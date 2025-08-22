@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsList from './ProjectsList';
 import ProjectForm from './ProjectForm';
 import api from '../services/api';
+import Seguimiento from './Seguimiento';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -108,7 +109,16 @@ const Dashboard = () => {
                         Ver Proyectos
                     </button>
                 </div>
-
+                <div className="action-card">
+                    <h3>📈 Seguimiento de Tuberías</h3>
+                    <p>Control de avance de instalación de tuberías por frentes de trabajo</p>
+                    <button
+                        className="action-btn"
+                        onClick={() => setCurrentView('seguimiento')}
+                    >
+                        Ver Seguimiento
+                    </button>
+                </div>
                 <div className="action-card">
                     <h3>👥 Gestión de Clientes</h3>
                     <p>Administrar información de clientes y contactos</p>
@@ -156,6 +166,8 @@ const Dashboard = () => {
         switch (currentView) {
             case 'projects':
                 return <ProjectsList onStatsUpdate={loadDashboardStats} />;
+            case 'seguimiento':
+                return <Seguimiento />;
             default:
                 return renderDashboardHome();
         }
@@ -186,6 +198,13 @@ const Dashboard = () => {
                         onClick={() => setCurrentView('projects')}
                     >
                         🏗️ Proyectos
+                    </button>
+
+                    <button
+                        className={`nav-item ${currentView === 'seguimiento' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('seguimiento')}
+                    >
+                        📈 Seguimiento
                     </button>
 
                     <button className="nav-item" disabled>

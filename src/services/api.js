@@ -2,7 +2,9 @@ import axios from 'axios';
 
 // Configuración base para API
 const api = axios.create({
-    baseURL: 'https://andrei-backend-production.up.railway.app/api',
+    baseURL: process.env.NODE_ENV === 'production'
+        ? 'https://andrei-backend-production.up.railway.app/api'
+        : 'http://localhost:5000/api',
     headers: {
         'Content-Type': 'application/json',
     },
