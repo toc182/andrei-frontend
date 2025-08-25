@@ -11,22 +11,29 @@ const ProjectForm = ({
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [clientes, setClientes] = useState([]);
+    const [loadingClientes, setLoadingClientes] = useState(true);
     const [formData, setFormData] = useState({
         nombre: '',
         nombre_corto: '',
+        cliente_id: '',
         contratista: '',
         ingeniero_residente: '',
         fecha_inicio: '',
         fecha_fin_estimada: '',
         estado: 'planificacion',
         monto_contrato_original: '',
+        presupuesto_base: '',
+        itbms: '',
+        monto_total: '',
         contrato: '',
         acto_publico: '',
         datos_adicionales: {
-            superficie_m2: '',
-            pisos: '',
-            tipo_estructura: '',
-            observaciones: ''
+            observaciones: '',
+            es_consorcio: false,
+            socios: [
+                { nombre: 'Pinellas, S.A.', porcentaje: 100 }
+            ]
         }
     });
 
@@ -38,40 +45,56 @@ const ProjectForm = ({
         { value: 'cancelado', label: 'Cancelado' }
     ];
 
-    const tiposEstructura = [
-        { value: '', label: 'Seleccionar tipo...' },
-        { value: 'concreto_armado', label: 'Concreto Armado' },
-        { value: 'acero', label: 'Estructura de Acero' },
-        { value: 'mixta', label: 'Estructura Mixta' },
-        { value: 'madera', label: 'Estructura de Madera' },
-        { value: 'prefabricado', label: 'Prefabricado' }
-    ];
+
+    // Cargar clientes
+    const loadClientes = async () => {
+        try {
+            setLoadingClientes(true);
+            const response = await api.get('/clientes');
+            if (response.data.success) {
+                setClientes(response.data.clientes);
+            }
+        } catch (error) {
+            console.error('Error cargando clientes:', error);
+        } finally {
+            setLoadingClientes(false);
+        }
+    };
 
     // Cargar datos del proyecto si es edición
     useEffect(() => {
-        if (projectId && isOpen) {
-            loadProject();
-        } else if (isOpen && !projectId) {
-            // Reset form para nuevo proyecto
-            setFormData({
-                nombre: '',
-                nombre_corto: '',
-                contratista: '',
-                ingeniero_residente: '',
-                fecha_inicio: '',
-                fecha_fin_estimada: '',
-                estado: 'planificacion',
-                monto_contrato_original: '',
-                contrato: '',
-                acto_publico: '',
-                datos_adicionales: {
-                    superficie_m2: '',
-                    pisos: '',
-                    tipo_estructura: '',
-                    observaciones: ''
-                }
-            });
-            setError('');
+        if (isOpen) {
+            loadClientes();
+            
+            if (projectId) {
+                loadProject();
+            } else {
+                // Reset form para nuevo proyecto
+                setFormData({
+                    nombre: '',
+                    nombre_corto: '',
+                    cliente_id: '',
+                    contratista: '',
+                    ingeniero_residente: '',
+                    fecha_inicio: '',
+                    fecha_fin_estimada: '',
+                    estado: 'planificacion',
+                    monto_contrato_original: '',
+                    presupuesto_base: '',
+                    itbms: '',
+                    monto_total: '',
+                    contrato: '',
+                    acto_publico: '',
+                    datos_adicionales: {
+                        observaciones: '',
+                        es_consorcio: false,
+                        socios: [
+                            { nombre: 'Pinellas, S.A.', porcentaje: 100 }
+                        ]
+                    }
+                });
+                setError('');
+            }
         }
     }, [projectId, isOpen]);
 
@@ -85,19 +108,24 @@ const ProjectForm = ({
                 setFormData({
                     nombre: project.nombre || '',
                     nombre_corto: project.nombre_corto || '',
+                    cliente_id: project.cliente_id || '',
                     contratista: project.contratista || '',
                     ingeniero_residente: project.ingeniero_residente || '',
                     fecha_inicio: project.fecha_inicio ? project.fecha_inicio.split('T')[0] : '',
                     fecha_fin_estimada: project.fecha_fin_estimada ? project.fecha_fin_estimada.split('T')[0] : '',
                     estado: project.estado || 'planificacion',
                     monto_contrato_original: project.monto_contrato_original || '',
+                    presupuesto_base: project.presupuesto_base || '',
+                    itbms: project.itbms || '',
+                    monto_total: project.monto_total || '',
                     contrato: project.contrato || '',
                     acto_publico: project.acto_publico || '',
                     datos_adicionales: {
-                        superficie_m2: project.datos_adicionales?.superficie_m2 || '',
-                        pisos: project.datos_adicionales?.pisos || '',
-                        tipo_estructura: project.datos_adicionales?.tipo_estructura || '',
-                        observaciones: project.datos_adicionales?.observaciones || ''
+                        observaciones: project.datos_adicionales?.observaciones || '',
+                        es_consorcio: project.datos_adicionales?.es_consorcio || false,
+                        socios: project.datos_adicionales?.socios || [
+                            { nombre: 'Pinellas, S.A.', porcentaje: 100 }
+                        ]
                     }
                 });
             }
@@ -110,21 +138,73 @@ const ProjectForm = ({
     };
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
 
         if (name.startsWith('datos_adicionales.')) {
             const field = name.replace('datos_adicionales.', '');
+            
+            if (field === 'es_consorcio') {
+                setFormData(prev => ({
+                    ...prev,
+                    datos_adicionales: {
+                        ...prev.datos_adicionales,
+                        [field]: checked,
+                        // Reset consortium data when unchecking
+                        socios: checked ? prev.datos_adicionales.socios : [{ nombre: 'Pinellas, S.A.', porcentaje: 100 }]
+                    }
+                }));
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    datos_adicionales: {
+                        ...prev.datos_adicionales,
+                        [field]: value
+                    }
+                }));
+            }
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            }));
+        }
+    };
+
+    // Handle partner changes
+    const handlePartnerChange = (index, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            datos_adicionales: {
+                ...prev.datos_adicionales,
+                socios: prev.datos_adicionales.socios.map((socio, i) => 
+                    i === index ? { ...socio, [field]: field === 'porcentaje' ? parseFloat(value) || 0 : value } : socio
+                )
+            }
+        }));
+    };
+
+    // Add partner
+    const addPartner = () => {
+        if (formData.datos_adicionales.socios.length < 4) {
             setFormData(prev => ({
                 ...prev,
                 datos_adicionales: {
                     ...prev.datos_adicionales,
-                    [field]: value
+                    socios: [...prev.datos_adicionales.socios, { nombre: '', porcentaje: 0 }]
                 }
             }));
-        } else {
+        }
+    };
+
+    // Remove partner
+    const removePartner = (index) => {
+        if (formData.datos_adicionales.socios.length > 1) {
             setFormData(prev => ({
                 ...prev,
-                [name]: value
+                datos_adicionales: {
+                    ...prev.datos_adicionales,
+                    socios: prev.datos_adicionales.socios.filter((_, i) => i !== index)
+                }
             }));
         }
     };
@@ -145,13 +225,36 @@ const ProjectForm = ({
         if (formData.monto_contrato_original && isNaN(parseFloat(formData.monto_contrato_original))) {
             errors.push('El monto del contrato debe ser un número válido');
         }
-
-        if (formData.datos_adicionales.pisos && isNaN(parseInt(formData.datos_adicionales.pisos))) {
-            errors.push('El número de pisos debe ser un número entero');
+        
+        if (formData.presupuesto_base && isNaN(parseFloat(formData.presupuesto_base))) {
+            errors.push('El presupuesto base debe ser un número válido');
+        }
+        
+        if (formData.itbms && isNaN(parseFloat(formData.itbms))) {
+            errors.push('El ITBMS debe ser un número válido');
+        }
+        
+        if (formData.monto_total && isNaN(parseFloat(formData.monto_total))) {
+            errors.push('El monto total debe ser un número válido');
         }
 
-        if (formData.datos_adicionales.superficie_m2 && isNaN(parseFloat(formData.datos_adicionales.superficie_m2))) {
-            errors.push('La superficie debe ser un número válido');
+        // Consortium validation
+        if (formData.datos_adicionales.es_consorcio) {
+            const socios = formData.datos_adicionales.socios;
+            const totalPercentage = socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0);
+            
+            if (Math.abs(totalPercentage - 100) > 0.01) {
+                errors.push('La suma de porcentajes debe ser exactamente 100%');
+            }
+
+            socios.forEach((socio, index) => {
+                if (!socio.nombre.trim()) {
+                    errors.push(`El nombre del socio ${index + 1} es obligatorio`);
+                }
+                if (socio.porcentaje <= 0) {
+                    errors.push(`El porcentaje del socio ${index + 1} debe ser mayor a 0`);
+                }
+            });
         }
 
         return errors;
@@ -175,10 +278,11 @@ const ProjectForm = ({
                 ...formData,
                 // Convertir valores numéricos
                 monto_contrato_original: formData.monto_contrato_original ? parseFloat(formData.monto_contrato_original) : null,
+                presupuesto_base: formData.presupuesto_base ? parseFloat(formData.presupuesto_base) : null,
+                itbms: formData.itbms ? parseFloat(formData.itbms) : null,
+                monto_total: formData.monto_total ? parseFloat(formData.monto_total) : null,
                 datos_adicionales: {
-                    ...formData.datos_adicionales,
-                    superficie_m2: formData.datos_adicionales.superficie_m2 ? parseFloat(formData.datos_adicionales.superficie_m2) : null,
-                    pisos: formData.datos_adicionales.pisos ? parseInt(formData.datos_adicionales.pisos) : null
+                    ...formData.datos_adicionales
                 }
             };
 
@@ -271,6 +375,26 @@ const ProjectForm = ({
                                     placeholder="Ej: Torre Central"
                                     disabled={loading}
                                 />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Cliente</label>
+                                <select
+                                    name="cliente_id"
+                                    value={formData.cliente_id}
+                                    onChange={handleInputChange}
+                                    disabled={loading || loadingClientes}
+                                >
+                                    <option value="">Seleccionar cliente...</option>
+                                    {clientes.map(cliente => (
+                                        <option key={cliente.id} value={cliente.id}>
+                                            {cliente.nombre} {cliente.abreviatura && `(${cliente.abreviatura})`}
+                                        </option>
+                                    ))}
+                                </select>
+                                {loadingClientes && <small>Cargando clientes...</small>}
                             </div>
                         </div>
 
@@ -380,13 +504,41 @@ const ProjectForm = ({
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Monto del Contrato Original (USD)</label>
+                                <label>Presupuesto Base (USD)</label>
                                 <input
                                     type="number"
-                                    name="monto_contrato_original"
-                                    value={formData.monto_contrato_original}
+                                    name="presupuesto_base"
+                                    value={formData.presupuesto_base}
                                     onChange={handleInputChange}
-                                    placeholder="2500000"
+                                    placeholder="2300000"
+                                    step="0.01"
+                                    min="0"
+                                    disabled={loading}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>ITBMS (7%)</label>
+                                <input
+                                    type="number"
+                                    name="itbms"
+                                    value={formData.itbms}
+                                    onChange={handleInputChange}
+                                    placeholder="161000"
+                                    step="0.01"
+                                    min="0"
+                                    disabled={loading}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Monto Total (USD)</label>
+                                <input
+                                    type="number"
+                                    name="monto_total"
+                                    value={formData.monto_total}
+                                    onChange={handleInputChange}
+                                    placeholder="2461000"
                                     step="0.01"
                                     min="0"
                                     disabled={loading}
@@ -395,56 +547,103 @@ const ProjectForm = ({
                         </div>
                     </div>
 
-                    {/* Datos Técnicos */}
+                    {/* Estructura Empresarial */}
                     <div className="form-section">
-                        <h3>Datos Técnicos</h3>
+                        <h3>Estructura Empresarial</h3>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Superficie (m²)</label>
-                                <input
-                                    type="number"
-                                    name="datos_adicionales.superficie_m2"
-                                    value={formData.datos_adicionales.superficie_m2}
-                                    onChange={handleInputChange}
-                                    placeholder="5000"
-                                    step="0.01"
-                                    min="0"
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Número de Pisos</label>
-                                <input
-                                    type="number"
-                                    name="datos_adicionales.pisos"
-                                    value={formData.datos_adicionales.pisos}
-                                    onChange={handleInputChange}
-                                    placeholder="15"
-                                    min="1"
-                                    disabled={loading}
-                                />
+                                <div className="toggle-container">
+                                    <label>Consorcio</label>
+                                    <label className="toggle-switch">
+                                        <input
+                                            type="checkbox"
+                                            name="datos_adicionales.es_consorcio"
+                                            checked={formData.datos_adicionales.es_consorcio}
+                                            onChange={handleInputChange}
+                                            disabled={loading}
+                                        />
+                                        <span className="toggle-slider"></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Tipo de Estructura</label>
-                                <select
-                                    name="datos_adicionales.tipo_estructura"
-                                    value={formData.datos_adicionales.tipo_estructura}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                >
-                                    {tiposEstructura.map(tipo => (
-                                        <option key={tipo.value} value={tipo.value}>
-                                            {tipo.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                        {formData.datos_adicionales.es_consorcio && (
+                            <>
+                                <div className="partners-header">
+                                    <h4>Socios del Consorcio</h4>
+                                    {formData.datos_adicionales.socios.length < 4 && (
+                                        <button
+                                            type="button"
+                                            className="btn-secondary"
+                                            onClick={addPartner}
+                                            disabled={loading}
+                                        >
+                                            + Agregar Socio
+                                        </button>
+                                    )}
+                                </div>
+
+                                {formData.datos_adicionales.socios.map((socio, index) => (
+                                    <div key={index} className="form-row partner-row">
+                                        <div className="form-group">
+                                            <label>Nombre del Socio {index + 1} *</label>
+                                            <input
+                                                type="text"
+                                                value={socio.nombre}
+                                                onChange={(e) => handlePartnerChange(index, 'nombre', e.target.value)}
+                                                placeholder="Nombre de la empresa"
+                                                disabled={loading || (index === 0 && socio.nombre === 'Pinellas, S.A.')}
+                                            />
+                                        </div>
+                                        <div className="form-group percentage-group">
+                                            <label>Porcentaje *</label>
+                                            <div className="percentage-input-container">
+                                                <input
+                                                    type="number"
+                                                    value={socio.porcentaje}
+                                                    onChange={(e) => handlePartnerChange(index, 'porcentaje', e.target.value)}
+                                                    placeholder="0"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.01"
+                                                    disabled={loading}
+                                                />
+                                                <span className="percentage-symbol">%</span>
+                                            </div>
+                                        </div>
+                                        {formData.datos_adicionales.socios.length > 1 && 
+                                         !(index === 0 && socio.nombre === 'Pinellas, S.A.') && (
+                                            <div className="form-group remove-group">
+                                                <label>&nbsp;</label>
+                                                <button
+                                                    type="button"
+                                                    className="btn-remove"
+                                                    onClick={() => removePartner(index)}
+                                                    disabled={loading}
+                                                    title="Eliminar socio"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                <div className="percentage-total">
+                                    Total: {formData.datos_adicionales.socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0).toFixed(2)}%
+                                    {Math.abs(formData.datos_adicionales.socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0) - 100) > 0.01 && (
+                                        <span className="percentage-warning">⚠️ Debe sumar 100%</span>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Adicionales */}
+                    <div className="form-section">
+                        <h3>Adicionales</h3>
 
                         <div className="form-row">
                             <div className="form-group full-width">

@@ -8,16 +8,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [filters, setFilters] = useState({
-        search: '',
-        estado: '',
-        page: 1,
-        limit: 10
-    });
     const [pagination, setPagination] = useState({});
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
     const [projectToDelete, setProjectToDelete] = useState(null);
+    const [viewingProject, setViewingProject] = useState(null);
 
     // Estados disponibles
     const estados = [
@@ -33,15 +28,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const loadProjects = async () => {
         try {
             setLoading(true);
-            const params = new URLSearchParams();
-
-            Object.keys(filters).forEach(key => {
-                if (filters[key]) {
-                    params.append(key, filters[key]);
-                }
-            });
-
-            const response = await api.get(`/projects?${params.toString()}`);
+            const response = await api.get('/projects');
 
             if (response.data.success) {
                 setProjects(response.data.proyectos);
@@ -58,27 +45,10 @@ const ProjectsList = ({ onStatsUpdate }) => {
         }
     };
 
-    // Cargar proyectos al montar y cuando cambien los filtros
+    // Cargar proyectos al montar
     useEffect(() => {
         loadProjects();
-    }, [filters]);
-
-    // Manejar cambios en filtros
-    const handleFilterChange = (key, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [key]: value,
-            page: 1 // Reset página al filtrar
-        }));
-    };
-
-    // Manejar paginación
-    const handlePageChange = (newPage) => {
-        setFilters(prev => ({
-            ...prev,
-            page: newPage
-        }));
-    };
+    }, []);
 
     // Manejar guardado de proyecto
     const handleProjectSave = (savedProject) => {
@@ -90,6 +60,25 @@ const ProjectsList = ({ onStatsUpdate }) => {
         }
         setShowCreateForm(false);
         setEditingProject(null);
+    };
+
+    // Manejar visualización de detalles
+    const handleViewProject = async (projectId) => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/projects/${projectId}`);
+            
+            if (response.data.success) {
+                setViewingProject(response.data.proyecto);
+            } else {
+                setError('Error al cargar los detalles del proyecto');
+            }
+        } catch (error) {
+            console.error('Error cargando proyecto:', error);
+            setError('Error de conexión al cargar el proyecto');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Manejar edición
@@ -178,60 +167,17 @@ const ProjectsList = ({ onStatsUpdate }) => {
         <div className="projects-container">
             {/* Header */}
             <div className="projects-header">
-                <div className="header-title">
-                    <h1>Gestión de Proyectos</h1>
-                    <p>Administra todos los proyectos de construcción</p>
-                </div>
-
+                <h1>Gestión de Proyectos</h1>
                 {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
                     <button
                         className="btn-primary"
                         onClick={() => setShowCreateForm(true)}
                     >
-                        + Nuevo Proyecto
+                        + Agregar Proyecto
                     </button>
                 )}
             </div>
 
-            {/* Filtros */}
-            <div className="projects-filters">
-                <div className="filter-group">
-                    <label>Buscar:</label>
-                    <input
-                        type="text"
-                        placeholder="Código, nombre, contratista..."
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                    />
-                </div>
-
-                <div className="filter-group">
-                    <label>Estado:</label>
-                    <select
-                        value={filters.estado}
-                        onChange={(e) => handleFilterChange('estado', e.target.value)}
-                    >
-                        {estados.map(estado => (
-                            <option key={estado.value} value={estado.value}>
-                                {estado.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="filter-group">
-                    <label>Por página:</label>
-                    <select
-                        value={filters.limit}
-                        onChange={(e) => handleFilterChange('limit', parseInt(e.target.value))}
-                    >
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                    </select>
-                </div>
-            </div>
 
             {/* Error */}
             {error && (
@@ -246,8 +192,8 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 <table className="projects-table">
                     <thead>
                     <tr>
-                        <th>Código</th>
                         <th>Proyecto</th>
+                        <th>Cliente</th>
                         <th>Contratista</th>
                         <th>Ing. Residente</th>
                         <th>Estado</th>
@@ -266,15 +212,12 @@ const ProjectsList = ({ onStatsUpdate }) => {
                         </tr>
                     ) : (
                         projects.map(project => (
-                            <tr key={project.id}>
-                                <td className="project-code">
-                                    {project.codigo_proyecto || `PRY-${project.id}`}
-                                </td>
+                            <tr key={project.id} onClick={() => handleViewProject(project.id)} style={{cursor: 'pointer'}}>
                                 <td className="project-name">
-                                    <div className="project-main-name">{project.nombre}</div>
-                                    {project.nombre_corto && (
-                                        <div className="project-short-name">{project.nombre_corto}</div>
-                                    )}
+                                    {project.nombre_corto || project.nombre}
+                                </td>
+                                <td className="project-client">
+                                    {project.cliente_abreviatura || '-'}
                                 </td>
                                 <td>{project.contratista || '-'}</td>
                                 <td>{project.ingeniero_residente || '-'}</td>
@@ -286,12 +229,15 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 <td>{formatDate(project.fecha_inicio)}</td>
                                 <td>{formatDate(project.fecha_fin_estimada)}</td>
                                 <td className="project-money">
-                                    {formatMoney(project.monto_contrato_original)}
+                                    {formatMoney(project.monto_total || project.monto_contrato_original)}
                                 </td>
                                 <td className="project-actions">
                                     <button
                                         className="btn-action btn-view"
-                                        onClick={() => console.log('Ver proyecto:', project.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewProject(project.id);
+                                        }}
                                         title="Ver detalles"
                                     >
                                         👁️
@@ -301,7 +247,10 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                         <>
                                             <button
                                                 className="btn-action btn-edit"
-                                                onClick={() => handleEditProject(project)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditProject(project);
+                                                }}
                                                 title="Editar proyecto"
                                             >
                                                 ✏️
@@ -310,7 +259,10 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                             {user?.rol === 'admin' && (
                                                 <button
                                                     className="btn-action btn-delete"
-                                                    onClick={() => handleDeleteProject(project.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteProject(project.id);
+                                                    }}
                                                     title="Eliminar proyecto"
                                                 >
                                                     🗑️
@@ -326,57 +278,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 </table>
             </div>
 
-            {/* Paginación */}
-            {pagination.total_pages > 1 && (
-                <div className="projects-pagination">
-                    <div className="pagination-info">
-                        Mostrando {((pagination.current_page - 1) * pagination.per_page) + 1} - {
-                        Math.min(pagination.current_page * pagination.per_page, pagination.total_records)
-                    } de {pagination.total_records} proyectos
-                    </div>
-
-                    <div className="pagination-buttons">
-                        <button
-                            onClick={() => handlePageChange(pagination.current_page - 1)}
-                            disabled={pagination.current_page <= 1}
-                        >
-                            ← Anterior
-                        </button>
-
-                        {[...Array(pagination.total_pages)].map((_, index) => {
-                            const page = index + 1;
-                            if (
-                                page === 1 ||
-                                page === pagination.total_pages ||
-                                (page >= pagination.current_page - 2 && page <= pagination.current_page + 2)
-                            ) {
-                                return (
-                                    <button
-                                        key={page}
-                                        onClick={() => handlePageChange(page)}
-                                        className={pagination.current_page === page ? 'active' : ''}
-                                    >
-                                        {page}
-                                    </button>
-                                );
-                            } else if (
-                                page === pagination.current_page - 3 ||
-                                page === pagination.current_page + 3
-                            ) {
-                                return <span key={page}>...</span>;
-                            }
-                            return null;
-                        })}
-
-                        <button
-                            onClick={() => handlePageChange(pagination.current_page + 1)}
-                            disabled={pagination.current_page >= pagination.total_pages}
-                        >
-                            Siguiente →
-                        </button>
-                    </div>
-                </div>
-            )}
 
             {/* Modal para crear proyecto */}
             <ProjectForm
@@ -392,6 +293,201 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 onClose={() => setEditingProject(null)}
                 onSave={handleProjectSave}
             />
+
+            {/* Modal para ver detalles del proyecto */}
+            {viewingProject && (
+                <div className="modal-overlay" onClick={() => setViewingProject(null)}>
+                    <div className="modal-content project-details-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Detalles del Proyecto</h2>
+                            <button
+                                className="modal-close"
+                                onClick={() => setViewingProject(null)}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="project-details">
+                            {/* Información Básica */}
+                            <div className="details-section">
+                                <h3>Información Básica</h3>
+                                <div className="details-grid">
+                                    <div className="detail-item">
+                                        <label>Nombre del Proyecto:</label>
+                                        <span>{viewingProject.nombre}</span>
+                                    </div>
+                                    {viewingProject.nombre_corto && (
+                                        <div className="detail-item">
+                                            <label>Nombre Corto:</label>
+                                            <span>{viewingProject.nombre_corto}</span>
+                                        </div>
+                                    )}
+                                    {viewingProject.codigo_proyecto && (
+                                        <div className="detail-item">
+                                            <label>Código:</label>
+                                            <span>{viewingProject.codigo_proyecto}</span>
+                                        </div>
+                                    )}
+                                    <div className="detail-item">
+                                        <label>Estado:</label>
+                                        <span className={`status-badge ${getStatusClass(viewingProject.estado)}`}>
+                                            {getStatusText(viewingProject.estado)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Cliente */}
+                            {viewingProject.cliente_nombre && (
+                                <div className="details-section">
+                                    <h3>Cliente</h3>
+                                    <div className="details-grid">
+                                        <div className="detail-item">
+                                            <label>Nombre:</label>
+                                            <span>{viewingProject.cliente_nombre}</span>
+                                        </div>
+                                        {viewingProject.cliente_abreviatura && (
+                                            <div className="detail-item">
+                                                <label>Abreviatura:</label>
+                                                <span className="client-abbreviation">{viewingProject.cliente_abreviatura}</span>
+                                            </div>
+                                        )}
+                                        {viewingProject.cliente_contacto && (
+                                            <div className="detail-item">
+                                                <label>Contacto:</label>
+                                                <span>{viewingProject.cliente_contacto}</span>
+                                            </div>
+                                        )}
+                                        {viewingProject.cliente_telefono && (
+                                            <div className="detail-item">
+                                                <label>Teléfono:</label>
+                                                <span>{viewingProject.cliente_telefono}</span>
+                                            </div>
+                                        )}
+                                        {viewingProject.cliente_email && (
+                                            <div className="detail-item">
+                                                <label>Email:</label>
+                                                <span>{viewingProject.cliente_email}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Equipo de Trabajo */}
+                            <div className="details-section">
+                                <h3>Equipo de Trabajo</h3>
+                                <div className="details-grid">
+                                    {viewingProject.contratista && (
+                                        <div className="detail-item">
+                                            <label>Contratista:</label>
+                                            <span>{viewingProject.contratista}</span>
+                                        </div>
+                                    )}
+                                    {viewingProject.ingeniero_residente && (
+                                        <div className="detail-item">
+                                            <label>Ingeniero Residente:</label>
+                                            <span>{viewingProject.ingeniero_residente}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Fechas */}
+                            <div className="details-section">
+                                <h3>Cronograma</h3>
+                                <div className="details-grid">
+                                    {viewingProject.fecha_inicio && (
+                                        <div className="detail-item">
+                                            <label>Fecha de Inicio:</label>
+                                            <span>{formatDate(viewingProject.fecha_inicio)}</span>
+                                        </div>
+                                    )}
+                                    {viewingProject.fecha_fin_estimada && (
+                                        <div className="detail-item">
+                                            <label>Fecha Fin Estimada:</label>
+                                            <span>{formatDate(viewingProject.fecha_fin_estimada)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Información Contractual */}
+                            <div className="details-section">
+                                <h3>Información Contractual</h3>
+                                <div className="details-grid">
+                                    {viewingProject.contrato && (
+                                        <div className="detail-item">
+                                            <label>Número de Contrato:</label>
+                                            <span>{viewingProject.contrato}</span>
+                                        </div>
+                                    )}
+                                    {viewingProject.acto_publico && (
+                                        <div className="detail-item">
+                                            <label>Acto Público:</label>
+                                            <span>{viewingProject.acto_publico}</span>
+                                        </div>
+                                    )}
+                                    {(viewingProject.presupuesto_base || viewingProject.monto_contrato_original) && (
+                                        <>
+                                            {viewingProject.presupuesto_base && (
+                                                <div className="detail-item">
+                                                    <label>Presupuesto Base:</label>
+                                                    <span className="project-money">{formatMoney(viewingProject.presupuesto_base)}</span>
+                                                </div>
+                                            )}
+                                            {viewingProject.itbms && (
+                                                <div className="detail-item">
+                                                    <label>ITBMS (7%):</label>
+                                                    <span className="project-money">{formatMoney(viewingProject.itbms)}</span>
+                                                </div>
+                                            )}
+                                            {viewingProject.monto_total && (
+                                                <div className="detail-item">
+                                                    <label>Monto Total:</label>
+                                                    <span className="project-money">{formatMoney(viewingProject.monto_total)}</span>
+                                                </div>
+                                            )}
+                                            {!viewingProject.monto_total && viewingProject.monto_contrato_original && (
+                                                <div className="detail-item">
+                                                    <label>Monto del Contrato:</label>
+                                                    <span className="project-money">{formatMoney(viewingProject.monto_contrato_original)}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Observaciones */}
+                            {viewingProject.datos_adicionales?.observaciones && (
+                                <div className="details-section">
+                                    <h3>Observaciones</h3>
+                                    <div className="detail-item full-width">
+                                        <p className="observations">{viewingProject.datos_adicionales.observaciones}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Metadatos */}
+                            <div className="details-section">
+                                <h3>Información del Sistema</h3>
+                                <div className="details-grid">
+                                    <div className="detail-item">
+                                        <label>Creado:</label>
+                                        <span>{formatDate(viewingProject.created_at)}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Última Actualización:</label>
+                                        <span>{formatDate(viewingProject.updated_at)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

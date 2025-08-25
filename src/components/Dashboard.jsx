@@ -3,7 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsList from './ProjectsList';
 import ProjectForm from './ProjectForm';
 import api from '../services/api';
-import Seguimiento from './Seguimiento';
+import SeguimientoHub from './SeguimientoHub';
+import Clientes from './Clientes';
+import CostsHub from './CostsHub';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -122,8 +124,22 @@ const Dashboard = () => {
                 <div className="action-card">
                     <h3>👥 Gestión de Clientes</h3>
                     <p>Administrar información de clientes y contactos</p>
-                    <button className="action-btn" disabled>
-                        Próximamente
+                    <button
+                        className="action-btn"
+                        onClick={() => setCurrentView('clientes')}
+                    >
+                        Ver Clientes
+                    </button>
+                </div>
+
+                <div className="action-card">
+                    <h3>💰 Control de Costos</h3>
+                    <p>Presupuestos, gastos y control financiero de proyectos</p>
+                    <button
+                        className="action-btn"
+                        onClick={() => setCurrentView('costs')}
+                    >
+                        Ver Costos
                     </button>
                 </div>
 
@@ -167,7 +183,11 @@ const Dashboard = () => {
             case 'projects':
                 return <ProjectsList onStatsUpdate={loadDashboardStats} />;
             case 'seguimiento':
-                return <Seguimiento />;
+                return <SeguimientoHub />;
+            case 'clientes':
+                return <Clientes />;
+            case 'costs':
+                return <CostsHub />;
             default:
                 return renderDashboardHome();
         }
@@ -207,8 +227,18 @@ const Dashboard = () => {
                         📈 Seguimiento
                     </button>
 
-                    <button className="nav-item" disabled>
+                    <button
+                        className={`nav-item ${currentView === 'clientes' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('clientes')}
+                    >
                         👥 Clientes
+                    </button>
+
+                    <button
+                        className={`nav-item ${currentView === 'costs' ? 'active' : ''}`}
+                        onClick={() => setCurrentView('costs')}
+                    >
+                        💰 Costos
                     </button>
 
                     <button className="nav-item" disabled>

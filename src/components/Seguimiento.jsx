@@ -117,7 +117,8 @@ function Seguimiento() {
 
     if (loading) {
         return (
-            <div style={{ padding: '20px', textAlign: 'center' }}>
+            <div className="seguimiento-loading">
+                <div className="loading-spinner"></div>
                 <h2>Cargando datos de seguimiento...</h2>
             </div>
         );
@@ -125,9 +126,11 @@ function Seguimiento() {
 
     if (error) {
         return (
-            <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
-                <h2>Error: {error}</h2>
-                <button onClick={cargarDashboard}>Intentar de nuevo</button>
+            <div className="seguimiento-error">
+                <h2>❌ Error: {error}</h2>
+                <button onClick={cargarDashboard} className="btn-retry">
+                    🔄 Intentar de nuevo
+                </button>
             </div>
         );
     }
@@ -136,118 +139,83 @@ function Seguimiento() {
     const metas = dashboard?.metas || [];
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-            <h1>Seguimiento de Instalación de Tuberías</h1>
+        <div className="seguimiento-bonyic">
+            <div className="seguimiento-header">
+                <h1>Seguimiento de Instalación de Tuberías</h1>
+                <p className="project-subtitle">Proyecto Bonyic - Control de Avance</p>
+            </div>
 
             {/* Navegación por pestañas */}
-            <div style={{ marginBottom: '20px', borderBottom: '2px solid #ddd' }}>
+            <div className="seguimiento-tabs">
                 <button
                     onClick={() => setActiveTab('dashboard')}
-                    style={{
-                        padding: '10px 20px',
-                        marginRight: '10px',
-                        backgroundColor: activeTab === 'dashboard' ? '#007bff' : 'transparent',
-                        color: activeTab === 'dashboard' ? 'white' : '#007bff',
-                        border: 'none',
-                        borderBottom: activeTab === 'dashboard' ? '2px solid #007bff' : 'none',
-                        cursor: 'pointer'
-                    }}
+                    className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
                 >
-                    Dashboard
+                    📊 Dashboard
                 </button>
                 <button
                     onClick={() => setActiveTab('reportar')}
-                    style={{
-                        padding: '10px 20px',
-                        marginRight: '10px',
-                        backgroundColor: activeTab === 'reportar' ? '#28a745' : 'transparent',
-                        color: activeTab === 'reportar' ? 'white' : '#28a745',
-                        border: 'none',
-                        borderBottom: activeTab === 'reportar' ? '2px solid #28a745' : 'none',
-                        cursor: 'pointer'
-                    }}
+                    className={`tab-btn ${activeTab === 'reportar' ? 'active' : ''}`}
                 >
-                    Reportar Avance
+                    📈 Reportar Avance
                 </button>
                 <button
                     onClick={() => setActiveTab('frentes')}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: activeTab === 'frentes' ? '#ffc107' : 'transparent',
-                        color: activeTab === 'frentes' ? 'white' : '#ffc107',
-                        border: 'none',
-                        borderBottom: activeTab === 'frentes' ? '2px solid #ffc107' : 'none',
-                        cursor: 'pointer'
-                    }}
+                    className={`tab-btn ${activeTab === 'frentes' ? 'active' : ''}`}
                 >
-                    Gestionar Frentes
+                    🏗️ Gestionar Frentes
                 </button>
             </div>
 
             {/* Tab Dashboard */}
             {activeTab === 'dashboard' && (
-                <div>
+                <div className="tab-content">
                     {/* Resumen General */}
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                        gap: '20px',
-                        marginBottom: '30px'
-                    }}>
-                        <div style={{
-                            backgroundColor: '#f8f9fa',
-                            padding: '20px',
-                            borderRadius: '8px',
-                            border: '1px solid #dee2e6'
-                        }}>
-                            <h3 style={{ color: '#495057', marginBottom: '10px' }}>Tubos Totales</h3>
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#007bff', margin: '0' }}>
+                    <div className="dashboard-cards">
+                        <div className="dashboard-card">
+                            <div className="card-icon">🔧</div>
+                            <h3>Tubos Totales</h3>
+                            <div className="card-number primary">
                                 {resumen.tubos_instalados_total || 0} / {resumen.tubos_totales_requeridos || 0}
-                            </p>
-                            <p style={{ color: '#6c757d', margin: '5px 0 0 0' }}>
+                            </div>
+                            <p className="card-subtitle">
                                 {resumen.porcentaje_avance_total || 0}% completado
                             </p>
+                            <div className="progress-bar">
+                                <div 
+                                    className="progress-fill" 
+                                    style={{width: `${resumen.porcentaje_avance_total || 0}%`}}
+                                ></div>
+                            </div>
                         </div>
 
-                        <div style={{
-                            backgroundColor: '#f8f9fa',
-                            padding: '20px',
-                            borderRadius: '8px',
-                            border: '1px solid #dee2e6'
-                        }}>
-                            <h3 style={{ color: '#495057', marginBottom: '10px' }}>Metros Instalados</h3>
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#28a745', margin: '0' }}>
+                        <div className="dashboard-card">
+                            <div className="card-icon">📏</div>
+                            <h3>Metros Instalados</h3>
+                            <div className="card-number success">
                                 {resumen.metros_instalados_total || 0}
-                            </p>
-                            <p style={{ color: '#6c757d', margin: '5px 0 0 0' }}>
+                            </div>
+                            <p className="card-subtitle">
                                 de {resumen.metros_totales_requeridos || 0} metros
                             </p>
                         </div>
 
-                        <div style={{
-                            backgroundColor: '#f8f9fa',
-                            padding: '20px',
-                            borderRadius: '8px',
-                            border: '1px solid #dee2e6'
-                        }}>
-                            <h3 style={{ color: '#495057', marginBottom: '10px' }}>Promedio Diario</h3>
-                            <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffc107', margin: '0' }}>
+                        <div className="dashboard-card">
+                            <div className="card-icon">⚡</div>
+                            <h3>Promedio Diario</h3>
+                            <div className="card-number warning">
                                 {resumen.promedio_diario || 0} tubos/día
-                            </p>
-                            <p style={{ color: '#6c757d', margin: '5px 0 0 0' }}>
+                            </div>
+                            <p className="card-subtitle">
                                 Últimos 15 días
                             </p>
                         </div>
                     </div>
 
                     {/* Metas del Proyecto */}
-                    <div style={{ marginBottom: '30px' }}>
-                        <h2 style={{ color: '#495057', marginBottom: '20px' }}>Metas del Proyecto</h2>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                            gap: '20px'
-                        }}>
+                    <div className="metas-section">
+                        <h2 className="section-title">🎯 Metas del Proyecto</h2>
+                        <div className="metas-grid">
                             {metas.map((meta) => {
                                 const diasRestantes = calcularDiasRestantes(meta.fecha_meta);
                                 const estaAtrasado = diasRestantes < 0;
@@ -255,35 +223,31 @@ function Seguimiento() {
                                 const tubosPorDiaRequeridos = diasRestantes > 0 ? Math.ceil(tubosRestantes / diasRestantes) : tubosRestantes;
 
                                 return (
-                                    <div key={meta.id} style={{
-                                        backgroundColor: estaAtrasado ? '#ffebee' : '#e8f5e8',
-                                        padding: '20px',
-                                        borderRadius: '8px',
-                                        border: `2px solid ${estaAtrasado ? '#f44336' : '#4caf50'}`
-                                    }}>
-                                        <h3 style={{
-                                            color: estaAtrasado ? '#f44336' : '#4caf50',
-                                            marginBottom: '15px'
-                                        }}>
+                                    <div key={meta.id} className={`meta-card ${estaAtrasado ? 'atrasado' : 'en-tiempo'}`}>
+                                        <h3 className="meta-title">
                                             {meta.descripcion}
                                         </h3>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <strong>Fecha objetivo:</strong> {new Date(meta.fecha_meta).toLocaleDateString()}
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <strong>Tubos objetivo:</strong> {meta.tubos_meta}
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <strong>Días restantes:</strong>
-                                            <span style={{ color: estaAtrasado ? '#f44336' : '#4caf50', fontWeight: 'bold' }}>
-                        {estaAtrasado ? `${Math.abs(diasRestantes)} días atrasado` : `${diasRestantes} días`}
-                      </span>
-                                        </div>
-                                        <div style={{ marginBottom: '10px' }}>
-                                            <strong>Tubos por día requeridos:</strong>
-                                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: tubosPorDiaRequeridos > 20 ? '#f44336' : '#4caf50' }}>
-                        {tubosPorDiaRequeridos}
-                      </span>
+                                        <div className="meta-info">
+                                            <div className="meta-item">
+                                                <span className="meta-label">📅 Fecha objetivo:</span>
+                                                <span>{new Date(meta.fecha_meta).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="meta-item">
+                                                <span className="meta-label">🎯 Tubos objetivo:</span>
+                                                <span>{meta.tubos_meta}</span>
+                                            </div>
+                                            <div className="meta-item">
+                                                <span className="meta-label">⏱️ Días restantes:</span>
+                                                <span className={`meta-days ${estaAtrasado ? 'overdue' : 'on-time'}`}>
+                                                    {estaAtrasado ? `${Math.abs(diasRestantes)} días atrasado` : `${diasRestantes} días`}
+                                                </span>
+                                            </div>
+                                            <div className="meta-item">
+                                                <span className="meta-label">🚀 Tubos/día requeridos:</span>
+                                                <span className={`meta-rate ${tubosPorDiaRequeridos > 20 ? 'high' : 'normal'}`}>
+                                                    {tubosPorDiaRequeridos}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -295,30 +259,19 @@ function Seguimiento() {
 
             {/* Tab Reportar Avance */}
             {activeTab === 'reportar' && (
-                <div>
-                    <h2 style={{ color: '#495057', marginBottom: '20px' }}>Reportar Avance Diario</h2>
+                <div className="tab-content">
+                    <h2 className="section-title">📈 Reportar Avance Diario</h2>
 
-                    <form onSubmit={crearReporte} style={{
-                        backgroundColor: '#f8f9fa',
-                        padding: '30px',
-                        borderRadius: '8px',
-                        maxWidth: '600px'
-                    }}>
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                Frente de Trabajo:
+                    <form onSubmit={crearReporte} className="seguimiento-form">
+                        <div className="form-group">
+                            <label className="form-label">
+                                🏗️ Frente de Trabajo:
                             </label>
                             <select
                                 value={reporteForm.frente_id}
                                 onChange={(e) => setReporteForm({...reporteForm, frente_id: e.target.value})}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '4px',
-                                    fontSize: '16px'
-                                }}
+                                className="form-input"
                             >
                                 <option value="">Seleccionar frente...</option>
                                 {frentes.map((frente) => (
@@ -329,28 +282,22 @@ function Seguimiento() {
                             </select>
                         </div>
 
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                Fecha:
+                        <div className="form-group">
+                            <label className="form-label">
+                                📅 Fecha:
                             </label>
                             <input
                                 type="date"
                                 value={reporteForm.fecha}
                                 onChange={(e) => setReporteForm({...reporteForm, fecha: e.target.value})}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '4px',
-                                    fontSize: '16px'
-                                }}
+                                className="form-input"
                             />
                         </div>
 
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                Tubos Instalados:
+                        <div className="form-group">
+                            <label className="form-label">
+                                🔧 Tubos Instalados:
                             </label>
                             <input
                                 type="number"
@@ -358,71 +305,40 @@ function Seguimiento() {
                                 value={reporteForm.tubos_instalados}
                                 onChange={(e) => setReporteForm({...reporteForm, tubos_instalados: e.target.value})}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '4px',
-                                    fontSize: '16px'
-                                }}
+                                className="form-input"
                             />
-                            <small style={{ color: '#6c757d' }}>
-                                Cada tubo = 5.8 metros
+                            <small className="form-help">
+                                📏 Cada tubo = 5.8 metros
                             </small>
                         </div>
 
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                Observaciones:
+                        <div className="form-group">
+                            <label className="form-label">
+                                📝 Observaciones:
                             </label>
                             <textarea
                                 value={reporteForm.observaciones}
                                 onChange={(e) => setReporteForm({...reporteForm, observaciones: e.target.value})}
                                 rows="3"
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '4px',
-                                    fontSize: '16px',
-                                    resize: 'vertical'
-                                }}
+                                className="form-input"
                                 placeholder="Condiciones climáticas, problemas encontrados, etc..."
                             />
                         </div>
 
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                Reportado por:
+                        <div className="form-group">
+                            <label className="form-label">
+                                👤 Reportado por:
                             </label>
                             <input
                                 type="text"
                                 value={reporteForm.reportado_por}
                                 onChange={(e) => setReporteForm({...reporteForm, reportado_por: e.target.value})}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '4px',
-                                    fontSize: '16px'
-                                }}
+                                className="form-input"
                             />
                         </div>
 
-                        <button
-                            type="submit"
-                            style={{
-                                backgroundColor: '#28a745',
-                                color: 'white',
-                                padding: '12px 30px',
-                                border: 'none',
-                                borderRadius: '4px',
-                                fontSize: '16px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold'
-                            }}
-                        >
-                            Guardar Reporte
+                        <button type="submit" className="btn-submit">
+                            💾 Guardar Reporte
                         </button>
                     </form>
                 </div>
@@ -431,34 +347,23 @@ function Seguimiento() {
 
             {/* Tab Gestionar Frentes */}
             {activeTab === 'frentes' && (
-                <div>
-                    <h2 style={{ color: '#495057', marginBottom: '20px' }}>Gestionar Frentes de Trabajo</h2>
+                <div className="tab-content">
+                    <h2 className="section-title">🏗️ Gestionar Frentes de Trabajo</h2>
 
                     {/* Formulario para crear frente */}
-                    <div style={{ marginBottom: '30px' }}>
-                        <h3 style={{ color: '#495057', marginBottom: '15px' }}>Crear Nuevo Frente</h3>
+                    <div className="crear-frente-section">
+                        <h3 className="subsection-title">➕ Crear Nuevo Frente</h3>
 
-                        <form onSubmit={crearFrente} style={{
-                            backgroundColor: '#f8f9fa',
-                            padding: '30px',
-                            borderRadius: '8px',
-                            maxWidth: '600px'
-                        }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                    Tramo:
+                        <form onSubmit={crearFrente} className="seguimiento-form">
+                            <div className="form-group">
+                                <label className="form-label">
+                                    🛤️ Tramo:
                                 </label>
                                 <select
                                     value={frenteForm.tramo_id}
                                     onChange={(e) => setFrenteForm({...frenteForm, tramo_id: e.target.value})}
                                     required
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '1px solid #ced4da',
-                                        borderRadius: '4px',
-                                        fontSize: '16px'
-                                    }}
+                                    className="form-input"
                                 >
                                     <option value="">Seleccionar tramo...</option>
                                     {tramos.map((tramo) => (
@@ -469,9 +374,9 @@ function Seguimiento() {
                                 </select>
                             </div>
 
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                    Nombre del Frente:
+                            <div className="form-group">
+                                <label className="form-label">
+                                    🏷️ Nombre del Frente:
                                 </label>
                                 <input
                                     type="text"
@@ -479,79 +384,50 @@ function Seguimiento() {
                                     onChange={(e) => setFrenteForm({...frenteForm, nombre: e.target.value})}
                                     required
                                     placeholder="Ej: T1C, T2C, etc."
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '1px solid #ced4da',
-                                        borderRadius: '4px',
-                                        fontSize: '16px'
-                                    }}
+                                    className="form-input"
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                                    Descripción:
+                            <div className="form-group">
+                                <label className="form-label">
+                                    📝 Descripción:
                                 </label>
                                 <textarea
                                     value={frenteForm.descripcion}
                                     onChange={(e) => setFrenteForm({...frenteForm, descripcion: e.target.value})}
                                     rows="3"
                                     placeholder="Descripción del frente de trabajo..."
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        border: '1px solid #ced4da',
-                                        borderRadius: '4px',
-                                        fontSize: '16px',
-                                        resize: 'vertical'
-                                    }}
+                                    className="form-input"
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={creandoFrente}
-                                style={{
-                                    backgroundColor: creandoFrente ? '#6c757d' : '#ffc107',
-                                    color: 'white',
-                                    padding: '12px 30px',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    fontSize: '16px',
-                                    cursor: creandoFrente ? 'not-allowed' : 'pointer',
-                                    fontWeight: 'bold'
-                                }}
+                                className={`btn-submit ${creandoFrente ? 'loading' : ''}`}
                             >
-                                {creandoFrente ? 'Creando...' : 'Crear Frente'}
+                                {creandoFrente ? '⏳ Creando...' : '➕ Crear Frente'}
                             </button>
                         </form>
                     </div>
 
                     {/* Lista de frentes existentes */}
-                    <div>
-                        <h3 style={{ color: '#495057', marginBottom: '15px' }}>Frentes Existentes</h3>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                            gap: '15px'
-                        }}>
+                    <div className="frentes-existentes">
+                        <h3 className="subsection-title">📋 Frentes Existentes</h3>
+                        <div className="frentes-grid">
                             {frentes.map((frente) => (
-                                <div key={frente.id} style={{
-                                    backgroundColor: '#f8f9fa',
-                                    padding: '15px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #dee2e6'
-                                }}>
-                                    <h4 style={{ color: '#007bff', marginBottom: '10px' }}>
-                                        {frente.nombre}
-                                    </h4>
-                                    <p style={{ margin: '5px 0', color: '#495057' }}>
-                                        <strong>Tramo:</strong> {frente.tramo_nombre}
-                                    </p>
-                                    <p style={{ margin: '5px 0', color: '#6c757d' }}>
-                                        {frente.descripcion}
-                                    </p>
+                                <div key={frente.id} className="frente-card">
+                                    <div className="frente-header">
+                                        <h4 className="frente-nombre">🏗️ {frente.nombre}</h4>
+                                    </div>
+                                    <div className="frente-info">
+                                        <p className="frente-tramo">
+                                            <span className="info-label">🛤️ Tramo:</span> {frente.tramo_nombre}
+                                        </p>
+                                        <p className="frente-descripcion">
+                                            {frente.descripcion}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
