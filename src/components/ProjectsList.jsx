@@ -229,7 +229,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 <td>{formatDate(project.fecha_inicio)}</td>
                                 <td>{formatDate(project.fecha_fin_estimada)}</td>
                                 <td className="project-money">
-                                    {formatMoney(project.monto_total || project.monto_contrato_original)}
+                                    {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
                                 </td>
                                 <td className="project-actions">
                                     <button
