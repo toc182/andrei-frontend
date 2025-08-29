@@ -3,8 +3,15 @@ import ProjectsList from './ProjectsList';
 import LicitacionesList from './LicitacionesList';
 import OportunidadesList from './OportunidadesList';
 
-const ProjectsHub = ({ onStatsUpdate }) => {
-    const [activeTab, setActiveTab] = useState('proyectos');
+const ProjectsHub = ({ onStatsUpdate, activeTab: propActiveTab }) => {
+    const [activeTab, setActiveTab] = useState(propActiveTab || 'proyectos');
+    
+    // Update activeTab when prop changes
+    React.useEffect(() => {
+        if (propActiveTab) {
+            setActiveTab(propActiveTab);
+        }
+    }, [propActiveTab]);
 
     const tabs = [
         { 

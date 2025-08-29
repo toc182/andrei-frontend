@@ -4,9 +4,9 @@
 .bg-gray-100 { background-color: #f3f4f6; }
 .bg-gray-600 { background-color: #4b5563; }
 .bg-blue-100 { background-color: #dbeafe; }
-.bg-blue-600 { background-color: #2563eb; }
-.bg-blue-700 { background-color: #1d4ed8; }
-.bg-blue-800 { background-color: #1e40af; }
+.bg-blue-600 { background-color: #2c3e50; }
+.bg-blue-700 { background-color: #34495e; }
+.bg-blue-800 { background-color: #2c3e50; }
 .bg-yellow-100 { background-color: #fef3c7; }
 .bg-yellow-600 { background-color: #d97706; }
 .bg-yellow-700 { background-color: #b45309; }
@@ -27,8 +27,8 @@
 .text-gray-600 { color: #4b5563; }
 .text-gray-700 { color: #374151; }
 .text-gray-800 { color: #1f2937; }
-.text-blue-600 { color: #2563eb; }
-.text-blue-800 { color: #1e40af; }
+.text-blue-600 { color: #2c3e50; }
+.text-blue-800 { color: #2c3e50; }
 .text-yellow-600 { color: #d97706; }
 .text-yellow-800 { color: #92400e; }
 .text-green-600 { color: #16a34a; }
@@ -86,10 +86,10 @@
 .border-b-2 { border-bottom-width: 2px; }
 .border-gray-200 { border-color: #e5e7eb; }
 .border-gray-300 { border-color: #d1d5db; }
-.border-blue-500 { border-color: #3b82f6; }
+.border-blue-500 { border-color: #2c3e50; }
 .border-transparent { border-color: transparent; }
 
-.hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+.hover\:bg-blue-700:hover { background-color: #34495e; }
 .hover\:bg-green-700:hover { background-color: #15803d; }
 .hover\:bg-yellow-700:hover { background-color: #b45309; }
 .hover\:bg-red-700:hover { background-color: #b91c1c; }
@@ -108,7 +108,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     min-height: 100vh;
 }
 
@@ -218,7 +218,7 @@ body {
 
 .login-button {
     width: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border: none;
     padding: 15px;
@@ -277,7 +277,7 @@ body {
 
 .user-role {
     background: #e3f2fd;
-    color: #1976d2;
+    color: #2c3e50;
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -391,7 +391,7 @@ body {
 }
 
 .action-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -463,7 +463,7 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.3s;
@@ -666,7 +666,7 @@ body {
 /* Client abbreviation in project cards */
 .project-field .client-abbreviation {
     font-size: 0.8rem;
-    color: #1976d2;
+    color: #2c3e50;
     font-family: 'Courier New', monospace;
     font-weight: 600;
     background: #e3f2fd;
@@ -966,7 +966,7 @@ body {
 
 .bonyic-project {
     border-color: #667eea;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
 }
 
@@ -1193,7 +1193,7 @@ body {
 }
 
 .btn-back {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -1227,7 +1227,7 @@ body {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1262,7 +1262,7 @@ body {
 }
 
 .tab-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
 }
 
@@ -1295,7 +1295,7 @@ body {
     transform: translateX(-50%);
     width: 80px;
     height: 3px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     border-radius: 2px;
 }
 
@@ -1333,7 +1333,7 @@ body {
 }
 
 .seguimiento-tab.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
 }
 
@@ -1429,7 +1429,7 @@ body {
     font-size: 0.9rem;
 }
 
-.value-blue { color: #007bff; }
+.value-blue { color: #2c3e50; }
 .value-green { color: #28a745; }
 .value-yellow { color: #ffc107; }
 .value-purple { color: #6f42c1; }
@@ -1526,7 +1526,7 @@ body {
 }
 
 .meta-card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     padding: 1.5rem;
 }
@@ -1555,7 +1555,7 @@ body {
     transition: width 0.3s ease;
 }
 
-.progress-blue { background: linear-gradient(90deg, #007bff, #0056b3); }
+.progress-blue { background: linear-gradient(90deg, #2c3e50, #34495e); }
 .progress-green { background: linear-gradient(90deg, #28a745, #1e7e34); }
 .progress-yellow { background: linear-gradient(90deg, #ffc107, #e0a800); }
 
@@ -1642,7 +1642,7 @@ body {
 }
 
 .seguimiento-table thead {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
 }
 
@@ -1807,7 +1807,7 @@ body {
 }
 
 .projects-table thead {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
 }
 
@@ -1888,7 +1888,7 @@ body {
 
 .project-client .client-abbreviation {
     font-size: 0.8rem;
-    color: #1976d2;
+    color: #2c3e50;
     font-family: 'Courier New', monospace;
     font-weight: 600;
     background: #e3f2fd;
@@ -2036,7 +2036,7 @@ body {
 
 /* Botones principales */
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border: none;
     padding: 1rem 1.5rem;
@@ -2184,7 +2184,7 @@ body {
     align-items: center;
     padding: 1.5rem 2rem;
     border-bottom: 1px solid #e5e7eb;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border-radius: 12px 12px 0 0;
 }
@@ -2390,7 +2390,7 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -2592,15 +2592,7 @@ body {
     gap: 0.5rem;
 }
 
-.nav-item:hover:not(:disabled) {
-    background: #f0f4ff;
-    color: #667eea;
-}
 
-.nav-item.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
 
 .nav-item:disabled {
     opacity: 0.5;
@@ -2620,7 +2612,7 @@ body {
 
 .user-role {
     background: #e3f2fd;
-    color: #1976d2;
+    color: #2c3e50;
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -2747,7 +2739,7 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.3s;
@@ -2778,7 +2770,7 @@ body {
 }
 
 .action-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -2949,10 +2941,10 @@ body {
 }
 
 /* Efectos de gradiente sutiles */
-.stat-card:nth-child(1) .stat-number { color: #3b82f6; }
+.stat-card:nth-child(1) .stat-number { color: #2c3e50; }
 .stat-card:nth-child(2) .stat-number { color: #f59e0b; }
 .stat-card:nth-child(3) .stat-number { color: #10b981; }
-.stat-card:nth-child(4) .stat-number { color: #8b5cf6; }
+.stat-card:nth-child(4) .stat-number { color: #2c3e50; }
 
 /* Mejoras de accesibilidad */
 @media (prefers-reduced-motion: reduce) {
@@ -3016,7 +3008,7 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.3s;
@@ -3049,7 +3041,7 @@ body {
 .cliente-abreviatura {
     display: inline-block;
     background: #e3f2fd;
-    color: #1976d2;
+    color: #2c3e50;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.8rem;
@@ -3291,13 +3283,13 @@ body {
 
 .cost-project-card {
     transition: all 0.3s ease;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid #2c3e50;
 }
 
 .cost-project-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
-    border-left-color: #0056b3;
+    border-left-color: #34495e;
 }
 
 .budget-badge {
@@ -3538,7 +3530,7 @@ body {
 }
 
 .dashboard-card .card-number.primary {
-    color: #007bff;
+    color: #2c3e50;
 }
 
 /* ============================================
@@ -4084,7 +4076,7 @@ body {
 
 /* Budget Summary Cards */
 .budget-summary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -4428,7 +4420,7 @@ body {
 /* Botones de acción adicionales para licitaciones y oportunidades */
 .btn-action.btn-primary {
     background: #e3f2fd;
-    color: #1976d2;
+    color: #2c3e50;
 }
 
 .btn-action.btn-secondary {
