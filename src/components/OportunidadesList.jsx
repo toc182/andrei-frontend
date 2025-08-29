@@ -210,9 +210,7 @@ const OportunidadesList = () => {
                                     {formatCurrency(oportunidad.valor_estimado)}
                                 </td>
                                 <td>
-                                    {oportunidad.fecha_siguiente_seguimiento ? 
-                                        formatDate(oportunidad.fecha_siguiente_seguimiento) : '-'
-                                    }
+                                    {formatDate(oportunidad.fecha_siguiente_seguimiento)}
                                 </td>
                                 <td className="project-actions">
                                     <button
