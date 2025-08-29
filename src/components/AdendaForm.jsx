@@ -16,7 +16,6 @@ const AdendaForm = ({
         nuevo_monto: editingAdenda?.nuevo_monto || '',
         monto_adicional: editingAdenda?.monto_adicional || '',
         justificacion: editingAdenda?.justificacion || null,
-        fecha_solicitud: editingAdenda?.fecha_solicitud ? editingAdenda.fecha_solicitud.split('T')[0] : new Date().toISOString().split('T')[0],
         observaciones: editingAdenda?.observaciones || '',
         estado: editingAdenda?.estado || 'en_proceso'
     });
@@ -74,7 +73,8 @@ const AdendaForm = ({
                 nuevo_monto: formData.nuevo_monto ? parseFloat(formData.nuevo_monto) : null,
                 monto_adicional: formData.monto_adicional ? parseFloat(formData.monto_adicional) : null,
                 dias_extension: formData.dias_extension ? parseInt(formData.dias_extension) : null,
-                justificacion: null
+                justificacion: null,
+                fecha_solicitud: new Date().toISOString().split('T')[0]
             };
 
             // Clean empty values
@@ -149,18 +149,6 @@ const AdendaForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Fecha de Solicitud</label>
-                                <input
-                                    type="date"
-                                    name="fecha_solicitud"
-                                    value={formData.fecha_solicitud}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
                     </div>
 
                     {/* Cambios de Tiempo */}
