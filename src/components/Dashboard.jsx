@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import ProjectsList from './ProjectsList';
+import ProjectsHub from './ProjectsHub';
 import ProjectForm from './ProjectForm';
 import api from '../services/api';
 import SeguimientoHub from './SeguimientoHub';
@@ -181,7 +181,7 @@ const Dashboard = () => {
     const renderContent = () => {
         switch (currentView) {
             case 'projects':
-                return <ProjectsList onStatsUpdate={loadDashboardStats} />;
+                return <ProjectsHub onStatsUpdate={loadDashboardStats} />;
             case 'seguimiento':
                 return <SeguimientoHub />;
             case 'clientes':
