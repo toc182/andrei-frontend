@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ProjectForm from './ProjectForm';
 import AdendaForm from './AdendaForm';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 
 const ProjectsList = ({ onStatsUpdate }) => {
     const { user } = useAuth();
@@ -126,11 +127,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
         }
     };
 
-    // Formatear fecha
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        return new Date(dateString).toLocaleDateString('es-ES');
-    };
 
     // Formatear monto
     const formatMoney = (amount) => {

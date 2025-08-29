@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
@@ -289,7 +290,7 @@ const Clientes = () => {
                                 
                                 <div className="cliente-footer">
                                     <small>
-                                        Registrado: {new Date(cliente.created_at).toLocaleDateString()}
+                                        Registrado: {formatDate(cliente.created_at)}
                                     </small>
                                 </div>
                             </div>

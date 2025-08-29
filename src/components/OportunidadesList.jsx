@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import OportunidadForm from './OportunidadForm';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 
 const OportunidadesList = () => {
     const { user } = useAuth();
@@ -210,7 +211,7 @@ const OportunidadesList = () => {
                                 </td>
                                 <td>
                                     {oportunidad.fecha_siguiente_seguimiento ? 
-                                        new Date(oportunidad.fecha_siguiente_seguimiento).toLocaleDateString() : '-'
+                                        formatDate(oportunidad.fecha_siguiente_seguimiento) : '-'
                                     }
                                 </td>
                                 <td className="project-actions">

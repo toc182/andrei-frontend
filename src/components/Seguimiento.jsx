@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 
 function Seguimiento() {
     const { user } = useAuth();
@@ -230,7 +231,7 @@ function Seguimiento() {
                                         <div className="meta-info">
                                             <div className="meta-item">
                                                 <span className="meta-label">📅 Fecha objetivo:</span>
-                                                <span>{new Date(meta.fecha_meta).toLocaleDateString()}</span>
+                                                <span>{formatDate(meta.fecha_meta)}</span>
                                             </div>
                                             <div className="meta-item">
                                                 <span className="meta-label">🎯 Tubos objetivo:</span>

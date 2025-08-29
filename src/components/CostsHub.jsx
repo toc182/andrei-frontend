@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import BudgetSetup from './BudgetSetup';
 import CostReporting from './CostReporting';
+import { formatDate } from '../utils/dateUtils';
 
 const CostsHub = () => {
     const { user } = useAuth();
@@ -303,7 +304,7 @@ const CostsHub = () => {
                                         {costDashboard.recentExpenses?.length > 0 ? (
                                             costDashboard.recentExpenses.map(expense => (
                                                 <div key={expense.id} className="expense-row">
-                                                    <div className="expense-date">{new Date(expense.fecha).toLocaleDateString()}</div>
+                                                    <div className="expense-date">{formatDate(expense.fecha)}</div>
                                                     <div className="expense-category" style={{color: expense.categoria_color}}>
                                                         {expense.categoria_nombre}
                                                     </div>

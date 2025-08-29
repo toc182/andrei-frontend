@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LicitacionForm from './LicitacionForm';
 import api from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 
 const LicitacionesList = () => {
     const { user } = useAuth();
@@ -195,7 +196,7 @@ const LicitacionesList = () => {
                                         {getEstadoText(licitacion.estado_licitacion)}
                                     </span>
                                 </td>
-                                <td>{new Date(licitacion.fecha_cierre).toLocaleDateString()}</td>
+                                <td>{formatDate(licitacion.fecha_cierre)}</td>
                                 <td className="project-money">
                                     {formatCurrency(licitacion.presupuesto_referencial)}
                                 </td>
