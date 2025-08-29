@@ -217,7 +217,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                     {project.nombre_corto || project.nombre}
                                 </td>
                                 <td className="project-client">
-                                    {project.cliente_abreviatura || '-'}
+                                    {project.cliente_abreviatura || project.cliente_nombre || '-'}
                                 </td>
                                 <td>{project.contratista || '-'}</td>
                                 <td>{project.ingeniero_residente || '-'}</td>

@@ -2196,10 +2196,10 @@ body {
 }
 
 .modal-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 1.5rem;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    color: #6c757d;
+    font-size: 1.2rem;
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
@@ -2207,11 +2207,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    font-weight: 600;
+    line-height: 1;
 }
 
 .modal-close:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.3);
+    background: #e9ecef;
+    border-color: #dee2e6;
+    color: #495057;
+    transform: scale(1.05);
 }
 
 .modal-close:disabled {
