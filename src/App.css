@@ -4514,3 +4514,125 @@ body {
     outline: none;
     border-color: #667eea;
 }
+
+/* Estilos para adendas */
+.adendas-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e9ecef;
+}
+
+.adendas-section h4 {
+    margin-bottom: 0.75rem;
+    color: #495057;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.adendas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.adenda-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.adenda-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.adenda-number {
+    font-weight: 600;
+    color: #495057;
+}
+
+.adenda-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.adenda-type, .adenda-date, .adenda-cost, .adenda-justification {
+    color: #6c757d;
+}
+
+.adenda-cost {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.extension-days {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.adenda-dates {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.adenda-dates small {
+    color: #6c757d;
+    font-size: 0.75rem;
+}
+
+.adenda-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.adenda-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-icon {
+    background: none;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+.btn-edit:hover {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.btn-delete:hover {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.project-actions-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e9ecef;
+    text-align: center;
+}

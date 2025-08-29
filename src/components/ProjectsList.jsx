@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProjectForm from './ProjectForm';
+import AdendaForm from './AdendaForm';
 import api from '../services/api';
 
 const ProjectsList = ({ onStatsUpdate }) => {
@@ -13,6 +14,9 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const [editingProject, setEditingProject] = useState(null);
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [viewingProject, setViewingProject] = useState(null);
+    const [projectAdendas, setProjectAdendas] = useState([]);
+    const [showAdendaForm, setShowAdendaForm] = useState(false);
+    const [editingAdenda, setEditingAdenda] = useState(null);
 
     // Estados disponibles
     const estados = [
@@ -66,16 +70,26 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const handleViewProject = async (projectId) => {
         try {
             setLoading(true);
-            const response = await api.get(`/projects/${projectId}`);
+            const [projectResponse, adendasResponse] = await Promise.all([
+                api.get(`/projects/${projectId}`),
+                api.get(`/adendas/project/${projectId}`)
+            ]);
             
-            if (response.data.success) {
-                setViewingProject(response.data.proyecto);
+            if (projectResponse.data.success) {
+                setViewingProject(projectResponse.data.proyecto);
             } else {
                 setError('Error al cargar los detalles del proyecto');
+            }
+            
+            if (adendasResponse.data.success) {
+                setProjectAdendas(adendasResponse.data.adendas);
+            } else {
+                setProjectAdendas([]);
             }
         } catch (error) {
             console.error('Error cargando proyecto:', error);
             setError('Error de conexión al cargar el proyecto');
+            setProjectAdendas([]);
         } finally {
             setLoading(false);
         }
@@ -150,6 +164,84 @@ const ProjectsList = ({ onStatsUpdate }) => {
             'cancelado': 'Cancelado'
         };
         return statusTexts[estado] || estado;
+    };
+
+    // Funciones para adendas
+    const getAdendaStatusClass = (estado) => {
+        const statusClasses = {
+            'en_proceso': 'status-planning',
+            'aprobada': 'status-completed',
+            'rechazada': 'status-cancelled'
+        };
+        return statusClasses[estado] || 'status-planning';
+    };
+
+    const getAdendaStatusText = (estado) => {
+        const statusTexts = {
+            'en_proceso': 'En Proceso',
+            'aprobada': 'Aprobada',
+            'rechazada': 'Rechazada'
+        };
+        return statusTexts[estado] || estado;
+    };
+
+    const getAdendaTypeText = (tipo) => {
+        const typeTexts = {
+            'tiempo': 'Extensión de Tiempo',
+            'costo': 'Modificación de Costo',
+            'mixta': 'Tiempo y Costo'
+        };
+        return typeTexts[tipo] || tipo;
+    };
+
+    // Manejar adendas
+    const handleAdendaSave = async (adendaData) => {
+        try {
+            setLoading(true);
+            let response;
+            
+            if (editingAdenda) {
+                response = await api.put(`/adendas/${editingAdenda.id}`, adendaData);
+            } else {
+                response = await api.post('/adendas', adendaData);
+            }
+            
+            if (response.data.success) {
+                // Recargar adendas del proyecto
+                const adendasResponse = await api.get(`/adendas/project/${viewingProject.id}`);
+                if (adendasResponse.data.success) {
+                    setProjectAdendas(adendasResponse.data.adendas);
+                }
+                setShowAdendaForm(false);
+                setEditingAdenda(null);
+            }
+        } catch (error) {
+            console.error('Error guardando adenda:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteAdenda = async (adendaId) => {
+        if (!confirm('¿Estás seguro de eliminar esta adenda?')) return;
+        
+        try {
+            setLoading(true);
+            await api.delete(`/adendas/${adendaId}`);
+            
+            // Recargar adendas del proyecto
+            if (viewingProject) {
+                const adendasResponse = await api.get(`/adendas/project/${viewingProject.id}`);
+                if (adendasResponse.data.success) {
+                    setProjectAdendas(adendasResponse.data.adendas);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error eliminando adenda:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading && projects.length === 0) {
@@ -240,7 +332,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                         }}
                                         title="Ver detalles"
                                     >
-                                        👁️
+                                        👁
                                     </button>
 
                                     {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
@@ -253,7 +345,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                                 }}
                                                 title="Editar proyecto"
                                             >
-                                                ✏️
+                                                ✏
                                             </button>
 
                                             {user?.rol === 'admin' && (
@@ -265,7 +357,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                                     }}
                                                     title="Eliminar proyecto"
                                                 >
-                                                    🗑️
+                                                    🗑
                                                 </button>
                                             )}
                                         </>
@@ -304,7 +396,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 className="modal-close"
                                 onClick={() => setViewingProject(null)}
                             >
-                                ✕
+                                ×
                             </button>
                         </div>
 
@@ -411,6 +503,82 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                         </div>
                                     )}
                                 </div>
+                                
+                                {/* Adendas */}
+                                {projectAdendas.length > 0 && (
+                                    <div className="adendas-section">
+                                        <h4>Adendas del Proyecto</h4>
+                                        <div className="adendas-list">
+                                            {projectAdendas.map(adenda => (
+                                                <div key={adenda.id} className="adenda-item">
+                                                    <div className="adenda-header">
+                                                        <span className="adenda-number">Adenda #{adenda.numero_adenda}</span>
+                                                        <div className="adenda-header-right">
+                                                            <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
+                                                                {getAdendaStatusText(adenda.estado)}
+                                                            </span>
+                                                            {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                                                <div className="adenda-actions">
+                                                                    <button
+                                                                        className="btn-icon btn-edit"
+                                                                        onClick={() => {
+                                                                            setEditingAdenda(adenda);
+                                                                            setShowAdendaForm(true);
+                                                                        }}
+                                                                        title="Editar adenda"
+                                                                    >
+                                                                        ✏
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn-icon btn-delete"
+                                                                        onClick={() => handleDeleteAdenda(adenda.id)}
+                                                                        title="Eliminar adenda"
+                                                                    >
+                                                                        🗑
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="adenda-details">
+                                                        <div className="adenda-type">
+                                                            <strong>Tipo:</strong> {getAdendaTypeText(adenda.tipo)}
+                                                        </div>
+                                                        {adenda.nueva_fecha_fin && (
+                                                            <div className="adenda-date">
+                                                                <strong>Nueva Fecha Fin:</strong> {formatDate(adenda.nueva_fecha_fin)}
+                                                                {adenda.dias_extension && (
+                                                                    <span className="extension-days"> (+{adenda.dias_extension} días)</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {(adenda.nuevo_monto || adenda.monto_adicional) && (
+                                                            <div className="adenda-cost">
+                                                                {adenda.nuevo_monto && (
+                                                                    <div><strong>Nuevo Monto:</strong> {formatMoney(adenda.nuevo_monto)}</div>
+                                                                )}
+                                                                {adenda.monto_adicional && (
+                                                                    <div><strong>Monto Adicional:</strong> {formatMoney(adenda.monto_adicional)}</div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {adenda.observaciones && (
+                                                            <div className="adenda-observations">
+                                                                <strong>Observaciones:</strong> {adenda.observaciones}
+                                                            </div>
+                                                        )}
+                                                        <div className="adenda-dates">
+                                                            <small>Solicitada: {formatDate(adenda.fecha_solicitud)}</small>
+                                                            {adenda.fecha_aprobacion && (
+                                                                <small> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</small>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Información Contractual */}
@@ -484,10 +652,34 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                     </div>
                                 </div>
                             </div>
+                            
+                            {/* Botones de Acción */}
+                            <div className="project-actions-section">
+                                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                    <button
+                                        className="btn-primary"
+                                        onClick={() => setShowAdendaForm(true)}
+                                    >
+                                        + Agregar Adenda
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Modal para crear/editar adenda */}
+            <AdendaForm
+                projectId={viewingProject?.id}
+                isOpen={showAdendaForm}
+                onClose={() => {
+                    setShowAdendaForm(false);
+                    setEditingAdenda(null);
+                }}
+                onSave={handleAdendaSave}
+                editingAdenda={editingAdenda}
+            />
         </div>
     );
 };
