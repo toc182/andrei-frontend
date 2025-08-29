@@ -286,7 +286,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                         <th>Ing. Residente</th>
                         <th>Estado</th>
                         <th>Fecha Inicio</th>
-                        <th>Fecha Fin Est.</th>
+                        <th>Fecha Terminación</th>
                         <th>Monto Contrato</th>
                         <th>Acciones</th>
                     </tr>
@@ -494,7 +494,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                     )}
                                     {viewingProject.fecha_fin_estimada && (
                                         <div className="detail-item">
-                                            <label>Fecha Fin Estimada:</label>
+                                            <label>Fecha de Terminación:</label>
                                             <span>{formatDate(viewingProject.fecha_fin_estimada)}</span>
                                         </div>
                                     )}
@@ -542,7 +542,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                                         </div>
                                                         {adenda.nueva_fecha_fin && (
                                                             <div className="adenda-date">
-                                                                <strong>Nueva Fecha Fin:</strong> {formatDate(adenda.nueva_fecha_fin)}
+                                                                <strong>Nueva Fecha de Terminación:</strong> {formatDate(adenda.nueva_fecha_fin)}
                                                                 {adenda.dias_extension && (
                                                                     <span className="extension-days"> (+{adenda.dias_extension} días)</span>
                                                                 )}

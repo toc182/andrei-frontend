@@ -158,7 +158,7 @@ const AdendaForm = ({
 
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Nueva Fecha de Fin *</label>
+                                    <label>Nueva Fecha de Terminación *</label>
                                     <input
                                         type="date"
                                         name="nueva_fecha_fin"

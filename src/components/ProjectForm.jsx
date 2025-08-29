@@ -460,7 +460,7 @@ const ProjectForm = ({
                             </div>
 
                             <div className="form-group">
-                                <label>Fecha Fin Estimada</label>
+                                <label>Fecha de Terminación</label>
                                 <input
                                     type="date"
                                     name="fecha_fin_estimada"
