@@ -1,5 +1,4 @@
-/* DEPRECATED: This file will be removed. Styles moved to globals.css, layout.css, and navigation.css */
-
+/* Sidebar Navigation Styles */
 
 /* Sidebar Navigation */
 .sidebar-nav {
@@ -20,7 +19,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.9rem;
-    color: #495057;
+    color: var(--text-secondary);
     border-left: 3px solid transparent;
     outline: none;
 }
@@ -30,25 +29,24 @@
 .sidebar .nav-item:active {
     outline: none;
     box-shadow: none;
-    border: none;
     border-left: 3px solid transparent;
 }
 
 .nav-item:hover:not(.nav-disabled):not(.active) {
     background: #e9ecef;
-    color: #2c3e50;
+    color: var(--primary-color);
 }
 
 .nav-item.active {
-    background: linear-gradient(135deg, #2c3e50 0%, #4a6b7a 100%);
+    background: var(--primary-gradient);
     color: white;
-    border-left-color: #2c3e50;
+    border-left-color: var(--primary-color);
     font-weight: 500;
     border-radius: 0;
 }
 
 .nav-item.active:hover {
-    background: linear-gradient(135deg, #2c3e50 0%, #4a6b7a 100%);
+    background: var(--primary-gradient);
     color: white;
 }
 
@@ -101,7 +99,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.85rem;
-    color: #6c757d;
+    color: var(--text-muted);
     border-left: 3px solid transparent;
     outline: none;
 }
@@ -114,21 +112,21 @@
 
 .nav-subitem:hover {
     background: #e9ecef;
-    color: #495057;
+    color: var(--text-secondary);
 }
 
 .nav-subitem.active {
     background: rgba(44, 62, 80, 0.1);
-    color: #2c3e50;
-    border-left-color: #2c3e50;
+    color: var(--primary-color);
+    border-left-color: var(--primary-color);
     font-weight: 500;
 }
 
 /* Sidebar Footer */
 .sidebar-footer {
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color);
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--bg-primary);
 }
 
 .user-info {
@@ -138,13 +136,13 @@
 
 .user-name {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--primary-color);
     font-size: 0.9rem;
 }
 
 .user-role {
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -157,7 +155,7 @@
     padding: 0.5rem;
     background: #dc3545;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--border-radius);
     color: white;
     font-size: 0.85rem;
     cursor: pointer;
@@ -170,79 +168,4 @@
 
 .logout-btn .nav-icon {
     margin-right: 0.5rem;
-}
-
-/* Main Content */
-.main-content {
-    flex: 1;
-    min-height: 100vh;
-    transition: margin-left 0.3s ease;
-    background: #f8f9fa;
-    margin-left: 280px;
-}
-
-.dashboard-layout .sidebar-closed ~ .main-content {
-    margin-left: 0;
-}
-
-
-/* Sidebar Overlay for Mobile */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-}
-
-/* Always show top bar and adjust layout */
-.sidebar {
-    top: 60px;
-    height: calc(100vh - 60px);
-}
-
-.main-content {
-    padding-top: 60px;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-280px);
-    }
-    
-    .sidebar-open {
-        transform: translateX(0);
-    }
-    
-    .sidebar-overlay {
-        display: block;
-        top: 60px;
-    }
-    
-    .main-content {
-        margin-left: 0;
-    }
-    
-    .content-shifted {
-        margin-left: 0;
-    }
-}
-
-@media (max-width: 480px) {
-    .sidebar {
-        width: 100%;
-        max-width: 280px;
-    }
-    
-    .mobile-title {
-        font-size: 1rem;
-    }
-    
-    .mobile-user {
-        font-size: 0.8rem;
-    }
 }

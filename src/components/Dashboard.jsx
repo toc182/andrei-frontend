@@ -9,7 +9,9 @@ import CostsHub from './CostsHub';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import '../styles/sidebar.css';
+import '../styles/globals.css';
+import '../styles/layout.css';
+import '../styles/navigation.css';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();

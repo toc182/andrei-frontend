@@ -2,6 +2,8 @@ import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import './styles/globals.css';
+import './styles/utilities.css';
 import './App.css';
 
 // Componente principal que decide qué mostrar
