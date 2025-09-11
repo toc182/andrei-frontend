@@ -6,13 +6,15 @@ const ProjectForm = ({
                          projectId = null,
                          isOpen,
                          onClose,
-                         onSave
+                         onSave,
+                         onDelete
                      }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [clientes, setClientes] = useState([]);
     const [loadingClientes, setLoadingClientes] = useState(true);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [formData, setFormData] = useState({
         nombre: '',
         nombre_corto: '',
@@ -669,30 +671,89 @@ const ProjectForm = ({
 
                     {/* Botones */}
                     <div className="form-actions">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="btn-secondary"
-                            disabled={loading}
-                        >
-                            Cancelar
-                        </button>
-
-                        <button
-                            type="submit"
-                            className="btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="btn-spinner"></div>
-                                    {projectId ? 'Actualizando...' : 'Creando...'}
-                                </>
-                            ) : (
-                                projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
+                        <div className="form-actions-left">
+                            {projectId && user?.rol === 'admin' && onDelete && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirmation(true)}
+                                    className="btn-danger"
+                                    disabled={loading}
+                                >
+                                    🗑 Eliminar Proyecto
+                                </button>
                             )}
-                        </button>
+                        </div>
+                        <div className="form-actions-right">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="btn-secondary"
+                                disabled={loading}
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                type="submit"
+                                className="btn-primary"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="btn-spinner"></div>
+                                        {projectId ? 'Actualizando...' : 'Creando...'}
+                                    </>
+                                ) : (
+                                    projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
+                                )}
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Modal de Confirmación de Eliminación */}
+                    {showDeleteConfirmation && (
+                        <div className="modal-overlay delete-confirmation-overlay">
+                            <div className="modal-content delete-confirmation-modal">
+                                <div className="modal-header">
+                                    <h3>⚠️ Eliminar Proyecto</h3>
+                                </div>
+                                <div className="modal-body">
+                                    <p><strong>¿Estás seguro de que quieres eliminar este proyecto?</strong></p>
+                                    <p>Esta acción no se puede deshacer. Se eliminarán todos los datos del proyecto, incluyendo:</p>
+                                    <ul>
+                                        <li>Toda la información del proyecto</li>
+                                        <li>Adendas asociadas</li>
+                                        <li>Reportes y seguimiento</li>
+                                    </ul>
+                                    <div className="project-to-delete">
+                                        <strong>Proyecto:</strong> {formData.nombre || 'Sin nombre'}
+                                    </div>
+                                </div>
+                                <div className="modal-actions">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteConfirmation(false)}
+                                        className="btn-secondary"
+                                        disabled={loading}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onDelete(projectId);
+                                            setShowDeleteConfirmation(false);
+                                            onClose();
+                                        }}
+                                        className="btn-danger"
+                                        disabled={loading}
+                                    >
+                                        Sí, Eliminar Proyecto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </form>
             </div>
         </div>

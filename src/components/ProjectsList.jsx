@@ -4,6 +4,8 @@ import ProjectForm from './ProjectForm';
 import AdendaForm from './AdendaForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faPenToSquare, faCog, faWrench, faTools, faCirclePlus } from '@fortawesome/free-solid-svg-icons';
 
 const ProjectsList = ({ onStatsUpdate }) => {
     const { user } = useAuth();
@@ -18,6 +20,28 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const [projectAdendas, setProjectAdendas] = useState([]);
     const [showAdendaForm, setShowAdendaForm] = useState(false);
     const [editingAdenda, setEditingAdenda] = useState(null);
+    const [expandedRows, setExpandedRows] = useState(new Set());
+
+    // Función para alternar expansión de fila
+    const handleRowClick = (projectId, event) => {
+        // Solo expandir en pantallas pequeñas, en grandes mostrar detalles
+        const screenWidth = window.innerWidth;
+        if (screenWidth > 1200) {
+            // En pantallas grandes, abrir detalles del proyecto
+            handleViewProject(projectId);
+            return;
+        }
+        
+        // En pantallas pequeñas, expandir/contraer fila
+        event.stopPropagation();
+        const newExpandedRows = new Set(expandedRows);
+        if (newExpandedRows.has(projectId)) {
+            newExpandedRows.delete(projectId);
+        } else {
+            newExpandedRows.add(projectId);
+        }
+        setExpandedRows(newExpandedRows);
+    };
 
     // Estados disponibles
     const estados = [
@@ -53,6 +77,18 @@ const ProjectsList = ({ onStatsUpdate }) => {
     // Cargar proyectos al montar
     useEffect(() => {
         loadProjects();
+    }, []);
+
+    // Cerrar acordeones en pantallas grandes
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth > 1200) {
+                setExpandedRows(new Set());
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // Manejar guardado de proyecto
@@ -131,10 +167,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
     // Formatear monto
     const formatMoney = (amount) => {
         if (!amount) return '-';
-        return new Intl.NumberFormat('es-ES', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
-            minimumFractionDigits: 0
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(amount);
     };
 
@@ -258,10 +295,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 <h1>Gestión de Proyectos</h1>
                 {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
                     <button
-                        className="btn-primary"
+                        className="btn-add-icon"
                         onClick={() => setShowCreateForm(true)}
+                        title="Agregar nuevo proyecto"
                     >
-                        + Agregar Proyecto
+                        <FontAwesomeIcon icon={faCirclePlus} />
                     </button>
                 )}
             </div>
@@ -282,84 +320,149 @@ const ProjectsList = ({ onStatsUpdate }) => {
                     <tr>
                         <th>Proyecto</th>
                         <th>Cliente</th>
-                        <th>Contratista</th>
-                        <th>Ing. Residente</th>
-                        <th>Estado</th>
-                        <th>Fecha Inicio</th>
-                        <th>Fecha Terminación</th>
-                        <th>Monto Contrato</th>
-                        <th>Acciones</th>
+                        <th className="hide-mobile-sm">Estado</th>
+                        <th className="hide-mobile-sm">Monto</th>
+                        <th></th>
                     </tr>
                     </thead>
                     <tbody>
                     {projects.length === 0 ? (
                         <tr>
-                            <td colSpan="9" className="no-data">
+                            <td colSpan="5" className="no-data">
                                 {loading ? 'Cargando proyectos...' : 'No se encontraron proyectos'}
                             </td>
                         </tr>
                     ) : (
                         projects.map(project => (
-                            <tr key={project.id} onClick={() => handleViewProject(project.id)} style={{cursor: 'pointer'}}>
-                                <td className="project-name">
-                                    {project.nombre_corto || project.nombre}
-                                </td>
-                                <td className="project-client">
-                                    {project.cliente_abreviatura || project.cliente_nombre || '-'}
-                                </td>
-                                <td>{project.contratista || '-'}</td>
-                                <td>{project.ingeniero_residente || '-'}</td>
-                                <td>
+                            <React.Fragment key={project.id}>
+                                <tr 
+                                    className={`project-row ${expandedRows.has(project.id) ? 'expanded' : ''}`}
+                                    onClick={(e) => handleRowClick(project.id, e)} 
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    <td className="project-name">
+                                        <div className="project-name-container">
+                                            <span>{project.nombre_corto || project.nombre}</span>
+                                            <span className="expand-icon">{expandedRows.has(project.id) ? '▼' : '▶'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="project-client">
+                                        {project.cliente_abreviatura || project.cliente_nombre || '-'}
+                                    </td>
+                                    <td className="hide-mobile-sm">
                                         <span className={`status-badge ${getStatusClass(project.estado)}`}>
                                             {getStatusText(project.estado)}
                                         </span>
-                                </td>
-                                <td>{formatDate(project.fecha_inicio)}</td>
-                                <td>{formatDate(project.fecha_fin_estimada)}</td>
-                                <td className="project-money">
-                                    {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
-                                </td>
-                                <td className="project-actions">
-                                    <button
-                                        className="btn-action btn-view"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleViewProject(project.id);
-                                        }}
-                                        title="Ver detalles"
-                                    >
-                                        👁
-                                    </button>
-
-                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                        <>
-                                            <button
-                                                className="btn-action btn-edit"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEditProject(project);
-                                                }}
-                                                title="Editar proyecto"
-                                            >
-                                                ✏
-                                            </button>
-
-                                            {user?.rol === 'admin' && (
+                                    </td>
+                                    <td className="project-money hide-mobile-sm">
+                                        {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
+                                    </td>
+                                    <td className="project-actions">
+                                        {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                            <div className="edit-button-options">
                                                 <button
-                                                    className="btn-action btn-delete"
+                                                    className="btn-edit-icon"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleDeleteProject(project.id);
+                                                        handleEditProject(project);
                                                     }}
-                                                    title="Eliminar proyecto"
+                                                    title="Editar proyecto"
                                                 >
-                                                    🗑
+                                                    <FontAwesomeIcon icon={faEdit} />
                                                 </button>
-                                            )}
-                                        </>
-                                    )}
-                                </td>
+                                            </div>
+                                        )}
+                                    </td>
                             </tr>
+                            
+                            {/* Fila expandible con detalles */}
+                            {expandedRows.has(project.id) && (
+                                <tr className="expanded-details">
+                                    <td colSpan="5">
+                                        <div className="project-details-expanded">
+                                            {/* Información básica */}
+                                            <div className="accordion-section">
+                                                <h4>Información Básica</h4>
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Nombre Completo:</span>
+                                                    <span>{project.nombre}</span>
+                                                </div>
+                                                {project.codigo_proyecto && (
+                                                    <div className="detail-row">
+                                                        <span className="detail-label">Código:</span>
+                                                        <span>{project.codigo_proyecto}</span>
+                                                    </div>
+                                                )}
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Estado:</span>
+                                                    <span className={`status-badge accordion-badge ${getStatusClass(project.estado)}`}>
+                                                        {getStatusText(project.estado)}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Cliente */}
+                                            <div className="accordion-section">
+                                                <h4>Cliente</h4>
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Nombre:</span>
+                                                    <span>{project.cliente_nombre || '-'}</span>
+                                                </div>
+                                                {project.cliente_abreviatura && (
+                                                    <div className="detail-row">
+                                                        <span className="detail-label">Abreviatura:</span>
+                                                        <span>{project.cliente_abreviatura}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Equipo */}
+                                            <div className="accordion-section">
+                                                <h4>Equipo de Trabajo</h4>
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Contratista:</span>
+                                                    <span>{project.contratista || '-'}</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Ing. Residente:</span>
+                                                    <span>{project.ingeniero_residente || '-'}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Cronograma */}
+                                            <div className="accordion-section">
+                                                <h4>Cronograma</h4>
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Fecha Inicio:</span>
+                                                    <span>{formatDate(project.fecha_inicio)}</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Fecha Terminación:</span>
+                                                    <span>{formatDate(project.fecha_fin_estimada)}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Información Contractual */}
+                                            <div className="accordion-section">
+                                                <h4>Información Contractual</h4>
+                                                {project.contrato && (
+                                                    <div className="detail-row">
+                                                        <span className="detail-label">Número de Contrato:</span>
+                                                        <span>{project.contrato}</span>
+                                                    </div>
+                                                )}
+                                                <div className="detail-row">
+                                                    <span className="detail-label">Monto Total:</span>
+                                                    <span className="accordion-money">
+                                                        {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            </React.Fragment>
                         ))
                     )}
                     </tbody>
@@ -380,6 +483,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 isOpen={!!editingProject}
                 onClose={() => setEditingProject(null)}
                 onSave={handleProjectSave}
+                onDelete={handleDeleteProject}
             />
 
             {/* Modal para ver detalles del proyecto */}

@@ -172,41 +172,6 @@
     margin-right: 0.5rem;
 }
 
-/* Main Content */
-.main-content {
-    flex: 1;
-    min-height: 100vh;
-    transition: margin-left 0.3s ease;
-    background: #f8f9fa;
-    margin-left: 280px;
-}
-
-.dashboard-layout .sidebar-closed ~ .main-content {
-    margin-left: 0;
-}
-
-
-/* Sidebar Overlay for Mobile */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-}
-
-/* Always show top bar and adjust layout */
-.sidebar {
-    top: 60px;
-    height: calc(100vh - 60px);
-}
-
-.main-content {
-    padding-top: 60px;
-}
 
 /* Mobile Responsive */
 @media (max-width: 768px) {

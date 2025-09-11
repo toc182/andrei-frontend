@@ -85,6 +85,10 @@
     background: var(--bg-primary);
     margin-left: var(--sidebar-width);
     padding-top: var(--header-height);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-x: auto;
 }
 
 .dashboard-layout .sidebar-closed ~ .main-content {
