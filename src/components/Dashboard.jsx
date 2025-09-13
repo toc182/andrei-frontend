@@ -6,9 +6,10 @@ import api from '../services/api';
 import SeguimientoHub from './SeguimientoHub';
 import Clientes from './Clientes';
 import CostsHub from './CostsHub';
+import DocumentForm from './DocumentForm';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText } from '@fortawesome/free-solid-svg-icons';
 import '../styles/globals.css';
 import '../styles/layout.css';
 import '../styles/navigation.css';
@@ -214,6 +215,16 @@ const Dashboard = () => {
                 return <Clientes />;
             case 'costs':
                 return <CostsHub />;
+            case 'doc-acuerdo-consorcio':
+                return <DocumentForm documentType="acuerdo-consorcio" />;
+            case 'doc-carta-adhesion':
+                return <DocumentForm documentType="carta-adhesion" />;
+            case 'doc-medidas-retorsion':
+                return <DocumentForm documentType="medidas-retorsion" />;
+            case 'doc-no-incapacidad':
+                return <DocumentForm documentType="no-incapacidad" />;
+            case 'doc-pacto-integridad':
+                return <DocumentForm documentType="pacto-integridad" />;
             default:
                 return renderDashboardHome();
         }
@@ -306,6 +317,52 @@ const Dashboard = () => {
                         <span className="nav-icon">$</span>
                         <span className="nav-text">Costos</span>
                     </button>
+
+                    <div className="nav-group">
+                        <button
+                            className={`nav-item nav-parent ${(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? 'expanded' : ''} ${currentView.startsWith('doc-') ? 'active' : ''}`}
+                            onClick={() => toggleSubmenu('documentos')}
+                        >
+                            <span className="nav-icon"><FontAwesomeIcon icon={faFileText} /></span>
+                            <span className="nav-text">Documentos</span>
+                            <span className="nav-arrow">{(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? '▼' : '▶'}</span>
+                        </button>
+                        
+                        {(expandedMenu === 'documentos' || currentView.startsWith('doc-')) && (
+                            <div className="nav-submenu">
+                                <button
+                                    className={`nav-subitem ${currentView === 'doc-acuerdo-consorcio' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('doc-acuerdo-consorcio')}
+                                >
+                                    <span className="nav-text">Acuerdo de Consorcio</span>
+                                </button>
+                                <button
+                                    className={`nav-subitem ${currentView === 'doc-carta-adhesion' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('doc-carta-adhesion')}
+                                >
+                                    <span className="nav-text">Carta de Adhesión</span>
+                                </button>
+                                <button
+                                    className={`nav-subitem ${currentView === 'doc-medidas-retorsion' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('doc-medidas-retorsion')}
+                                >
+                                    <span className="nav-text">Medidas de Retorsión</span>
+                                </button>
+                                <button
+                                    className={`nav-subitem ${currentView === 'doc-no-incapacidad' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('doc-no-incapacidad')}
+                                >
+                                    <span className="nav-text">No Incapacidad</span>
+                                </button>
+                                <button
+                                    className={`nav-subitem ${currentView === 'doc-pacto-integridad' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('doc-pacto-integridad')}
+                                >
+                                    <span className="nav-text">Pacto de Integridad</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     <button className="nav-item nav-disabled">
                         <span className="nav-icon"><FontAwesomeIcon icon={faBoxes} /></span>
