@@ -191,33 +191,29 @@ const DocumentForm = ({ documentType }) => {
                 <form onSubmit={handleSubmit} className="document-form">
                     {config.hasEntitySelector && (
                         <div className="form-group">
-                            <label className="form-label">
-                                Entidad
-                                <span className="required">*</span>
-                            </label>
-                            <div className="radio-group">
-                                <label className="radio-label">
+                            <div className="entity-selector">
+                                <div className="entity-option">
                                     <input
                                         type="radio"
+                                        id="pinellas"
                                         name="entity"
                                         value="pinellas"
                                         checked={formData.entity === 'pinellas'}
                                         onChange={(e) => handleInputChange('entity', e.target.value)}
-                                        className="radio-input"
                                     />
-                                    <span className="radio-text">Pinellas S.A.</span>
-                                </label>
-                                <label className="radio-label">
+                                    <label htmlFor="pinellas">Pinellas S.A.</label>
+                                </div>
+                                <div className="entity-option">
                                     <input
                                         type="radio"
+                                        id="consorcio"
                                         name="entity"
                                         value="consorcio"
                                         checked={formData.entity === 'consorcio'}
                                         onChange={(e) => handleInputChange('entity', e.target.value)}
-                                        className="radio-input"
                                     />
-                                    <span className="radio-text">Consorcio</span>
-                                </label>
+                                    <label htmlFor="consorcio">Consorcio</label>
+                                </div>
                             </div>
                         </div>
                     )}
