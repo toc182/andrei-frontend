@@ -111,11 +111,17 @@ body {
     background: #f8f9fa;
     min-height: 100vh;
     font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* Responsive typography base */
 html {
     font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 @media (max-width: 768px) {
@@ -134,7 +140,7 @@ html {
     html {
         font-size: 13px;
     }
-    
+
     body {
         font-size: 14px;
     }
