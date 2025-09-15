@@ -5655,8 +5655,9 @@ html {
 
 /* Document Form Styles */
 .document-form-container {
-    max-width: 1000px;
-    margin: 0 auto;
+    max-width: 1200px;
+    width: 90%;
+    margin: 2rem auto;
     padding: 3rem;
     background: white;
     border-radius: 12px;
@@ -5793,8 +5794,9 @@ html {
 /* Responsive Design */
 @media (max-width: 768px) {
     .document-form-container {
-        margin: 1rem;
-        padding: 1.5rem;
+        width: 95%;
+        margin: 1rem auto;
+        padding: 2rem 1.5rem;
     }
     
     .form-title {
@@ -5867,6 +5869,12 @@ html {
     height: 18px;
     margin: 0;
     cursor: pointer;
+    outline: none;
+}
+
+.entity-option input[type="radio"]:focus {
+    outline: none;
+    box-shadow: none;
 }
 
 .entity-option label {

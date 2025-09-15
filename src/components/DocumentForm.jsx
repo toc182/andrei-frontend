@@ -12,7 +12,7 @@ const DocumentForm = ({ documentType }) => {
     const documentConfig = {
         'acuerdo-consorcio': {
             title: 'Acuerdo de Consorcio',
-            description: 'Generar documento legal que establece los términos del consorcio',
+            description: '',
             hasEntitySelector: false,
             fields: [
                 { name: 'projectName', label: 'Nombre del Proyecto', type: 'text', required: true },
@@ -20,24 +20,24 @@ const DocumentForm = ({ documentType }) => {
             ]
         },
         'carta-adhesion': {
-            title: 'Carta de Adhesión',
-            description: 'Generar carta de adhesión oficial',
+            title: 'Carta de Adhesión a Principios de Sostenibilidad',
+            description: '',
             hasEntitySelector: true,
             fields: [
                 { name: 'fecha', label: 'Fecha', type: 'date', required: true }
             ]
         },
         'medidas-retorsion': {
-            title: 'Medidas de Retorsión',
-            description: 'Generar carta de medidas de retorsión',
+            title: 'Declaración Jurada de Medidas de Retorsión',
+            description: '',
             hasEntitySelector: true,
             fields: [
                 { name: 'fecha', label: 'Fecha', type: 'date', required: true }
             ]
         },
         'no-incapacidad': {
-            title: 'No Incapacidad',
-            description: 'Generar carta de no incapacidad',
+            title: 'Declaración Jurada de No Incapacidad para Contratar',
+            description: '',
             hasEntitySelector: true,
             fields: [
                 { name: 'projectName', label: 'Nombre del Proyecto', type: 'text', required: true },
@@ -46,7 +46,7 @@ const DocumentForm = ({ documentType }) => {
         },
         'pacto-integridad': {
             title: 'Pacto de Integridad',
-            description: 'Generar carta de pacto de integridad',
+            description: '',
             hasEntitySelector: true,
             fields: [
                 { name: 'projectName', label: 'Nombre del Proyecto', type: 'text', required: true },
@@ -184,7 +184,9 @@ const DocumentForm = ({ documentType }) => {
                     <FontAwesomeIcon icon={faFileText} />
                     <h1>{config.title}</h1>
                 </div>
-                <p className="form-description">{config.description}</p>
+                {config.description && (
+                    <p className="form-description">{config.description}</p>
+                )}
             </div>
 
             <div className="document-form-content">
