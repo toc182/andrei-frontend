@@ -54,10 +54,7 @@ const DocumentosHub = ({ onDocumentClick }) => {
                             className="document-item"
                             onClick={() => handleDocumentClick(doc.id)}
                         >
-                            <div className="document-content">
-                                <h3 className="document-title">{doc.title}</h3>
-                                <p className="document-description">{doc.description}</p>
-                            </div>
+                            {doc.title}
                         </div>
                     ))}
                 </div>
