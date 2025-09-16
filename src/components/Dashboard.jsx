@@ -217,7 +217,7 @@ const Dashboard = () => {
             case 'costs':
                 return <CostsHub />;
             case 'documentos':
-                return <DocumentosHub />;
+                return <DocumentosHub onDocumentClick={(docId) => setCurrentView(docId)} />;
             case 'doc-acuerdo-consorcio':
                 return <DocumentForm documentType="acuerdo-consorcio" />;
             case 'doc-carta-adhesion':
@@ -323,10 +323,14 @@ const Dashboard = () => {
 
                     <div className="nav-group">
                         <button
-                            className={`nav-item nav-parent ${expandedMenu === 'documentos' ? 'expanded' : ''} ${['documentos'].concat(currentView.startsWith('doc-') ? [currentView] : []).includes(currentView) ? 'active' : ''}`}
+                            className={`nav-item nav-parent ${(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? 'expanded' : ''} ${currentView === 'documentos' ? 'active' : ''}`}
                             onClick={() => {
-                                setCurrentView('documentos');
-                                setExpandedMenu('documentos');
+                                if (expandedMenu === 'documentos') {
+                                    setExpandedMenu(null);
+                                } else {
+                                    setCurrentView('documentos');
+                                    setExpandedMenu('documentos');
+                                }
                             }}
                         >
                             <span className="nav-icon"><FontAwesomeIcon icon={faFileText} /></span>
@@ -336,12 +340,6 @@ const Dashboard = () => {
                         
                         {(expandedMenu === 'documentos' || currentView.startsWith('doc-')) && (
                             <div className="nav-submenu">
-                                <button
-                                    className={`nav-subitem ${currentView === 'documentos' ? 'active' : ''}`}
-                                    onClick={() => handleMenuClick('documentos', 'documentos')}
-                                >
-                                    <span className="nav-text">Documentos</span>
-                                </button>
                                 <button
                                     className={`nav-subitem ${currentView === 'doc-acuerdo-consorcio' ? 'active' : ''}`}
                                     onClick={() => handleMenuClick('doc-acuerdo-consorcio')}

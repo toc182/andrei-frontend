@@ -1,208 +1,84 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileContract, faEnvelope, faFileAlt, faPlus, faEye, faEdit, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faHandshake, faEnvelope, faShieldAlt, faUserCheck, faGavel } from '@fortawesome/free-solid-svg-icons';
 
-const DocumentosHub = ({ activeSubsection = null }) => {
-    const [selectedType, setSelectedType] = useState(activeSubsection || 'contratos');
-
-    const documentTypes = [
+const DocumentosHub = ({ onDocumentClick }) => {
+    // Lista de documentos disponibles (basada en el acordeón del sidebar)
+    const availableDocuments = [
         {
-            key: 'contratos',
-            title: 'Contratos',
-            icon: faFileContract,
-            description: 'Gestión de contratos de proyectos',
+            id: 'doc-acuerdo-consorcio',
+            title: 'Acuerdo de Consorcio',
+            description: 'Documento legal que establece los términos del consorcio',
+            icon: faHandshake,
             color: '#2c3e50'
         },
         {
-            key: 'cartas',
-            title: 'Cartas',
+            id: 'doc-carta-adhesion',
+            title: 'Carta de Adhesión',
+            description: 'Carta de adhesión a principios de sostenibilidad',
             icon: faEnvelope,
-            description: 'Cartas oficiales y comunicaciones',
             color: '#27ae60'
         },
         {
-            key: 'informes',
-            title: 'Informes',
-            icon: faFileAlt,
-            description: 'Informes técnicos y reportes',
+            id: 'doc-medidas-retorsion',
+            title: 'Medidas de Retorsión',
+            description: 'Declaración jurada de medidas de retorsión',
+            icon: faShieldAlt,
             color: '#e74c3c'
+        },
+        {
+            id: 'doc-no-incapacidad',
+            title: 'No Incapacidad',
+            description: 'Certificación de no incapacidad legal',
+            icon: faUserCheck,
+            color: '#f39c12'
+        },
+        {
+            id: 'doc-pacto-integridad',
+            title: 'Pacto de Integridad',
+            description: 'Compromiso de transparencia en procesos',
+            icon: faGavel,
+            color: '#9b59b6'
         }
     ];
 
-    // Tipos de documentos disponibles para generar
-    const documentTemplates = {
-        contratos: [
-            { 
-                id: 'acuerdo-consorcio', 
-                name: 'Acuerdo de Consorcio', 
-                description: 'Documento legal que establece los términos del consorcio',
-                campos: ['Nombre del Proyecto', 'Día', 'Mes', 'Año'],
-                disponible: true
-            }
-        ],
-        cartas: [
-            { 
-                id: 'adhesion-pinellas', 
-                name: 'Adhesión - Pinellas', 
-                description: 'Carta de adhesión oficial de Pinellas S.A.',
-                campos: ['Día', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'adhesion-consorcio', 
-                name: 'Adhesión - Consorcio', 
-                description: 'Carta de adhesión del consorcio',
-                campos: ['Día', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'retorsion-pinellas', 
-                name: 'Retorsión - Pinellas', 
-                description: 'Carta de retorsión de Pinellas S.A.',
-                campos: ['Día de la Semana', 'Día del Mes', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'retorsion-consorcio', 
-                name: 'Retorsión - Consorcio', 
-                description: 'Carta de retorsión del consorcio',
-                campos: ['Día de la Semana', 'Día del Mes', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'incapacidad-pinellas', 
-                name: 'Incapacidad - Pinellas', 
-                description: 'Carta de incapacidad de Pinellas S.A.',
-                campos: ['Nombre del Proyecto', 'Día', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'incapacidad-consorcio', 
-                name: 'Incapacidad - Consorcio', 
-                description: 'Carta de incapacidad del consorcio',
-                campos: ['Nombre del Proyecto', 'Día', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'integridad-pinellas', 
-                name: 'Integridad - Pinellas', 
-                description: 'Carta de integridad de Pinellas S.A.',
-                campos: ['Nombre del Proyecto', 'Código de Licitación', 'Día de la Semana', 'Día del Mes', 'Mes', 'Año'],
-                disponible: true
-            },
-            { 
-                id: 'integridad-consorcio', 
-                name: 'Integridad - Consorcio', 
-                description: 'Carta de integridad del consorcio',
-                campos: ['Nombre del Proyecto', 'Código de Licitación', 'Día de la Semana', 'Día del Mes', 'Mes', 'Año'],
-                disponible: true
-            }
-        ],
-        informes: [
-            { 
-                id: 'informe-avance', 
-                name: 'Informe de Avance', 
-                description: 'Documento de seguimiento de proyecto (próximamente)',
-                campos: [],
-                disponible: false
-            }
-        ]
+    const handleDocumentClick = (documentId) => {
+        // Si se proporciona la función onDocumentClick, úsala
+        if (onDocumentClick) {
+            onDocumentClick(documentId);
+        } else {
+            // Fallback: simular clic en el sidebar
+            window.location.hash = documentId;
+        }
     };
 
-    const selectedTypeData = documentTypes.find(type => type.key === selectedType);
-    const templates = documentTemplates[selectedType] || [];
-
     return (
-        <div className="documentos-hub">
-            {/* Header */}
-            <div className="hub-header">
-                <h1>Gestión de Documentos</h1>
-                <p>Crea y gestiona documentos oficiales para tus proyectos</p>
+        <div className="documents-hub-container">
+            <div className="documents-hub-header">
+                <h1>Documentos</h1>
+                <p>Selecciona el tipo de documento que deseas generar</p>
             </div>
 
-            {/* Document Type Selector */}
-            <div className="document-type-selector">
-                {documentTypes.map(type => (
-                    <button
-                        key={type.key}
-                        className={`type-card ${selectedType === type.key ? 'active' : ''}`}
-                        onClick={() => setSelectedType(type.key)}
-                        style={{ '--type-color': type.color }}
+            <div className="documents-grid">
+                {availableDocuments.map((doc) => (
+                    <div
+                        key={doc.id}
+                        className="document-card"
+                        onClick={() => handleDocumentClick(doc.id)}
+                        style={{ borderLeftColor: doc.color }}
                     >
-                        <div className="type-icon">
-                            <FontAwesomeIcon icon={type.icon} />
+                        <div className="document-card-icon" style={{ color: doc.color }}>
+                            <FontAwesomeIcon icon={doc.icon} />
                         </div>
-                        <div className="type-info">
-                            <h3>{type.title}</h3>
-                            <p>{type.description}</p>
+                        <div className="document-card-content">
+                            <h3>{doc.title}</h3>
+                            <p>{doc.description}</p>
                         </div>
-                    </button>
-                ))}
-            </div>
-
-            {/* Selected Type Content */}
-            <div className="document-content">
-                <div className="content-header">
-                    <div className="content-title">
-                        <FontAwesomeIcon icon={selectedTypeData.icon} />
-                        <h2>{selectedTypeData.title}</h2>
+                        <div className="document-card-arrow">
+                            →
+                        </div>
                     </div>
-                    <button className="btn-primary">
-                        <FontAwesomeIcon icon={faPlus} />
-                        Crear {selectedTypeData.title.slice(0, -1)}
-                    </button>
-                </div>
-
-                {/* Document Templates List */}
-                <div className="documents-list">
-                    {templates.length > 0 ? (
-                        <div className="templates-grid">
-                            {templates.map(template => (
-                                <div key={template.id} className={`template-card ${!template.disponible ? 'disabled' : ''}`}>
-                                    <div className="template-header">
-                                        <div className="template-icon">
-                                            <FontAwesomeIcon icon={selectedTypeData.icon} />
-                                        </div>
-                                        <h3>{template.name}</h3>
-                                    </div>
-                                    <div className="template-body">
-                                        <p>{template.description}</p>
-                                        {template.campos.length > 0 && (
-                                            <div className="template-fields">
-                                                <span className="fields-label">Campos requeridos:</span>
-                                                <div className="fields-list">
-                                                    {template.campos.map((campo, index) => (
-                                                        <span key={index} className="field-tag">
-                                                            {campo}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="template-actions">
-                                        {template.disponible ? (
-                                            <button className="btn-generate">
-                                                <FontAwesomeIcon icon={faPlus} />
-                                                Generar Documento
-                                            </button>
-                                        ) : (
-                                            <button className="btn-disabled" disabled>
-                                                Próximamente
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="empty-state">
-                            <FontAwesomeIcon icon={selectedTypeData.icon} />
-                            <h3>No hay plantillas disponibles</h3>
-                            <p>No se encontraron plantillas para {selectedTypeData.title.toLowerCase()}</p>
-                        </div>
-                    )}
-                </div>
+                ))}
             </div>
         </div>
     );
