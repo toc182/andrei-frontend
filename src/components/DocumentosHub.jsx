@@ -41,10 +41,9 @@ const DocumentosHub = ({ onDocumentClick }) => {
     };
 
     return (
-        <div className="dashboard-content">
-            <div className="dashboard-header">
+        <div className="projects-container">
+            <div className="projects-header">
                 <h1>Documentos</h1>
-                <p>Selecciona el tipo de documento que deseas generar</p>
             </div>
 
             <div className="documents-container">
@@ -58,9 +57,6 @@ const DocumentosHub = ({ onDocumentClick }) => {
                             <div className="document-content">
                                 <h3 className="document-title">{doc.title}</h3>
                                 <p className="document-description">{doc.description}</p>
-                            </div>
-                            <div className="document-arrow">
-                                <span>→</span>
                             </div>
                         </div>
                     ))}
