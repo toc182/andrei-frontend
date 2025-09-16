@@ -7,6 +7,7 @@ import SeguimientoHub from './SeguimientoHub';
 import Clientes from './Clientes';
 import CostsHub from './CostsHub';
 import DocumentForm from './DocumentForm';
+import DocumentosHub from './DocumentosHub';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText } from '@fortawesome/free-solid-svg-icons';
@@ -215,6 +216,8 @@ const Dashboard = () => {
                 return <Clientes />;
             case 'costs':
                 return <CostsHub />;
+            case 'documentos':
+                return <DocumentosHub />;
             case 'doc-acuerdo-consorcio':
                 return <DocumentForm documentType="acuerdo-consorcio" />;
             case 'doc-carta-adhesion':
@@ -320,8 +323,11 @@ const Dashboard = () => {
 
                     <div className="nav-group">
                         <button
-                            className={`nav-item nav-parent ${(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? 'expanded' : ''} ${currentView.startsWith('doc-') ? 'active' : ''}`}
-                            onClick={() => toggleSubmenu('documentos')}
+                            className={`nav-item nav-parent ${expandedMenu === 'documentos' ? 'expanded' : ''} ${['documentos'].concat(currentView.startsWith('doc-') ? [currentView] : []).includes(currentView) ? 'active' : ''}`}
+                            onClick={() => {
+                                setCurrentView('documentos');
+                                setExpandedMenu('documentos');
+                            }}
                         >
                             <span className="nav-icon"><FontAwesomeIcon icon={faFileText} /></span>
                             <span className="nav-text">Documentos</span>
@@ -330,6 +336,12 @@ const Dashboard = () => {
                         
                         {(expandedMenu === 'documentos' || currentView.startsWith('doc-')) && (
                             <div className="nav-submenu">
+                                <button
+                                    className={`nav-subitem ${currentView === 'documentos' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('documentos', 'documentos')}
+                                >
+                                    <span className="nav-text">Documentos</span>
+                                </button>
                                 <button
                                     className={`nav-subitem ${currentView === 'doc-acuerdo-consorcio' ? 'active' : ''}`}
                                     onClick={() => handleMenuClick('doc-acuerdo-consorcio')}
