@@ -5,28 +5,27 @@ const DocumentosHub = ({ onDocumentClick }) => {
     const availableDocuments = [
         {
             id: 'doc-acuerdo-consorcio',
-            title: 'Acuerdo de Consorcio',
-            description: 'Documento legal que establece los términos del consorcio'
+            title: 'Acuerdo de Consorcio'
         },
         {
             id: 'doc-carta-adhesion',
-            title: 'Carta de Adhesión',
-            description: 'Carta de adhesión a principios de sostenibilidad'
+            title: 'Carta de Adhesión a Principios de Sostenibilidad'
         },
         {
             id: 'doc-medidas-retorsion',
-            title: 'Medidas de Retorsión',
-            description: 'Declaración jurada de medidas de retorsión'
+            title: 'Declaración Jurada de Medidas de Retorsión'
         },
         {
             id: 'doc-no-incapacidad',
-            title: 'No Incapacidad',
-            description: 'Certificación de no incapacidad legal'
+            title: 'Declaración Jurada de No Incapacidad para Contratar'
         },
         {
             id: 'doc-pacto-integridad',
-            title: 'Pacto de Integridad',
-            description: 'Compromiso de transparencia en procesos'
+            title: 'Pacto de Integridad'
+        },
+        {
+            id: 'doc-carta-compromiso-verde',
+            title: 'Carta de Compromiso Verde'
         }
     ];
 
@@ -41,20 +40,27 @@ const DocumentosHub = ({ onDocumentClick }) => {
     };
 
     return (
-        <div className="projects-container">
-            <div className="projects-header">
+        <div className="section-container">
+            <div className="section-header card-mediano">
                 <h1>Documentos</h1>
             </div>
 
-            <div className="documents-container">
+            <div className="documents-main-card card-mediano">
                 <div className="documents-list">
-                    {availableDocuments.map((doc) => (
-                        <div
-                            key={doc.id}
-                            className="document-item"
-                            onClick={() => handleDocumentClick(doc.id)}
-                        >
-                            {doc.title}
+                    {availableDocuments.map((doc, index) => (
+                        <div key={doc.id}>
+                            <div
+                                className="document-item-row"
+                                onClick={() => handleDocumentClick(doc.id)}
+                            >
+                                <div className="document-content">
+                                    <h3 className="document-title">{doc.title}</h3>
+                                </div>
+                                <div className="document-arrow">›</div>
+                            </div>
+                            {index < availableDocuments.length - 1 && (
+                                <div className="document-separator"></div>
+                            )}
                         </div>
                     ))}
                 </div>

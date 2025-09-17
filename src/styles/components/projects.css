@@ -1,0 +1,204 @@
+/* ===== PROJECTS SECTION STYLES ===== */
+
+/* Projects-specific styles (header styles now in common.css) */
+
+/* Projects Table Container - More compact */
+.projects-table-container {
+    background: white;
+    border-radius: 10px; /* Reducido de 12px */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    margin-bottom: 1.25rem; /* Reducido de 2rem */
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Projects Table - MANTENER ESTRUCTURA COMPLETA */
+.projects-table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+/* Table Headers - MANTENER GRADIENTE */
+.projects-table thead {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.projects-table th {
+    padding: 0.75rem 0.625rem; /* Reducido de 1rem 0.75rem */
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem; /* Reducido de 0.85rem */
+    letter-spacing: 0.4px; /* Reducido */
+    text-transform: uppercase;
+    border: none;
+}
+
+.projects-table th:first-child {
+    padding-left: 1.5rem;
+}
+
+.projects-table th:last-child {
+    padding-right: 1.5rem;
+}
+
+/* Table Cells */
+.projects-table td {
+    padding: 0.75rem 0.625rem; /* Reducido de 1rem 0.75rem */
+    border-bottom: 1px solid #f0f4f8;
+    vertical-align: middle;
+    background: white;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem; /* Añadido para hacer texto más pequeño */
+}
+
+.projects-table td:first-child {
+    padding-left: 1.5rem;
+}
+
+.projects-table td:last-child {
+    padding-right: 1.5rem;
+}
+
+/* Table Row Hover - MANTENER */
+.projects-table tbody tr {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.projects-table tbody tr:hover {
+    background: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.projects-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Column Widths - MANTENER */
+.projects-table th:nth-child(1), .projects-table td:nth-child(1) { width: 30%; } /* Proyecto */
+.projects-table th:nth-child(2), .projects-table td:nth-child(2) { width: 22%; text-align: center; } /* Cliente */
+.projects-table th:nth-child(3), .projects-table td:nth-child(3) { width: 18%; text-align: center; min-width: 130px; } /* Estado */
+.projects-table th:nth-child(4), .projects-table td:nth-child(4) { width: 20%; } /* Monto */
+.projects-table th:nth-child(5), .projects-table td:nth-child(5) { width: 10%; } /* Acciones */
+
+/* Special Column Styling */
+.projects-table td:nth-child(1) { /* Proyecto - allow wrapping */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+}
+
+.projects-table td:nth-child(3) { /* Estado */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    text-align: center;
+}
+
+.projects-table th:nth-child(2),
+.projects-table th:nth-child(3),
+.projects-table th:nth-child(4) {
+    text-align: center;
+}
+
+.projects-table td:nth-child(4) { /* Monto values */
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.projects-table td:nth-child(5) { /* Acciones */
+    text-align: center;
+    padding: 0.5rem;
+}
+
+/* Edit Button - MANTENER */
+.btn-edit-icon {
+    color: #6c757d;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0.25rem;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+}
+
+.btn-edit-icon:hover {
+    color: #2c3e50;
+    background: rgba(44, 62, 80, 0.1);
+    transform: scale(1.1);
+}
+
+/* Project Name Container with Expand Icon */
+.project-name-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.expand-icon {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-left: 0.5rem;
+    transition: transform 0.2s ease;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-planning { background: #fff3cd; color: #856404; }
+.status-active { background: #d4edda; color: #155724; }
+.status-paused { background: #f8d7da; color: #721c24; }
+.status-completed { background: #d1ecf1; color: #0c5460; }
+.status-cancelled { background: #f5c6cb; color: #721c24; }
+
+/* Responsive Design - Projects specific (if needed) */
+
+@media (max-width: 768px) {
+    .projects-table-container {
+        overflow-x: auto;
+    }
+
+    .projects-table {
+        min-width: 600px;
+        font-size: 0.85rem;
+    }
+
+    .projects-table th {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .projects-table td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .projects-table {
+        min-width: 500px;
+        font-size: 0.8rem;
+    }
+
+    .projects-table th,
+    .projects-table td {
+        padding: 0.5rem 0.25rem;
+    }
+}

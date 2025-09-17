@@ -1,10 +1,10 @@
 /* DEPRECATED: This file will be removed. Styles moved to globals.css, layout.css, and navigation.css */
 
 
-/* Sidebar Navigation */
+/* Sidebar Navigation - More compact */
 .sidebar-nav {
     flex: 1;
-    padding: 2rem 0 1rem 0;
+    padding: 1.25rem 0 0.75rem 0; /* Reducido de 2rem 0 1rem 0 */
     overflow-y: auto;
 }
 
@@ -12,14 +12,14 @@
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.875rem; /* Reducido de 0.75rem 1rem */
     background: none;
     border: none;
     border-radius: 0;
     text-align: left;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.9rem;
+    font-size: 0.8rem; /* Reducido de 0.9rem */
     color: #495057;
     border-left: 3px solid transparent;
     outline: none;
@@ -93,14 +93,14 @@
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 0.5rem 1rem 0.5rem 3rem;
+    padding: 0.375rem 0.875rem 0.375rem 2.625rem; /* Reducido */
     background: none;
     border: none;
     border-radius: 0;
     text-align: left;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* Reducido de 0.85rem */
     color: #6c757d;
     border-left: 3px solid transparent;
     outline: none;

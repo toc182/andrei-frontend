@@ -14,6 +14,7 @@ import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUser
 import '../styles/globals.css';
 import '../styles/layout.css';
 import '../styles/navigation.css';
+import '../App.css';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -323,7 +324,7 @@ const Dashboard = () => {
 
                     <div className="nav-group">
                         <button
-                            className={`nav-item nav-parent ${(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? 'expanded' : ''} ${currentView === 'documentos' ? 'active' : ''}`}
+                            className={`nav-item nav-parent ${(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? 'expanded' : ''} ${(currentView === 'documentos' || currentView.startsWith('doc-')) ? 'active' : ''}`}
                             onClick={() => {
                                 if (expandedMenu === 'documentos') {
                                     setExpandedMenu(null);

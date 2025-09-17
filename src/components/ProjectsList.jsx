@@ -279,7 +279,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
 
     if (loading && projects.length === 0) {
         return (
-            <div className="projects-container">
+            <div className="section-container">
                 <div className="projects-loading">
                     <div className="loading-spinner"></div>
                     <p>Cargando proyectos...</p>
@@ -289,9 +289,9 @@ const ProjectsList = ({ onStatsUpdate }) => {
     }
 
     return (
-        <div className="projects-container">
+        <div className="section-container">
             {/* Header */}
-            <div className="projects-header">
+            <div className="section-header">
                 <h1>Gestión de Proyectos</h1>
                 {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
                     <button
