@@ -79,6 +79,10 @@
     transition: background 0.2s ease;
 }
 
+.projects-table tbody tr:hover td {
+    background: #f8f9fa;
+}
+
 .projects-table tbody tr:last-child td {
     border-bottom: none;
 }
