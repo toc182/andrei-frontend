@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileText, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faFileText, faDownload, faSpinner, faEye } from '@fortawesome/free-solid-svg-icons';
 import api from '../services/api';
 
 const DocumentForm = ({ documentType }) => {
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [previewHtml, setPreviewHtml] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
+    const [loadingPreview, setLoadingPreview] = useState(false);
 
     // Configuration for each document type
     const documentConfig = {
@@ -111,6 +114,58 @@ const DocumentForm = ({ documentType }) => {
             month: months[date.getMonth()],
             year: date.getFullYear().toString()
         };
+    };
+
+    const handlePreview = async () => {
+        if (!validateForm()) {
+            return;
+        }
+
+        setLoadingPreview(true);
+        setError('');
+
+        try {
+            // Prepare data for backend
+            let backendData = { ...formData };
+
+            // Convert date to backend format
+            if (formData.fecha) {
+                const dateInfo = formatDateForBackend(formData.fecha);
+                backendData = { ...backendData, ...dateInfo };
+                delete backendData.fecha;
+            }
+
+            // Determine endpoint based on document type and entity
+            let endpoint = '';
+
+            if (documentType === 'acuerdo-consorcio') {
+                endpoint = 'acuerdo-consorcio-preview';
+            } else {
+                const entitySuffix = formData.entity === 'consorcio' ? 'consorcio' : 'pinellas';
+                const docTypeMap = {
+                    'carta-adhesion': 'adhesion',
+                    'medidas-retorsion': 'retorsion',
+                    'no-incapacidad': 'incapacidad',
+                    'pacto-integridad': 'integridad'
+                };
+                const docType = docTypeMap[documentType];
+                endpoint = `${docType}-${entitySuffix}-preview`;
+            }
+
+            const response = await api.post(`/documents/${endpoint}`, backendData);
+
+            if (response.data.success) {
+                setPreviewHtml(response.data.html);
+                setShowPreview(true);
+            } else {
+                setError('Error al generar la vista previa');
+            }
+        } catch (error) {
+            console.error('Error generating preview:', error);
+            setError('Error al generar la vista previa. Por favor intenta de nuevo.');
+        } finally {
+            setLoadingPreview(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -264,9 +319,27 @@ const DocumentForm = ({ documentType }) => {
 
                     <div className="form-actions">
                         <button
+                            type="button"
+                            className="btn-preview"
+                            onClick={handlePreview}
+                            disabled={loadingPreview || loading}
+                        >
+                            {loadingPreview ? (
+                                <>
+                                    <FontAwesomeIcon icon={faSpinner} spin />
+                                    Cargando...
+                                </>
+                            ) : (
+                                <>
+                                    <FontAwesomeIcon icon={faEye} />
+                                    Vista Previa
+                                </>
+                            )}
+                        </button>
+                        <button
                             type="submit"
                             className="btn-submit"
-                            disabled={loading}
+                            disabled={loading || loadingPreview}
                         >
                             {loading ? (
                                 <>
@@ -283,6 +356,37 @@ const DocumentForm = ({ documentType }) => {
                     </div>
                 </form>
             </div>
+
+            {/* Modal de Vista Previa */}
+            {showPreview && (
+                <div className="modal-overlay" onClick={() => setShowPreview(false)}>
+                    <div className="modal-content preview-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Vista Previa - {config.title}</h2>
+                            <button
+                                className="modal-close"
+                                onClick={() => setShowPreview(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div
+                                className="preview-content"
+                                dangerouslySetInnerHTML={{ __html: previewHtml }}
+                            />
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setShowPreview(false)}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

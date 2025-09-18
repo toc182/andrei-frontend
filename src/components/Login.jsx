@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -34,16 +35,15 @@ const Login = () => {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
+        <div className="section-container">
+            <div className="document-form-card card-login">
                 <div className="login-header">
-                    <h1>Sistema Andrei</h1>
-                    <p>ERP de Construcción</p>
+                    <img src={logo} alt="Pinellas" className="login-logo" />
                 </div>
 
-                <form onSubmit={handleSubmit} className="login-form">
+                <form onSubmit={handleSubmit} className="document-form">
                     <div className="form-group">
-                        <label>Email:</label>
+                        <label className="form-label">Email:</label>
                         <input
                             type="email"
                             name="email"
@@ -52,11 +52,12 @@ const Login = () => {
                             required
                             placeholder="admin@andrei.com"
                             disabled={loading}
+                            className="form-control"
                         />
                     </div>
 
                     <div className="form-group">
-                        <label>Contraseña:</label>
+                        <label className="form-label">Contraseña:</label>
                         <input
                             type="password"
                             name="password"
@@ -65,6 +66,7 @@ const Login = () => {
                             required
                             placeholder="123456"
                             disabled={loading}
+                            className="form-control"
                         />
                     </div>
 
@@ -74,18 +76,17 @@ const Login = () => {
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        className={`login-button ${loading ? 'loading' : ''}`}
-                        disabled={loading}
-                    >
-                        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                    </button>
+                    <div style={{textAlign: 'center', marginTop: '1rem'}}>
+                        <button
+                            type="submit"
+                            className={`btn-submit ${loading ? 'loading' : ''}`}
+                            disabled={loading}
+                        >
+                            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                        </button>
+                    </div>
                 </form>
 
-                <div className="login-footer">
-                    <small>Sistema de gestión para empresas de construcción</small>
-                </div>
             </div>
         </div>
     );
