@@ -66,6 +66,9 @@
     font-weight: 600;
     letter-spacing: -0.4px;
     text-rendering: optimizeLegibility;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 /* Section Action Button - Universal style for add/action buttons */
@@ -332,7 +335,217 @@
     gap: 0.5rem;
 }
 
-/* Responsive Design */
+/* ===== TABLE COLUMN RULES - BASE ===== */
+
+/* Base Column Widths for Projects Table */
+.projects-table th:nth-child(1), .projects-table td:nth-child(1) { width: 30%; } /* Proyecto */
+.projects-table th:nth-child(2), .projects-table td:nth-child(2) { width: 22%; text-align: center; } /* Cliente */
+.projects-table th:nth-child(3), .projects-table td:nth-child(3) { width: 18%; text-align: center; min-width: 130px; white-space: nowrap; overflow: visible; } /* Estado */
+.projects-table th:nth-child(4), .projects-table td:nth-child(4) { width: 20%; text-align: right; } /* Monto */
+.projects-table th:nth-child(5), .projects-table td:nth-child(5) { width: 10%; text-align: center; } /* Acciones */
+
+/* Special Column Styling */
+.projects-table td:nth-child(1) { /* Proyecto - allow wrapping */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+}
+
+.projects-table th:nth-child(2),
+.projects-table th:nth-child(3),
+.projects-table th:nth-child(4) {
+    text-align: center;
+}
+
+.projects-table td:nth-child(5) { /* Acciones */
+    padding: 0.5rem;
+}
+
+/* ===== RESPONSIVE DESIGN - CONSOLIDATED ===== */
+
+/* Small Phones (≤480px) */
+@media (max-width: 480px) {
+    .section-container {
+        padding: 0.25rem;
+        max-width: none;
+        width: 100%;
+    }
+
+    .hide-mobile-sm {
+        display: none;
+    }
+
+    /* Projects Table Mobile */
+    .projects-table-container {
+        margin-bottom: 0.75rem;
+        border-radius: 6px;
+    }
+
+    .projects-table {
+        font-size: 0.8rem;
+    }
+
+    .projects-table th,
+    .projects-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+
+    .projects-table th:first-child,
+    .projects-table td:first-child {
+        padding-left: 0.5rem;
+    }
+
+    .projects-table th:last-child,
+    .projects-table td:last-child {
+        padding-right: 0.5rem;
+    }
+
+    /* Hide amount and edit button columns on smallest screens */
+    .projects-table th:nth-child(4),
+    .projects-table td:nth-child(4),
+    .projects-table th:nth-child(5),
+    .projects-table td:nth-child(5) {
+        display: none;
+    }
+
+    /* Adjust remaining column widths */
+    .projects-table th:nth-child(1), .projects-table td:nth-child(1) {
+        width: 50%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    .projects-table th:nth-child(2), .projects-table td:nth-child(2) { width: 25%; }
+
+    /* Override font-size for this breakpoint */
+    .projects-table tbody td {
+        font-size: 0.8rem;
+    }
+    .projects-table th:nth-child(3), .projects-table td:nth-child(3) {
+        width: 25%;
+        min-width: 90px;
+        white-space: nowrap;
+        overflow: visible;
+    }
+}
+
+/* Large Phones (≤576px) */
+@media (max-width: 576px) {
+    .section-container {
+        padding: 0.375rem;
+    }
+
+    .hide-mobile-lg {
+        display: none;
+    }
+
+    /* Hide only edit button column on large phones */
+    .projects-table th:nth-child(5),
+    .projects-table td:nth-child(5) {
+        display: none;
+    }
+
+    .projects-table {
+        font-size: 0.8rem;
+    }
+
+    .projects-table th,
+    .projects-table td {
+        padding: 0.5rem 0.375rem;
+    }
+
+
+    /* Adjust column widths - 4 columns now (without edit) */
+    .projects-table th:nth-child(1), .projects-table td:nth-child(1) {
+        width: 35%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+    }
+    .projects-table th:nth-child(2), .projects-table td:nth-child(2) {
+        width: 20%;
+    }
+    .projects-table th:nth-child(3), .projects-table td:nth-child(3) {
+        width: 20%;
+        min-width: 90px;
+        white-space: nowrap;
+        overflow: visible;
+    }
+    .projects-table th:nth-child(4), .projects-table td:nth-child(4) {
+        width: 25%;
+    }
+
+    /* Override font-size for this breakpoint */
+    .projects-table tbody td {
+        font-size: 0.8rem;
+    }
+}
+
+/* Tablets Portrait (≤768px) */
+@media (max-width: 768px) {
+    .section-container {
+        padding: 0.5rem;
+        max-width: none;
+        width: 100%;
+    }
+
+    .hide-tablet {
+        display: none;
+    }
+
+    /* Projects Table Responsive */
+    .projects-table-container {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+
+    .projects-table {
+        table-layout: auto;
+    }
+
+
+    .projects-table th,
+    .projects-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .projects-table th:first-child,
+    .projects-table td:first-child {
+        padding-left: 0.75rem;
+    }
+
+    .projects-table th:last-child,
+    .projects-table td:last-child {
+        padding-right: 0.75rem;
+    }
+
+    /* Adjust column widths for tablets */
+    .projects-table th:nth-child(1), .projects-table td:nth-child(1) { width: 28%; }
+    .projects-table th:nth-child(2), .projects-table td:nth-child(2) { width: 18%; }
+    .projects-table th:nth-child(3), .projects-table td:nth-child(3) {
+        width: 19%;
+        min-width: 90px;
+        white-space: nowrap;
+        overflow: visible;
+    }
+    .projects-table th:nth-child(4), .projects-table td:nth-child(4) { width: 25%; }
+    .projects-table th:nth-child(5), .projects-table td:nth-child(5) { width: 10%; }
+
+    /* Override font-size for this breakpoint */
+    .projects-table tbody td {
+        font-size: 0.8rem;
+    }
+}
+
+/* Tablets Landscape (≤992px) */
+@media (max-width: 992px) {
+    .hide-tablet-landscape {
+        display: none;
+    }
+}
+
+/* Large Tablets & Small Desktops (≤1200px) */
 @media (max-width: 1200px) {
     .section-container {
         padding: 0.75rem;
@@ -351,8 +564,7 @@
         min-width: 0;
         flex: 1;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        overflow: visible;
     }
 
     .section-header .btn-add-icon {
@@ -362,17 +574,5 @@
 
     .hide-mobile {
         display: none;
-    }
-}
-
-@media (max-width: 900px) {
-    .hide-mobile-sm {
-        display: none;
-    }
-}
-
-@media (max-width: 480px) {
-    .section-container {
-        padding: 0.5rem;
     }
 }

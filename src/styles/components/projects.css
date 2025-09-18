@@ -18,7 +18,7 @@
     width: 100%;
     max-width: 100%;
     border-collapse: collapse;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     border-spacing: 0;
     table-layout: fixed;
 }
@@ -57,7 +57,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.9rem; /* Añadido para hacer texto más pequeño */
+    font-size: 0.9rem; /* Revertido - solo cambiar en breakpoints ≤768px */
 }
 
 .projects-table td:first-child {
@@ -75,52 +75,15 @@
 }
 
 .projects-table tbody tr:hover {
-    background: #f8fafc;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    background: #f8f9fa;
+    transition: background 0.2s ease;
 }
 
 .projects-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-/* Column Widths - MANTENER */
-.projects-table th:nth-child(1), .projects-table td:nth-child(1) { width: 30%; } /* Proyecto */
-.projects-table th:nth-child(2), .projects-table td:nth-child(2) { width: 22%; text-align: center; } /* Cliente */
-.projects-table th:nth-child(3), .projects-table td:nth-child(3) { width: 18%; text-align: center; min-width: 130px; } /* Estado */
-.projects-table th:nth-child(4), .projects-table td:nth-child(4) { width: 20%; } /* Monto */
-.projects-table th:nth-child(5), .projects-table td:nth-child(5) { width: 10%; } /* Acciones */
-
-/* Special Column Styling */
-.projects-table td:nth-child(1) { /* Proyecto - allow wrapping */
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
-}
-
-.projects-table td:nth-child(3) { /* Estado */
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
-    text-align: center;
-}
-
-.projects-table th:nth-child(2),
-.projects-table th:nth-child(3),
-.projects-table th:nth-child(4) {
-    text-align: center;
-}
-
-.projects-table td:nth-child(4) { /* Monto values */
-    text-align: right;
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-}
-
-.projects-table td:nth-child(5) { /* Acciones */
-    text-align: center;
-    padding: 0.5rem;
-}
+/* Column styling now consolidated in common.css for proper responsive behavior */
 
 /* Edit Button - MANTENER */
 .btn-edit-icon {
@@ -158,7 +121,7 @@
 .status-badge {
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.6rem;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -170,35 +133,4 @@
 .status-completed { background: #d1ecf1; color: #0c5460; }
 .status-cancelled { background: #f5c6cb; color: #721c24; }
 
-/* Responsive Design - Projects specific (if needed) */
-
-@media (max-width: 768px) {
-    .projects-table-container {
-        overflow-x: auto;
-    }
-
-    .projects-table {
-        min-width: 600px;
-        font-size: 0.85rem;
-    }
-
-    .projects-table th {
-        padding: 0.75rem 0.5rem;
-    }
-
-    .projects-table td {
-        padding: 0.75rem 0.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .projects-table {
-        min-width: 500px;
-        font-size: 0.8rem;
-    }
-
-    .projects-table th,
-    .projects-table td {
-        padding: 0.5rem 0.25rem;
-    }
-}
+/* Responsive Design - Consolidated in common.css */

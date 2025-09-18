@@ -5,7 +5,7 @@ import AdendaForm from './AdendaForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faPenToSquare, faCog, faWrench, faTools, faCirclePlus } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faPenToSquare, faCog, faWrench, faTools, faCirclePlus, faBuilding } from '@fortawesome/free-solid-svg-icons';
 
 const ProjectsList = ({ onStatsUpdate }) => {
     const { user } = useAuth();
@@ -169,10 +169,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
         if (!amount) return '-';
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'PAB',
+            currencyDisplay: 'symbol',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        }).format(amount);
+        }).format(amount).replace('PAB', 'B/.');
     };
 
     // Obtener clase CSS para estado
@@ -292,7 +293,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
         <div className="section-container">
             {/* Header */}
             <div className="section-header">
-                <h1>Gestión de Proyectos</h1>
+                <h1><FontAwesomeIcon icon={faBuilding} /> Proyectos</h1>
                 {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
                     <button
                         className="btn-add-icon"
@@ -341,10 +342,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                     style={{cursor: 'pointer'}}
                                 >
                                     <td className="project-name">
-                                        <div className="project-name-container">
-                                            <span>{project.nombre_corto || project.nombre}</span>
-                                            <span className="expand-icon">{expandedRows.has(project.id) ? '▼' : '▶'}</span>
-                                        </div>
+                                        <span>{project.nombre_corto || project.nombre}</span>
                                     </td>
                                     <td className="project-client">
                                         {project.cliente_abreviatura || project.cliente_nombre || '-'}
