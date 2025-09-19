@@ -219,3 +219,394 @@
         padding: 1rem;
     }
 }
+
+/* Project Details Modal - Custom Styles */
+.project-details-modal {
+    margin-top: 7rem;
+    margin-bottom: 2rem;
+    max-width: 700px;
+    font-size: 0.8rem;
+}
+
+/* Adenda Modal - Same styles as project details modal */
+.adenda-modal {
+    margin-top: 7rem;
+    margin-bottom: 2rem;
+    max-width: 600px;
+    font-size: 0.8rem;
+}
+
+.adenda-modal .modal-header {
+    border-bottom: none;
+    padding: 1rem 2rem 0 2rem;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.adenda-modal .modal-close {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+/* Adenda form content styling */
+.adenda-modal .project-form {
+    padding: 0 2rem 1.5rem 2rem;
+}
+
+/* Remove section styling and apply detail-row layout to adenda form */
+.adenda-modal .form-section {
+    margin-bottom: 0;
+    border: none;
+    padding: 0;
+}
+
+.adenda-modal .form-section h3 {
+    display: none;
+}
+
+.adenda-modal .form-row {
+    display: contents;
+}
+
+.adenda-modal .form-group {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: start;
+    margin-bottom: 0.75rem;
+}
+
+.adenda-modal .form-group label {
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-primary);
+    padding-right: 1rem;
+    margin-bottom: 0;
+}
+
+.adenda-modal .form-group select,
+.adenda-modal .form-group input,
+.adenda-modal .form-group textarea {
+    text-align: left;
+    margin: 0;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: #fafbfc;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.adenda-modal .form-group select:focus,
+.adenda-modal .form-group input:focus,
+.adenda-modal .form-group textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15), 0 4px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.adenda-modal .form-group select:hover,
+.adenda-modal .form-group input:hover,
+.adenda-modal .form-group textarea:hover {
+    border-color: #c1c7cd;
+    background: white;
+}
+
+/* Full width items for textarea */
+.adenda-modal .form-group.full-width {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.adenda-modal .form-group.full-width label {
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 0.5rem;
+}
+
+/* Form actions styling */
+.adenda-modal .form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Form error styling */
+.adenda-modal .form-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    margin: 1.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+/* Button spinner for loading state */
+.adenda-modal .btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 2px solid white;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+}
+
+/* Equipos table specific column widths */
+.equipos-table th:nth-child(1),
+.equipos-table td:nth-child(1) {
+    width: 10%;
+}
+
+.equipos-table th:nth-child(2),
+.equipos-table td:nth-child(2) {
+    width: 43%;
+    text-align: left;
+}
+
+.equipos-table th:nth-child(3),
+.equipos-table td:nth-child(3) {
+    width: 20%;
+}
+
+.equipos-table th:nth-child(4),
+.equipos-table td:nth-child(4) {
+    width: 15%;
+    text-align: center;
+}
+
+.equipos-table th:nth-child(5),
+.equipos-table td:nth-child(5) {
+    width: 12%;
+}
+
+/* Equipos table title row styling */
+.equipos-title-row {
+    background: var(--primary-gradient);
+}
+
+.equipos-title-header {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 1rem;
+    color: white;
+    text-transform: none;
+    letter-spacing: normal;
+    background: var(--primary-gradient);
+}
+
+th.equipos-title-header {
+    padding: 0.5rem 0 0 0;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.equipos-logo {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Equipos modal styling */
+.equipos-modal {
+    max-width: 500px;
+}
+
+.equipos-modal .modal-header {
+    border-bottom: none;
+    padding: 1rem 2rem;
+    justify-content: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.equipos-modal .modal-header h2 {
+    text-align: left;
+    margin-right: auto;
+}
+
+.equipos-modal .modal-close {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.project-details-modal .project-details {
+    padding: 0 2rem 1.5rem 2rem;
+}
+
+.project-details-modal .modal-header {
+    border-bottom: none;
+    padding: 1rem 2rem 0 2rem;
+    justify-content: flex-end;
+}
+
+.project-details-modal .modal-close {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+/* Individual Row Layout for Project Details */
+.detail-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: start;
+    margin-bottom: 0.75rem;
+}
+
+.detail-row label {
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-primary);
+    padding-right: 1rem;
+}
+
+.detail-row span {
+    text-align: left;
+}
+
+/* Full width items (like observations) */
+.detail-row.full-width {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.detail-row.full-width label {
+    text-align: left;
+    margin-bottom: 0.5rem;
+    padding-right: 0;
+}
+
+.detail-row.full-width .observations {
+    margin: 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Status badges in modal */
+.detail-row .status-badge {
+    display: inline-block;
+    width: fit-content;
+}
+
+/* Money formatting in modal */
+.detail-row .project-money {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.detail-row .client-abbreviation {
+    font-weight: 600;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* Adendas specific styling */
+.adendas-section h4 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.adenda-item {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.adenda-status-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.adenda-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.adenda-actions .btn-icon {
+    padding: 0.25rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    color: #6c757d;
+}
+
+.adenda-actions .btn-edit:hover {
+    color: var(--primary-color);
+    background: rgba(44, 62, 80, 0.1);
+}
+
+.adenda-actions .btn-delete:hover {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.extension-days {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Project actions styling */
+.project-actions-section {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Responsive for modal */
+@media (max-width: 768px) {
+    .detail-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .detail-row label {
+        text-align: left;
+        padding-right: 0;
+        margin-bottom: 0.25rem;
+    }
+
+    .adenda-status-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

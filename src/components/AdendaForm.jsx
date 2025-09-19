@@ -98,7 +98,7 @@ const AdendaForm = ({
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content">
+            <div className="modal-content adenda-modal">
                 <div className="modal-header">
                     <h2>{editingAdenda ? 'Editar Adenda' : 'Nueva Adenda'}</h2>
                     <button

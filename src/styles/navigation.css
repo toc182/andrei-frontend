@@ -78,7 +78,7 @@
 }
 
 .nav-parent.expanded .nav-arrow {
-    transform: rotate(90deg);
+    /* No rotation needed since we use specific chevron icons */
 }
 
 .nav-submenu {

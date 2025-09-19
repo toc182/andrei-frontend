@@ -8,9 +8,10 @@ import Clientes from './Clientes';
 import CostsHub from './CostsHub';
 import DocumentForm from './DocumentForm';
 import DocumentosHub from './DocumentosHub';
+import EquiposInformacion from './EquiposInformacion';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText, faTruckPickup, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import '../styles/globals.css';
 import '../styles/layout.css';
 import '../styles/navigation.css';
@@ -217,6 +218,30 @@ const Dashboard = () => {
                 return <Clientes />;
             case 'costs':
                 return <CostsHub />;
+            case 'equipos':
+                return (
+                    <div className="section-container">
+                        <div className="section-header">
+                            <h1>Equipos</h1>
+                        </div>
+                        <div className="placeholder-content">
+                            <p>Página principal de Equipos - Próximamente</p>
+                        </div>
+                    </div>
+                );
+            case 'equipos-informacion':
+                return <EquiposInformacion />;
+            case 'equipos-status':
+                return (
+                    <div className="section-container">
+                        <div className="section-header">
+                            <h1>📊 Status de Equipos</h1>
+                        </div>
+                        <div className="placeholder-content">
+                            <p>Sección de Status de Equipos - Próximamente</p>
+                        </div>
+                    </div>
+                );
             case 'documentos':
                 return <DocumentosHub onDocumentClick={(docId) => setCurrentView(docId)} />;
             case 'doc-acuerdo-consorcio':
@@ -271,7 +296,7 @@ const Dashboard = () => {
                         >
                             <span className="nav-icon"><FontAwesomeIcon icon={faBuilding} /></span>
                             <span className="nav-text">Proyectos</span>
-                            <span className="nav-arrow">{expandedMenu === 'projects' ? '▼' : '▶'}</span>
+                            <span className="nav-arrow"><FontAwesomeIcon icon={expandedMenu === 'projects' ? faChevronDown : faChevronRight} /></span>
                         </button>
                         
                         {expandedMenu === 'projects' && (
@@ -324,6 +349,37 @@ const Dashboard = () => {
 
                     <div className="nav-group">
                         <button
+                            className={`nav-item nav-parent ${expandedMenu === 'equipos' ? 'expanded' : ''} ${['equipos', 'equipos-informacion', 'equipos-status'].includes(currentView) ? 'active' : ''}`}
+                            onClick={() => {
+                                setCurrentView('equipos');
+                                setExpandedMenu('equipos');
+                            }}
+                        >
+                            <span className="nav-icon"><FontAwesomeIcon icon={faTruckPickup} /></span>
+                            <span className="nav-text">Equipos</span>
+                            <span className="nav-arrow"><FontAwesomeIcon icon={expandedMenu === 'equipos' ? faChevronDown : faChevronRight} /></span>
+                        </button>
+
+                        {expandedMenu === 'equipos' && (
+                            <div className="nav-submenu">
+                                <button
+                                    className={`nav-subitem ${currentView === 'equipos-informacion' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('equipos', 'equipos-informacion')}
+                                >
+                                    <span className="nav-text">Información de Equipos</span>
+                                </button>
+                                <button
+                                    className={`nav-subitem ${currentView === 'equipos-status' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('equipos', 'equipos-status')}
+                                >
+                                    <span className="nav-text">Status de Equipos</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="nav-group">
+                        <button
                             className={`nav-item nav-parent ${(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? 'expanded' : ''} ${(currentView === 'documentos' || currentView.startsWith('doc-')) ? 'active' : ''}`}
                             onClick={() => {
                                 if (expandedMenu === 'documentos') {
@@ -336,7 +392,7 @@ const Dashboard = () => {
                         >
                             <span className="nav-icon"><FontAwesomeIcon icon={faFileText} /></span>
                             <span className="nav-text">Documentos</span>
-                            <span className="nav-arrow">{(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? '▼' : '▶'}</span>
+                            <span className="nav-arrow"><FontAwesomeIcon icon={(expandedMenu === 'documentos' || currentView.startsWith('doc-')) ? faChevronDown : faChevronRight} /></span>
                         </button>
                         
                         {(expandedMenu === 'documentos' || currentView.startsWith('doc-')) && (

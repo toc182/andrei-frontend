@@ -5,7 +5,7 @@ import AdendaForm from './AdendaForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faPenToSquare, faCog, faWrench, faTools, faCirclePlus, faBuilding } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faPenToSquare, faCog, faWrench, faTools, faCirclePlus, faBuilding, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 const ProjectsList = ({ onStatsUpdate }) => {
     const { user } = useAuth();
@@ -26,7 +26,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const handleRowClick = (projectId, event) => {
         // Solo expandir en pantallas pequeñas, en grandes mostrar detalles
         const screenWidth = window.innerWidth;
-        if (screenWidth > 1200) {
+        if (screenWidth > 768) {
             // En pantallas grandes, abrir detalles del proyecto
             handleViewProject(projectId);
             return;
@@ -82,7 +82,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
     // Cerrar acordeones en pantallas grandes
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth > 1200) {
+            if (window.innerWidth > 768) {
                 setExpandedRows(new Set());
             }
         };
@@ -489,7 +489,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 <div className="modal-overlay" onClick={() => setViewingProject(null)}>
                     <div className="modal-content project-details-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Detalles del Proyecto</h2>
                             <button
                                 className="modal-close"
                                 onClick={() => setViewingProject(null)}
@@ -499,258 +498,238 @@ const ProjectsList = ({ onStatsUpdate }) => {
                         </div>
 
                         <div className="project-details">
-                            {/* Información Básica */}
-                            <div className="details-section">
-                                <h3>Información Básica</h3>
-                                <div className="details-grid">
-                                    <div className="detail-item">
-                                        <label>Nombre del Proyecto:</label>
-                                        <span>{viewingProject.nombre}</span>
-                                    </div>
-                                    {viewingProject.nombre_corto && (
-                                        <div className="detail-item">
-                                            <label>Nombre Corto:</label>
-                                            <span>{viewingProject.nombre_corto}</span>
-                                        </div>
-                                    )}
-                                    {viewingProject.codigo_proyecto && (
-                                        <div className="detail-item">
-                                            <label>Código:</label>
-                                            <span>{viewingProject.codigo_proyecto}</span>
-                                        </div>
-                                    )}
-                                    <div className="detail-item">
-                                        <label>Estado:</label>
-                                        <span className={`status-badge ${getStatusClass(viewingProject.estado)}`}>
-                                            {getStatusText(viewingProject.estado)}
-                                        </span>
-                                    </div>
+                            {/* Nombre del Proyecto */}
+                            <div className="detail-row">
+                                <label>Nombre del Proyecto:</label>
+                                <span>{viewingProject.nombre}</span>
+                            </div>
+
+                            {/* Código */}
+                            {viewingProject.codigo_proyecto && (
+                                <div className="detail-row">
+                                    <label>Código:</label>
+                                    <span>{viewingProject.codigo_proyecto}</span>
                                 </div>
+                            )}
+
+                            {/* Estado */}
+                            <div className="detail-row">
+                                <label>Estado:</label>
+                                <span className={`status-badge ${getStatusClass(viewingProject.estado)}`}>
+                                    {getStatusText(viewingProject.estado)}
+                                </span>
                             </div>
 
                             {/* Cliente */}
                             {viewingProject.cliente_nombre && (
-                                <div className="details-section">
-                                    <h3>Cliente</h3>
-                                    <div className="details-grid">
-                                        <div className="detail-item">
-                                            <label>Nombre:</label>
-                                            <span>{viewingProject.cliente_nombre}</span>
-                                        </div>
-                                        {viewingProject.cliente_abreviatura && (
-                                            <div className="detail-item">
-                                                <label>Abreviatura:</label>
-                                                <span className="client-abbreviation">{viewingProject.cliente_abreviatura}</span>
+                                <div className="detail-row">
+                                    <label>Cliente:</label>
+                                    <span>{viewingProject.cliente_nombre}</span>
+                                </div>
+                            )}
+
+                            {/* Abreviatura Cliente */}
+                            {viewingProject.cliente_abreviatura && (
+                                <div className="detail-row">
+                                    <label>Abreviatura:</label>
+                                    <span className="client-abbreviation">{viewingProject.cliente_abreviatura}</span>
+                                </div>
+                            )}
+
+                            {/* Continuar con otros campos de cliente aquí */}
+                            {viewingProject.cliente_contacto && (
+                                <div className="detail-row">
+                                    <label>Contacto:</label>
+                                    <span>{viewingProject.cliente_contacto}</span>
+                                </div>
+                            )}
+
+                            {viewingProject.cliente_telefono && (
+                                <div className="detail-row">
+                                    <label>Teléfono:</label>
+                                    <span>{viewingProject.cliente_telefono}</span>
+                                </div>
+                            )}
+
+                            {viewingProject.cliente_email && (
+                                <div className="detail-row">
+                                    <label>Email:</label>
+                                    <span>{viewingProject.cliente_email}</span>
+                                </div>
+                            )}
+
+                            {/* Contratista */}
+                            {viewingProject.contratista && (
+                                <div className="detail-row">
+                                    <label>Contratista:</label>
+                                    <span>{viewingProject.contratista}</span>
+                                </div>
+                            )}
+
+                            {/* Ingeniero Residente */}
+                            {viewingProject.ingeniero_residente && (
+                                <div className="detail-row">
+                                    <label>Ingeniero Residente:</label>
+                                    <span>{viewingProject.ingeniero_residente}</span>
+                                </div>
+                            )}
+
+                            {/* Fecha de Inicio */}
+                            {viewingProject.fecha_inicio && (
+                                <div className="detail-row">
+                                    <label>Fecha de Inicio:</label>
+                                    <span>{formatDate(viewingProject.fecha_inicio)}</span>
+                                </div>
+                            )}
+
+                            {/* Fecha de Terminación */}
+                            {viewingProject.fecha_fin_estimada && (
+                                <div className="detail-row">
+                                    <label>Fecha de Terminación:</label>
+                                    <span>{formatDate(viewingProject.fecha_fin_estimada)}</span>
+                                </div>
+                            )}
+
+                            {/* Presupuesto Base */}
+                            {viewingProject.presupuesto_base && (
+                                <div className="detail-row">
+                                    <label>Presupuesto Base:</label>
+                                    <span className="project-money">{formatMoney(viewingProject.presupuesto_base)}</span>
+                                </div>
+                            )}
+
+                            {/* ITBMS */}
+                            {viewingProject.itbms && (
+                                <div className="detail-row">
+                                    <label>ITBMS (7%):</label>
+                                    <span className="project-money">{formatMoney(viewingProject.itbms)}</span>
+                                </div>
+                            )}
+
+                            {/* Monto Total */}
+                            {viewingProject.monto_total && (
+                                <div className="detail-row">
+                                    <label>Monto Total:</label>
+                                    <span className="project-money">{formatMoney(viewingProject.monto_total)}</span>
+                                </div>
+                            )}
+
+                            {/* Monto del Contrato (alternativo) */}
+                            {!viewingProject.monto_total && viewingProject.monto_contrato_original && (
+                                <div className="detail-row">
+                                    <label>Monto del Contrato:</label>
+                                    <span className="project-money">{formatMoney(viewingProject.monto_contrato_original)}</span>
+                                </div>
+                            )}
+
+                            {/* Adendas */}
+                            {projectAdendas.length > 0 && (
+                                <div className="adendas-section">
+                                    <h4>Adendas</h4>
+                                    <div className="adendas-list">
+                                        {projectAdendas.map(adenda => (
+                                            <div key={adenda.id} className="adenda-item">
+                                                <div className="detail-row">
+                                                    <label>Adenda #{adenda.numero_adenda}:</label>
+                                                    <span className="adenda-status-container">
+                                                        <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
+                                                            {getAdendaStatusText(adenda.estado)}
+                                                        </span>
+                                                        {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                                            <div className="adenda-actions">
+                                                                <button
+                                                                    className="btn-icon btn-edit"
+                                                                    onClick={() => {
+                                                                        setEditingAdenda(adenda);
+                                                                        setShowAdendaForm(true);
+                                                                    }}
+                                                                    title="Editar adenda"
+                                                                >
+                                                                    <FontAwesomeIcon icon={faEdit} />
+                                                                </button>
+                                                                <button
+                                                                    className="btn-icon btn-delete"
+                                                                    onClick={() => handleDeleteAdenda(adenda.id)}
+                                                                    title="Eliminar adenda"
+                                                                >
+                                                                    <FontAwesomeIcon icon={faTrash} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <label>Tipo:</label>
+                                                    <span>{getAdendaTypeText(adenda.tipo)}</span>
+                                                </div>
+                                                {adenda.nueva_fecha_fin && (
+                                                    <div className="detail-row">
+                                                        <label>Nueva Fecha de Terminación:</label>
+                                                        <span>
+                                                            {formatDate(adenda.nueva_fecha_fin)}
+                                                            {adenda.dias_extension && (
+                                                                <span className="extension-days"> (+{adenda.dias_extension} días)</span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {adenda.nuevo_monto && (
+                                                    <div className="detail-row">
+                                                        <label>Nuevo Monto:</label>
+                                                        <span className="project-money">{formatMoney(adenda.nuevo_monto)}</span>
+                                                    </div>
+                                                )}
+                                                {adenda.monto_adicional && (
+                                                    <div className="detail-row">
+                                                        <label>Monto Adicional:</label>
+                                                        <span className="project-money">{formatMoney(adenda.monto_adicional)}</span>
+                                                    </div>
+                                                )}
+                                                {adenda.observaciones && (
+                                                    <div className="detail-row">
+                                                        <label>Observaciones:</label>
+                                                        <span>{adenda.observaciones}</span>
+                                                    </div>
+                                                )}
+                                                <div className="detail-row">
+                                                    <label>Solicitada:</label>
+                                                    <span>
+                                                        {formatDate(adenda.fecha_solicitud)}
+                                                        {adenda.fecha_aprobacion && (
+                                                            <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
+                                                        )}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        )}
-                                        {viewingProject.cliente_contacto && (
-                                            <div className="detail-item">
-                                                <label>Contacto:</label>
-                                                <span>{viewingProject.cliente_contacto}</span>
-                                            </div>
-                                        )}
-                                        {viewingProject.cliente_telefono && (
-                                            <div className="detail-item">
-                                                <label>Teléfono:</label>
-                                                <span>{viewingProject.cliente_telefono}</span>
-                                            </div>
-                                        )}
-                                        {viewingProject.cliente_email && (
-                                            <div className="detail-item">
-                                                <label>Email:</label>
-                                                <span>{viewingProject.cliente_email}</span>
-                                            </div>
-                                        )}
+                                        ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Equipo de Trabajo */}
-                            <div className="details-section">
-                                <h3>Equipo de Trabajo</h3>
-                                <div className="details-grid">
-                                    {viewingProject.contratista && (
-                                        <div className="detail-item">
-                                            <label>Contratista:</label>
-                                            <span>{viewingProject.contratista}</span>
-                                        </div>
-                                    )}
-                                    {viewingProject.ingeniero_residente && (
-                                        <div className="detail-item">
-                                            <label>Ingeniero Residente:</label>
-                                            <span>{viewingProject.ingeniero_residente}</span>
-                                        </div>
-                                    )}
+                            {/* Número de Contrato */}
+                            {viewingProject.contrato && (
+                                <div className="detail-row">
+                                    <label>Número de Contrato:</label>
+                                    <span>{viewingProject.contrato}</span>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* Fechas */}
-                            <div className="details-section">
-                                <h3>Cronograma</h3>
-                                <div className="details-grid">
-                                    {viewingProject.fecha_inicio && (
-                                        <div className="detail-item">
-                                            <label>Fecha de Inicio:</label>
-                                            <span>{formatDate(viewingProject.fecha_inicio)}</span>
-                                        </div>
-                                    )}
-                                    {viewingProject.fecha_fin_estimada && (
-                                        <div className="detail-item">
-                                            <label>Fecha de Terminación:</label>
-                                            <span>{formatDate(viewingProject.fecha_fin_estimada)}</span>
-                                        </div>
-                                    )}
+                            {/* Acto Público */}
+                            {viewingProject.acto_publico && (
+                                <div className="detail-row">
+                                    <label>Acto Público:</label>
+                                    <span>{viewingProject.acto_publico}</span>
                                 </div>
-                                
-                                {/* Adendas */}
-                                {projectAdendas.length > 0 && (
-                                    <div className="adendas-section">
-                                        <h4>Adendas del Proyecto</h4>
-                                        <div className="adendas-list">
-                                            {projectAdendas.map(adenda => (
-                                                <div key={adenda.id} className="adenda-item">
-                                                    <div className="adenda-header">
-                                                        <span className="adenda-number">Adenda #{adenda.numero_adenda}</span>
-                                                        <div className="adenda-header-right">
-                                                            <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
-                                                                {getAdendaStatusText(adenda.estado)}
-                                                            </span>
-                                                            {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                                                <div className="adenda-actions">
-                                                                    <button
-                                                                        className="btn-icon btn-edit"
-                                                                        onClick={() => {
-                                                                            setEditingAdenda(adenda);
-                                                                            setShowAdendaForm(true);
-                                                                        }}
-                                                                        title="Editar adenda"
-                                                                    >
-                                                                        ✏
-                                                                    </button>
-                                                                    <button
-                                                                        className="btn-icon btn-delete"
-                                                                        onClick={() => handleDeleteAdenda(adenda.id)}
-                                                                        title="Eliminar adenda"
-                                                                    >
-                                                                        🗑
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="adenda-details">
-                                                        <div className="adenda-type">
-                                                            <strong>Tipo:</strong> {getAdendaTypeText(adenda.tipo)}
-                                                        </div>
-                                                        {adenda.nueva_fecha_fin && (
-                                                            <div className="adenda-date">
-                                                                <strong>Nueva Fecha de Terminación:</strong> {formatDate(adenda.nueva_fecha_fin)}
-                                                                {adenda.dias_extension && (
-                                                                    <span className="extension-days"> (+{adenda.dias_extension} días)</span>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {(adenda.nuevo_monto || adenda.monto_adicional) && (
-                                                            <div className="adenda-cost">
-                                                                {adenda.nuevo_monto && (
-                                                                    <div><strong>Nuevo Monto:</strong> {formatMoney(adenda.nuevo_monto)}</div>
-                                                                )}
-                                                                {adenda.monto_adicional && (
-                                                                    <div><strong>Monto Adicional:</strong> {formatMoney(adenda.monto_adicional)}</div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {adenda.observaciones && (
-                                                            <div className="adenda-observations">
-                                                                <strong>Observaciones:</strong> {adenda.observaciones}
-                                                            </div>
-                                                        )}
-                                                        <div className="adenda-dates">
-                                                            <small>Solicitada: {formatDate(adenda.fecha_solicitud)}</small>
-                                                            {adenda.fecha_aprobacion && (
-                                                                <small> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</small>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Información Contractual */}
-                            <div className="details-section">
-                                <h3>Información Contractual</h3>
-                                <div className="details-grid">
-                                    {viewingProject.contrato && (
-                                        <div className="detail-item">
-                                            <label>Número de Contrato:</label>
-                                            <span>{viewingProject.contrato}</span>
-                                        </div>
-                                    )}
-                                    {viewingProject.acto_publico && (
-                                        <div className="detail-item">
-                                            <label>Acto Público:</label>
-                                            <span>{viewingProject.acto_publico}</span>
-                                        </div>
-                                    )}
-                                    {(viewingProject.presupuesto_base || viewingProject.monto_contrato_original) && (
-                                        <>
-                                            {viewingProject.presupuesto_base && (
-                                                <div className="detail-item">
-                                                    <label>Presupuesto Base:</label>
-                                                    <span className="project-money">{formatMoney(viewingProject.presupuesto_base)}</span>
-                                                </div>
-                                            )}
-                                            {viewingProject.itbms && (
-                                                <div className="detail-item">
-                                                    <label>ITBMS (7%):</label>
-                                                    <span className="project-money">{formatMoney(viewingProject.itbms)}</span>
-                                                </div>
-                                            )}
-                                            {viewingProject.monto_total && (
-                                                <div className="detail-item">
-                                                    <label>Monto Total:</label>
-                                                    <span className="project-money">{formatMoney(viewingProject.monto_total)}</span>
-                                                </div>
-                                            )}
-                                            {!viewingProject.monto_total && viewingProject.monto_contrato_original && (
-                                                <div className="detail-item">
-                                                    <label>Monto del Contrato:</label>
-                                                    <span className="project-money">{formatMoney(viewingProject.monto_contrato_original)}</span>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                            )}
 
                             {/* Observaciones */}
                             {viewingProject.datos_adicionales?.observaciones && (
-                                <div className="details-section">
-                                    <h3>Observaciones</h3>
-                                    <div className="detail-item full-width">
-                                        <p className="observations">{viewingProject.datos_adicionales.observaciones}</p>
-                                    </div>
+                                <div className="detail-row full-width">
+                                    <label>Observaciones:</label>
+                                    <p className="observations">{viewingProject.datos_adicionales.observaciones}</p>
                                 </div>
                             )}
 
-                            {/* Metadatos */}
-                            <div className="details-section">
-                                <h3>Información del Sistema</h3>
-                                <div className="details-grid">
-                                    <div className="detail-item">
-                                        <label>Creado:</label>
-                                        <span>{formatDate(viewingProject.created_at)}</span>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Última Actualización:</label>
-                                        <span>{formatDate(viewingProject.updated_at)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
                             {/* Botones de Acción */}
                             <div className="project-actions-section">
                                 {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
