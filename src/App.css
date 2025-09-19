@@ -369,32 +369,44 @@
     margin-right: 0.5rem;
 }
 
-/* Equipos table specific column widths */
-.equipos-table th:nth-child(1),
-.equipos-table td:nth-child(1) {
-    width: 10%;
+/* Fix table layout for equipos tables to allow column width adjustments */
+.projects-table.equipos-table {
+    table-layout: auto;
 }
 
-.equipos-table th:nth-child(2),
-.equipos-table td:nth-child(2) {
-    width: 43%;
+/* Equipos table specific column widths - Higher specificity to override projects-table rules */
+.projects-table-container .projects-table.equipos-table th:nth-child(1),
+.projects-table-container .projects-table.equipos-table td:nth-child(1) {
+    width: 12%;
+}
+
+.projects-table-container .projects-table.equipos-table th:nth-child(2),
+.projects-table-container .projects-table.equipos-table td:nth-child(2) {
+    width: 30%;
     text-align: left;
 }
 
-.equipos-table th:nth-child(3),
-.equipos-table td:nth-child(3) {
-    width: 20%;
+.projects-table-container .projects-table.equipos-table th:nth-child(3),
+.projects-table-container .projects-table.equipos-table td:nth-child(3) {
+    width: 23%;
 }
 
-.equipos-table th:nth-child(4),
-.equipos-table td:nth-child(4) {
-    width: 15%;
+.projects-table-container .projects-table.equipos-table th:nth-child(4),
+.projects-table-container .projects-table.equipos-table td:nth-child(4) {
+    width: 20%;
     text-align: center;
 }
 
-.equipos-table th:nth-child(5),
-.equipos-table td:nth-child(5) {
-    width: 12%;
+.projects-table-container .projects-table.equipos-table th:nth-child(5),
+.projects-table-container .projects-table.equipos-table td:nth-child(5) {
+    width: 10%;
+}
+
+.projects-table-container .projects-table.equipos-table th:nth-child(6),
+.projects-table-container .projects-table.equipos-table td:nth-child(6) {
+    width: 5%;
+    text-align: center;
+    padding: 0.5rem 0.25rem;
 }
 
 /* Equipos table title row styling */
@@ -449,6 +461,147 @@ th.equipos-title-header {
     align-items: center;
     justify-content: center;
     border-radius: 4px;
+}
+
+/* Equipos Form Modal - Same styles as adenda modal */
+.equipos-form-modal {
+    margin-top: 7rem;
+    margin-bottom: 2rem;
+    max-width: 700px;
+    font-size: 0.8rem;
+}
+
+.equipos-form-modal .modal-header {
+    border-bottom: none;
+    padding: 1rem 2rem 0 2rem;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.equipos-form-modal .modal-close {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+/* Equipos form content styling */
+.equipos-form-modal .project-form {
+    padding: 0 2rem 1.5rem 2rem;
+}
+
+/* Remove section styling and apply detail-row layout to equipos form */
+.equipos-form-modal .form-section {
+    margin-bottom: 0;
+    border: none;
+    padding: 0;
+}
+
+.equipos-form-modal .form-section h3 {
+    display: none;
+}
+
+.equipos-form-modal .form-row {
+    display: contents;
+}
+
+.equipos-form-modal .form-group {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: start;
+    margin-bottom: 0.75rem;
+}
+
+.equipos-form-modal .form-group label {
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-primary);
+    padding-right: 1rem;
+    margin-bottom: 0;
+}
+
+.equipos-form-modal .form-group select,
+.equipos-form-modal .form-group input,
+.equipos-form-modal .form-group textarea {
+    text-align: left;
+    margin: 0;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: #fafbfc;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.equipos-form-modal .form-group select:focus,
+.equipos-form-modal .form-group input:focus,
+.equipos-form-modal .form-group textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15), 0 4px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.equipos-form-modal .form-group select:hover,
+.equipos-form-modal .form-group input:hover,
+.equipos-form-modal .form-group textarea:hover {
+    border-color: #c1c7cd;
+    background: white;
+}
+
+/* Full width items for textarea */
+.equipos-form-modal .form-group.full-width {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.equipos-form-modal .form-group.full-width label {
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: 0.5rem;
+}
+
+/* Form actions styling */
+.equipos-form-modal .form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Form error styling */
+.equipos-form-modal .form-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+    margin: 1.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+/* Button spinner for loading state */
+.equipos-form-modal .btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 2px solid white;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
 }
 
 .project-details-modal .project-details {
@@ -530,6 +683,12 @@ th.equipos-title-header {
     font-size: 0.8rem;
 }
 
+.detail-row .owner-badge {
+    display: inline-block;
+    width: fit-content;
+    max-width: max-content;
+}
+
 /* Adendas specific styling */
 .adendas-section h4 {
     text-align: center;
@@ -592,16 +751,31 @@ th.equipos-title-header {
 
 /* Responsive for modal */
 @media (max-width: 768px) {
-    .detail-row {
+    /* Solo el nombre del proyecto usa layout vertical (título arriba, contenido abajo) */
+    .detail-row:first-child {
         grid-template-columns: 1fr;
         gap: 0.5rem;
         margin-bottom: 1rem;
     }
 
-    .detail-row label {
+    .detail-row:first-child label {
         text-align: left;
         padding-right: 0;
         margin-bottom: 0.25rem;
+    }
+
+    /* Resto de campos mantienen layout horizontal (título al lado del contenido) */
+    .detail-row:not(:first-child) {
+        grid-template-columns: 120px 1fr;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        align-items: center;
+    }
+
+    .detail-row:not(:first-child) label {
+        text-align: right;
+        padding-right: 0;
+        font-size: 0.85rem;
     }
 
     .adenda-status-container {

@@ -20,27 +20,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const [projectAdendas, setProjectAdendas] = useState([]);
     const [showAdendaForm, setShowAdendaForm] = useState(false);
     const [editingAdenda, setEditingAdenda] = useState(null);
-    const [expandedRows, setExpandedRows] = useState(new Set());
 
-    // Función para alternar expansión de fila
+    // Función para abrir modal de detalles (todas las pantallas)
     const handleRowClick = (projectId, event) => {
-        // Solo expandir en pantallas pequeñas, en grandes mostrar detalles
-        const screenWidth = window.innerWidth;
-        if (screenWidth > 768) {
-            // En pantallas grandes, abrir detalles del proyecto
-            handleViewProject(projectId);
-            return;
-        }
-        
-        // En pantallas pequeñas, expandir/contraer fila
-        event.stopPropagation();
-        const newExpandedRows = new Set(expandedRows);
-        if (newExpandedRows.has(projectId)) {
-            newExpandedRows.delete(projectId);
-        } else {
-            newExpandedRows.add(projectId);
-        }
-        setExpandedRows(newExpandedRows);
+        // Siempre abrir el modal de detalles
+        handleViewProject(projectId);
     };
 
     // Estados disponibles
@@ -335,132 +319,43 @@ const ProjectsList = ({ onStatsUpdate }) => {
                         </tr>
                     ) : (
                         projects.map(project => (
-                            <React.Fragment key={project.id}>
-                                <tr 
-                                    className={`project-row ${expandedRows.has(project.id) ? 'expanded' : ''}`}
-                                    onClick={(e) => handleRowClick(project.id, e)} 
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    <td className="project-name">
-                                        <span>{project.nombre_corto || project.nombre}</span>
-                                    </td>
-                                    <td className="project-client">
-                                        {project.cliente_abreviatura || project.cliente_nombre || '-'}
-                                    </td>
-                                    <td className="hide-mobile-sm">
-                                        <span className={`status-badge ${getStatusClass(project.estado)}`}>
-                                            {getStatusText(project.estado)}
-                                        </span>
-                                    </td>
-                                    <td className="project-money hide-mobile-sm">
-                                        {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
-                                    </td>
-                                    <td className="project-actions">
-                                        {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                            <div className="edit-button-options">
-                                                <button
-                                                    className="btn-edit-icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEditProject(project);
-                                                    }}
-                                                    title="Editar proyecto"
-                                                >
-                                                    <FontAwesomeIcon icon={faEdit} />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                            </tr>
-                            
-                            {/* Fila expandible con detalles */}
-                            {expandedRows.has(project.id) && (
-                                <tr className="expanded-details">
-                                    <td colSpan="5">
-                                        <div className="project-details-expanded">
-                                            {/* Información básica */}
-                                            <div className="accordion-section">
-                                                <h4>Información Básica</h4>
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Nombre Completo:</span>
-                                                    <span>{project.nombre}</span>
-                                                </div>
-                                                {project.codigo_proyecto && (
-                                                    <div className="detail-row">
-                                                        <span className="detail-label">Código:</span>
-                                                        <span>{project.codigo_proyecto}</span>
-                                                    </div>
-                                                )}
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Estado:</span>
-                                                    <span className={`status-badge accordion-badge ${getStatusClass(project.estado)}`}>
-                                                        {getStatusText(project.estado)}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Cliente */}
-                                            <div className="accordion-section">
-                                                <h4>Cliente</h4>
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Nombre:</span>
-                                                    <span>{project.cliente_nombre || '-'}</span>
-                                                </div>
-                                                {project.cliente_abreviatura && (
-                                                    <div className="detail-row">
-                                                        <span className="detail-label">Abreviatura:</span>
-                                                        <span>{project.cliente_abreviatura}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Equipo */}
-                                            <div className="accordion-section">
-                                                <h4>Equipo de Trabajo</h4>
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Contratista:</span>
-                                                    <span>{project.contratista || '-'}</span>
-                                                </div>
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Ing. Residente:</span>
-                                                    <span>{project.ingeniero_residente || '-'}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Cronograma */}
-                                            <div className="accordion-section">
-                                                <h4>Cronograma</h4>
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Fecha Inicio:</span>
-                                                    <span>{formatDate(project.fecha_inicio)}</span>
-                                                </div>
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Fecha Terminación:</span>
-                                                    <span>{formatDate(project.fecha_fin_estimada)}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Información Contractual */}
-                                            <div className="accordion-section">
-                                                <h4>Información Contractual</h4>
-                                                {project.contrato && (
-                                                    <div className="detail-row">
-                                                        <span className="detail-label">Número de Contrato:</span>
-                                                        <span>{project.contrato}</span>
-                                                    </div>
-                                                )}
-                                                <div className="detail-row">
-                                                    <span className="detail-label">Monto Total:</span>
-                                                    <span className="accordion-money">
-                                                        {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
-                                                    </span>
-                                                </div>
-                                            </div>
+                            <tr
+                                key={project.id}
+                                className="project-row"
+                                onClick={(e) => handleRowClick(project.id, e)}
+                                style={{cursor: 'pointer'}}
+                            >
+                                <td className="project-name">
+                                    <span>{project.nombre_corto || project.nombre}</span>
+                                </td>
+                                <td className="project-client">
+                                    {project.cliente_abreviatura || project.cliente_nombre || '-'}
+                                </td>
+                                <td className="hide-mobile-sm">
+                                    <span className={`status-badge ${getStatusClass(project.estado)}`}>
+                                        {getStatusText(project.estado)}
+                                    </span>
+                                </td>
+                                <td className="project-money hide-mobile-sm">
+                                    {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
+                                </td>
+                                <td className="project-actions">
+                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                        <div className="edit-button-options">
+                                            <button
+                                                className="btn-edit-icon"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditProject(project);
+                                                }}
+                                                title="Editar proyecto"
+                                            >
+                                                <FontAwesomeIcon icon={faEdit} />
+                                            </button>
                                         </div>
-                                    </td>
-                                </tr>
-                            )}
-                            </React.Fragment>
+                                    )}
+                                </td>
+                            </tr>
                         ))
                     )}
                     </tbody>

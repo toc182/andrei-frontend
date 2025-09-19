@@ -1,291 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCirclePlus, faEdit } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/logo.png';
 import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
+import EquipoForm from './EquipoForm';
+import api from '../services/api';
 
 const EquiposInformacion = () => {
     const [selectedEquipo, setSelectedEquipo] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [editingEquipo, setEditingEquipo] = useState(null);
+    const [equiposPinellas, setEquiposPinellas] = useState([]);
+    const [equiposCOCP, setEquiposCOCP] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    // Datos de equipos basados en el CSV
-    const equiposPinellas = [
-        {
-            codigo: "01-19",
-            descripcion: "Retroexcavadora",
-            marca: "John Deere",
-            modelo: "310K",
-            ano: "2014",
-            motor: "PE4045G945825",
-            chasis: "1T0310KXPEC266013",
-            costo: "$73,000.00",
-            valorActual: "$25,000.00",
-            rataMes: "$4,500.00",
-            proyecto: "",
-            responsable: "",
-            estado: "OK",
-            observaciones: "Comprado en sept14. Incluye kit para martillo"
-        },
-        {
-            codigo: "01-20",
-            descripcion: "Retroexcavadora",
-            marca: "John Deere",
-            modelo: "310K",
-            ano: "2014",
-            motor: "PE4045G941718",
-            chasis: "1T0310KXHEC264840",
-            costo: "$73,000.00",
-            valorActual: "$25,000.00",
-            rataMes: "$4,500.00",
-            proyecto: "",
-            responsable: "",
-            estado: "OK",
-            observaciones: "Comprado en sept14. Incluye kit para martillo"
-        },
-        {
-            codigo: "01-18",
-            descripcion: "Tractor 700J",
-            marca: "John Deere",
-            modelo: "700J",
-            ano: "2008",
-            motor: "",
-            chasis: "T0700JX167545",
-            costo: "$49,166.50",
-            valorActual: "$40,000.00",
-            rataMes: "$12,600.00",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: ""
-        },
-        {
-            codigo: "",
-            descripcion: "Tractor D5N",
-            marca: "Caterpillar",
-            modelo: "D5N",
-            ano: "2010",
-            motor: "",
-            chasis: "",
-            costo: "",
-            valorActual: "$40,000.00",
-            rataMes: "",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: ""
-        },
-        {
-            codigo: "01-12",
-            descripcion: "Pala 21 Ton",
-            marca: "John Deere",
-            modelo: "210G LC",
-            ano: "2012",
-            motor: "PE6068G880193",
-            chasis: "1FF210GXCCC520557",
-            costo: "$175,000.00",
-            valorActual: "$40,000.00",
-            rataMes: "$11,700.00",
-            proyecto: "",
-            responsable: "",
-            estado: "OK",
-            observaciones: ""
-        },
-        {
-            codigo: "01-23",
-            descripcion: "Pala 21 Ton",
-            marca: "Case",
-            modelo: "CX210B",
-            ano: "2009",
-            motor: "",
-            chasis: "N8SAH1966",
-            costo: "$56,656.50",
-            valorActual: "$25,000.00",
-            rataMes: "$11,700.00",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: ""
-        },
-        {
-            codigo: "",
-            descripcion: "Pala 20 Ton",
-            marca: "Caterpillar",
-            modelo: "320 GX",
-            ano: "2024",
-            motor: "",
-            chasis: "",
-            costo: "$130,000.00",
-            valorActual: "$150,000.00",
-            rataMes: "",
-            proyecto: "MOP",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "",
-            descripcion: "Pala 22 Ton",
-            marca: "Shantui",
-            modelo: "SE220LC",
-            ano: "2025",
-            motor: "93382160",
-            chasis: "66SE22DKNS1022089",
-            costo: "$110,210.00",
-            valorActual: "$140,000.00",
-            rataMes: "",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "01-21",
-            descripcion: "Rola Vibratoria 10 Ton",
-            marca: "Volvo",
-            modelo: "SD100DC",
-            ano: "2008",
-            motor: "36031658",
-            chasis: "198475",
-            costo: "$32,034.60",
-            valorActual: "$18,000.00",
-            rataMes: "$7,500.00",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: ""
-        },
-        {
-            codigo: "",
-            descripcion: "Rola Vibratoria 12P5",
-            marca: "Shantui",
-            modelo: "SR12P-5",
-            ano: "2024",
-            motor: "WEICHAI WP6G140E",
-            chasis: "CHSR12YPCP6000892",
-            costo: "$59,767.95",
-            valorActual: "$80,000.00",
-            rataMes: "",
-            proyecto: "MOP",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "01-22",
-            descripcion: "Rodillo Neumático 9 Llantas",
-            marca: "Hypac",
-            modelo: "C530AH",
-            ano: "2002",
-            motor: "46201274",
-            chasis: "109A22201987",
-            costo: "$32,034.60",
-            valorActual: "$15,000.00",
-            rataMes: "$7,500.00",
-            proyecto: "FINCA",
-            responsable: "",
-            estado: "",
-            observaciones: ""
+    // Cargar equipos desde API
+    const loadEquipos = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            const response = await api.get('/equipos');
+
+            if (response.data.success) {
+                const equipos = response.data.data;
+
+                // Separar equipos por propietario
+                const pinellas = equipos.filter(equipo => equipo.owner === 'Pinellas');
+                const cocp = equipos.filter(equipo => equipo.owner === 'COCP');
+
+                setEquiposPinellas(pinellas);
+                setEquiposCOCP(cocp);
+            } else {
+                setError('Error al cargar equipos');
+            }
+        } catch (error) {
+            console.error('Error loading equipos:', error);
+            setError('Error al conectar con el servidor');
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
 
-    // Equipos de COCP (50% con Arafat)
-    const equiposCOCP = [
-        {
-            codigo: "",
-            descripcion: "Tractor SD13",
-            marca: "Shantui",
-            modelo: "SD13",
-            ano: "2024",
-            motor: "CUMMINS 6CTA8.3-C145",
-            chasis: "CHSD13AATP1006074",
-            costo: "$110,437.91",
-            valorActual: "$140,000.00",
-            rataMes: "",
-            proyecto: "MOP",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT. POCO MAS GRANDE QUE UN D4 CAT"
-        },
-        {
-            codigo: "",
-            descripcion: "Pala 20 Ton",
-            marca: "Caterpillar",
-            modelo: "320 GX",
-            ano: "2024",
-            motor: "",
-            chasis: "",
-            costo: "$130,000.00",
-            valorActual: "$150,000.00",
-            rataMes: "",
-            proyecto: "MOP",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "",
-            descripcion: "Pala 22 Ton",
-            marca: "Shantui",
-            modelo: "SE220LC",
-            ano: "2025",
-            motor: "93382160",
-            chasis: "66SE22DKNS1022089",
-            costo: "$110,210.00",
-            valorActual: "$140,000.00",
-            rataMes: "",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "",
-            descripcion: "Rola Vibratoria 12P5",
-            marca: "Shantui",
-            modelo: "SR12P-5",
-            ano: "2024",
-            motor: "WEICHAI WP6G140E",
-            chasis: "CHSR12YPCP6000892",
-            costo: "$59,767.95",
-            valorActual: "$80,000.00",
-            rataMes: "",
-            proyecto: "MOP",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "02-04",
-            descripcion: "Pick-up Ford Ranger 4x4",
-            marca: "Ford",
-            modelo: "Ranger",
-            ano: "2014",
-            motor: "",
-            chasis: "",
-            costo: "$11,000.00",
-            valorActual: "$5,500.00",
-            rataMes: "$0.00",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        },
-        {
-            codigo: "02-06",
-            descripcion: "Camión 3.5 Ton Utilitario",
-            marca: "Hyundai",
-            modelo: "DA0514",
-            ano: "2016",
-            motor: "",
-            chasis: "",
-            costo: "$15,000.00",
-            valorActual: "$7,500.00",
-            rataMes: "",
-            proyecto: "",
-            responsable: "",
-            estado: "",
-            observaciones: "50% CON ARAFAT"
-        }
-    ];
+    useEffect(() => {
+        loadEquipos();
+    }, []);
 
+    // Funciones para manejar formularios
+    const handleAddEquipo = () => {
+        setEditingEquipo(null);
+        setShowForm(true);
+    };
+
+    const handleEditEquipo = (equipo, e) => {
+        e.stopPropagation(); // Evitar que se abra el modal de detalles
+        setEditingEquipo(equipo);
+        setShowForm(true);
+    };
+
+
+    const handleFormSuccess = () => {
+        loadEquipos(); // Recargar lista después de agregar/editar
+        setShowForm(false);
+        setEditingEquipo(null);
+    };
+
+    const handleCloseForm = () => {
+        setShowForm(false);
+        setEditingEquipo(null);
+    };
+
+    // Formato de moneda para mostrar
+    const formatMoney = (amount) => {
+        if (!amount) return 'N/A';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
+    };
+
+    // Funciones del modal de detalles
     const handleRowClick = (equipo) => {
         setSelectedEquipo(equipo);
         setShowModal(true);
@@ -296,84 +92,102 @@ const EquiposInformacion = () => {
         setSelectedEquipo(null);
     };
 
+    // Renderizar tabla de equipos
+    const renderEquiposTable = (equipos, logoSrc, altText) => (
+        <div className="projects-table-container">
+            <table className="projects-table equipos-table">
+                <thead>
+                    <tr className="equipos-title-row">
+                        <th colSpan="6" className="equipos-title-header">
+                            <img src={logoSrc} alt={altText} className="equipos-logo" />
+                        </th>
+                    </tr>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Año</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {equipos.map((equipo, index) => (
+                        <tr
+                            key={equipo.id || `equipo-${index}`}
+                            onClick={() => handleRowClick(equipo)}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <td>{equipo.codigo || '-'}</td>
+                            <td>{equipo.descripcion}</td>
+                            <td>{equipo.marca}</td>
+                            <td>{equipo.modelo}</td>
+                            <td>{equipo.ano}</td>
+                            <td>
+                                <button
+                                    className="btn-edit-icon"
+                                    onClick={(e) => handleEditEquipo(equipo, e)}
+                                    title="Editar equipo"
+                                >
+                                    <FontAwesomeIcon icon={faEdit} />
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+
+    if (loading) {
+        return (
+            <div className="section-container">
+                <div className="section-header">
+                    <h1>Información de Equipos</h1>
+                </div>
+                <div className="projects-loading">
+                    <div className="loading-spinner"></div>
+                    <p>Cargando equipos...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="section-container">
+                <div className="section-header">
+                    <h1>Información de Equipos</h1>
+                </div>
+                <div className="error-message">
+                    {error}
+                    <button onClick={loadEquipos}>Reintentar</button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="section-container">
             <div className="section-header">
                 <h1>Información de Equipos</h1>
+                <button
+                    className="btn-add-icon"
+                    onClick={handleAddEquipo}
+                    title="Agregar nuevo equipo"
+                >
+                    <FontAwesomeIcon icon={faCirclePlus} />
+                </button>
             </div>
 
             {/* Tabla de Equipos de Pinellas */}
             <div style={{ marginBottom: '2rem' }}>
-                <div className="projects-table-container">
-                    <table className="projects-table equipos-table">
-                        <thead>
-                            <tr className="equipos-title-row">
-                                <th colSpan="5" className="equipos-title-header">
-                                    <img src={logo} alt="Pinellas Logo" className="equipos-logo" />
-                                </th>
-                            </tr>
-                            <tr>
-                                <th>Código</th>
-                                <th>Descripción</th>
-                                <th>Marca</th>
-                                <th>Modelo</th>
-                                <th>Año</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {equiposPinellas.map((equipo, index) => (
-                                <tr
-                                    key={`pinellas-${index}`}
-                                    onClick={() => handleRowClick(equipo)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td>{equipo.codigo || '-'}</td>
-                                    <td>{equipo.descripcion}</td>
-                                    <td>{equipo.marca}</td>
-                                    <td>{equipo.modelo}</td>
-                                    <td>{equipo.ano}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {renderEquiposTable(equiposPinellas, logo, "Pinellas Logo")}
             </div>
 
             {/* Tabla de Equipos de COCP */}
             <div style={{ marginBottom: '2rem' }}>
-                <div className="projects-table-container">
-                    <table className="projects-table equipos-table">
-                        <thead>
-                            <tr className="equipos-title-row">
-                                <th colSpan="5" className="equipos-title-header">
-                                    <img src={cocpLogo} alt="COCP Logo" className="equipos-logo" />
-                                </th>
-                            </tr>
-                            <tr>
-                                <th>Código</th>
-                                <th>Descripción</th>
-                                <th>Marca</th>
-                                <th>Modelo</th>
-                                <th>Año</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {equiposCOCP.map((equipo, index) => (
-                                <tr
-                                    key={`cocp-${index}`}
-                                    onClick={() => handleRowClick(equipo)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <td>{equipo.codigo || '-'}</td>
-                                    <td>{equipo.descripcion}</td>
-                                    <td>{equipo.marca}</td>
-                                    <td>{equipo.modelo}</td>
-                                    <td>{equipo.ano}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {renderEquiposTable(equiposCOCP, cocpLogo, "COCP Logo")}
             </div>
 
             {/* Modal de detalles */}
@@ -428,17 +242,22 @@ const EquiposInformacion = () => {
 
                             <div className="detail-row">
                                 <label>Costo:</label>
-                                <span className="project-money">{selectedEquipo.costo || 'N/A'}</span>
+                                <span className="project-money">{formatMoney(selectedEquipo.costo)}</span>
                             </div>
 
                             <div className="detail-row">
                                 <label>Valor Actual:</label>
-                                <span className="project-money">{selectedEquipo.valorActual || 'N/A'}</span>
+                                <span className="project-money">{formatMoney(selectedEquipo.valor_actual)}</span>
                             </div>
 
                             <div className="detail-row">
                                 <label>Rata/Mes:</label>
-                                <span className="project-money">{selectedEquipo.rataMes || 'N/A'}</span>
+                                <span className="project-money">{formatMoney(selectedEquipo.rata_mes)}</span>
+                            </div>
+
+                            <div className="detail-row">
+                                <label>Propietario:</label>
+                                <span className="client-abbreviation owner-badge">{selectedEquipo.owner}</span>
                             </div>
 
                             {selectedEquipo.observaciones && (
@@ -452,6 +271,15 @@ const EquiposInformacion = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Formulario de agregar/editar equipo */}
+            {showForm && (
+                <EquipoForm
+                    equipo={editingEquipo}
+                    onClose={handleCloseForm}
+                    onSuccess={handleFormSuccess}
+                />
             )}
         </div>
     );
