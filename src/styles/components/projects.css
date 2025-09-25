@@ -6,7 +6,7 @@
 .projects-table-container {
     background: white;
     border-radius: 10px; /* Reducido de 12px */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
     margin-bottom: 1.25rem; /* Reducido de 2rem */
     width: 100%;
@@ -32,7 +32,7 @@
 .projects-table th {
     padding: 0.75rem 0.625rem; /* Reducido de 1rem 0.75rem */
     text-align: left;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     font-size: 0.75rem; /* Reducido de 0.85rem */
     letter-spacing: 0.4px; /* Reducido */
     text-transform: uppercase;
@@ -50,7 +50,7 @@
 /* Table Cells */
 .projects-table td {
     padding: 0.75rem 0.625rem; /* Reducido de 1rem 0.75rem */
-    border-bottom: 1px solid #f0f4f8;
+    border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
     background: white;
     word-wrap: break-word;
@@ -75,12 +75,12 @@
 }
 
 .projects-table tbody tr:hover {
-    background: #f8f9fa;
+    background: var(--bg-primary);
     transition: background 0.2s ease;
 }
 
 .projects-table tbody tr:hover td {
-    background: #f8f9fa;
+    background: var(--bg-primary);
 }
 
 .projects-table tbody tr:last-child td {
@@ -91,7 +91,7 @@
 
 /* Edit Button - MANTENER */
 .btn-edit-icon {
-    color: #6c757d;
+    color: var(--text-muted);
     font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -102,7 +102,7 @@
 }
 
 .btn-edit-icon:hover {
-    color: #2c3e50;
+    color: var(--primary-color);
     background: rgba(44, 62, 80, 0.1);
     transform: scale(1.1);
 }
@@ -116,7 +116,7 @@
 
 .expand-icon {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--text-muted);
     margin-left: 0.5rem;
     transition: transform 0.2s ease;
 }
@@ -126,15 +126,15 @@
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.6rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.status-planning { background: #fff3cd; color: #856404; }
-.status-active { background: #d4edda; color: #155724; }
-.status-paused { background: #f8d7da; color: #721c24; }
-.status-completed { background: #d1ecf1; color: #0c5460; }
-.status-cancelled { background: #f5c6cb; color: #721c24; }
+.status-planning { background: var(--status-planning-bg); color: var(--status-planning-text); }
+.status-active { background: var(--status-active-bg); color: var(--status-active-text); }
+.status-paused { background: var(--status-paused-bg); color: var(--status-paused-text); }
+.status-completed { background: var(--status-completed-bg); color: var(--status-completed-text); }
+.status-cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled-text); }
 
 /* Responsive Design - Consolidated in common.css */

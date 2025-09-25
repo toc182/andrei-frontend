@@ -1,0 +1,442 @@
+/* =============================================================================
+   MODAL ESPECÍFICO - PROYECTOS
+   - Reglas específicas para el modal de detalles de proyectos
+   - Basado en el sistema estándar de modales-standard.css
+   - Responsive optimizado para pantallas pequeñas
+   ============================================================================= */
+
+/* ===== MODAL DE PROYECTOS - REGLAS ESPECÍFICAS ===== */
+
+/* Contenedor principal del modal de proyectos */
+.project-details-modal.standard-modal-content {
+    max-width: 700px;
+}
+
+/* Header específico para modal de proyectos */
+.project-details-modal .standard-modal-header {
+    background: white;
+    color: var(--text-primary);
+    border-bottom: none;
+}
+
+.project-details-modal .standard-modal-title {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.project-details-modal .standard-modal-close {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+
+.project-details-modal .standard-modal-close:hover {
+    background: var(--danger-light);
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+/* Body del modal de proyectos */
+.project-details-modal .standard-modal-body {
+    padding: var(--space-md) var(--space-lg);
+}
+
+/* ===== LAYOUT DE DETALLES DE PROYECTO ===== */
+
+/* Fila de detalle individual */
+.project-detail-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+    gap: var(--space-sm);
+}
+
+.project-detail-row label {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    text-align: right;
+    padding-right: var(--space-sm);
+    line-height: 1.4;
+    font-size: 0.8rem;
+}
+
+.project-detail-row .detail-value {
+    color: var(--text-secondary);
+    line-height: 1.4;
+    word-wrap: break-word;
+    font-size: 0.8rem;
+}
+
+/* Fila de ancho completo (para observaciones) */
+.project-detail-row.full-width {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+}
+
+.project-detail-row.full-width label {
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: var(--space-sm);
+}
+
+.project-detail-row.full-width .detail-value {
+    background: var(--bg-primary);
+    padding: var(--space-sm);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+    font-style: italic;
+}
+
+/* ===== ELEMENTOS ESPECÍFICOS ===== */
+
+
+
+/* Abreviación del cliente */
+.project-detail-row .client-abbreviation {
+    background: var(--primary-color);
+    color: white;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius-sm);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+/* Badge del propietario */
+.project-detail-row .owner-badge {
+    background: var(--info-light);
+    color: var(--info-color);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius-sm);
+    font-weight: var(--font-weight-medium);
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+/* ===== SECCIÓN DE ADENDAS ===== */
+
+.adendas-section {
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-color);
+}
+
+
+.adenda-item {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    border-left: 4px solid var(--primary-color);
+}
+
+.adenda-item:last-child {
+    margin-bottom: 0;
+}
+
+.adenda-status-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.adenda-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.adenda-actions .btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.adenda-actions .btn-edit:hover {
+    background: var(--primary-alpha-10);
+    color: var(--primary-color);
+}
+
+.adenda-actions .btn-delete:hover {
+    background: var(--danger-light);
+    color: var(--danger-color);
+}
+
+/* ===== FORMULARIO DE PROYECTO ===== */
+
+/* Modal de formulario de proyecto */
+.projects-standard-modal-content {
+    max-width: 700px;
+}
+
+.projects-standard-modal-content .standard-modal-header {
+    background: white;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.projects-standard-modal-content .standard-modal-title,
+.projects-standard-modal-content h2 {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.projects-standard-modal-content .standard-modal-close {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+
+.projects-standard-modal-content .standard-modal-close:hover {
+    background: var(--danger-light);
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+/* Formulario dentro del modal */
+.standard-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* Fila de formulario con dos columnas */
+.projects-standard-modal-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+
+/* Grupo de formulario individual */
+.standard-modal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.standard-modal-form-group label {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.standard-modal-form-group input,
+.standard-modal-form-group select,
+.standard-modal-form-group textarea {
+    padding: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    transition: all 0.2s ease;
+}
+
+.standard-modal-form-group input:focus,
+.standard-modal-form-group select:focus,
+.standard-modal-form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.1);
+}
+
+.standard-modal-form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Botones del modal */
+.standard-modal-btn {
+    padding: var(--space-xs) var(--space-md);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: auto;
+    white-space: nowrap;
+}
+
+.standard-modal-btn-primary {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.standard-modal-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-btn-primary);
+}
+
+.standard-modal-btn-secondary {
+    background: var(--text-muted);
+    color: white;
+}
+
+.standard-modal-btn-secondary:hover:not(:disabled) {
+    background: var(--text-secondary);
+}
+
+.standard-modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Error del modal */
+.standard-modal-error {
+    background: var(--danger-light);
+    color: var(--danger-color);
+    padding: var(--space-md);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--danger-color);
+    margin-bottom: var(--space-lg);
+}
+
+/* ===== FOOTER ESPECÍFICO ===== */
+
+.project-details-modal .standard-modal-footer {
+    background: var(--bg-primary);
+    border-top: none;
+    justify-content: center;
+}
+
+.project-details-modal .standard-modal-footer .standard-modal-btn {
+    width: auto;
+    min-width: 120px;
+}
+
+.projects-standard-modal-content .standard-modal-footer {
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+}
+
+/* ===== RESPONSIVE PARA FORMULARIO DE PROYECTOS ===== */
+
+/* Pantallas Extra Pequeñas (≤480px) - Formulario */
+@media (max-width: 480px) {
+    .projects-standard-modal-form-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+
+    .standard-modal-form-group input,
+    .standard-modal-form-group select,
+    .standard-modal-form-group textarea {
+        padding: var(--space-sm);
+        font-size: 0.9rem;
+    }
+
+    .standard-modal-btn {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: 0.8rem;
+        width: auto;
+        justify-content: center;
+        min-width: 100px;
+    }
+}
+
+/* Pantallas Pequeñas (≤576px) - Formulario */
+@media (max-width: 576px) and (min-width: 481px) {
+    .projects-standard-modal-form-row {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+}
+
+/* ===== RESPONSIVE PARA MODAL DE PROYECTOS ===== */
+
+/* Pantallas Extra Pequeñas (≤480px) */
+@media (max-width: 480px) {
+    .project-details-modal .standard-modal-body {
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .project-detail-row {
+        grid-template-columns: 120px 1fr;
+        gap: var(--space-xs);
+        margin-bottom: var(--space-xs);
+    }
+
+    .project-detail-row label {
+        text-align: right;
+        padding-right: var(--space-xs);
+        font-size: 0.8rem;
+        margin-bottom: 0;
+    }
+
+    .project-detail-row .detail-value {
+        font-size: 0.8rem;
+    }
+
+    .project-detail-row.full-width .detail-value {
+        padding: var(--space-md);
+    }
+
+
+    .adenda-actions {
+        flex-shrink: 0;
+    }
+
+    .adenda-actions .btn-icon {
+        width: 24px;
+        height: 24px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Pantallas Pequeñas (≤576px) */
+@media (max-width: 576px) and (min-width: 481px) {
+    .project-details-modal .standard-modal-body {
+        padding: var(--space-lg);
+    }
+
+    .project-detail-row {
+        grid-template-columns: 140px 1fr;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-sm);
+    }
+
+    .project-detail-row label {
+        font-size: 0.8rem;
+    }
+
+    .project-detail-row .detail-value {
+        font-size: 0.8rem;
+    }
+
+
+    .adenda-actions {
+        flex-shrink: 0;
+    }
+
+    .adenda-actions .btn-icon {
+        width: 26px;
+        height: 26px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Pantallas Medianas (≤768px) */
+@media (max-width: 768px) and (min-width: 577px) {
+    .project-detail-row {
+        grid-template-columns: 160px 1fr;
+        gap: var(--space-sm);
+    }
+}
+

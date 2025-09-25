@@ -1,0 +1,406 @@
+/* =============================================================================
+   STANDARD TABLE SYSTEM - TABLAS ESTANDARIZADAS
+   - Sistema base copiando estilos existentes de projects.css y common.css
+   - Container Queries para responsive inteligente
+   ============================================================================= */
+
+/* ===== BASE TABLE STRUCTURE ===== */
+
+/* Contenedor de tabla estandarizado */
+.standard-table-container {
+    background: white;
+    border-radius: 10px; /* Copiado de projects.css */
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    margin-bottom: 1.25rem; /* Copiado de projects.css */
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Tabla base estandarizada */
+.standard-table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem; /* Copiado de projects.css */
+    border-spacing: 0;
+    table-layout: fixed; /* Copiado de projects.css */
+}
+
+/* ===== HEADERS ESTANDARIZADOS ===== */
+
+.standard-table thead {
+    background: var(--primary-gradient); /* Copiado de projects.css */
+    color: white;
+}
+
+.standard-table th {
+    padding: 0.75rem 0.625rem; /* Copiado de projects.css */
+    text-align: left;
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.75rem; /* Copiado de projects.css */
+    letter-spacing: 0.4px; /* Copiado de projects.css */
+    text-transform: uppercase;
+    border: none;
+}
+
+.standard-table th:first-child {
+    padding-left: 1.5rem; /* Copiado de projects.css */
+}
+
+.standard-table th:last-child {
+    padding-right: 1.5rem; /* Copiado de projects.css */
+}
+
+/* ===== CELDAS ESTANDARIZADAS ===== */
+
+.standard-table td {
+    padding: 0.75rem 0.625rem; /* Copiado de projects.css */
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+    background: white;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem; /* Copiado de projects.css */
+}
+
+.standard-table td:first-child {
+    padding-left: 1.5rem; /* Copiado de projects.css */
+}
+
+.standard-table td:last-child {
+    padding-right: 1.5rem; /* Copiado de projects.css */
+}
+
+/* ===== HOVER EFFECTS ESTANDARIZADOS ===== */
+
+.standard-table tbody tr {
+    transition: all 0.2s ease; /* Copiado de projects.css */
+    cursor: pointer;
+}
+
+.standard-table tbody tr:hover {
+    background: var(--bg-primary); /* Copiado de projects.css */
+    transition: background 0.2s ease;
+}
+
+.standard-table tbody tr:hover td {
+    background: var(--bg-primary); /* Copiado de projects.css */
+}
+
+.standard-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ===== STATUS BADGES ESTANDARIZADOS ===== */
+
+.status-badge {
+    padding: 0.25rem 0.75rem; /* Copiado de projects.css */
+    border-radius: 20px;
+    font-size: 0.6rem; /* Copiado de projects.css */
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px; /* Copiado de projects.css */
+}
+
+.status-planning { background: var(--status-planning-bg); color: var(--status-planning-text); }
+.status-active { background: var(--status-active-bg); color: var(--status-active-text); }
+.status-paused { background: var(--status-paused-bg); color: var(--status-paused-text); }
+.status-completed { background: var(--status-completed-bg); color: var(--status-completed-text); }
+.status-cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled-text); }
+
+/* ===== BOTONES DE ACCIÓN ESTANDARIZADOS ===== */
+
+.btn-edit-icon {
+    color: var(--text-muted); /* Copiado de projects.css */
+    font-size: 1.1rem; /* Copiado de projects.css */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0.25rem; /* Copiado de projects.css */
+    border-radius: 4px; /* Copiado de projects.css */
+    background: transparent;
+    border: none;
+}
+
+.btn-edit-icon:hover {
+    color: var(--primary-color); /* Copiado de projects.css */
+    background: rgba(44, 62, 80, 0.1); /* Copiado de projects.css */
+    transform: scale(1.1); /* Copiado de projects.css */
+}
+
+/* ===== ICONOS ESTANDARIZADOS PARA TABLAS ===== */
+
+.standard-table-icon {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+}
+
+.standard-table-icon:hover {
+    color: var(--primary-color);
+    background: rgba(44, 62, 80, 0.1);
+    transform: scale(1.1);
+}
+
+/* ===== UTILIDADES COMUNES ===== */
+
+.project-money {
+    font-weight: var(--font-weight-medium);
+    color: var(--primary-color);
+}
+
+.no-data {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* ===== TABLAS ESPECÍFICAS ===== */
+
+/* Tabla de Proyectos */
+.projects-standard-table-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.projects-standard-table th:nth-child(1),
+.projects-standard-table td:nth-child(1) {
+    width: 23%; /* Proyecto */
+}
+
+.projects-standard-table th:nth-child(2),
+.projects-standard-table td:nth-child(2) {
+    width: 23%; /* Cliente */
+}
+
+.projects-standard-table th:nth-child(3),
+.projects-standard-table td:nth-child(3) {
+    width: 23%; /* Estado */
+}
+
+.projects-standard-table th:nth-child(4),
+.projects-standard-table td:nth-child(4) {
+    width: 23%; /* Monto */
+}
+
+.projects-standard-table th:nth-child(5),
+.projects-standard-table td:nth-child(5) {
+    width: 8%; /* Icono */
+}
+
+/* Remover padding especial para última columna en tabla de proyectos */
+.projects-standard-table th:last-child,
+.projects-standard-table td:last-child {
+    padding-right: 0.625rem; /* Igual que las otras columnas */
+}
+
+/* Quitar bold del monto en tabla de proyectos */
+.projects-standard-table .project-money {
+    font-weight: normal;
+}
+
+/* ===== CONTAINER QUERIES - RESPONSIVE INTELIGENTE ===== */
+/* Estos se aplicarán cuando configuremos el container en layout.css */
+
+/* Tablets Portrait (≤768px disponible en contenedor) */
+@container main (max-width: 768px) {
+    .standard-table-container {
+        margin-bottom: var(--space-lg);
+        border-radius: 8px;
+    }
+
+    .standard-table {
+        table-layout: auto;
+    }
+
+    .standard-table th,
+    .standard-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .standard-table th:first-child,
+    .standard-table td:first-child {
+        padding-left: 0.75rem;
+    }
+
+    .standard-table th:last-child,
+    .standard-table td:last-child {
+        padding-right: 0.75rem;
+    }
+
+    .standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    /* Reglas específicas para tabla de proyectos en móvil */
+    .projects-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .projects-standard-table .project-money {
+        font-size: 0.8rem;
+    }
+
+    /* Mantener padding original en first-child para tabla de proyectos */
+    .projects-standard-table th:first-child,
+    .projects-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+}
+
+/* Large Phones (≤576px disponible en contenedor) */
+@container main (max-width: 576px) {
+    .standard-table {
+        font-size: 0.8rem;
+    }
+
+    .standard-table th,
+    .standard-table td {
+        padding: 0.5rem 0.375rem;
+    }
+
+    .standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    /* Reglas específicas para tabla de proyectos */
+    .projects-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .projects-standard-table .project-money {
+        font-size: 0.8rem;
+    }
+
+    /* Mantener padding original en first-child para tabla de proyectos */
+    .projects-standard-table th:first-child,
+    .projects-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .projects-standard-table th:last-child,
+    .projects-standard-table td:last-child {
+        padding-right: 1.5rem;
+    }
+
+    /* Padding específico para columna Estado en ≤576px */
+    .projects-standard-table th:nth-child(3),
+    .projects-standard-table td:nth-child(3) {
+        padding-right: 1.5rem;
+    }
+
+    /* Alineación de contenidos y títulos en ≤576px */
+    .projects-standard-table th:nth-child(2), /* Título Cliente */
+    .projects-standard-table td:nth-child(2), /* Cliente */
+    .projects-standard-table th:nth-child(3), /* Título Estado */
+    .projects-standard-table td:nth-child(3), /* Estado */
+    .projects-standard-table th:nth-child(4), /* Título Monto */
+    .projects-standard-table td:nth-child(4) { /* Monto */
+        text-align: center;
+    }
+
+    /* Ocultar columna de botón editar en ≤576px */
+    .projects-standard-table th:nth-child(5),
+    .projects-standard-table td:nth-child(5) {
+        display: none;
+    }
+}
+
+/* Small Phones (≤480px disponible en contenedor) */
+@container main (max-width: 480px) {
+    .standard-table-container {
+        margin-bottom: var(--space-md);
+        border-radius: 6px;
+    }
+
+    .standard-table {
+        font-size: 0.8rem;
+    }
+
+    .standard-table th,
+    .standard-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .standard-table th:first-child,
+    .standard-table td:first-child {
+        padding-left: 0.5rem;
+    }
+
+    .standard-table th:last-child,
+    .standard-table td:last-child {
+        padding-right: 0.5rem;
+    }
+
+    .standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    /* Reglas específicas para tabla de proyectos */
+    .projects-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .projects-standard-table .project-money {
+        font-size: 0.8rem;
+    }
+
+    /* Mantener padding original en first-child para tabla de proyectos */
+    .projects-standard-table th:first-child,
+    .projects-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .projects-standard-table th:last-child,
+    .projects-standard-table td:last-child {
+        padding-right: 1.5rem;
+    }
+
+    /* Padding específico para columna Estado en ≤480px */
+    .projects-standard-table th:nth-child(3),
+    .projects-standard-table td:nth-child(3) {
+        padding-right: 1.5rem;
+    }
+
+    /* Ocultar columnas Cliente, Monto y Botón editar en ≤480px */
+    .projects-standard-table th:nth-child(2), /* Cliente */
+    .projects-standard-table td:nth-child(2),
+    .projects-standard-table th:nth-child(4), /* Monto */
+    .projects-standard-table td:nth-child(4),
+    .projects-standard-table th:nth-child(5), /* Botón editar */
+    .projects-standard-table td:nth-child(5) {
+        display: none;
+    }
+
+    /* Anchos específicos de columnas en ≤480px */
+    .projects-standard-table th:nth-child(1),
+    .projects-standard-table td:nth-child(1) {
+        width: 60%; /* Proyecto */
+    }
+
+    .projects-standard-table th:nth-child(3),
+    .projects-standard-table td:nth-child(3) {
+        width: 40%; /* Estado */
+    }
+
+    /* Alineaciones específicas en ≤480px */
+    .projects-standard-table td:nth-child(1) {
+        text-align: left; /* Proyecto a la izquierda */
+    }
+
+    .projects-standard-table th:nth-child(3) {
+        text-align: center; /* Título "ESTADO" centrado */
+    }
+
+    .projects-standard-table td:nth-child(3) {
+        text-align: center; /* Contenido estado centrado */
+    }
+}

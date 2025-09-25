@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProjectForm from './ProjectForm';
 import AdendaForm from './AdendaForm';
+import StandardModal from './common/StandardModal';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,7 +17,8 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
     const [projectToDelete, setProjectToDelete] = useState(null);
-    const [viewingProject, setViewingProject] = useState(null);
+    const [viewingProject, setViewingProject] = useState(null); // Tabla original
+    const [viewingProjectExperimental, setViewingProjectExperimental] = useState(null); // Tabla experimental
     const [projectAdendas, setProjectAdendas] = useState([]);
     const [showAdendaForm, setShowAdendaForm] = useState(false);
     const [editingAdenda, setEditingAdenda] = useState(null);
@@ -114,6 +116,40 @@ const ProjectsList = ({ onStatsUpdate }) => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Función para ver proyecto - TABLA EXPERIMENTAL
+    const handleViewProjectExperimental = async (projectId) => {
+        try {
+            setLoading(true);
+            const [projectResponse, adendasResponse] = await Promise.all([
+                api.get(`/projects/${projectId}`),
+                api.get(`/adendas/project/${projectId}`)
+            ]);
+
+            if (projectResponse.data.success) {
+                setViewingProjectExperimental(projectResponse.data.proyecto);
+            } else {
+                setError('Error al cargar los detalles del proyecto');
+            }
+
+            if (adendasResponse.data.success) {
+                setProjectAdendas(adendasResponse.data.adendas);
+            } else {
+                setProjectAdendas([]);
+            }
+        } catch (error) {
+            console.error('Error cargando proyecto:', error);
+            setError('Error de conexión al cargar el proyecto');
+            setProjectAdendas([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Función para abrir modal - TABLA EXPERIMENTAL
+    const handleRowClickExperimental = (projectId, event) => {
+        handleViewProjectExperimental(projectId);
     };
 
     // Manejar edición
@@ -226,7 +262,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
             
             if (response.data.success) {
                 // Recargar adendas del proyecto
-                const adendasResponse = await api.get(`/adendas/project/${viewingProject.id}`);
+                const adendasResponse = await api.get(`/adendas/project/${viewingProjectExperimental.id}`);
                 if (adendasResponse.data.success) {
                     setProjectAdendas(adendasResponse.data.adendas);
                 }
@@ -248,8 +284,8 @@ const ProjectsList = ({ onStatsUpdate }) => {
             await api.delete(`/adendas/${adendaId}`);
             
             // Recargar adendas del proyecto
-            if (viewingProject) {
-                const adendasResponse = await api.get(`/adendas/project/${viewingProject.id}`);
+            if (viewingProjectExperimental) {
+                const adendasResponse = await api.get(`/adendas/project/${viewingProjectExperimental.id}`);
                 if (adendasResponse.data.success) {
                     setProjectAdendas(adendasResponse.data.adendas);
                 }
@@ -363,6 +399,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
             </div>
 
 
+
             {/* Modal para crear proyecto */}
             <ProjectForm
                 isOpen={showCreateForm}
@@ -379,7 +416,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 onDelete={handleDeleteProject}
             />
 
-            {/* Modal para ver detalles del proyecto */}
+            {/* Modal para ver detalles del proyecto - TABLA ORIGINAL (Modal Viejo) */}
             {viewingProject && (
                 <div className="modal-overlay" onClick={() => setViewingProject(null)}>
                     <div className="modal-content project-details-modal" onClick={(e) => e.stopPropagation()}>
@@ -431,7 +468,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 </div>
                             )}
 
-                            {/* Continuar con otros campos de cliente aquí */}
+                            {/* Contacto Cliente */}
                             {viewingProject.cliente_contacto && (
                                 <div className="detail-row">
                                     <label>Contacto:</label>
@@ -439,6 +476,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 </div>
                             )}
 
+                            {/* Teléfono Cliente */}
                             {viewingProject.cliente_telefono && (
                                 <div className="detail-row">
                                     <label>Teléfono:</label>
@@ -446,6 +484,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 </div>
                             )}
 
+                            {/* Email Cliente */}
                             {viewingProject.cliente_email && (
                                 <div className="detail-row">
                                     <label>Email:</label>
@@ -517,16 +556,316 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 </div>
                             )}
 
-                            {/* Adendas */}
-                            {projectAdendas.length > 0 && (
+                            {/* Número de Contrato */}
+                            {viewingProject.contrato && (
+                                <div className="detail-row">
+                                    <label>Número de Contrato:</label>
+                                    <span>{viewingProject.contrato}</span>
+                                </div>
+                            )}
+
+                            {/* Acto Público */}
+                            {viewingProject.acto_publico && (
+                                <div className="detail-row">
+                                    <label>Acto Público:</label>
+                                    <span>{viewingProject.acto_publico}</span>
+                                </div>
+                            )}
+
+                            {/* Observaciones */}
+                            {viewingProject.datos_adicionales?.observaciones && (
+                                <div className="detail-row full-width">
+                                    <label>Observaciones:</label>
+                                    <div className="observation-text">{viewingProject.datos_adicionales.observaciones}</div>
+                                </div>
+                            )}
+
+                            {/* Sección de Adendas */}
+                            {projectAdendas && projectAdendas.length > 0 && (
                                 <div className="adendas-section">
-                                    <h4>Adendas</h4>
-                                    <div className="adendas-list">
-                                        {projectAdendas.map(adenda => (
-                                            <div key={adenda.id} className="adenda-item">
+                                    <h4>Adendas del Proyecto</h4>
+                                    {projectAdendas.map(adenda => (
+                                        <div key={adenda.id} className="adenda-item">
+                                            <div className="detail-row">
+                                                <label>Adenda #{adenda.numero_adenda}:</label>
+                                                <div className="adenda-status-container">
+                                                    <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
+                                                        {getAdendaStatusText(adenda.estado)}
+                                                    </span>
+                                                    <div className="adenda-actions">
+                                                        <button
+                                                            className="btn-icon btn-edit"
+                                                            onClick={() => handleEditAdenda(adenda)}
+                                                            title="Editar adenda"
+                                                        >
+                                                            <FontAwesomeIcon icon={faEdit} />
+                                                        </button>
+                                                        {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                                            <button
+                                                                className="btn-icon btn-delete"
+                                                                onClick={() => handleDeleteAdenda(adenda.id)}
+                                                                title="Eliminar adenda"
+                                                            >
+                                                                <FontAwesomeIcon icon={faTrash} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="detail-row">
+                                                <label>Tipo:</label>
+                                                <span>{getAdendaTypeText(adenda.tipo)}</span>
+                                            </div>
+                                            {adenda.nueva_fecha_fin && (
                                                 <div className="detail-row">
-                                                    <label>Adenda #{adenda.numero_adenda}:</label>
-                                                    <span className="adenda-status-container">
+                                                    <label>Nueva Fecha de Terminación:</label>
+                                                    <span>
+                                                        {formatDate(adenda.nueva_fecha_fin)}
+                                                        {adenda.dias_extension && (
+                                                            <span className="extension-days"> (+{adenda.dias_extension} días)</span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {adenda.nuevo_monto && (
+                                                <div className="detail-row">
+                                                    <label>Nuevo Monto:</label>
+                                                    <span className="project-money">{formatMoney(adenda.nuevo_monto)}</span>
+                                                </div>
+                                            )}
+                                            {adenda.monto_adicional && (
+                                                <div className="detail-row">
+                                                    <label>Monto Adicional:</label>
+                                                    <span className="project-money">{formatMoney(adenda.monto_adicional)}</span>
+                                                </div>
+                                            )}
+                                            {adenda.observaciones && (
+                                                <div className="detail-row">
+                                                    <label>Observaciones:</label>
+                                                    <span>{adenda.observaciones}</span>
+                                                </div>
+                                            )}
+                                            <div className="detail-row">
+                                                <label>Solicitada:</label>
+                                                <span>
+                                                    {formatDate(adenda.fecha_solicitud)}
+                                                    {adenda.fecha_aprobacion && (
+                                                        <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Botones de Acción */}
+                            <div className="project-actions-section">
+                                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={() => setShowAdendaForm(true)}
+                                    >
+                                        + Agregar Adenda
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal para ver detalles del proyecto - TABLA EXPERIMENTAL (Nuevo Sistema) */}
+            <StandardModal
+                isOpen={!!viewingProjectExperimental}
+                onClose={() => setViewingProjectExperimental(null)}
+                title=""
+                size="large"
+                className="project-details-modal"
+                footer={(
+                    (user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                        <button
+                            className="standard-modal-btn standard-modal-btn-primary"
+                            onClick={() => setShowAdendaForm(true)}
+                        >
+                            + Agregar Adenda
+                        </button>
+                    )
+                )}
+            >
+                {viewingProjectExperimental && (
+                    <>
+                        {/* Nombre del Proyecto */}
+                        <div className="project-detail-row">
+                            <label>Proyecto:</label>
+                            <div className="detail-value">{viewingProjectExperimental.nombre}</div>
+                        </div>
+
+                        {/* Código */}
+                        {viewingProjectExperimental.codigo_proyecto && (
+                            <div className="project-detail-row">
+                                <label>Código:</label>
+                                <div className="detail-value">{viewingProjectExperimental.codigo_proyecto}</div>
+                            </div>
+                        )}
+
+                        {/* Estado */}
+                        <div className="project-detail-row">
+                            <label>Estado:</label>
+                            <div className="detail-value">
+                                <span className={`status-badge ${getStatusClass(viewingProjectExperimental.estado)}`}>
+                                    {getStatusText(viewingProjectExperimental.estado)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Cliente */}
+                        {viewingProjectExperimental.cliente_nombre && (
+                            <div className="project-detail-row">
+                                <label>Cliente:</label>
+                                <div className="detail-value">{viewingProjectExperimental.cliente_nombre}</div>
+                            </div>
+                        )}
+
+                        {/* Abreviatura Cliente */}
+                        {viewingProjectExperimental.cliente_abreviatura && (
+                            <div className="project-detail-row">
+                                <label>Abreviatura:</label>
+                                <div className="detail-value">
+                                    <span className="client-abbreviation">{viewingProjectExperimental.cliente_abreviatura}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Contacto Cliente */}
+                        {viewingProjectExperimental.cliente_contacto && (
+                            <div className="project-detail-row">
+                                <label>Contacto:</label>
+                                <div className="detail-value">{viewingProjectExperimental.cliente_contacto}</div>
+                            </div>
+                        )}
+
+                        {/* Teléfono Cliente */}
+                        {viewingProjectExperimental.cliente_telefono && (
+                            <div className="project-detail-row">
+                                <label>Teléfono:</label>
+                                <div className="detail-value">{viewingProjectExperimental.cliente_telefono}</div>
+                            </div>
+                        )}
+
+                        {/* Email Cliente */}
+                        {viewingProjectExperimental.cliente_email && (
+                            <div className="project-detail-row">
+                                <label>Email:</label>
+                                <div className="detail-value">{viewingProjectExperimental.cliente_email}</div>
+                            </div>
+                        )}
+
+                        {/* Contratista */}
+                        {viewingProjectExperimental.contratista && (
+                            <div className="project-detail-row">
+                                <label>Contratista:</label>
+                                <div className="detail-value">{viewingProjectExperimental.contratista}</div>
+                            </div>
+                        )}
+
+                        {/* Ingeniero Residente */}
+                        {viewingProjectExperimental.ingeniero_residente && (
+                            <div className="project-detail-row">
+                                <label>Ingeniero Residente:</label>
+                                <div className="detail-value">{viewingProjectExperimental.ingeniero_residente}</div>
+                            </div>
+                        )}
+
+                        {/* Fecha de Inicio */}
+                        {viewingProjectExperimental.fecha_inicio && (
+                            <div className="project-detail-row">
+                                <label>Fecha de Inicio:</label>
+                                <div className="detail-value">{formatDate(viewingProjectExperimental.fecha_inicio)}</div>
+                            </div>
+                        )}
+
+                        {/* Fecha de Terminación */}
+                        {viewingProjectExperimental.fecha_fin_estimada && (
+                            <div className="project-detail-row">
+                                <label>Fecha de Terminación:</label>
+                                <div className="detail-value">{formatDate(viewingProjectExperimental.fecha_fin_estimada)}</div>
+                            </div>
+                        )}
+
+                        {/* Presupuesto Base */}
+                        {viewingProjectExperimental.presupuesto_base && (
+                            <div className="project-detail-row">
+                                <label>Presupuesto Base:</label>
+                                <div className="detail-value">
+                                    <span>{formatMoney(viewingProjectExperimental.presupuesto_base)}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ITBMS */}
+                        {viewingProjectExperimental.itbms && (
+                            <div className="project-detail-row">
+                                <label>ITBMS (7%):</label>
+                                <div className="detail-value">
+                                    <span>{formatMoney(viewingProjectExperimental.itbms)}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Monto Total */}
+                        {viewingProjectExperimental.monto_total && (
+                            <div className="project-detail-row">
+                                <label>Monto Total:</label>
+                                <div className="detail-value">
+                                    <span>{formatMoney(viewingProjectExperimental.monto_total)}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Monto del Contrato (alternativo) */}
+                        {!viewingProjectExperimental.monto_total && viewingProjectExperimental.monto_contrato_original && (
+                            <div className="project-detail-row">
+                                <label>Monto del Contrato:</label>
+                                <div className="detail-value">
+                                    <span>{formatMoney(viewingProjectExperimental.monto_contrato_original)}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Número de Contrato */}
+                        {viewingProjectExperimental.contrato && (
+                            <div className="project-detail-row">
+                                <label>Número de Contrato:</label>
+                                <div className="detail-value">{viewingProjectExperimental.contrato}</div>
+                            </div>
+                        )}
+
+                        {/* Acto Público */}
+                        {viewingProjectExperimental.acto_publico && (
+                            <div className="project-detail-row">
+                                <label>Acto Público:</label>
+                                <div className="detail-value">{viewingProjectExperimental.acto_publico}</div>
+                            </div>
+                        )}
+
+                        {/* Observaciones */}
+                        {viewingProjectExperimental.datos_adicionales?.observaciones && (
+                            <div className="project-detail-row full-width">
+                                <label>Observaciones:</label>
+                                <div className="detail-value">{viewingProjectExperimental.datos_adicionales.observaciones}</div>
+                            </div>
+                        )}
+
+                        {/* Adendas */}
+                        {projectAdendas.length > 0 && (
+                            <div className="adendas-section">
+                                    {projectAdendas.map(adenda => (
+                                        <div key={adenda.id} className="adenda-item">
+                                            <div className="project-detail-row">
+                                                <label>Adenda #{adenda.numero_adenda}:</label>
+                                                <div className="detail-value">
+                                                    <div className="adenda-status-container">
                                                         <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
                                                             {getAdendaStatusText(adenda.estado)}
                                                         </span>
@@ -551,99 +890,66 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                                                 </button>
                                                             </div>
                                                         )}
-                                                    </span>
-                                                </div>
-                                                <div className="detail-row">
-                                                    <label>Tipo:</label>
-                                                    <span>{getAdendaTypeText(adenda.tipo)}</span>
-                                                </div>
-                                                {adenda.nueva_fecha_fin && (
-                                                    <div className="detail-row">
-                                                        <label>Nueva Fecha de Terminación:</label>
-                                                        <span>
-                                                            {formatDate(adenda.nueva_fecha_fin)}
-                                                            {adenda.dias_extension && (
-                                                                <span className="extension-days"> (+{adenda.dias_extension} días)</span>
-                                                            )}
-                                                        </span>
                                                     </div>
-                                                )}
-                                                {adenda.nuevo_monto && (
-                                                    <div className="detail-row">
-                                                        <label>Nuevo Monto:</label>
-                                                        <span className="project-money">{formatMoney(adenda.nuevo_monto)}</span>
-                                                    </div>
-                                                )}
-                                                {adenda.monto_adicional && (
-                                                    <div className="detail-row">
-                                                        <label>Monto Adicional:</label>
-                                                        <span className="project-money">{formatMoney(adenda.monto_adicional)}</span>
-                                                    </div>
-                                                )}
-                                                {adenda.observaciones && (
-                                                    <div className="detail-row">
-                                                        <label>Observaciones:</label>
-                                                        <span>{adenda.observaciones}</span>
-                                                    </div>
-                                                )}
-                                                <div className="detail-row">
-                                                    <label>Solicitada:</label>
-                                                    <span>
-                                                        {formatDate(adenda.fecha_solicitud)}
-                                                        {adenda.fecha_aprobacion && (
-                                                            <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
-                                                        )}
-                                                    </span>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Número de Contrato */}
-                            {viewingProject.contrato && (
-                                <div className="detail-row">
-                                    <label>Número de Contrato:</label>
-                                    <span>{viewingProject.contrato}</span>
-                                </div>
-                            )}
-
-                            {/* Acto Público */}
-                            {viewingProject.acto_publico && (
-                                <div className="detail-row">
-                                    <label>Acto Público:</label>
-                                    <span>{viewingProject.acto_publico}</span>
-                                </div>
-                            )}
-
-                            {/* Observaciones */}
-                            {viewingProject.datos_adicionales?.observaciones && (
-                                <div className="detail-row full-width">
-                                    <label>Observaciones:</label>
-                                    <p className="observations">{viewingProject.datos_adicionales.observaciones}</p>
-                                </div>
-                            )}
-
-                            {/* Botones de Acción */}
-                            <div className="project-actions-section">
-                                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                    <button
-                                        className="btn-primary"
-                                        onClick={() => setShowAdendaForm(true)}
-                                    >
-                                        + Agregar Adenda
-                                    </button>
-                                )}
+                                            <div className="project-detail-row">
+                                                <label>Tipo:</label>
+                                                <div className="detail-value">{getAdendaTypeText(adenda.tipo)}</div>
+                                            </div>
+                                            {adenda.nueva_fecha_fin && (
+                                                <div className="project-detail-row">
+                                                    <label>Nueva Fecha de Terminación:</label>
+                                                    <div className="detail-value">
+                                                        {formatDate(adenda.nueva_fecha_fin)}
+                                                        {adenda.dias_extension && (
+                                                            <span className="extension-days"> (+{adenda.dias_extension} días)</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {adenda.nuevo_monto && (
+                                                <div className="project-detail-row">
+                                                    <label>Nuevo Monto:</label>
+                                                    <div className="detail-value">
+                                                        <span>{formatMoney(adenda.nuevo_monto)}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {adenda.monto_adicional && (
+                                                <div className="project-detail-row">
+                                                    <label>Monto Adicional:</label>
+                                                    <div className="detail-value">
+                                                        <span>{formatMoney(adenda.monto_adicional)}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {adenda.observaciones && (
+                                                <div className="project-detail-row">
+                                                    <label>Observaciones:</label>
+                                                    <div className="detail-value">{adenda.observaciones}</div>
+                                                </div>
+                                            )}
+                                            <div className="project-detail-row">
+                                                <label>Solicitada:</label>
+                                                <div className="detail-value">
+                                                    {formatDate(adenda.fecha_solicitud)}
+                                                    {adenda.fecha_aprobacion && (
+                                                        <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                             </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        )}
+                    </>
+                )}
+            </StandardModal>
 
             {/* Modal para crear/editar adenda */}
             <AdendaForm
-                projectId={viewingProject?.id}
+                projectId={viewingProjectExperimental?.id}
                 isOpen={showAdendaForm}
                 onClose={() => {
                     setShowAdendaForm(false);
@@ -652,6 +958,51 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 onSave={handleAdendaSave}
                 editingAdenda={editingAdenda}
             />
+
+            {/* ===== TABLA EXPERIMENTAL (Sistema Estandarizado) ===== */}
+            <div className="standard-table-container projects-standard-table-container" style={{marginTop: '3rem'}}>
+                <table className="standard-table projects-standard-table">
+                    <thead>
+                        <tr>
+                            <th>Proyecto</th>
+                            <th>Cliente</th>
+                            <th>Estado</th>
+                            <th>Monto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {projects.map(project => (
+                            <tr key={project.id} onClick={(e) => handleRowClickExperimental(project.id, e)} style={{cursor: 'pointer'}}>
+                                <td>{project.nombre_corto || project.nombre}</td>
+                                <td>{project.cliente_abreviatura || project.cliente_nombre || '-'}</td>
+                                <td>
+                                    <span className={`status-badge ${getStatusClass(project.estado)}`}>
+                                        {getStatusText(project.estado)}
+                                    </span>
+                                </td>
+                                <td className="project-money">
+                                    {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
+                                </td>
+                                <td>
+                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                        <button
+                                            className="standard-table-icon"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditProject(project);
+                                            }}
+                                            title="Editar proyecto"
+                                        >
+                                            <FontAwesomeIcon icon={faEdit} />
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };

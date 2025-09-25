@@ -1,0 +1,282 @@
+/* =============================================================================
+   MODAL SYSTEM - REGLAS ESTÁNDAR BASE
+   - Sistema base para todos los modales
+   - Responsive design optimizado para pantallas pequeñas
+   - Estructura escalable para reglas específicas por página
+   ============================================================================= */
+
+/* ===== BASE MODAL STRUCTURE ===== */
+
+/* Modal Overlay - Fondo semi-transparente */
+.standard-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--overlay-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-lg);
+    box-sizing: border-box;
+}
+
+/* Modal Container - Contenedor principal */
+.standard-modal-content {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Modal Header - Header estándar */
+.standard-modal-header {
+    padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: white;
+}
+
+.standard-modal-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+/* Close Button */
+.standard-modal-close {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.standard-modal-close:hover {
+    background: var(--danger-light);
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+/* Modal Body - Contenido scrolleable */
+.standard-modal-body {
+    padding: var(--space-md) var(--space-lg);
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Modal Footer - Acciones */
+.standard-modal-footer {
+    padding: var(--space-md) var(--space-lg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
+/* ===== TAMAÑOS DE MODAL ESTÁNDAR ===== */
+
+/* Modal Pequeño */
+.standard-modal-sm {
+    max-width: 400px;
+}
+
+/* Modal Mediano (default) */
+.standard-modal-md {
+    max-width: 600px;
+}
+
+/* Modal Grande */
+.standard-modal-lg {
+    max-width: 800px;
+}
+
+/* Modal Extra Grande */
+.standard-modal-xl {
+    max-width: 1000px;
+}
+
+/* ===== ANIMACIONES ===== */
+
+/* Entrada del modal */
+.standard-modal-overlay {
+    animation: modalFadeIn 0.3s ease;
+}
+
+.standard-modal-content {
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Pantallas Extra Pequeñas (≤480px) */
+@media (max-width: 480px) {
+    .standard-modal-overlay {
+        padding: var(--space-sm);
+        align-items: flex-start;
+        padding-top: var(--space-lg);
+    }
+
+    .standard-modal-content {
+        max-width: 100%;
+        max-height: calc(100vh - 2rem);
+        border-radius: var(--border-radius);
+    }
+
+    .standard-modal-header {
+        padding: var(--space-md) var(--space-md) var(--space-sm) var(--space-md);
+    }
+
+    .standard-modal-title {
+        font-size: 1rem;
+        line-height: 1.3;
+        padding-right: var(--space-sm);
+    }
+
+    .standard-modal-close {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+
+    .standard-modal-body {
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .standard-modal-footer {
+        padding: var(--space-sm) var(--space-md) var(--space-md) var(--space-md);
+        gap: var(--space-xs);
+    }
+
+    .standard-modal-footer .btn {
+        width: auto;
+        min-width: 120px;
+        justify-content: center;
+    }
+}
+
+/* Pantallas Pequeñas (≤576px) */
+@media (max-width: 576px) and (min-width: 481px) {
+    .standard-modal-overlay {
+        padding: var(--space-md);
+        align-items: flex-start;
+        padding-top: var(--space-xl);
+    }
+
+    .standard-modal-content {
+        max-width: 100%;
+        max-height: calc(100vh - 3rem);
+    }
+
+    .standard-modal-header {
+        padding: var(--space-xl) var(--space-lg) var(--space-md) var(--space-lg);
+    }
+
+    .standard-modal-body {
+        padding: var(--space-md) var(--space-lg);
+    }
+
+    .standard-modal-footer {
+        padding: var(--space-md) var(--space-lg) var(--space-xl) var(--space-lg);
+    }
+}
+
+/* Pantallas Medianas (≤768px) */
+@media (max-width: 768px) and (min-width: 577px) {
+    .standard-modal-overlay {
+        padding: var(--space-lg);
+    }
+
+    .standard-modal-content {
+        max-width: 95vw;
+        max-height: 90vh;
+    }
+}
+
+/* ===== UTILIDADES HELPER ===== */
+
+/* Ocultar scroll del body cuando modal está abierto */
+.modal-open {
+    overflow: hidden;
+}
+
+/* Contenido centrado en el modal */
+.standard-modal-centered {
+    text-align: center;
+}
+
+.standard-modal-centered .standard-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal sin footer */
+.standard-modal-no-footer .standard-modal-body {
+    padding-bottom: var(--space-xl);
+}
+
+/* Modal sin header border */
+.standard-modal-borderless .standard-modal-header {
+    border-bottom: none;
+}
+
+/* ===== DEBUG HELPERS (remove in production) ===== */
+/*
+.standard-modal-content {
+    outline: 2px solid red;
+}
+.standard-modal-header {
+    outline: 1px solid blue;
+}
+.standard-modal-body {
+    outline: 1px solid green;
+}
+.standard-modal-footer {
+    outline: 1px solid orange;
+}
+*/

@@ -252,7 +252,7 @@ const AdendaForm = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="btn-secondary"
+                            className="btn btn-secondary"
                             disabled={loading}
                         >
                             Cancelar
@@ -260,7 +260,7 @@ const AdendaForm = ({
 
                         <button
                             type="submit"
-                            className="btn-primary"
+                            className="btn btn-primary"
                             disabled={loading}
                         >
                             {loading ? (

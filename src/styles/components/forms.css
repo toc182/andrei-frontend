@@ -1,0 +1,65 @@
+/* ===== FORM COMPONENTS ===== */
+
+/* Form Group Container */
+.form-group {
+    margin-bottom: var(--space-xl);
+}
+
+/* Form Labels */
+.form-group label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+/* Form Controls (Inputs, Textareas, Selects) */
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: white;
+}
+
+/* Form Control Focus State */
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-focus);
+}
+
+/* Form Control Disabled State */
+.form-control:disabled {
+    background: var(--gray-light);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* Form Control Error State */
+.form-control.error {
+    border-color: var(--danger-color);
+}
+
+.form-control.error:focus {
+    box-shadow: 0 0 0 3px var(--danger-light);
+}
+
+/* Form Error Messages */
+.form-error {
+    color: var(--danger-color);
+    font-size: 0.8rem;
+    margin-top: var(--space-xs);
+    display: block;
+}
+
+/* Form Help Text */
+.form-help {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: var(--space-xs);
+    display: block;
+}

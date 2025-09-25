@@ -3,7 +3,7 @@
 /* Login Specific Styles */
 .login-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-2xl);
 }
 
 .login-logo {
@@ -32,7 +32,7 @@
     max-width: 1400px;
     margin: 0 auto;
     padding: 0.75rem;
-    background: #f8f9fa;
+    background: var(--bg-primary);
 }
 
 
@@ -41,11 +41,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-lg);
     background: white;
     padding: 0.25rem 0.75rem;
     border-radius: 6px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-card);
     width: 100%;
     min-height: 3rem;
 }
@@ -59,10 +59,10 @@
 
 /* Section Title - Universal style for all section titles */
 .section-header h1 {
-    color: #2c3e50;
+    color: var(--primary-color);
     font-size: 1.25rem;
     margin: 0;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     letter-spacing: -0.4px;
     text-rendering: optimizeLegibility;
     display: flex;
@@ -79,7 +79,7 @@
 
 /* Section Add Icon Button - Universal style */
 .section-header .btn-add-icon {
-    color: #3a546a;
+    color: var(--text-secondary);
     font-size: 1.6rem;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -93,7 +93,7 @@
 }
 
 .section-header .btn-add-icon:hover {
-    color: #2c3e50;
+    color: var(--primary-color);
     background: rgba(44, 62, 80, 0.1);
     transform: scale(1.1);
 }
@@ -102,7 +102,7 @@
 .document-form-card {
     background: white;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-card);
     padding: 1.5rem;
     margin-bottom: 1.25rem;
 }
@@ -115,7 +115,7 @@
 .document-form .form-label {
     display: block;
     margin-bottom: 0.5rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
     font-size: 0.9rem;
 }
@@ -123,14 +123,14 @@
 .document-form .form-control {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #e1e5e9;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--text-primary);
-    background: #fafbfc;
+    background: var(--gray-light);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-input);
 }
 
 .document-form .form-control[type="date"] {
@@ -139,19 +139,19 @@
 
 .document-form .form-control:focus {
     outline: none;
-    border-color: #4a90e2;
+    border-color: var(--info-color);
     background: white;
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15), 0 4px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-focus);
     transform: translateY(-1px);
 }
 
 .document-form .form-control:hover {
-    border-color: #c1c7cd;
+    border-color: var(--gray-border);
     background: white;
 }
 
 .document-form .required {
-    color: #dc3545;
+    color: var(--danger-color);
     margin-left: 0.25rem;
 }
 
@@ -160,7 +160,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-lg);
 }
 
 .document-form .entity-option {
@@ -176,7 +176,7 @@
 
 .document-form .entity-option label {
     margin: 0;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
 }
 
@@ -189,13 +189,13 @@
 
 /* Preview Button */
 .document-form .btn-preview {
-    background: #6c757d;
+    background: var(--text-muted);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
     border-radius: 6px;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
@@ -204,9 +204,9 @@
 }
 
 .document-form .btn-preview:hover {
-    background: #5a6268;
+    background: var(--text-secondary);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    box-shadow: var(--shadow-btn-secondary);
 }
 
 /* Submit Button */
@@ -217,7 +217,7 @@
     padding: 0.75rem 1.5rem;
     border-radius: 6px;
     font-size: 0.9rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
@@ -227,7 +227,7 @@
 
 .document-form .btn-submit:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+    box-shadow: var(--shadow-btn-primary);
 }
 
 .document-form .btn-submit:disabled {
@@ -242,7 +242,7 @@
     height: 40px;
     border: 4px solid rgba(102, 126, 234, 0.3);
     border-radius: 50%;
-    border-top: 4px solid #667eea;
+    border-top: 4px solid var(--primary-color);
     animation: spin 1s linear infinite;
     margin: 2rem auto;
 }
@@ -260,23 +260,23 @@
     padding: 4rem 2rem;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-card);
 }
 
 .projects-loading p {
     text-align: center;
-    color: #666;
+    color: var(--text-muted);
     margin-top: 1rem;
     font-size: 0.9rem;
 }
 
 /* Error States */
 .error-message {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--danger-light);
+    color: var(--danger-color);
     padding: 1rem 1.5rem;
     border-radius: 8px;
-    border: 1px solid #f5c6cb;
+    border: 1px solid var(--danger-light);
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
@@ -284,7 +284,7 @@
 }
 
 .error-message button {
-    background: #dc3545;
+    background: var(--danger-color);
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -295,7 +295,7 @@
 }
 
 .error-message button:hover {
-    background: #c82333;
+    background: var(--danger-color);
 }
 
 /* Preview Modal */
@@ -313,12 +313,12 @@
 
 .preview-content {
     background: white;
-    border: 1px solid #e1e5e9;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 2rem;
     font-family: 'Times New Roman', serif;
     line-height: 1.6;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .preview-content img {
@@ -328,7 +328,7 @@
 
 .modal-footer {
     padding: 1rem 1.5rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
@@ -376,7 +376,7 @@
 
     /* Projects Table Mobile */
     .projects-table-container {
-        margin-bottom: 0.75rem;
+        margin-bottom: var(--space-md);
         border-radius: 6px;
     }
 
@@ -495,7 +495,7 @@
 
     /* Projects Table Responsive */
     .projects-table-container {
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-lg);
         border-radius: 8px;
     }
 

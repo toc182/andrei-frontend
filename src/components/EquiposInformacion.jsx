@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCirclePlus, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faEdit, faTruckPickup } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/logo.png';
 import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
 import EquipoForm from './EquipoForm';
 import api from '../services/api';
+import SectionHeader from './common/SectionHeader';
 
 const EquiposInformacion = () => {
     const [selectedEquipo, setSelectedEquipo] = useState(null);
@@ -142,9 +143,10 @@ const EquiposInformacion = () => {
     if (loading) {
         return (
             <div className="section-container">
-                <div className="section-header">
-                    <h1>Información de Equipos</h1>
-                </div>
+                <SectionHeader
+                    title="Información de Equipos"
+                    icon={faTruckPickup}
+                />
                 <div className="projects-loading">
                     <div className="loading-spinner"></div>
                     <p>Cargando equipos...</p>
@@ -156,9 +158,10 @@ const EquiposInformacion = () => {
     if (error) {
         return (
             <div className="section-container">
-                <div className="section-header">
-                    <h1>Información de Equipos</h1>
-                </div>
+                <SectionHeader
+                    title="Información de Equipos"
+                    icon={faTruckPickup}
+                />
                 <div className="error-message">
                     {error}
                     <button onClick={loadEquipos}>Reintentar</button>
@@ -169,16 +172,15 @@ const EquiposInformacion = () => {
 
     return (
         <div className="section-container">
-            <div className="section-header">
-                <h1>Información de Equipos</h1>
-                <button
-                    className="btn-add-icon"
-                    onClick={handleAddEquipo}
-                    title="Agregar nuevo equipo"
-                >
-                    <FontAwesomeIcon icon={faCirclePlus} />
-                </button>
-            </div>
+            <SectionHeader
+                title="Información de Equipos"
+                icon={faTruckPickup}
+                actionButton={{
+                    icon: faPlus,
+                    onClick: handleAddEquipo,
+                    title: "Agregar nuevo equipo"
+                }}
+            />
 
             {/* Tabla de Equipos de Pinellas */}
             <div style={{ marginBottom: '2rem' }}>

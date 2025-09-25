@@ -1,0 +1,124 @@
+/* =============================================================================
+   SECTION COMPONENTS CSS - COMPONENTES ESTANDARIZADOS
+   - Solo para componentes SectionHeader y SectionActionButton
+   - CSS defensivo con alta especificidad para evitar conflictos
+   ============================================================================= */
+
+/* CSS Reset específico para estos componentes */
+.standard-section-header,
+.standard-section-header * {
+    box-sizing: border-box;
+}
+
+/* Contenedor principal del header estandarizado */
+.standard-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl, 2rem);
+    padding: var(--space-md, 0.75rem);
+    background: white;
+    border-radius: var(--border-radius, 10px);
+    box-shadow: var(--shadow-card, 0 2px 10px rgba(0,0,0,0.1));
+}
+
+/* Título del header estandarizado */
+.standard-section-header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-semibold, 600);
+    color: var(--primary-color, #2c3e50);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm, 0.5rem);
+    line-height: 1.2;
+}
+
+/* Icono dentro del título */
+.standard-section-header h1 svg {
+    font-size: 1.5rem;
+    color: var(--primary-color, #2c3e50);
+}
+
+/* Botón de header estandarizado - Copia exacta del estilo de la página de proyectos */
+.standard-section-header .section-header-button {
+    color: white;
+    background: var(--primary-color, #2c3e50);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0.5rem;
+    border: none;
+    outline: none;
+    width: 2rem;
+    height: 2rem;
+}
+
+.standard-section-header .section-header-button:hover {
+    background: var(--primary-color-dark, #1e2832);
+    transform: scale(1.1);
+}
+
+.standard-section-header .section-header-button:focus {
+    outline: 2px solid var(--primary-color, #2c3e50);
+    outline-offset: 2px;
+}
+
+.standard-section-header .section-header-button:active {
+    transform: scale(1.05);
+}
+
+/* Container Queries - Responsive to available container space */
+@container main (max-width: 480px) {
+    .standard-section-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg, 1.5rem);
+        padding: var(--space-md, 1rem);
+        gap: var(--space-sm, 0.5rem);
+    }
+
+    .standard-section-header h1 {
+        font-size: 1.2rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .standard-section-header .section-header-button {
+        font-size: 0.8rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        flex-shrink: 0;
+    }
+}
+
+@container main (max-width: 768px) and (min-width: 481px) {
+    .standard-section-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-lg, 1.5rem);
+        padding: var(--space-md, 1rem);
+        gap: var(--space-sm, 0.5rem);
+    }
+
+    .standard-section-header h1 {
+        font-size: 1.2rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .standard-section-header .section-header-button {
+        font-size: 0.8rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        flex-shrink: 0;
+    }
+}

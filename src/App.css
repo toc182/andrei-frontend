@@ -3,151 +3,28 @@
 /* Import Component Styles */
 @import "./styles/components/common.css";
 @import "./styles/components/projects.css";
-
-/* Temporary Global Styles - Will be organized later */
+@import "./styles/components/modals.css";
+@import "./styles/components/modals-standard.css";
+@import "./styles/components/modals-projects.css";
+@import "./styles/components/forms.css";
+@import "./styles/components/buttons.css";
+@import "./styles/equipos-status.css";
 
 /* App Root */
 .App {
     min-height: 100vh;
-    background: #f8f9fa;
+    background: var(--bg-primary);
 }
 
-/* Modal Styles - Basic for now */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-}
-
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.modal-header h2 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #6c757d;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-    background: rgba(0, 0, 0, 0.1);
-    color: #2c3e50;
-}
-
-/* Basic Form Elements */
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.9rem;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    background: white;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
-}
-
-/* Basic Button Styles */
-.btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.btn-primary {
-    background: var(--primary-gradient);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-}
+/* Temporary Global Styles - Will be organized later */
 
 /* Document Styles - Temporary until reorganization - More compact */
 .documents-main-card {
     background: white;
     border-radius: 10px; /* Reducido de 12px */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
-    border: 1px solid #e1e5e9;
+    border: 1px solid var(--border-color);
 }
 
 .documents-list {
@@ -165,7 +42,7 @@
 }
 
 .document-item-row:hover {
-    background: #f8f9fa;
+    background: var(--bg-primary);
 }
 
 .document-content {
@@ -175,33 +52,33 @@
 .document-title {
     margin: 0 0 0.5rem 0;
     font-size: 1.1rem;
-    font-weight: 600;
-    color: #2c3e50;
+    font-weight: var(--font-weight-semibold);
+    color: var(--primary-color);
 }
 
 .document-description {
     margin: 0;
     font-size: 0.9rem;
-    color: #6c757d;
+    color: var(--text-muted);
     line-height: 1.4;
 }
 
 .document-arrow {
     font-size: 1.5rem;
-    color: #bdc3c7;
+    color: var(--text-muted);
     font-weight: 300;
     transition: all 0.2s ease;
     margin-left: 1rem;
 }
 
 .document-item-row:hover .document-arrow {
-    color: #3498db;
+    color: var(--info-color);
     transform: translateX(4px);
 }
 
 .document-separator {
     height: 1px;
-    background: linear-gradient(90deg, transparent, #e1e5e9 20%, #e1e5e9 80%, transparent);
+    background: linear-gradient(90deg, transparent, var(--border-color) 20%, var(--border-color) 80%, transparent);
     margin: 0 2rem;
 }
 
@@ -276,12 +153,12 @@
     display: grid;
     grid-template-columns: 200px 1fr;
     align-items: start;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-md);
 }
 
 .adenda-modal .form-group label {
     text-align: right;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     color: var(--text-primary);
     padding-right: 1rem;
     margin-bottom: 0;
@@ -294,30 +171,30 @@
     margin: 0;
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #e1e5e9;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--text-primary);
-    background: #fafbfc;
+    background: var(--gray-light);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-input);
 }
 
 .adenda-modal .form-group select:focus,
 .adenda-modal .form-group input:focus,
 .adenda-modal .form-group textarea:focus {
     outline: none;
-    border-color: #4a90e2;
+    border-color: var(--info-color);
     background: white;
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15), 0 4px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-focus);
     transform: translateY(-1px);
 }
 
 .adenda-modal .form-group select:hover,
 .adenda-modal .form-group input:hover,
 .adenda-modal .form-group textarea:hover {
-    border-color: #c1c7cd;
+    border-color: var(--gray-border);
     background: white;
 }
 
@@ -330,14 +207,14 @@
 .adenda-modal .form-group.full-width label {
     text-align: left;
     padding-right: 0;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-sm);
 }
 
 /* Form actions styling */
 .adenda-modal .form-actions {
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -346,11 +223,11 @@
 
 /* Form error styling */
 .adenda-modal .form-error {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--danger-light);
+    color: var(--danger-color);
     padding: 1rem 1.5rem;
     border-radius: 8px;
-    border: 1px solid #f5c6cb;
+    border: 1px solid var(--danger-light);
     margin: 1.5rem 0;
     display: flex;
     align-items: center;
@@ -417,7 +294,7 @@
 .equipos-title-header {
     text-align: center;
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     padding: 1rem;
     color: white;
     text-transform: none;
@@ -446,7 +323,7 @@ th.equipos-title-header {
     border-bottom: none;
     padding: 1rem 2rem;
     justify-content: flex-start;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-xl);
 }
 
 .equipos-modal .modal-header h2 {
@@ -511,12 +388,12 @@ th.equipos-title-header {
     display: grid;
     grid-template-columns: 200px 1fr;
     align-items: start;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-md);
 }
 
 .equipos-form-modal .form-group label {
     text-align: right;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     color: var(--text-primary);
     padding-right: 1rem;
     margin-bottom: 0;
@@ -529,30 +406,30 @@ th.equipos-title-header {
     margin: 0;
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #e1e5e9;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--text-primary);
-    background: #fafbfc;
+    background: var(--gray-light);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-input);
 }
 
 .equipos-form-modal .form-group select:focus,
 .equipos-form-modal .form-group input:focus,
 .equipos-form-modal .form-group textarea:focus {
     outline: none;
-    border-color: #4a90e2;
+    border-color: var(--info-color);
     background: white;
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15), 0 4px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-focus);
     transform: translateY(-1px);
 }
 
 .equipos-form-modal .form-group select:hover,
 .equipos-form-modal .form-group input:hover,
 .equipos-form-modal .form-group textarea:hover {
-    border-color: #c1c7cd;
+    border-color: var(--gray-border);
     background: white;
 }
 
@@ -565,14 +442,14 @@ th.equipos-title-header {
 .equipos-form-modal .form-group.full-width label {
     text-align: left;
     padding-right: 0;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-sm);
 }
 
 /* Form actions styling */
 .equipos-form-modal .form-actions {
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -581,11 +458,11 @@ th.equipos-title-header {
 
 /* Form error styling */
 .equipos-form-modal .form-error {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--danger-light);
+    color: var(--danger-color);
     padding: 1rem 1.5rem;
     border-radius: 8px;
-    border: 1px solid #f5c6cb;
+    border: 1px solid var(--danger-light);
     margin: 1.5rem 0;
     display: flex;
     align-items: center;
@@ -628,12 +505,12 @@ th.equipos-title-header {
     display: grid;
     grid-template-columns: 200px 1fr;
     align-items: start;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-md);
 }
 
 .detail-row label {
     text-align: right;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     color: var(--text-primary);
     padding-right: 1rem;
 }
@@ -650,14 +527,14 @@ th.equipos-title-header {
 
 .detail-row.full-width label {
     text-align: left;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-sm);
     padding-right: 0;
 }
 
 .detail-row.full-width .observations {
     margin: 0;
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--bg-primary);
     border-radius: 6px;
     border-left: 4px solid var(--primary-color);
 }
@@ -670,12 +547,12 @@ th.equipos-title-header {
 
 /* Money formatting in modal */
 .detail-row .project-money {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--primary-color);
 }
 
 .detail-row .client-abbreviation {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     background: var(--primary-color);
     color: white;
     padding: 0.25rem 0.5rem;
@@ -692,24 +569,19 @@ th.equipos-title-header {
 /* Adendas specific styling */
 .adendas-section h4 {
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-xl);
     color: var(--primary-color);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
 }
 
 .adenda-item {
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--space-xl);
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--bg-primary);
     border-radius: 6px;
     border-left: 4px solid var(--primary-color);
 }
 
-.adenda-status-container {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
 
 .adenda-actions {
     display: flex;
@@ -723,7 +595,7 @@ th.equipos-title-header {
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s ease;
-    color: #6c757d;
+    color: var(--text-muted);
 }
 
 .adenda-actions .btn-edit:hover {
@@ -732,12 +604,12 @@ th.equipos-title-header {
 }
 
 .adenda-actions .btn-delete:hover {
-    color: #dc3545;
+    color: var(--danger-color);
     background: rgba(220, 53, 69, 0.1);
 }
 
 .extension-days {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     color: var(--primary-color);
 }
 
@@ -746,7 +618,7 @@ th.equipos-title-header {
     text-align: center;
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Responsive for modal - SOLO para modal de proyectos */
@@ -755,7 +627,7 @@ th.equipos-title-header {
     .project-details-modal .detail-row:first-child {
         grid-template-columns: 1fr;
         gap: 0.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: var(--space-lg);
     }
 
     .project-details-modal .detail-row:first-child label {
@@ -768,7 +640,7 @@ th.equipos-title-header {
     .project-details-modal .detail-row:not(:first-child) {
         grid-template-columns: 120px 1fr;
         gap: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: var(--space-md);
         align-items: center;
     }
 
@@ -782,7 +654,7 @@ th.equipos-title-header {
     .modal-overlay .equipos-modal .detail-row {
         grid-template-columns: 120px 1fr;
         gap: 1rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: var(--space-md);
         align-items: center;
     }
 
@@ -792,9 +664,4 @@ th.equipos-title-header {
         font-size: 0.85rem;
     }
 
-    .adenda-status-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
 }

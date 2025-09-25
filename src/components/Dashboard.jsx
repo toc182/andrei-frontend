@@ -9,6 +9,7 @@ import CostsHub from './CostsHub';
 import DocumentForm from './DocumentForm';
 import DocumentosHub from './DocumentosHub';
 import EquiposInformacion from './EquiposInformacion';
+import EquiposStatus from './EquiposStatus';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText, faTruckPickup, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
@@ -232,16 +233,7 @@ const Dashboard = () => {
             case 'equipos-informacion':
                 return <EquiposInformacion />;
             case 'equipos-status':
-                return (
-                    <div className="section-container">
-                        <div className="section-header">
-                            <h1>📊 Status de Equipos</h1>
-                        </div>
-                        <div className="placeholder-content">
-                            <p>Sección de Status de Equipos - Próximamente</p>
-                        </div>
-                    </div>
-                );
+                return <EquiposStatus />;
             case 'documentos':
                 return <DocumentosHub onDocumentClick={(docId) => setCurrentView(docId)} />;
             case 'doc-acuerdo-consorcio':
