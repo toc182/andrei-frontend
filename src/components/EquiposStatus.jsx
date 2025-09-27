@@ -7,6 +7,8 @@ import api from '../services/api';
 import logo from '../assets/logo.png';
 import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
 import SectionHeader from './common/SectionHeader';
+import '../styles/components/badges.css';
+import '../styles/components/standardModal.css';
 
 const EquiposStatus = () => {
     const [equiposPinellas, setEquiposPinellas] = useState([]);
@@ -22,20 +24,20 @@ const EquiposStatus = () => {
         const estadoLower = (estado || '').toLowerCase();
 
         if (estadoLower.includes('operacion') || estadoLower.includes('operativo')) {
-            return { label: 'En Operación', class: 'status-active' };
+            return { label: 'En Operación', class: 'status-green' };
         }
         if (estadoLower.includes('standby')) {
-            return { label: 'Standby', class: 'status-paused' };
+            return { label: 'Standby', class: 'status-blue' };
         }
         if (estadoLower.includes('mantenimiento')) {
-            return { label: 'En Mantenimiento', class: 'status-planning' };
+            return { label: 'En Mantenimiento', class: 'status-yellow' };
         }
         if (estadoLower.includes('fuera')) {
-            return { label: 'Fuera de Servicio', class: 'status-cancelled' };
+            return { label: 'Fuera de Servicio', class: 'status-red' };
         }
 
         // Estado por defecto
-        return { label: 'En Operación', class: 'status-active' };
+        return { label: 'En Operación', class: 'status-green' };
     };
 
     // Cargar equipos y sus estados desde API
@@ -238,15 +240,15 @@ const EquiposStatus = () => {
 
             {/* Modal de información del equipo */}
             {showModal && selectedEquipo && (
-                <div className="modal-overlay" onClick={handleCloseModal}>
-                    <div className="modal-content equipo-details-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="standard-modal-overlay" onClick={handleCloseModal}>
+                    <div className="standard-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="standard-modal-header">
                             <h2>Detalles del Equipo</h2>
-                            <button className="modal-close-btn" onClick={handleCloseModal}>
+                            <button className="standard-modal-close" onClick={handleCloseModal}>
                                 ×
                             </button>
                         </div>
-                        <div className="modal-body">
+                        <div className="standard-modal-body">
                             <div className="detail-row">
                                 <div className="detail-item">
                                     <label>Código:</label>

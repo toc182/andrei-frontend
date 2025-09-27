@@ -3,10 +3,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const SectionHeader = ({ title, icon, actionButton }) => {
     return (
-        <div className="section-header">
+        <div className="section-header-container">
             <div className="section-header-left">
-                {icon && <FontAwesomeIcon icon={icon} className="section-icon" />}
-                <h1 className="section-title">{title}</h1>
+                {icon && <FontAwesomeIcon icon={icon} className="section-header-icon" />}
+                <h1 className="section-header-title">{title}</h1>
             </div>
             {actionButton && (
                 <div className="section-header-right">

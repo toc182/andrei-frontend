@@ -22,7 +22,7 @@
     color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: var(--shadow-btn-primary);
 }
@@ -32,7 +32,7 @@
     color: white;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
     background: var(--text-secondary);
     box-shadow: var(--shadow-btn-secondary);
 }
@@ -61,8 +61,6 @@
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
 }
 
 .btn:focus {
@@ -70,25 +68,3 @@
     box-shadow: var(--shadow-focus);
 }
 
-/* Outline Button Variants */
-.btn-outline-primary {
-    background: transparent;
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-}
-
-.btn-outline-primary:hover {
-    background: var(--primary-color);
-    color: white;
-}
-
-.btn-outline-secondary {
-    background: transparent;
-    color: var(--text-secondary);
-    border: 1px solid var(--text-secondary);
-}
-
-.btn-outline-secondary:hover {
-    background: var(--text-secondary);
-    color: white;
-}

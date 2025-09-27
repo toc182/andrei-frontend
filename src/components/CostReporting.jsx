@@ -280,7 +280,7 @@ const CostReporting = ({ project }) => {
                             </div>
                         ))
                     ) : (
-                        <div className="no-data">
+                        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic', padding: '2rem' }}>
                             📊 No hay datos de gastos para mostrar
                         </div>
                     )}

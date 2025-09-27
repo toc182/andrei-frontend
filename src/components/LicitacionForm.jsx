@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import '../styles/components/standardModal.css';
 
 const LicitacionForm = ({
     licitacionId = null,
@@ -177,12 +178,12 @@ const LicitacionForm = ({
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content project-form-modal">
-                <div className="modal-header">
+        <div className="standard-modal-overlay">
+            <div className="standard-modal-content project-form-modal">
+                <div className="standard-modal-header">
                     <h2>{licitacionId ? 'Editar Licitación' : 'Nueva Licitación'}</h2>
                     <button
-                        className="modal-close"
+                        className="standard-modal-close"
                         onClick={onClose}
                         disabled={loading}
                     >

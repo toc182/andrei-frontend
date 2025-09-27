@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import OportunidadForm from './OportunidadForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
+import '../styles/components/badges.css';
 
 const OportunidadesList = () => {
     const { user } = useAuth();
@@ -185,7 +186,7 @@ const OportunidadesList = () => {
                     <tbody>
                     {oportunidades.length === 0 ? (
                         <tr>
-                            <td colSpan="7" className="no-data">
+                            <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic', padding: '2rem' }}>
                                 {loading ? 'Cargando oportunidades...' : selectedEstado ? `No hay oportunidades ${selectedEstado}s` : 'No hay oportunidades registradas'}
                             </td>
                         </tr>

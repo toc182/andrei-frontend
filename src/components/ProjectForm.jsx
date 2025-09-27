@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import '../styles/components/standardModal.css';
 
 const ProjectForm = ({
                          projectId = null,
@@ -328,12 +329,12 @@ const ProjectForm = ({
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content project-form-modal">
-                <div className="modal-header">
+        <div className="standard-modal-overlay">
+            <div className="standard-modal-content project-form-modal">
+                <div className="standard-modal-header">
                     <h2>{projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}</h2>
                     <button
-                        className="modal-close"
+                        className="standard-modal-close"
                         onClick={onClose}
                         disabled={loading}
                     >
@@ -712,9 +713,9 @@ const ProjectForm = ({
 
                     {/* Modal de Confirmación de Eliminación */}
                     {showDeleteConfirmation && (
-                        <div className="modal-overlay delete-confirmation-overlay">
-                            <div className="modal-content delete-confirmation-modal">
-                                <div className="modal-header">
+                        <div className="standard-modal-overlay delete-confirmation-overlay">
+                            <div className="standard-modal-content delete-confirmation-modal">
+                                <div className="standard-modal-header">
                                     <h3>⚠️ Eliminar Proyecto</h3>
                                 </div>
                                 <div className="modal-body">

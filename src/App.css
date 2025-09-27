@@ -3,9 +3,6 @@
 /* Import Component Styles */
 @import "./styles/components/common.css";
 @import "./styles/components/projects.css";
-@import "./styles/components/modals.css";
-@import "./styles/components/modals-standard.css";
-@import "./styles/components/modals-projects.css";
 @import "./styles/components/forms.css";
 @import "./styles/components/buttons.css";
 @import "./styles/equipos-status.css";
@@ -82,169 +79,8 @@
     margin: 0 2rem;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .modal-overlay {
-        padding: 0.5rem;
-    }
 
-    .modal-content {
-        max-height: 95vh;
-    }
 
-    .modal-header {
-        padding: 1rem;
-    }
-}
-
-/* Project Details Modal - Custom Styles */
-.project-details-modal {
-    margin-top: 7rem;
-    margin-bottom: 2rem;
-    max-width: 700px;
-    font-size: 0.8rem;
-}
-
-/* Adenda Modal - Same styles as project details modal */
-.adenda-modal {
-    margin-top: 7rem;
-    margin-bottom: 2rem;
-    max-width: 600px;
-    font-size: 0.8rem;
-}
-
-.adenda-modal .modal-header {
-    border-bottom: none;
-    padding: 1rem 2rem 0 2rem;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.adenda-modal .modal-close {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-
-/* Adenda form content styling */
-.adenda-modal .project-form {
-    padding: 0 2rem 1.5rem 2rem;
-}
-
-/* Remove section styling and apply detail-row layout to adenda form */
-.adenda-modal .form-section {
-    margin-bottom: 0;
-    border: none;
-    padding: 0;
-}
-
-.adenda-modal .form-section h3 {
-    display: none;
-}
-
-.adenda-modal .form-row {
-    display: contents;
-}
-
-.adenda-modal .form-group {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    align-items: start;
-    margin-bottom: var(--space-md);
-}
-
-.adenda-modal .form-group label {
-    text-align: right;
-    font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    padding-right: 1rem;
-    margin-bottom: 0;
-}
-
-.adenda-modal .form-group select,
-.adenda-modal .form-group input,
-.adenda-modal .form-group textarea {
-    text-align: left;
-    margin: 0;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-    background: var(--gray-light);
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-input);
-}
-
-.adenda-modal .form-group select:focus,
-.adenda-modal .form-group input:focus,
-.adenda-modal .form-group textarea:focus {
-    outline: none;
-    border-color: var(--info-color);
-    background: white;
-    box-shadow: var(--shadow-focus);
-    transform: translateY(-1px);
-}
-
-.adenda-modal .form-group select:hover,
-.adenda-modal .form-group input:hover,
-.adenda-modal .form-group textarea:hover {
-    border-color: var(--gray-border);
-    background: white;
-}
-
-/* Full width items for textarea */
-.adenda-modal .form-group.full-width {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-}
-
-.adenda-modal .form-group.full-width label {
-    text-align: left;
-    padding-right: 0;
-    margin-bottom: var(--space-sm);
-}
-
-/* Form actions styling */
-.adenda-modal .form-actions {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-}
-
-/* Form error styling */
-.adenda-modal .form-error {
-    background: var(--danger-light);
-    color: var(--danger-color);
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    border: 1px solid var(--danger-light);
-    margin: 1.5rem 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-}
-
-/* Button spinner for loading state */
-.adenda-modal .btn-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 2px solid white;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
-}
 
 /* Fix table layout for equipos tables to allow column width adjustments */
 .projects-table.equipos-table {
@@ -314,191 +150,6 @@ th.equipos-title-header {
     object-fit: contain;
 }
 
-/* Equipos modal styling */
-.equipos-modal {
-    max-width: 500px;
-}
-
-.equipos-modal .modal-header {
-    border-bottom: none;
-    padding: 1rem 2rem;
-    justify-content: flex-start;
-    margin-bottom: var(--space-xl);
-}
-
-.equipos-modal .modal-header h2 {
-    text-align: left;
-    margin-right: auto;
-}
-
-.equipos-modal .modal-close {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-
-/* Equipos Form Modal - Same styles as adenda modal */
-.equipos-form-modal {
-    margin-top: 7rem;
-    margin-bottom: 2rem;
-    max-width: 700px;
-    font-size: 0.8rem;
-}
-
-.equipos-form-modal .modal-header {
-    border-bottom: none;
-    padding: 1rem 2rem 0 2rem;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.equipos-form-modal .modal-close {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
-
-/* Equipos form content styling */
-.equipos-form-modal .project-form {
-    padding: 0 2rem 1.5rem 2rem;
-}
-
-/* Remove section styling and apply detail-row layout to equipos form */
-.equipos-form-modal .form-section {
-    margin-bottom: 0;
-    border: none;
-    padding: 0;
-}
-
-.equipos-form-modal .form-section h3 {
-    display: none;
-}
-
-.equipos-form-modal .form-row {
-    display: contents;
-}
-
-.equipos-form-modal .form-group {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    align-items: start;
-    margin-bottom: var(--space-md);
-}
-
-.equipos-form-modal .form-group label {
-    text-align: right;
-    font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    padding-right: 1rem;
-    margin-bottom: 0;
-}
-
-.equipos-form-modal .form-group select,
-.equipos-form-modal .form-group input,
-.equipos-form-modal .form-group textarea {
-    text-align: left;
-    margin: 0;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-    background: var(--gray-light);
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-input);
-}
-
-.equipos-form-modal .form-group select:focus,
-.equipos-form-modal .form-group input:focus,
-.equipos-form-modal .form-group textarea:focus {
-    outline: none;
-    border-color: var(--info-color);
-    background: white;
-    box-shadow: var(--shadow-focus);
-    transform: translateY(-1px);
-}
-
-.equipos-form-modal .form-group select:hover,
-.equipos-form-modal .form-group input:hover,
-.equipos-form-modal .form-group textarea:hover {
-    border-color: var(--gray-border);
-    background: white;
-}
-
-/* Full width items for textarea */
-.equipos-form-modal .form-group.full-width {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-}
-
-.equipos-form-modal .form-group.full-width label {
-    text-align: left;
-    padding-right: 0;
-    margin-bottom: var(--space-sm);
-}
-
-/* Form actions styling */
-.equipos-form-modal .form-actions {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-}
-
-/* Form error styling */
-.equipos-form-modal .form-error {
-    background: var(--danger-light);
-    color: var(--danger-color);
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    border: 1px solid var(--danger-light);
-    margin: 1.5rem 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-}
-
-/* Button spinner for loading state */
-.equipos-form-modal .btn-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top: 2px solid white;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
-}
-
-.project-details-modal .project-details {
-    padding: 0 2rem 1.5rem 2rem;
-}
-
-.project-details-modal .modal-header {
-    border-bottom: none;
-    padding: 1rem 2rem 0 2rem;
-    justify-content: flex-end;
-}
-
-.project-details-modal .modal-close {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-}
 
 /* Individual Row Layout for Project Details */
 .detail-row {
@@ -539,13 +190,13 @@ th.equipos-title-header {
     border-left: 4px solid var(--primary-color);
 }
 
-/* Status badges in modal */
+/* Status badges in detail rows */
 .detail-row .status-badge {
     display: inline-block;
     width: fit-content;
 }
 
-/* Money formatting in modal */
+/* Money formatting in detail rows */
 .detail-row .project-money {
     font-weight: var(--font-weight-semibold);
     color: var(--primary-color);
@@ -574,13 +225,6 @@ th.equipos-title-header {
     font-weight: var(--font-weight-semibold);
 }
 
-.adenda-item {
-    margin-bottom: var(--space-xl);
-    padding: 1rem;
-    background: var(--bg-primary);
-    border-radius: 6px;
-    border-left: 4px solid var(--primary-color);
-}
 
 
 .adenda-actions {
@@ -621,47 +265,3 @@ th.equipos-title-header {
     border-top: 1px solid var(--border-color);
 }
 
-/* Responsive for modal - SOLO para modal de proyectos */
-@media (max-width: 768px) {
-    /* Solo el nombre del proyecto usa layout vertical (título arriba, contenido abajo) */
-    .project-details-modal .detail-row:first-child {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-        margin-bottom: var(--space-lg);
-    }
-
-    .project-details-modal .detail-row:first-child label {
-        text-align: left;
-        padding-right: 0;
-        margin-bottom: 0.25rem;
-    }
-
-    /* Resto de campos del modal de proyectos mantienen layout horizontal */
-    .project-details-modal .detail-row:not(:first-child) {
-        grid-template-columns: 120px 1fr;
-        gap: 0.75rem;
-        margin-bottom: var(--space-md);
-        align-items: center;
-    }
-
-    .project-details-modal .detail-row:not(:first-child) label {
-        text-align: right;
-        padding-right: 0;
-        font-size: 0.85rem;
-    }
-
-    /* Modal de equipos mantiene el layout horizontal para TODOS los campos - mayor especificidad */
-    .modal-overlay .equipos-modal .detail-row {
-        grid-template-columns: 120px 1fr;
-        gap: 1rem;
-        margin-bottom: var(--space-md);
-        align-items: center;
-    }
-
-    .modal-overlay .equipos-modal .detail-row label {
-        text-align: right;
-        padding-right: 0;
-        font-size: 0.85rem;
-    }
-
-}

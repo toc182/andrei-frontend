@@ -1,0 +1,51 @@
+/* ===== STATUS BADGES COMPONENT ===== */
+/* Badges reutilizables para estados de proyectos y otros elementos */
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.6rem;
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-yellow {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-green {
+    background: #d1edda;
+    color: #155724;
+}
+
+.status-blue {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-red {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-orange {
+    background: #ffe8d1;
+    color: #8b4513;
+}
+
+.status-purple {
+    background: #e2d1f3;
+    color: #5a2d6b;
+}
+
+.status-gray {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.status-brown {
+    background: #f3e5d0;
+    color: #6f4e37;
+}

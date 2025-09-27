@@ -6,6 +6,8 @@ import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
 import EquipoForm from './EquipoForm';
 import api from '../services/api';
 import SectionHeader from './common/SectionHeader';
+import '../styles/pages/informacion-equipos.css';
+import '../styles/components/standardModal.css';
 
 const EquiposInformacion = () => {
     const [selectedEquipo, setSelectedEquipo] = useState(null);
@@ -95,8 +97,8 @@ const EquiposInformacion = () => {
 
     // Renderizar tabla de equipos
     const renderEquiposTable = (equipos, logoSrc, altText) => (
-        <div className="projects-table-container">
-            <table className="projects-table equipos-table">
+        <div className="standard-table-container equipos-standard-table-container">
+            <table className="standard-table equipos-standard-table">
                 <thead>
                     <tr className="equipos-title-row">
                         <th colSpan="6" className="equipos-title-header">
@@ -126,7 +128,7 @@ const EquiposInformacion = () => {
                             <td>{equipo.ano}</td>
                             <td>
                                 <button
-                                    className="btn-edit-icon"
+                                    className="standard-table-icon"
                                     onClick={(e) => handleEditEquipo(equipo, e)}
                                     title="Editar equipo"
                                 >
@@ -183,30 +185,27 @@ const EquiposInformacion = () => {
             />
 
             {/* Tabla de Equipos de Pinellas */}
-            <div style={{ marginBottom: '2rem' }}>
-                {renderEquiposTable(equiposPinellas, logo, "Pinellas Logo")}
-            </div>
+            {renderEquiposTable(equiposPinellas, logo, "Pinellas Logo")}
 
             {/* Tabla de Equipos de COCP */}
-            <div style={{ marginBottom: '2rem' }}>
-                {renderEquiposTable(equiposCOCP, cocpLogo, "COCP Logo")}
-            </div>
+            {renderEquiposTable(equiposCOCP, cocpLogo, "COCP Logo")}
 
             {/* Modal de detalles */}
             {showModal && selectedEquipo && (
-                <div className="modal-overlay">
-                    <div className="modal-content project-details-modal equipos-modal">
-                        <div className="modal-header">
+                <div className="standard-modal-overlay">
+                    <div className="standard-modal-content">
+                        <div className="standard-modal-header">
                             <h2>Detalles del Equipo</h2>
                             <button
-                                className="modal-close"
+                                className="standard-modal-close"
                                 onClick={closeModal}
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <div className="project-details">
+                        <div className="standard-modal-body">
+                            <div className="project-details">
                             <div className="detail-row">
                                 <label>Código:</label>
                                 <span>{selectedEquipo.codigo || 'N/A'}</span>
@@ -270,6 +269,7 @@ const EquiposInformacion = () => {
                                     </div>
                                 </div>
                             )}
+                            </div>
                         </div>
                     </div>
                 </div>

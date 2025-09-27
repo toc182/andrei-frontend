@@ -54,7 +54,7 @@ const ProjectModal = ({ isOpen, onClose, project, onSave, isEditing = false }) =
         <>
             <button
                 type="button"
-                className="standard-modal-btn standard-modal-btn-secondary"
+                className="btn btn-secondary"
                 onClick={onClose}
                 disabled={loading}
             >
@@ -64,7 +64,7 @@ const ProjectModal = ({ isOpen, onClose, project, onSave, isEditing = false }) =
             <button
                 type="submit"
                 form="project-form"
-                className="standard-modal-btn standard-modal-btn-primary"
+                className="btn btn-primary"
                 disabled={loading}
             >
                 <FontAwesomeIcon icon={faSave} />

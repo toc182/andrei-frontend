@@ -32,17 +32,6 @@
     --danger-hover: #c82333;
     --active-bg: rgba(44, 62, 80, 0.1);
 
-    /* Status Colors for Badges */
-    --status-planning-bg: #fff3cd;
-    --status-planning-text: #856404;
-    --status-active-bg: #d4edda;
-    --status-active-text: #155724;
-    --status-paused-bg: #d1ecf1;
-    --status-paused-text: #0c5460;
-    --status-completed-bg: #d1ecf1;
-    --status-completed-text: #0c5460;
-    --status-cancelled-bg: #f5c6cb;
-    --status-cancelled-text: #721c24;
 
     /* Overlay and Alpha Colors */
     --overlay-bg: rgba(0, 0, 0, 0.5);

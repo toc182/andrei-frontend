@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileText, faDownload, faSpinner, faEye } from '@fortawesome/free-solid-svg-icons';
 import api from '../services/api';
+import '../styles/components/standardModal.css';
 
 const DocumentForm = ({ documentType }) => {
     const [formData, setFormData] = useState({});
@@ -359,12 +360,12 @@ const DocumentForm = ({ documentType }) => {
 
             {/* Modal de Vista Previa */}
             {showPreview && (
-                <div className="modal-overlay" onClick={() => setShowPreview(false)}>
-                    <div className="modal-content preview-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="standard-modal-overlay" onClick={() => setShowPreview(false)}>
+                    <div className="standard-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="standard-modal-header">
                             <h2>Vista Previa - {config.title}</h2>
                             <button
-                                className="modal-close"
+                                className="standard-modal-close"
                                 onClick={() => setShowPreview(false)}
                             >
                                 ×

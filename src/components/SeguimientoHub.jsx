@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Seguimiento from './Seguimiento'; // Componente específico de Bonyic
+import '../styles/components/badges.css';
 
 const SeguimientoHub = () => {
     const { user } = useAuth();

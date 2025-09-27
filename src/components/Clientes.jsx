@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
+import '../styles/components/standardModal.css';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
@@ -138,9 +139,9 @@ const Clientes = () => {
             {success && <div className="alert alert-success">{success}</div>}
 
             {showForm && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <div className="modal-header">
+                <div className="standard-modal-overlay">
+                    <div className="standard-modal-content">
+                        <div className="standard-modal-header">
                             <h2>{editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
                             <button className="close-btn" onClick={resetForm}>×</button>
                         </div>

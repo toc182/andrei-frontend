@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/components/standardModal.css';
 
 const AdendaForm = ({ 
     projectId, 
@@ -97,12 +98,12 @@ const AdendaForm = ({
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content adenda-modal">
-                <div className="modal-header">
+        <div className="standard-modal-overlay">
+            <div className="standard-modal-content">
+                <div className="standard-modal-header">
                     <h2>{editingAdenda ? 'Editar Adenda' : 'Nueva Adenda'}</h2>
                     <button
-                        className="modal-close"
+                        className="standard-modal-close"
                         onClick={onClose}
                         disabled={loading}
                     >

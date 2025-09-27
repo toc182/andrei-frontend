@@ -4,6 +4,7 @@ import api from '../services/api';
 import BudgetSetup from './BudgetSetup';
 import CostReporting from './CostReporting';
 import { formatDate } from '../utils/dateUtils';
+import '../styles/components/badges.css';
 
 const CostsHub = () => {
     const { user } = useAuth();

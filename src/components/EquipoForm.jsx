@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import api from '../services/api';
+import '../styles/components/standardModal.css';
 
 const EquipoForm = ({ equipo = null, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
@@ -105,12 +106,12 @@ const EquipoForm = ({ equipo = null, onClose, onSuccess }) => {
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content equipos-form-modal">
-                <div className="modal-header">
+        <div className="standard-modal-overlay">
+            <div className="standard-modal-content equipos-form-modal">
+                <div className="standard-modal-header">
                     <h2>{equipo ? 'Editar Equipo' : 'Agregar Nuevo Equipo'}</h2>
                     <button
-                        className="modal-close"
+                        className="standard-modal-close"
                         onClick={onClose}
                         disabled={loading}
                     >

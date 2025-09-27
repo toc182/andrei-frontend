@@ -32,10 +32,10 @@ const ProjectsHub = ({ onStatsUpdate, activeTab: propActiveTab }) => {
     ];
 
     return (
-        <div>
+        <>
             {/* Tab Content - No navigation, only accessible from sidebar */}
             {tabs.find(tab => tab.id === activeTab)?.component}
-        </div>
+        </>
     );
 };
 

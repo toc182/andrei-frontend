@@ -121,20 +121,5 @@
     transition: transform 0.2s ease;
 }
 
-/* Status Badges */
-.status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.6rem;
-    font-weight: var(--font-weight-medium);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.status-planning { background: var(--status-planning-bg); color: var(--status-planning-text); }
-.status-active { background: var(--status-active-bg); color: var(--status-active-text); }
-.status-paused { background: var(--status-paused-bg); color: var(--status-paused-text); }
-.status-completed { background: var(--status-completed-bg); color: var(--status-completed-text); }
-.status-cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled-text); }
 
 /* Responsive Design - Consolidated in common.css */

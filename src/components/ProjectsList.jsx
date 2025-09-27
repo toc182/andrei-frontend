@@ -3,10 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import ProjectForm from './ProjectForm';
 import AdendaForm from './AdendaForm';
 import StandardModal from './common/StandardModal';
+import SectionHeader from './common/SectionHeader';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faPenToSquare, faCog, faWrench, faTools, faCirclePlus, faBuilding, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faPenToSquare, faCog, faWrench, faTools, faPlus, faBuilding, faTrash } from '@fortawesome/free-solid-svg-icons';
+import '../styles/pages/proyectos.css';
+import '../styles/components/badges.css';
 
 const ProjectsList = ({ onStatsUpdate }) => {
     const { user } = useAuth();
@@ -199,11 +202,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
     // Obtener clase CSS para estado
     const getStatusClass = (estado) => {
         const statusClasses = {
-            'planificacion': 'status-planning',
-            'en_curso': 'status-active',
-            'pausado': 'status-paused',
-            'completado': 'status-completed',
-            'cancelado': 'status-cancelled'
+            'planificacion': 'status-yellow',
+            'en_curso': 'status-green',
+            'pausado': 'status-blue',
+            'completado': 'status-gray',
+            'cancelado': 'status-red'
         };
         return statusClasses[estado] || '';
     };
@@ -312,18 +315,15 @@ const ProjectsList = ({ onStatsUpdate }) => {
     return (
         <div className="section-container">
             {/* Header */}
-            <div className="section-header">
-                <h1><FontAwesomeIcon icon={faBuilding} /> Proyectos</h1>
-                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                    <button
-                        className="btn-add-icon"
-                        onClick={() => setShowCreateForm(true)}
-                        title="Agregar nuevo proyecto"
-                    >
-                        <FontAwesomeIcon icon={faCirclePlus} />
-                    </button>
-                )}
-            </div>
+            <SectionHeader
+                title="Proyectos"
+                icon={faBuilding}
+                actionButton={(user?.rol === 'admin' || user?.rol === 'project_manager') ? {
+                    icon: faPlus,
+                    onClick: () => setShowCreateForm(true),
+                    className: 'btn-primary'
+                } : null}
+            />
 
 
             {/* Error */}
@@ -334,69 +334,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 </div>
             )}
 
-            {/* Tabla de Proyectos */}
-            <div className="projects-table-container">
-                <table className="projects-table">
-                    <thead>
-                    <tr>
-                        <th>Proyecto</th>
-                        <th>Cliente</th>
-                        <th className="hide-mobile-sm">Estado</th>
-                        <th className="hide-mobile-sm">Monto</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {projects.length === 0 ? (
-                        <tr>
-                            <td colSpan="5" className="no-data">
-                                {loading ? 'Cargando proyectos...' : 'No se encontraron proyectos'}
-                            </td>
-                        </tr>
-                    ) : (
-                        projects.map(project => (
-                            <tr
-                                key={project.id}
-                                className="project-row"
-                                onClick={(e) => handleRowClick(project.id, e)}
-                                style={{cursor: 'pointer'}}
-                            >
-                                <td className="project-name">
-                                    <span>{project.nombre_corto || project.nombre}</span>
-                                </td>
-                                <td className="project-client">
-                                    {project.cliente_abreviatura || project.cliente_nombre || '-'}
-                                </td>
-                                <td className="hide-mobile-sm">
-                                    <span className={`status-badge ${getStatusClass(project.estado)}`}>
-                                        {getStatusText(project.estado)}
-                                    </span>
-                                </td>
-                                <td className="project-money hide-mobile-sm">
-                                    {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
-                                </td>
-                                <td className="project-actions">
-                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                        <div className="edit-button-options">
-                                            <button
-                                                className="btn-edit-icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEditProject(project);
-                                                }}
-                                                title="Editar proyecto"
-                                            >
-                                                <FontAwesomeIcon icon={faEdit} />
-                                            </button>
-                                        </div>
-                                    )}
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                    </tbody>
-                </table>
-            </div>
 
 
 
@@ -416,264 +353,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 onDelete={handleDeleteProject}
             />
 
-            {/* Modal para ver detalles del proyecto - TABLA ORIGINAL (Modal Viejo) */}
-            {viewingProject && (
-                <div className="modal-overlay" onClick={() => setViewingProject(null)}>
-                    <div className="modal-content project-details-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <button
-                                className="modal-close"
-                                onClick={() => setViewingProject(null)}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <div className="project-details">
-                            {/* Nombre del Proyecto */}
-                            <div className="detail-row">
-                                <label>Nombre del Proyecto:</label>
-                                <span>{viewingProject.nombre}</span>
-                            </div>
-
-                            {/* Código */}
-                            {viewingProject.codigo_proyecto && (
-                                <div className="detail-row">
-                                    <label>Código:</label>
-                                    <span>{viewingProject.codigo_proyecto}</span>
-                                </div>
-                            )}
-
-                            {/* Estado */}
-                            <div className="detail-row">
-                                <label>Estado:</label>
-                                <span className={`status-badge ${getStatusClass(viewingProject.estado)}`}>
-                                    {getStatusText(viewingProject.estado)}
-                                </span>
-                            </div>
-
-                            {/* Cliente */}
-                            {viewingProject.cliente_nombre && (
-                                <div className="detail-row">
-                                    <label>Cliente:</label>
-                                    <span>{viewingProject.cliente_nombre}</span>
-                                </div>
-                            )}
-
-                            {/* Abreviatura Cliente */}
-                            {viewingProject.cliente_abreviatura && (
-                                <div className="detail-row">
-                                    <label>Abreviatura:</label>
-                                    <span className="client-abbreviation">{viewingProject.cliente_abreviatura}</span>
-                                </div>
-                            )}
-
-                            {/* Contacto Cliente */}
-                            {viewingProject.cliente_contacto && (
-                                <div className="detail-row">
-                                    <label>Contacto:</label>
-                                    <span>{viewingProject.cliente_contacto}</span>
-                                </div>
-                            )}
-
-                            {/* Teléfono Cliente */}
-                            {viewingProject.cliente_telefono && (
-                                <div className="detail-row">
-                                    <label>Teléfono:</label>
-                                    <span>{viewingProject.cliente_telefono}</span>
-                                </div>
-                            )}
-
-                            {/* Email Cliente */}
-                            {viewingProject.cliente_email && (
-                                <div className="detail-row">
-                                    <label>Email:</label>
-                                    <span>{viewingProject.cliente_email}</span>
-                                </div>
-                            )}
-
-                            {/* Contratista */}
-                            {viewingProject.contratista && (
-                                <div className="detail-row">
-                                    <label>Contratista:</label>
-                                    <span>{viewingProject.contratista}</span>
-                                </div>
-                            )}
-
-                            {/* Ingeniero Residente */}
-                            {viewingProject.ingeniero_residente && (
-                                <div className="detail-row">
-                                    <label>Ingeniero Residente:</label>
-                                    <span>{viewingProject.ingeniero_residente}</span>
-                                </div>
-                            )}
-
-                            {/* Fecha de Inicio */}
-                            {viewingProject.fecha_inicio && (
-                                <div className="detail-row">
-                                    <label>Fecha de Inicio:</label>
-                                    <span>{formatDate(viewingProject.fecha_inicio)}</span>
-                                </div>
-                            )}
-
-                            {/* Fecha de Terminación */}
-                            {viewingProject.fecha_fin_estimada && (
-                                <div className="detail-row">
-                                    <label>Fecha de Terminación:</label>
-                                    <span>{formatDate(viewingProject.fecha_fin_estimada)}</span>
-                                </div>
-                            )}
-
-                            {/* Presupuesto Base */}
-                            {viewingProject.presupuesto_base && (
-                                <div className="detail-row">
-                                    <label>Presupuesto Base:</label>
-                                    <span className="project-money">{formatMoney(viewingProject.presupuesto_base)}</span>
-                                </div>
-                            )}
-
-                            {/* ITBMS */}
-                            {viewingProject.itbms && (
-                                <div className="detail-row">
-                                    <label>ITBMS (7%):</label>
-                                    <span className="project-money">{formatMoney(viewingProject.itbms)}</span>
-                                </div>
-                            )}
-
-                            {/* Monto Total */}
-                            {viewingProject.monto_total && (
-                                <div className="detail-row">
-                                    <label>Monto Total:</label>
-                                    <span className="project-money">{formatMoney(viewingProject.monto_total)}</span>
-                                </div>
-                            )}
-
-                            {/* Monto del Contrato (alternativo) */}
-                            {!viewingProject.monto_total && viewingProject.monto_contrato_original && (
-                                <div className="detail-row">
-                                    <label>Monto del Contrato:</label>
-                                    <span className="project-money">{formatMoney(viewingProject.monto_contrato_original)}</span>
-                                </div>
-                            )}
-
-                            {/* Número de Contrato */}
-                            {viewingProject.contrato && (
-                                <div className="detail-row">
-                                    <label>Número de Contrato:</label>
-                                    <span>{viewingProject.contrato}</span>
-                                </div>
-                            )}
-
-                            {/* Acto Público */}
-                            {viewingProject.acto_publico && (
-                                <div className="detail-row">
-                                    <label>Acto Público:</label>
-                                    <span>{viewingProject.acto_publico}</span>
-                                </div>
-                            )}
-
-                            {/* Observaciones */}
-                            {viewingProject.datos_adicionales?.observaciones && (
-                                <div className="detail-row full-width">
-                                    <label>Observaciones:</label>
-                                    <div className="observation-text">{viewingProject.datos_adicionales.observaciones}</div>
-                                </div>
-                            )}
-
-                            {/* Sección de Adendas */}
-                            {projectAdendas && projectAdendas.length > 0 && (
-                                <div className="adendas-section">
-                                    <h4>Adendas del Proyecto</h4>
-                                    {projectAdendas.map(adenda => (
-                                        <div key={adenda.id} className="adenda-item">
-                                            <div className="detail-row">
-                                                <label>Adenda #{adenda.numero_adenda}:</label>
-                                                <div className="adenda-status-container">
-                                                    <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
-                                                        {getAdendaStatusText(adenda.estado)}
-                                                    </span>
-                                                    <div className="adenda-actions">
-                                                        <button
-                                                            className="btn-icon btn-edit"
-                                                            onClick={() => handleEditAdenda(adenda)}
-                                                            title="Editar adenda"
-                                                        >
-                                                            <FontAwesomeIcon icon={faEdit} />
-                                                        </button>
-                                                        {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                                            <button
-                                                                className="btn-icon btn-delete"
-                                                                onClick={() => handleDeleteAdenda(adenda.id)}
-                                                                title="Eliminar adenda"
-                                                            >
-                                                                <FontAwesomeIcon icon={faTrash} />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="detail-row">
-                                                <label>Tipo:</label>
-                                                <span>{getAdendaTypeText(adenda.tipo)}</span>
-                                            </div>
-                                            {adenda.nueva_fecha_fin && (
-                                                <div className="detail-row">
-                                                    <label>Nueva Fecha de Terminación:</label>
-                                                    <span>
-                                                        {formatDate(adenda.nueva_fecha_fin)}
-                                                        {adenda.dias_extension && (
-                                                            <span className="extension-days"> (+{adenda.dias_extension} días)</span>
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {adenda.nuevo_monto && (
-                                                <div className="detail-row">
-                                                    <label>Nuevo Monto:</label>
-                                                    <span className="project-money">{formatMoney(adenda.nuevo_monto)}</span>
-                                                </div>
-                                            )}
-                                            {adenda.monto_adicional && (
-                                                <div className="detail-row">
-                                                    <label>Monto Adicional:</label>
-                                                    <span className="project-money">{formatMoney(adenda.monto_adicional)}</span>
-                                                </div>
-                                            )}
-                                            {adenda.observaciones && (
-                                                <div className="detail-row">
-                                                    <label>Observaciones:</label>
-                                                    <span>{adenda.observaciones}</span>
-                                                </div>
-                                            )}
-                                            <div className="detail-row">
-                                                <label>Solicitada:</label>
-                                                <span>
-                                                    {formatDate(adenda.fecha_solicitud)}
-                                                    {adenda.fecha_aprobacion && (
-                                                        <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Botones de Acción */}
-                            <div className="project-actions-section">
-                                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={() => setShowAdendaForm(true)}
-                                    >
-                                        + Agregar Adenda
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Modal para ver detalles del proyecto - TABLA EXPERIMENTAL (Nuevo Sistema) */}
             <StandardModal
@@ -681,11 +360,10 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 onClose={() => setViewingProjectExperimental(null)}
                 title=""
                 size="large"
-                className="project-details-modal"
                 footer={(
                     (user?.rol === 'admin' || user?.rol === 'project_manager') && (
                         <button
-                            className="standard-modal-btn standard-modal-btn-primary"
+                            className="btn btn-primary"
                             onClick={() => setShowAdendaForm(true)}
                         >
                             + Agregar Adenda
@@ -960,7 +638,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
             />
 
             {/* ===== TABLA EXPERIMENTAL (Sistema Estandarizado) ===== */}
-            <div className="standard-table-container projects-standard-table-container" style={{marginTop: '3rem'}}>
+            <div className="standard-table-container projects-standard-table-container">
                 <table className="standard-table projects-standard-table">
                     <thead>
                         <tr>

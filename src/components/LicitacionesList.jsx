@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import LicitacionForm from './LicitacionForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
+import '../styles/components/badges.css';
 
 const LicitacionesList = () => {
     const { user } = useAuth();
@@ -177,7 +178,7 @@ const LicitacionesList = () => {
                     <tbody>
                     {licitaciones.length === 0 ? (
                         <tr>
-                            <td colSpan="7" className="no-data">
+                            <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic', padding: '2rem' }}>
                                 {loading ? 'Cargando licitaciones...' : selectedEstado ? `No hay licitaciones ${selectedEstado}s` : 'No hay licitaciones registradas'}
                             </td>
                         </tr>
