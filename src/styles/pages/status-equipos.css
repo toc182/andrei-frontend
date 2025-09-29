@@ -1,3 +1,42 @@
-/* Estilos específicos para la página de Status de Equipos */
+/* STATUS EQUIPOS PAGE - ESTILOS ESPECIFICOS */
 
-@import './informacion-equipos.css';
+.status-equipos-page .standard-table td,
+.status-equipos-page .standard-table th,
+.status-equipos-page .equipos-table td,
+.status-equipos-page .equipos-table th {
+    vertical-align: middle;
+}
+
+/* Centrar horizontalmente la columna de Estado */
+.status-equipos-page .standard-table th:nth-child(3),
+.status-equipos-page .standard-table td:nth-child(3),
+.status-equipos-page .equipos-table th:nth-child(3),
+.status-equipos-page .equipos-table td:nth-child(3) {
+    text-align: center;
+}
+
+/* RESPONSIVE DESIGN */
+@container main (max-width: 576px) {
+    /* Ocultar columna de ubicacion */
+    .status-equipos-page .standard-table th:nth-child(4),
+    .status-equipos-page .standard-table td:nth-child(4),
+    .status-equipos-page .equipos-table th:nth-child(4),
+    .status-equipos-page .equipos-table td:nth-child(4) {
+        display: none;
+    }
+
+    /* Redistribuir espacio: mitad a descripcion, mitad a estado */
+    .status-equipos-page .standard-table th:nth-child(2),
+    .status-equipos-page .standard-table td:nth-child(2),
+    .status-equipos-page .equipos-table th:nth-child(2),
+    .status-equipos-page .equipos-table td:nth-child(2) {
+        width: 50%;
+    }
+
+    .status-equipos-page .standard-table th:nth-child(3),
+    .status-equipos-page .standard-table td:nth-child(3),
+    .status-equipos-page .equipos-table th:nth-child(3),
+    .status-equipos-page .equipos-table td:nth-child(3) {
+        width: 30%;
+    }
+}

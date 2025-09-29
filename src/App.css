@@ -2,10 +2,9 @@
 
 /* Import Component Styles */
 @import "./styles/components/common.css";
-@import "./styles/components/projects.css";
+@import "./styles/components/section.css";
 @import "./styles/components/forms.css";
 @import "./styles/components/buttons.css";
-@import "./styles/equipos-status.css";
 
 /* App Root */
 .App {
@@ -82,41 +81,40 @@
 
 
 
-/* Fix table layout for equipos tables to allow column width adjustments */
-.projects-table.equipos-table {
+/* Equipos table specific column widths */
+.standard-table-container .standard-table.equipos-table {
     table-layout: auto;
 }
 
-/* Equipos table specific column widths - Higher specificity to override projects-table rules */
-.projects-table-container .projects-table.equipos-table th:nth-child(1),
-.projects-table-container .projects-table.equipos-table td:nth-child(1) {
+.standard-table-container .standard-table.equipos-table th:nth-child(1),
+.standard-table-container .standard-table.equipos-table td:nth-child(1) {
     width: 12%;
 }
 
-.projects-table-container .projects-table.equipos-table th:nth-child(2),
-.projects-table-container .projects-table.equipos-table td:nth-child(2) {
+.standard-table-container .standard-table.equipos-table th:nth-child(2),
+.standard-table-container .standard-table.equipos-table td:nth-child(2) {
     width: 30%;
     text-align: left;
 }
 
-.projects-table-container .projects-table.equipos-table th:nth-child(3),
-.projects-table-container .projects-table.equipos-table td:nth-child(3) {
+.standard-table-container .standard-table.equipos-table th:nth-child(3),
+.standard-table-container .standard-table.equipos-table td:nth-child(3) {
     width: 23%;
 }
 
-.projects-table-container .projects-table.equipos-table th:nth-child(4),
-.projects-table-container .projects-table.equipos-table td:nth-child(4) {
+.standard-table-container .standard-table.equipos-table th:nth-child(4),
+.standard-table-container .standard-table.equipos-table td:nth-child(4) {
     width: 20%;
     text-align: center;
 }
 
-.projects-table-container .projects-table.equipos-table th:nth-child(5),
-.projects-table-container .projects-table.equipos-table td:nth-child(5) {
+.standard-table-container .standard-table.equipos-table th:nth-child(5),
+.standard-table-container .standard-table.equipos-table td:nth-child(5) {
     width: 10%;
 }
 
-.projects-table-container .projects-table.equipos-table th:nth-child(6),
-.projects-table-container .projects-table.equipos-table td:nth-child(6) {
+.standard-table-container .standard-table.equipos-table th:nth-child(6),
+.standard-table-container .standard-table.equipos-table td:nth-child(6) {
     width: 5%;
     text-align: center;
     padding: 0.5rem 0.25rem;

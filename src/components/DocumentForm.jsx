@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileText, faDownload, faSpinner, faEye } from '@fortawesome/free-solid-svg-icons';
 import api from '../services/api';
 import '../styles/components/standardModal.css';
+import '../styles/pages/documentos.css';
 
 const DocumentForm = ({ documentType }) => {
     const [formData, setFormData] = useState({});

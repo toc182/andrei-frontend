@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
+import '../styles/pages/login.css';
 
 const Login = () => {
     const [formData, setFormData] = useState({

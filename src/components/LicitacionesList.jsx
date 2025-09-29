@@ -162,8 +162,8 @@ const LicitacionesList = () => {
             </div>
 
             {/* Tabla de Licitaciones */}
-            <div className="projects-table-container">
-                <table className="projects-table">
+            <div className="standard-table-container">
+                <table className="standard-table">
                     <thead>
                     <tr>
                         <th>Número</th>
@@ -185,10 +185,10 @@ const LicitacionesList = () => {
                     ) : (
                         licitaciones.map(licitacion => (
                             <tr key={licitacion.id}>
-                                <td className="project-name">
+                                <td className="standard-name">
                                     {licitacion.numero_licitacion}
                                 </td>
-                                <td className="project-client">
+                                <td className="standard-client">
                                     {licitacion.nombre}
                                 </td>
                                 <td>{licitacion.entidad_licitante}</td>
@@ -198,10 +198,10 @@ const LicitacionesList = () => {
                                     </span>
                                 </td>
                                 <td>{formatDate(licitacion.fecha_cierre)}</td>
-                                <td className="project-money">
+                                <td className="standard-money">
                                     {formatCurrency(licitacion.presupuesto_referencial)}
                                 </td>
-                                <td className="project-actions">
+                                <td className="standard-actions">
                                     <button
                                         className="btn-action btn-edit"
                                         onClick={() => handleEditLicitacion(licitacion)}

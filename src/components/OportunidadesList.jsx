@@ -170,8 +170,8 @@ const OportunidadesList = () => {
             </div>
 
             {/* Tabla de Oportunidades */}
-            <div className="projects-table-container">
-                <table className="projects-table">
+            <div className="standard-table-container">
+                <table className="standard-table">
                     <thead>
                     <tr>
                         <th>Nombre</th>
@@ -193,10 +193,10 @@ const OportunidadesList = () => {
                     ) : (
                         oportunidades.map(oportunidad => (
                             <tr key={oportunidad.id}>
-                                <td className="project-name">
+                                <td className="standard-name">
                                     {oportunidad.nombre_oportunidad}
                                 </td>
-                                <td className="project-client">
+                                <td className="standard-client">
                                     {oportunidad.cliente_potencial}
                                 </td>
                                 <td>
@@ -207,13 +207,13 @@ const OportunidadesList = () => {
                                 <td className={getProbabilidadColor(oportunidad.probabilidad_cierre)}>
                                     {oportunidad.probabilidad_cierre ? `${oportunidad.probabilidad_cierre}%` : '-'}
                                 </td>
-                                <td className="project-money">
+                                <td className="standard-money">
                                     {formatCurrency(oportunidad.valor_estimado)}
                                 </td>
                                 <td>
                                     {formatDate(oportunidad.fecha_siguiente_seguimiento)}
                                 </td>
-                                <td className="project-actions">
+                                <td className="standard-actions">
                                     <button
                                         className="btn-action btn-edit"
                                         onClick={() => handleEditOportunidad(oportunidad)}

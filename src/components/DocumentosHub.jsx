@@ -1,4 +1,5 @@
 import React from 'react';
+import '../styles/pages/documentos.css';
 
 const DocumentosHub = ({ onDocumentClick }) => {
     // Lista de documentos disponibles (basada en el acordeón del sidebar)

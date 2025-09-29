@@ -1,9 +1,9 @@
 import React from 'react';
 
-const StandardTable = ({ columns, data, onRowClick, emptyMessage = "No hay datos disponibles" }) => {
+const StandardTable = ({ className, tableClassName, columns, data, onRowClick, emptyMessage = "No hay datos disponibles" }) => {
     return (
-        <div className="standard-table-container">
-            <table className="standard-table">
+        <div className={`standard-table-container ${className || ''}`}>
+            <table className={`standard-table ${tableClassName || ''}`}>
                 <thead>
                     <tr>
                         {columns.map((column, index) => (

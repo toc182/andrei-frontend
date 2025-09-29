@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import ProjectForm from './ProjectForm';
 import AdendaForm from './AdendaForm';
 import StandardModal from './common/StandardModal';
+import StandardTable from './common/StandardTable';
 import SectionHeader from './common/SectionHeader';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
@@ -304,7 +305,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
     if (loading && projects.length === 0) {
         return (
             <div className="section-container">
-                <div className="projects-loading">
+                <div className="loading-container">
                     <div className="loading-spinner"></div>
                     <p>Cargando proyectos...</p>
                 </div>
@@ -637,50 +638,51 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 editingAdenda={editingAdenda}
             />
 
-            {/* ===== TABLA EXPERIMENTAL (Sistema Estandarizado) ===== */}
-            <div className="standard-table-container projects-standard-table-container">
-                <table className="standard-table projects-standard-table">
-                    <thead>
-                        <tr>
-                            <th>Proyecto</th>
-                            <th>Cliente</th>
-                            <th>Estado</th>
-                            <th>Monto</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {projects.map(project => (
-                            <tr key={project.id} onClick={(e) => handleRowClickExperimental(project.id, e)} style={{cursor: 'pointer'}}>
-                                <td>{project.nombre_corto || project.nombre}</td>
-                                <td>{project.cliente_abreviatura || project.cliente_nombre || '-'}</td>
-                                <td>
-                                    <span className={`status-badge ${getStatusClass(project.estado)}`}>
-                                        {getStatusText(project.estado)}
-                                    </span>
-                                </td>
-                                <td className="project-money">
+            {/* ===== TABLA DE PROYECTOS (StandardTable Component) ===== */}
+            <StandardTable
+                className="projects-standard-table-container"
+                tableClassName="projects-standard-table"
+                columns={[
+                        { header: 'Proyecto', accessor: 'nombre_corto' },
+                        { header: 'Cliente', accessor: 'cliente_abreviatura' },
+                        {
+                            header: 'Estado',
+                            render: (project) => (
+                                <span className={`status-badge ${getStatusClass(project.estado)}`}>
+                                    {getStatusText(project.estado)}
+                                </span>
+                            )
+                        },
+                        {
+                            header: 'Monto',
+                            render: (project) => (
+                                <span className="project-money">
                                     {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
-                                </td>
-                                <td>
-                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                        <button
-                                            className="standard-table-icon"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEditProject(project);
-                                            }}
-                                            title="Editar proyecto"
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} />
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                                </span>
+                            )
+                        },
+                        {
+                            header: '',
+                            render: (project) => (
+                                (user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                    <button
+                                        className="standard-table-icon"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditProject(project);
+                                        }}
+                                        title="Editar proyecto"
+                                    >
+                                        <FontAwesomeIcon icon={faEdit} />
+                                    </button>
+                                )
+                            )
+                        }
+                    ]}
+                    data={projects}
+                    onRowClick={(project) => handleRowClickExperimental(project.id)}
+                    emptyMessage="No hay proyectos disponibles"
+                />
         </div>
     );
 };

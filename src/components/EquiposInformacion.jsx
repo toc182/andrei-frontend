@@ -6,6 +6,7 @@ import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
 import EquipoForm from './EquipoForm';
 import api from '../services/api';
 import SectionHeader from './common/SectionHeader';
+import StandardTable from './common/StandardTable';
 import '../styles/pages/informacion-equipos.css';
 import '../styles/components/standardModal.css';
 
@@ -95,52 +96,6 @@ const EquiposInformacion = () => {
         setSelectedEquipo(null);
     };
 
-    // Renderizar tabla de equipos
-    const renderEquiposTable = (equipos, logoSrc, altText) => (
-        <div className="standard-table-container equipos-standard-table-container">
-            <table className="standard-table equipos-standard-table">
-                <thead>
-                    <tr className="equipos-title-row">
-                        <th colSpan="6" className="equipos-title-header">
-                            <img src={logoSrc} alt={altText} className="equipos-logo" />
-                        </th>
-                    </tr>
-                    <tr>
-                        <th>Código</th>
-                        <th>Descripción</th>
-                        <th>Marca</th>
-                        <th>Modelo</th>
-                        <th>Año</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {equipos.map((equipo, index) => (
-                        <tr
-                            key={equipo.id || `equipo-${index}`}
-                            onClick={() => handleRowClick(equipo)}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <td>{equipo.codigo || '-'}</td>
-                            <td>{equipo.descripcion}</td>
-                            <td>{equipo.marca}</td>
-                            <td>{equipo.modelo}</td>
-                            <td>{equipo.ano}</td>
-                            <td>
-                                <button
-                                    className="standard-table-icon"
-                                    onClick={(e) => handleEditEquipo(equipo, e)}
-                                    title="Editar equipo"
-                                >
-                                    <FontAwesomeIcon icon={faEdit} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
 
     if (loading) {
         return (
@@ -149,7 +104,7 @@ const EquiposInformacion = () => {
                     title="Información de Equipos"
                     icon={faTruckPickup}
                 />
-                <div className="projects-loading">
+                <div className="loading-container">
                     <div className="loading-spinner"></div>
                     <p>Cargando equipos...</p>
                 </div>
@@ -185,10 +140,66 @@ const EquiposInformacion = () => {
             />
 
             {/* Tabla de Equipos de Pinellas */}
-            {renderEquiposTable(equiposPinellas, logo, "Pinellas Logo")}
+            <div style={{ textAlign: 'center', marginBottom: '0.2rem', marginTop: '2rem' }}>
+                <img src={logo} alt="Pinellas Logo" className="equipos-logo" />
+            </div>
+            <StandardTable
+                className="equipos-standard-table-container"
+                tableClassName="equipos-standard-table"
+                columns={[
+                    { header: 'Código', accessor: 'codigo' },
+                    { header: 'Descripción', accessor: 'descripcion' },
+                    { header: 'Marca', accessor: 'marca' },
+                    { header: 'Modelo', accessor: 'modelo' },
+                    { header: 'Año', accessor: 'ano' },
+                    {
+                        header: '',
+                        render: (equipo) => (
+                            <button
+                                className="standard-table-icon"
+                                onClick={(e) => handleEditEquipo(equipo, e)}
+                                title="Editar equipo"
+                            >
+                                <FontAwesomeIcon icon={faEdit} />
+                            </button>
+                        )
+                    }
+                ]}
+                data={equiposPinellas}
+                onRowClick={handleRowClick}
+                emptyMessage="No hay equipos de Pinellas disponibles"
+            />
 
             {/* Tabla de Equipos de COCP */}
-            {renderEquiposTable(equiposCOCP, cocpLogo, "COCP Logo")}
+            <div style={{ textAlign: 'center', marginBottom: '0.2rem', marginTop: '2rem' }}>
+                <img src={cocpLogo} alt="COCP Logo" className="equipos-logo" />
+            </div>
+            <StandardTable
+                className="equipos-standard-table-container"
+                tableClassName="equipos-standard-table"
+                columns={[
+                    { header: 'Código', accessor: 'codigo' },
+                    { header: 'Descripción', accessor: 'descripcion' },
+                    { header: 'Marca', accessor: 'marca' },
+                    { header: 'Modelo', accessor: 'modelo' },
+                    { header: 'Año', accessor: 'ano' },
+                    {
+                        header: '',
+                        render: (equipo) => (
+                            <button
+                                className="standard-table-icon"
+                                onClick={(e) => handleEditEquipo(equipo, e)}
+                                title="Editar equipo"
+                            >
+                                <FontAwesomeIcon icon={faEdit} />
+                            </button>
+                        )
+                    }
+                ]}
+                data={equiposCOCP}
+                onRowClick={handleRowClick}
+                emptyMessage="No hay equipos de COCP disponibles"
+            />
 
             {/* Modal de detalles */}
             {showModal && selectedEquipo && (

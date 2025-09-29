@@ -7,8 +7,10 @@ import api from '../services/api';
 import logo from '../assets/logo.png';
 import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
 import SectionHeader from './common/SectionHeader';
+import StandardTable from './common/StandardTable';
 import '../styles/components/badges.css';
 import '../styles/components/standardModal.css';
+import '../styles/pages/status-equipos.css';
 
 const EquiposStatus = () => {
     const [equiposPinellas, setEquiposPinellas] = useState([]);
@@ -130,60 +132,6 @@ const EquiposStatus = () => {
         setSelectedEquipo(null);
     };
 
-    // Renderizar tabla de status de equipos
-    const renderStatusTable = (equipos, logoSrc, altText) => (
-        <div className="projects-table-container">
-            <table className="projects-table equipos-table">
-                <thead>
-                    <tr className="equipos-title-row">
-                        <th colSpan="4" className="equipos-title-header">
-                            <img src={logoSrc} alt={altText} className="equipos-logo" />
-                        </th>
-                    </tr>
-                    <tr>
-                        <th>Código</th>
-                        <th>Descripción</th>
-                        <th>Estado</th>
-                        <th>Ubicación</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {equipos.map((equipo, index) => {
-                        const statusInfo = getStatusInfo(equipo.estado);
-                        return (
-                            <tr
-                                key={equipo.id || `status-${index}`}
-                                className="projects-row clickable-row"
-                                onClick={() => handleRowClick(equipo)}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <td>{equipo.codigo || '-'}</td>
-                                <td className="equipo-description-cell">
-                                    <div className="equipo-description-row">
-                                        {equipo.descripcion}
-                                    </div>
-                                    <div className="equipo-marca-modelo-row">
-                                        {equipo.marca} {equipo.modelo}
-                                    </div>
-                                    <div className="equipo-ano-row">
-                                        {equipo.ano || ''}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span className={`status-badge ${statusInfo.class}`}>
-                                        {statusInfo.label}
-                                    </span>
-                                </td>
-                                <td>
-                                    {equipo.ubicacion || 'No especificada'}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
-    );
 
     if (loading) {
         return (
@@ -192,7 +140,7 @@ const EquiposStatus = () => {
                     title="Estado de Equipos"
                     icon={faTruckPickup}
                 />
-                <div className="projects-loading">
+                <div className="loading-container">
                     <div className="loading-spinner"></div>
                     <p>Cargando estados de equipos...</p>
                 </div>
@@ -216,7 +164,7 @@ const EquiposStatus = () => {
     }
 
     return (
-        <div className="section-container">
+        <div className="section-container status-equipos-page">
             <SectionHeader
                 title="Estado de Equipos"
                 icon={faTruckPickup}
@@ -228,14 +176,90 @@ const EquiposStatus = () => {
             />
 
             {/* Tabla de Equipos de Pinellas */}
-            <div style={{ marginBottom: '2rem' }}>
-                {renderStatusTable(equiposPinellas, logo, "Pinellas Logo")}
+            <div style={{ textAlign: 'center', marginBottom: '0.2rem', marginTop: '2rem' }}>
+                <img src={logo} alt="Pinellas Logo" className="equipos-logo" />
             </div>
+            <StandardTable
+                className=""
+                tableClassName="equipos-table"
+                columns={[
+                    { header: 'Código', accessor: 'codigo' },
+                    {
+                        header: 'Descripción',
+                        render: (equipo) => (
+                            <div className="equipo-description-cell">
+                                <div className="equipo-description-row">
+                                    {equipo.descripcion}
+                                </div>
+                                <div className="equipo-marca-modelo-row">
+                                    {equipo.marca} {equipo.modelo}
+                                </div>
+                                <div className="equipo-ano-row">
+                                    {equipo.ano || ''}
+                                </div>
+                            </div>
+                        )
+                    },
+                    {
+                        header: 'Estado',
+                        render: (equipo) => {
+                            const statusInfo = getStatusInfo(equipo.estado);
+                            return (
+                                <span className={`status-badge ${statusInfo.class}`}>
+                                    {statusInfo.label}
+                                </span>
+                            );
+                        }
+                    },
+                    { header: 'Ubicación', render: (equipo) => equipo.ubicacion || 'No especificada' }
+                ]}
+                data={equiposPinellas}
+                onRowClick={handleRowClick}
+                emptyMessage="No hay equipos de Pinellas disponibles"
+            />
 
             {/* Tabla de Equipos de COCP */}
-            <div style={{ marginBottom: '2rem' }}>
-                {renderStatusTable(equiposCOCP, cocpLogo, "COCP Logo")}
+            <div style={{ textAlign: 'center', marginBottom: '0.2rem', marginTop: '2rem' }}>
+                <img src={cocpLogo} alt="COCP Logo" className="equipos-logo" />
             </div>
+            <StandardTable
+                className=""
+                tableClassName="equipos-table"
+                columns={[
+                    { header: 'Código', accessor: 'codigo' },
+                    {
+                        header: 'Descripción',
+                        render: (equipo) => (
+                            <div className="equipo-description-cell">
+                                <div className="equipo-description-row">
+                                    {equipo.descripcion}
+                                </div>
+                                <div className="equipo-marca-modelo-row">
+                                    {equipo.marca} {equipo.modelo}
+                                </div>
+                                <div className="equipo-ano-row">
+                                    {equipo.ano || ''}
+                                </div>
+                            </div>
+                        )
+                    },
+                    {
+                        header: 'Estado',
+                        render: (equipo) => {
+                            const statusInfo = getStatusInfo(equipo.estado);
+                            return (
+                                <span className={`status-badge ${statusInfo.class}`}>
+                                    {statusInfo.label}
+                                </span>
+                            );
+                        }
+                    },
+                    { header: 'Ubicación', render: (equipo) => equipo.ubicacion || 'No especificada' }
+                ]}
+                data={equiposCOCP}
+                onRowClick={handleRowClick}
+                emptyMessage="No hay equipos de COCP disponibles"
+            />
 
 
             {/* Modal de información del equipo */}
