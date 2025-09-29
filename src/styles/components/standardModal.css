@@ -18,7 +18,7 @@
     align-items: flex-start;
     justify-content: center;
     z-index: 1000;
-    padding: 2rem 1rem 1rem;
+    padding: 5rem 1rem 1rem;
 }
 
 /* Contenedor de modal estandarizado */
@@ -156,12 +156,6 @@
 
 /* ===== MOBILE TOP BAR FIX ===== */
 
-/* Fix para evitar que el modal se esconda detrás del top bar en móviles */
-@media (max-width: 480px) {
-    .standard-modal-overlay {
-        padding-top: 5rem;
-    }
-}
 
 
 /* ===== CONTAINER QUERIES - RESPONSIVE INTELIGENTE ===== */
