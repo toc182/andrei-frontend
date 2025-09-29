@@ -160,7 +160,7 @@
 @media (max-height: 600px) {
     .standard-modal-overlay {
         align-items: flex-start;
-        padding-top: 2rem;
+        padding-top: 10rem;
     }
 }
 
