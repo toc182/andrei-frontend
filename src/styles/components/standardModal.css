@@ -154,8 +154,19 @@
 }
 
 
-/* ===== MOBILE TOP BAR FIX ===== */
+/* ===== iOS SAFARI FIX ===== */
 
+/* Solo iOS Safari - Fix para bottom bar y scroll */
+@supports (-webkit-touch-callout: none) {
+    .standard-modal-overlay {
+        padding-bottom: env(safe-area-inset-bottom, 2rem);
+        height: 100dvh;
+    }
+
+    .standard-modal-content {
+        max-height: calc(100dvh - 10rem);
+    }
+}
 
 
 /* ===== CONTAINER QUERIES - RESPONSIVE INTELIGENTE ===== */

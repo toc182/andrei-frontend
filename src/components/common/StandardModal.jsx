@@ -21,11 +21,25 @@ const StandardModal = ({
         if (isOpen) {
             document.addEventListener('keydown', handleEscapeKey);
             document.body.classList.add('modal-open');
+
+            // iOS Safari scroll fix
+            if (/iPhone|iPad/.test(navigator.userAgent)) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            }
         }
 
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
             document.body.classList.remove('modal-open');
+
+            // Reset iOS Safari styles
+            if (/iPhone|iPad/.test(navigator.userAgent)) {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
         };
     }, [isOpen, onClose]);
 
