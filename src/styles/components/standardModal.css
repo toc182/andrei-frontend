@@ -154,6 +154,17 @@
 }
 
 
+/* ===== MOBILE TOP BAR FIX ===== */
+
+/* Fix para evitar que el modal se esconda detrás del top bar en móviles */
+@media (max-height: 600px) {
+    .standard-modal-overlay {
+        align-items: flex-start;
+        padding-top: 2rem;
+    }
+}
+
+
 /* ===== CONTAINER QUERIES - RESPONSIVE INTELIGENTE ===== */
 
 /* Tablets (≤768px disponible en modal) */
