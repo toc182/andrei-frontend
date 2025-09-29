@@ -15,10 +15,10 @@
     bottom: 0;
     background: var(--overlay-bg);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 1000;
-    padding: 1rem;
+    padding: 2rem 1rem 1rem;
 }
 
 /* Contenedor de modal estandarizado */
@@ -159,8 +159,7 @@
 /* Fix para evitar que el modal se esconda detrás del top bar en móviles */
 @media (max-width: 480px) {
     .standard-modal-overlay {
-        align-items: flex-start;
-        padding-top: 4rem;
+        padding-top: 5rem;
     }
 }
 
