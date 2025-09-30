@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import '../styles/components/standardModal.css';
+import StandardModal from './common/StandardModal';
 
 const OportunidadForm = ({
     oportunidadId = null,
@@ -172,33 +172,56 @@ const OportunidadForm = ({
 
     if (!isOpen) return null;
 
-    return (
-        <div className="standard-modal-overlay">
-            <div className="standard-modal-content project-form-modal">
-                <div className="standard-modal-header">
-                    <h2>{oportunidadId ? 'Editar Oportunidad' : 'Nueva Oportunidad'}</h2>
-                    <button
-                        className="standard-modal-close"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        ✕
-                    </button>
-                </div>
+    const footer = (
+        <div >
+            <button
+                type="button"
+                onClick={onClose}
+                className="btn-secondary"
+                disabled={loading}
+            >
+                Cancelar
+            </button>
 
-                {loading && !formData.nombre_oportunidad && (
-                    <div className="form-loading">
-                        <div className="loading-spinner"></div>
-                        <p>Cargando datos de la oportunidad...</p>
-                    </div>
+            <button
+                type="submit"
+                form="oportunidad-form"
+                className="btn-primary"
+                disabled={loading}
+            >
+                {loading ? (
+                    <>
+                        <div className="btn-spinner"></div>
+                        {oportunidadId ? 'Actualizando...' : 'Creando...'}
+                    </>
+                ) : (
+                    oportunidadId ? 'Actualizar Oportunidad' : 'Crear Oportunidad'
                 )}
+            </button>
+        </div>
+    );
 
-                <form onSubmit={handleSubmit} className="project-form">
-                    <div className="form-section">
+    return (
+        <StandardModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={oportunidadId ? 'Editar Oportunidad' : 'Nueva Oportunidad'}
+            footer={footer}
+            className="form-container"
+        >
+            {loading && !formData.nombre_oportunidad && (
+                <div >
+                    <div className="loading-spinner"></div>
+                    <p>Cargando datos de la oportunidad...</p>
+                </div>
+            )}
+
+            <form id="oportunidad-form" onSubmit={handleSubmit}>
+                    <div >
                         <h3>Información Básica</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Nombre de la Oportunidad *</label>
                                 <input
                                     type="text"
@@ -211,7 +234,7 @@ const OportunidadForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Estado</label>
                                 <select
                                     name="estado_oportunidad"
@@ -228,8 +251,8 @@ const OportunidadForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Cliente Potencial *</label>
                                 <input
                                     type="text"
@@ -242,7 +265,7 @@ const OportunidadForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Contacto Referido</label>
                                 <input
                                     type="text"
@@ -255,8 +278,8 @@ const OportunidadForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Tipo de Trabajo</label>
                                 <input
                                     type="text"
@@ -270,11 +293,11 @@ const OportunidadForm = ({
                         </div>
                     </div>
 
-                    <div className="form-section">
+                    <div >
                         <h3>Información Comercial</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Valor Estimado (USD)</label>
                                 <input
                                     type="number"
@@ -288,7 +311,7 @@ const OportunidadForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Probabilidad de Cierre (%)</label>
                                 <input
                                     type="number"
@@ -303,8 +326,8 @@ const OportunidadForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Fecha de Identificación</label>
                                 <input
                                     type="date"
@@ -315,7 +338,7 @@ const OportunidadForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Próximo Seguimiento</label>
                                 <input
                                     type="date"
@@ -328,11 +351,11 @@ const OportunidadForm = ({
                         </div>
                     </div>
 
-                    <div className="form-section">
+                    <div >
                         <h3>Notas Comerciales</h3>
 
-                        <div className="form-row">
-                            <div className="form-group full-width">
+                        <div >
+                            <div>
                                 <label>Notas Comerciales</label>
                                 <textarea
                                     name="notas_comerciales"
@@ -346,40 +369,13 @@ const OportunidadForm = ({
                         </div>
                     </div>
 
-                    {error && (
-                        <div className="form-error">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="form-actions">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="btn-secondary"
-                            disabled={loading}
-                        >
-                            Cancelar
-                        </button>
-
-                        <button
-                            type="submit"
-                            className="btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="btn-spinner"></div>
-                                    {oportunidadId ? 'Actualizando...' : 'Creando...'}
-                                </>
-                            ) : (
-                                oportunidadId ? 'Actualizar Oportunidad' : 'Crear Oportunidad'
-                            )}
-                        </button>
+                {error && (
+                    <div >
+                        {error}
                     </div>
-                </form>
-            </div>
-        </div>
+                )}
+            </form>
+        </StandardModal>
     );
 };
 

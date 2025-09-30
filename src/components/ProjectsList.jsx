@@ -227,11 +227,11 @@ const ProjectsList = ({ onStatsUpdate }) => {
     // Funciones para adendas
     const getAdendaStatusClass = (estado) => {
         const statusClasses = {
-            'en_proceso': 'status-planning',
-            'aprobada': 'status-completed',
-            'rechazada': 'status-cancelled'
+            'en_proceso': 'status-yellow',
+            'aprobada': 'status-green',
+            'rechazada': 'status-red'
         };
-        return statusClasses[estado] || 'status-planning';
+        return statusClasses[estado] || 'status-yellow';
     };
 
     const getAdendaStatusText = (estado) => {
@@ -322,7 +322,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 actionButton={(user?.rol === 'admin' || user?.rol === 'project_manager') ? {
                     icon: faPlus,
                     onClick: () => setShowCreateForm(true),
-                    className: 'btn-primary'
+                    className: 'btn-circular'
                 } : null}
             />
 
@@ -359,7 +359,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
             <StandardModal
                 isOpen={!!viewingProjectExperimental}
                 onClose={() => setViewingProjectExperimental(null)}
-                title=""
+                title={viewingProjectExperimental?.nombre_corto || "Detalles del Proyecto"}
                 size="large"
                 footer={(
                     (user?.rol === 'admin' || user?.rol === 'project_manager') && (
@@ -373,183 +373,163 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 )}
             >
                 {viewingProjectExperimental && (
-                    <>
-                        {/* Nombre del Proyecto */}
-                        <div className="project-detail-row">
-                            <label>Proyecto:</label>
-                            <div className="detail-value">{viewingProjectExperimental.nombre}</div>
+                    <div>
+                        <div className="modal-row">
+                            <label className="modal-row-label">Proyecto:</label>
+                            <span className="modal-row-value">{viewingProjectExperimental.nombre}</span>
                         </div>
 
-                        {/* Código */}
                         {viewingProjectExperimental.codigo_proyecto && (
-                            <div className="project-detail-row">
-                                <label>Código:</label>
-                                <div className="detail-value">{viewingProjectExperimental.codigo_proyecto}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Código:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.codigo_proyecto}</span>
                             </div>
                         )}
 
-                        {/* Estado */}
-                        <div className="project-detail-row">
-                            <label>Estado:</label>
-                            <div className="detail-value">
+                        <div className="modal-row">
+                            <label className="modal-row-label">Estado:</label>
+                            <span className="modal-row-value">
                                 <span className={`status-badge ${getStatusClass(viewingProjectExperimental.estado)}`}>
                                     {getStatusText(viewingProjectExperimental.estado)}
                                 </span>
-                            </div>
+                            </span>
                         </div>
 
-                        {/* Cliente */}
                         {viewingProjectExperimental.cliente_nombre && (
-                            <div className="project-detail-row">
-                                <label>Cliente:</label>
-                                <div className="detail-value">{viewingProjectExperimental.cliente_nombre}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Cliente:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.cliente_nombre}</span>
                             </div>
                         )}
 
-                        {/* Abreviatura Cliente */}
                         {viewingProjectExperimental.cliente_abreviatura && (
-                            <div className="project-detail-row">
-                                <label>Abreviatura:</label>
-                                <div className="detail-value">
-                                    <span className="client-abbreviation">{viewingProjectExperimental.cliente_abreviatura}</span>
-                                </div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Abreviatura:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.cliente_abreviatura}</span>
                             </div>
                         )}
 
-                        {/* Contacto Cliente */}
                         {viewingProjectExperimental.cliente_contacto && (
-                            <div className="project-detail-row">
-                                <label>Contacto:</label>
-                                <div className="detail-value">{viewingProjectExperimental.cliente_contacto}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Contacto:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.cliente_contacto}</span>
                             </div>
                         )}
 
-                        {/* Teléfono Cliente */}
                         {viewingProjectExperimental.cliente_telefono && (
-                            <div className="project-detail-row">
-                                <label>Teléfono:</label>
-                                <div className="detail-value">{viewingProjectExperimental.cliente_telefono}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Teléfono:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.cliente_telefono}</span>
                             </div>
                         )}
 
-                        {/* Email Cliente */}
                         {viewingProjectExperimental.cliente_email && (
-                            <div className="project-detail-row">
-                                <label>Email:</label>
-                                <div className="detail-value">{viewingProjectExperimental.cliente_email}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Email:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.cliente_email}</span>
                             </div>
                         )}
 
-                        {/* Contratista */}
                         {viewingProjectExperimental.contratista && (
-                            <div className="project-detail-row">
-                                <label>Contratista:</label>
-                                <div className="detail-value">{viewingProjectExperimental.contratista}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Contratista:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.contratista}</span>
                             </div>
                         )}
 
-                        {/* Ingeniero Residente */}
                         {viewingProjectExperimental.ingeniero_residente && (
-                            <div className="project-detail-row">
-                                <label>Ingeniero Residente:</label>
-                                <div className="detail-value">{viewingProjectExperimental.ingeniero_residente}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Ingeniero Residente:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.ingeniero_residente}</span>
                             </div>
                         )}
 
                         {/* Fecha de Inicio */}
                         {viewingProjectExperimental.fecha_inicio && (
-                            <div className="project-detail-row">
-                                <label>Fecha de Inicio:</label>
-                                <div className="detail-value">{formatDate(viewingProjectExperimental.fecha_inicio)}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Fecha de Inicio:</label>
+                                <span className="modal-row-value">{formatDate(viewingProjectExperimental.fecha_inicio)}</span>
                             </div>
                         )}
 
                         {/* Fecha de Terminación */}
                         {viewingProjectExperimental.fecha_fin_estimada && (
-                            <div className="project-detail-row">
-                                <label>Fecha de Terminación:</label>
-                                <div className="detail-value">{formatDate(viewingProjectExperimental.fecha_fin_estimada)}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Fecha de Terminación:</label>
+                                <span className="modal-row-value">{formatDate(viewingProjectExperimental.fecha_fin_estimada)}</span>
                             </div>
                         )}
 
                         {/* Presupuesto Base */}
                         {viewingProjectExperimental.presupuesto_base && (
-                            <div className="project-detail-row">
-                                <label>Presupuesto Base:</label>
-                                <div className="detail-value">
-                                    <span>{formatMoney(viewingProjectExperimental.presupuesto_base)}</span>
-                                </div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Presupuesto Base:</label>
+                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.presupuesto_base)}</span>
                             </div>
                         )}
 
                         {/* ITBMS */}
                         {viewingProjectExperimental.itbms && (
-                            <div className="project-detail-row">
-                                <label>ITBMS (7%):</label>
-                                <div className="detail-value">
-                                    <span>{formatMoney(viewingProjectExperimental.itbms)}</span>
-                                </div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">ITBMS (7%):</label>
+                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.itbms)}</span>
                             </div>
                         )}
 
                         {/* Monto Total */}
                         {viewingProjectExperimental.monto_total && (
-                            <div className="project-detail-row">
-                                <label>Monto Total:</label>
-                                <div className="detail-value">
-                                    <span>{formatMoney(viewingProjectExperimental.monto_total)}</span>
-                                </div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Monto Total:</label>
+                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.monto_total)}</span>
                             </div>
                         )}
 
                         {/* Monto del Contrato (alternativo) */}
                         {!viewingProjectExperimental.monto_total && viewingProjectExperimental.monto_contrato_original && (
-                            <div className="project-detail-row">
-                                <label>Monto del Contrato:</label>
-                                <div className="detail-value">
-                                    <span>{formatMoney(viewingProjectExperimental.monto_contrato_original)}</span>
-                                </div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Monto del Contrato:</label>
+                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.monto_contrato_original)}</span>
                             </div>
                         )}
 
                         {/* Número de Contrato */}
                         {viewingProjectExperimental.contrato && (
-                            <div className="project-detail-row">
-                                <label>Número de Contrato:</label>
-                                <div className="detail-value">{viewingProjectExperimental.contrato}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Número de Contrato:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.contrato}</span>
                             </div>
                         )}
 
                         {/* Acto Público */}
                         {viewingProjectExperimental.acto_publico && (
-                            <div className="project-detail-row">
-                                <label>Acto Público:</label>
-                                <div className="detail-value">{viewingProjectExperimental.acto_publico}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Acto Público:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.acto_publico}</span>
                             </div>
                         )}
 
                         {/* Observaciones */}
                         {viewingProjectExperimental.datos_adicionales?.observaciones && (
-                            <div className="project-detail-row full-width">
-                                <label>Observaciones:</label>
-                                <div className="detail-value">{viewingProjectExperimental.datos_adicionales.observaciones}</div>
+                            <div className="modal-row">
+                                <label className="modal-row-label">Observaciones:</label>
+                                <span className="modal-row-value">{viewingProjectExperimental.datos_adicionales.observaciones}</span>
                             </div>
                         )}
 
                         {/* Adendas */}
                         {projectAdendas.length > 0 && (
-                            <div className="adendas-section">
-                                    {projectAdendas.map(adenda => (
-                                        <div key={adenda.id} className="adenda-item">
-                                            <div className="project-detail-row">
-                                                <label>Adenda #{adenda.numero_adenda}:</label>
-                                                <div className="detail-value">
-                                                    <div className="adenda-status-container">
+                            <div className="modal-section">
+                                {projectAdendas.map(adenda => (
+                                    <React.Fragment key={adenda.id}>
+                                            <div className="modal-row">
+                                                <label className="modal-row-label">Adenda #{adenda.numero_adenda}:</label>
+                                                <div className="modal-row-value">
+                                                    <>
                                                         <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
                                                             {getAdendaStatusText(adenda.estado)}
                                                         </span>
                                                         {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                                            <div className="adenda-actions">
+                                                            <>
                                                                 <button
                                                                     className="btn-icon btn-edit"
                                                                     onClick={() => {
@@ -567,62 +547,58 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                                                 >
                                                                     <FontAwesomeIcon icon={faTrash} />
                                                                 </button>
-                                                            </div>
+                                                            </>
                                                         )}
-                                                    </div>
+                                                    </>
                                                 </div>
                                             </div>
-                                            <div className="project-detail-row">
-                                                <label>Tipo:</label>
-                                                <div className="detail-value">{getAdendaTypeText(adenda.tipo)}</div>
+                                            <div className="modal-row">
+                                                <label className="modal-row-label">Tipo:</label>
+                                                <span className="modal-row-value">{getAdendaTypeText(adenda.tipo)}</span>
                                             </div>
                                             {adenda.nueva_fecha_fin && (
-                                                <div className="project-detail-row">
-                                                    <label>Nueva Fecha de Terminación:</label>
-                                                    <div className="detail-value">
+                                                <div className="modal-row">
+                                                    <label className="modal-row-label">Nueva Fecha de Terminación:</label>
+                                                    <span className="modal-row-value">
                                                         {formatDate(adenda.nueva_fecha_fin)}
                                                         {adenda.dias_extension && (
-                                                            <span className="extension-days"> (+{adenda.dias_extension} días)</span>
+                                                            <span> (+{adenda.dias_extension} días)</span>
                                                         )}
-                                                    </div>
+                                                    </span>
                                                 </div>
                                             )}
                                             {adenda.nuevo_monto && (
-                                                <div className="project-detail-row">
-                                                    <label>Nuevo Monto:</label>
-                                                    <div className="detail-value">
-                                                        <span>{formatMoney(adenda.nuevo_monto)}</span>
-                                                    </div>
+                                                <div className="modal-row">
+                                                    <label className="modal-row-label">Nuevo Monto:</label>
+                                                    <span className="modal-row-value">{formatMoney(adenda.nuevo_monto)}</span>
                                                 </div>
                                             )}
                                             {adenda.monto_adicional && (
-                                                <div className="project-detail-row">
-                                                    <label>Monto Adicional:</label>
-                                                    <div className="detail-value">
-                                                        <span>{formatMoney(adenda.monto_adicional)}</span>
-                                                    </div>
+                                                <div className="modal-row">
+                                                    <label className="modal-row-label">Monto Adicional:</label>
+                                                    <span className="modal-row-value">{formatMoney(adenda.monto_adicional)}</span>
                                                 </div>
                                             )}
                                             {adenda.observaciones && (
-                                                <div className="project-detail-row">
-                                                    <label>Observaciones:</label>
-                                                    <div className="detail-value">{adenda.observaciones}</div>
+                                                <div className="modal-row">
+                                                    <label className="modal-row-label">Observaciones:</label>
+                                                    <span className="modal-row-value">{adenda.observaciones}</span>
                                                 </div>
                                             )}
-                                            <div className="project-detail-row">
-                                                <label>Solicitada:</label>
-                                                <div className="detail-value">
+                                            <div className="modal-row">
+                                                <label className="modal-row-label">Solicitada:</label>
+                                                <span className="modal-row-value">
                                                     {formatDate(adenda.fecha_solicitud)}
                                                     {adenda.fecha_aprobacion && (
                                                         <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
                                                     )}
-                                                </div>
+                                                </span>
                                             </div>
-                                        </div>
+                                    </React.Fragment>
                                     ))}
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
             </StandardModal>
 
@@ -656,7 +632,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                         {
                             header: 'Monto',
                             render: (project) => (
-                                <span className="project-money">
+                                <span>
                                     {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
                                 </span>
                             )

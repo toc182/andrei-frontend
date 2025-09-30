@@ -147,8 +147,8 @@ const Clientes = () => {
                         </div>
                         
                         <form onSubmit={handleSubmit} className="cliente-form">
-                            <div className="form-row">
-                                <div className="form-group">
+                            <div className="">
+                                <div className="">
                                     <label htmlFor="nombre">Nombre *</label>
                                     <input
                                         type="text"
@@ -160,7 +160,7 @@ const Clientes = () => {
                                     />
                                 </div>
 
-                                <div className="form-group">
+                                <div className="">
                                     <label htmlFor="abreviatura">Abreviatura</label>
                                     <input
                                         type="text"
@@ -174,7 +174,7 @@ const Clientes = () => {
                                 </div>
                             </div>
 
-                            <div className="form-group">
+                            <div className="">
                                 <label htmlFor="contacto">Persona de Contacto</label>
                                 <input
                                     type="text"
@@ -185,8 +185,8 @@ const Clientes = () => {
                                 />
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-group">
+                            <div className="">
+                                <div className="">
                                     <label htmlFor="telefono">Teléfono</label>
                                     <input
                                         type="tel"
@@ -197,7 +197,7 @@ const Clientes = () => {
                                     />
                                 </div>
 
-                                <div className="form-group">
+                                <div className="">
                                     <label htmlFor="email">Email</label>
                                     <input
                                         type="email"
@@ -209,7 +209,7 @@ const Clientes = () => {
                                 </div>
                             </div>
 
-                            <div className="form-group">
+                            <div className="">
                                 <label htmlFor="direccion">Dirección</label>
                                 <textarea
                                     id="direccion"
@@ -220,7 +220,7 @@ const Clientes = () => {
                                 />
                             </div>
 
-                            <div className="form-actions">
+                            <div className="">
                                 <button type="button" onClick={resetForm} className="btn-secondary">
                                     Cancelar
                                 </button>

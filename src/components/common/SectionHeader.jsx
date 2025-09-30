@@ -11,7 +11,7 @@ const SectionHeader = ({ title, icon, actionButton }) => {
             {actionButton && (
                 <div className="section-header-right">
                     <button
-                        className={actionButton.className || 'btn-primary'}
+                        className={actionButton.className || 'btn-circular'}
                         onClick={actionButton.onClick}
                     >
                         {actionButton.icon && (

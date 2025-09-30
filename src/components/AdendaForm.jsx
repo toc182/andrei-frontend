@@ -111,12 +111,12 @@ const AdendaForm = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="project-form">
-                    <div className="form-section">
+                <form onSubmit={handleSubmit}>
+                    <div >
                         <h3>Información de la Adenda</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Tipo de Adenda *</label>
                                 <select
                                     name="tipo"
@@ -133,7 +133,7 @@ const AdendaForm = ({
                                 </select>
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Estado</label>
                                 <select
                                     name="estado"
@@ -154,11 +154,11 @@ const AdendaForm = ({
 
                     {/* Cambios de Tiempo */}
                     {(formData.tipo === 'tiempo' || formData.tipo === 'mixta') && (
-                        <div className="form-section">
+                        <div >
                             <h3>Modificación de Tiempo</h3>
 
-                            <div className="form-row">
-                                <div className="form-group">
+                            <div >
+                                <div >
                                     <label>Nueva Fecha de Terminación *</label>
                                     <input
                                         type="date"
@@ -170,7 +170,7 @@ const AdendaForm = ({
                                     />
                                 </div>
 
-                                <div className="form-group">
+                                <div >
                                     <label>Días de Extensión</label>
                                     <input
                                         type="number"
@@ -188,11 +188,11 @@ const AdendaForm = ({
 
                     {/* Cambios de Costo */}
                     {(formData.tipo === 'costo' || formData.tipo === 'mixta') && (
-                        <div className="form-section">
+                        <div >
                             <h3>Modificación de Costo</h3>
 
-                            <div className="form-row">
-                                <div className="form-group">
+                            <div >
+                                <div >
                                     <label>Nuevo Monto Total (USD)</label>
                                     <input
                                         type="number"
@@ -206,7 +206,7 @@ const AdendaForm = ({
                                     />
                                 </div>
 
-                                <div className="form-group">
+                                <div >
                                     <label>Monto Adicional (USD)</label>
                                     <input
                                         type="number"
@@ -224,12 +224,12 @@ const AdendaForm = ({
                     )}
 
                     {/* Justificación */}
-                    <div className="form-section">
+                    <div >
                         <h3>Observaciones</h3>
 
 
-                        <div className="form-row">
-                            <div className="form-group full-width">
+                        <div >
+                            <div>
                                 <label>Observaciones Adicionales</label>
                                 <textarea
                                     name="observaciones"
@@ -244,12 +244,12 @@ const AdendaForm = ({
                     </div>
 
                     {error && (
-                        <div className="form-error">
+                        <div>
                             {error}
                         </div>
                     )}
 
-                    <div className="form-actions">
+                    <div>
                         <button
                             type="button"
                             onClick={onClose}

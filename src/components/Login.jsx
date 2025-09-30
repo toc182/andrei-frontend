@@ -42,9 +42,9 @@ const Login = () => {
                     <img src={logo} alt="Pinellas" className="login-logo" />
                 </div>
 
-                <form onSubmit={handleSubmit} className="document-form">
-                    <div className="form-group">
-                        <label className="form-label">Email:</label>
+                <form onSubmit={handleSubmit} >
+                    <div >
+                        <label >Email:</label>
                         <input
                             type="email"
                             name="email"
@@ -53,12 +53,11 @@ const Login = () => {
                             required
                             placeholder="admin@andrei.com"
                             disabled={loading}
-                            className="form-control"
-                        />
+                                                    />
                     </div>
 
-                    <div className="form-group">
-                        <label className="form-label">Contraseña:</label>
+                    <div >
+                        <label >Contraseña:</label>
                         <input
                             type="password"
                             name="password"
@@ -67,8 +66,7 @@ const Login = () => {
                             required
                             placeholder="123456"
                             disabled={loading}
-                            className="form-control"
-                        />
+                                                    />
                     </div>
 
                     {error && (

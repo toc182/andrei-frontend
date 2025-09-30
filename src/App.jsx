@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import './styles/globals.css';
-import './styles/utilities.css';
 import './styles/components/standardTable.css';
 import './styles/components/standardModal.css';
 import './App.css';

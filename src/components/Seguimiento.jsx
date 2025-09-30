@@ -263,17 +263,16 @@ function Seguimiento() {
                 <div className="tab-content">
                     <h2 className="section-title">📈 Reportar Avance Diario</h2>
 
-                    <form onSubmit={crearReporte} className="seguimiento-form">
-                        <div className="form-group">
-                            <label className="form-label">
+                    <form onSubmit={crearReporte} >
+                        <div >
+                            <label >
                                 🏗️ Frente de Trabajo:
                             </label>
                             <select
                                 value={reporteForm.frente_id}
                                 onChange={(e) => setReporteForm({...reporteForm, frente_id: e.target.value})}
                                 required
-                                className="form-input"
-                            >
+                                                            >
                                 <option value="">Seleccionar frente...</option>
                                 {frentes.map((frente) => (
                                     <option key={frente.id} value={frente.id}>
@@ -283,8 +282,8 @@ function Seguimiento() {
                             </select>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">
+                        <div >
+                            <label >
                                 📅 Fecha:
                             </label>
                             <input
@@ -292,12 +291,11 @@ function Seguimiento() {
                                 value={reporteForm.fecha}
                                 onChange={(e) => setReporteForm({...reporteForm, fecha: e.target.value})}
                                 required
-                                className="form-input"
-                            />
+                                                            />
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">
+                        <div >
+                            <label >
                                 🔧 Tubos Instalados:
                             </label>
                             <input
@@ -306,36 +304,33 @@ function Seguimiento() {
                                 value={reporteForm.tubos_instalados}
                                 onChange={(e) => setReporteForm({...reporteForm, tubos_instalados: e.target.value})}
                                 required
-                                className="form-input"
-                            />
-                            <small className="form-help">
+                                                            />
+                            <small >
                                 📏 Cada tubo = 5.8 metros
                             </small>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">
+                        <div >
+                            <label >
                                 📝 Observaciones:
                             </label>
                             <textarea
                                 value={reporteForm.observaciones}
                                 onChange={(e) => setReporteForm({...reporteForm, observaciones: e.target.value})}
                                 rows="3"
-                                className="form-input"
-                                placeholder="Condiciones climáticas, problemas encontrados, etc..."
+                                                                placeholder="Condiciones climáticas, problemas encontrados, etc..."
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">
+                        <div >
+                            <label >
                                 👤 Reportado por:
                             </label>
                             <input
                                 type="text"
                                 value={reporteForm.reportado_por}
                                 onChange={(e) => setReporteForm({...reporteForm, reportado_por: e.target.value})}
-                                className="form-input"
-                            />
+                                                            />
                         </div>
 
                         <button type="submit" className="btn-submit">
@@ -355,17 +350,16 @@ function Seguimiento() {
                     <div className="crear-frente-section">
                         <h3 className="subsection-title">➕ Crear Nuevo Frente</h3>
 
-                        <form onSubmit={crearFrente} className="seguimiento-form">
-                            <div className="form-group">
-                                <label className="form-label">
+                        <form onSubmit={crearFrente} >
+                            <div >
+                                <label >
                                     🛤️ Tramo:
                                 </label>
                                 <select
                                     value={frenteForm.tramo_id}
                                     onChange={(e) => setFrenteForm({...frenteForm, tramo_id: e.target.value})}
                                     required
-                                    className="form-input"
-                                >
+                                                                    >
                                     <option value="">Seleccionar tramo...</option>
                                     {tramos.map((tramo) => (
                                         <option key={tramo.id} value={tramo.id}>
@@ -375,8 +369,8 @@ function Seguimiento() {
                                 </select>
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">
+                            <div >
+                                <label >
                                     🏷️ Nombre del Frente:
                                 </label>
                                 <input
@@ -385,12 +379,11 @@ function Seguimiento() {
                                     onChange={(e) => setFrenteForm({...frenteForm, nombre: e.target.value})}
                                     required
                                     placeholder="Ej: T1C, T2C, etc."
-                                    className="form-input"
-                                />
+                                                                    />
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">
+                            <div >
+                                <label >
                                     📝 Descripción:
                                 </label>
                                 <textarea
@@ -398,8 +391,7 @@ function Seguimiento() {
                                     onChange={(e) => setFrenteForm({...frenteForm, descripcion: e.target.value})}
                                     rows="3"
                                     placeholder="Descripción del frente de trabajo..."
-                                    className="form-input"
-                                />
+                                                                    />
                             </div>
 
                             <button

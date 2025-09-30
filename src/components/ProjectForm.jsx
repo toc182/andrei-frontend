@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import StandardModal from './common/StandardModal';
 import '../styles/components/standardModal.css';
 
 const ProjectForm = ({
@@ -326,438 +327,414 @@ const ProjectForm = ({
         }
     };
 
+    // Footer for the main form
+    const mainModalFooter = (
+        <div>
+            <div>
+                {projectId && user?.rol === 'admin' && onDelete && (
+                    <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => setShowDeleteConfirmation(true)}
+                        disabled={loading}
+                    >
+                        🗑 Eliminar Proyecto
+                    </button>
+                )}
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={onClose}
+                    disabled={loading}
+                >
+                    Cancelar
+                </button>
+                <button
+                    type="submit"
+                    form="project-form"
+                    className="btn btn-primary"
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <>
+                            <div className="btn-spinner"></div>
+                            {projectId ? 'Actualizando...' : 'Creando...'}
+                        </>
+                    ) : (
+                        projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+
+    // Footer for the delete confirmation modal
+    const deleteModalFooter = (
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <button
+                type="button"
+                onClick={() => setShowDeleteConfirmation(false)}
+                className="btn btn-secondary"
+                disabled={loading}
+            >
+                Cancelar
+            </button>
+            <button
+                type="button"
+                onClick={() => {
+                    onDelete(projectId);
+                    setShowDeleteConfirmation(false);
+                    onClose();
+                }}
+                className="btn btn-danger"
+                disabled={loading}
+            >
+                Sí, Eliminar Proyecto
+            </button>
+        </div>
+    );
+
     if (!isOpen) return null;
 
     return (
-        <div className="standard-modal-overlay">
-            <div className="standard-modal-content project-form-modal">
-                <div className="standard-modal-header">
-                    <h2>{projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}</h2>
-                    <button
-                        className="standard-modal-close"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        ✕
-                    </button>
-                </div>
+        <>
+            <StandardModal
+                isOpen={isOpen && !showDeleteConfirmation}
+                onClose={onClose}
+                title={projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+                footer={mainModalFooter}
+                size="large"
+                className="form-container"
+            >
 
                 {loading && !formData.nombre && (
-                    <div className="form-loading">
+                    <div >
                         <div className="loading-spinner"></div>
                         <p>Cargando datos del proyecto...</p>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="project-form">
-                    {/* Información Básica */}
-                    <div className="form-section">
-                        <h3>Información Básica</h3>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Nombre del Proyecto *</label>
-                                <input
-                                    type="text"
-                                    name="nombre"
-                                    value={formData.nombre}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Edificio Torre Central"
-                                    required
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Nombre Corto</label>
-                                <input
-                                    type="text"
-                                    name="nombre_corto"
-                                    value={formData.nombre_corto}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Torre Central"
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Cliente</label>
-                                <select
-                                    name="cliente_id"
-                                    value={formData.cliente_id}
-                                    onChange={handleInputChange}
-                                    disabled={loading || loadingClientes}
-                                >
-                                    <option value="">Seleccionar cliente...</option>
-                                    {clientes.map(cliente => (
-                                        <option key={cliente.id} value={cliente.id}>
-                                            {cliente.nombre} {cliente.abreviatura && `(${cliente.abreviatura})`}
-                                        </option>
-                                    ))}
-                                </select>
-                                {loadingClientes && <small>Cargando clientes...</small>}
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Contratista</label>
-                                <input
-                                    type="text"
-                                    name="contratista"
-                                    value={formData.contratista}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Constructora Panama S.A."
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Ingeniero Residente</label>
-                                <input
-                                    type="text"
-                                    name="ingeniero_residente"
-                                    value={formData.ingeniero_residente}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Ing. Carlos Mendoza"
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Estado</label>
-                                <select
-                                    name="estado"
-                                    value={formData.estado}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                >
-                                    {estados.map(estado => (
-                                        <option key={estado.value} value={estado.value}>
-                                            {estado.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                <form id="project-form" onSubmit={handleSubmit}>
+                    <div>
+                        <label>Nombre del Proyecto *</label>
+                        <input
+                            type="text"
+                            name="nombre"
+                            value={formData.nombre}
+                            onChange={handleInputChange}
+                            placeholder="Ej: Edificio Torre Central"
+                            required
+                            disabled={loading}
+                        />
                     </div>
 
-                    {/* Fechas */}
-                    <div className="form-section">
-                        <h3>Cronograma</h3>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Fecha de Inicio</label>
-                                <input
-                                    type="date"
-                                    name="fecha_inicio"
-                                    value={formData.fecha_inicio}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Fecha de Terminación</label>
-                                <input
-                                    type="date"
-                                    name="fecha_fin_estimada"
-                                    value={formData.fecha_fin_estimada}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
+                    <div>
+                        <label>Nombre Corto</label>
+                        <input
+                            type="text"
+                            name="nombre_corto"
+                            value={formData.nombre_corto}
+                            onChange={handleInputChange}
+                            placeholder="Ej: Torre Central"
+                            disabled={loading}
+                        />
                     </div>
 
-                    {/* Información Contractual */}
-                    <div className="form-section">
-                        <h3>Información Contractual</h3>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Número de Contrato</label>
-                                <input
-                                    type="text"
-                                    name="contrato"
-                                    value={formData.contrato}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: CT-2025-001"
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Acto Público</label>
-                                <input
-                                    type="text"
-                                    name="acto_publico"
-                                    value={formData.acto_publico}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: AP-001-2025"
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Presupuesto Base (USD)</label>
-                                <input
-                                    type="number"
-                                    name="presupuesto_base"
-                                    value={formData.presupuesto_base}
-                                    onChange={handleInputChange}
-                                    placeholder="2300000"
-                                    step="0.01"
-                                    min="0"
-                                    disabled={loading}
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <label>ITBMS (7%)</label>
-                                <input
-                                    type="number"
-                                    name="itbms"
-                                    value={formData.itbms}
-                                    onChange={handleInputChange}
-                                    placeholder="161000"
-                                    step="0.01"
-                                    min="0"
-                                    disabled={loading}
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <label>Monto Total (USD)</label>
-                                <input
-                                    type="number"
-                                    name="monto_total"
-                                    value={formData.monto_total}
-                                    onChange={handleInputChange}
-                                    placeholder="2461000"
-                                    step="0.01"
-                                    min="0"
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
+                    <div>
+                        <label>Cliente</label>
+                        <select
+                            name="cliente_id"
+                            value={formData.cliente_id}
+                            onChange={handleInputChange}
+                            disabled={loading || loadingClientes}
+                        >
+                            <option value="">Seleccionar cliente...</option>
+                            {clientes.map(cliente => (
+                                <option key={cliente.id} value={cliente.id}>
+                                    {cliente.nombre} {cliente.abreviatura && `(${cliente.abreviatura})`}
+                                </option>
+                            ))}
+                        </select>
+                        {loadingClientes && <small>Cargando clientes...</small>}
                     </div>
 
-                    {/* Estructura Empresarial */}
-                    <div className="form-section">
-                        <h3>Estructura Empresarial</h3>
+                    <div>
+                        <label>Contratista</label>
+                        <input
+                            type="text"
+                            name="contratista"
+                            value={formData.contratista}
+                            onChange={handleInputChange}
+                            placeholder="Ej: Constructora Panama S.A."
+                            disabled={loading}
+                        />
+                    </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="toggle-container">
-                                    <label>Consorcio</label>
-                                    <label className="toggle-switch">
-                                        <input
-                                            type="checkbox"
-                                            name="datos_adicionales.es_consorcio"
-                                            checked={formData.datos_adicionales.es_consorcio}
-                                            onChange={handleInputChange}
-                                            disabled={loading}
-                                        />
-                                        <span className="toggle-slider"></span>
-                                    </label>
+                    <div>
+                        <label>Ingeniero Residente</label>
+                        <input
+                            type="text"
+                            name="ingeniero_residente"
+                            value={formData.ingeniero_residente}
+                            onChange={handleInputChange}
+                            placeholder="Ej: Ing. Carlos Mendoza"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Estado</label>
+                        <select
+                            name="estado"
+                            value={formData.estado}
+                            onChange={handleInputChange}
+                            disabled={loading}
+                        >
+                            {estados.map(estado => (
+                                <option key={estado.value} value={estado.value}>
+                                    {estado.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Fecha de Inicio</label>
+                        <input
+                            type="date"
+                            name="fecha_inicio"
+                            value={formData.fecha_inicio}
+                            onChange={handleInputChange}
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Fecha de Terminación</label>
+                        <input
+                            type="date"
+                            name="fecha_fin_estimada"
+                            value={formData.fecha_fin_estimada}
+                            onChange={handleInputChange}
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Número de Contrato</label>
+                        <input
+                            type="text"
+                            name="contrato"
+                            value={formData.contrato}
+                            onChange={handleInputChange}
+                            placeholder="Ej: CT-2025-001"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Acto Público</label>
+                        <input
+                            type="text"
+                            name="acto_publico"
+                            value={formData.acto_publico}
+                            onChange={handleInputChange}
+                            placeholder="Ej: AP-001-2025"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Presupuesto Base (USD)</label>
+                        <input
+                            type="number"
+                            name="presupuesto_base"
+                            value={formData.presupuesto_base}
+                            onChange={handleInputChange}
+                            placeholder="2300000"
+                            step="0.01"
+                            min="0"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>ITBMS (7%)</label>
+                        <input
+                            type="number"
+                            name="itbms"
+                            value={formData.itbms}
+                            onChange={handleInputChange}
+                            placeholder="161000"
+                            step="0.01"
+                            min="0"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Monto Total (USD)</label>
+                        <input
+                            type="number"
+                            name="monto_total"
+                            value={formData.monto_total}
+                            onChange={handleInputChange}
+                            placeholder="2461000"
+                            step="0.01"
+                            min="0"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Contratista</label>
+                        <input
+                            type="radio"
+                            name="datos_adicionales.es_consorcio"
+                            value="false"
+                            checked={!formData.datos_adicionales.es_consorcio}
+                            onChange={(e) => handleInputChange({
+                                target: {
+                                    name: "datos_adicionales.es_consorcio",
+                                    type: "checkbox",
+                                    checked: false
+                                }
+                            })}
+                            disabled={loading}
+                        />
+                        Pinellas
+                        <input
+                            type="radio"
+                            name="datos_adicionales.es_consorcio"
+                            value="true"
+                            checked={formData.datos_adicionales.es_consorcio}
+                            onChange={(e) => handleInputChange({
+                                target: {
+                                    name: "datos_adicionales.es_consorcio",
+                                    type: "checkbox",
+                                    checked: true
+                                }
+                            })}
+                            disabled={loading}
+                        />
+                        Consorcio
+                    </div>
+
+                    {formData.datos_adicionales.es_consorcio && (
+                        <>
+                            {formData.datos_adicionales.socios.length < 4 && (
+                                <div style={{textAlign: 'center'}}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={addPartner}
+                                        disabled={loading}
+                                        style={{marginTop: '5px', marginBottom: '5px'}}
+                                    >
+                                        + Agregar Socio
+                                    </button>
                                 </div>
-                            </div>
-                        </div>
+                            )}
 
-                        {formData.datos_adicionales.es_consorcio && (
-                            <>
-                                <div className="partners-header">
-                                    <h4>Socios del Consorcio</h4>
-                                    {formData.datos_adicionales.socios.length < 4 && (
-                                        <button
-                                            type="button"
-                                            className="btn-secondary"
-                                            onClick={addPartner}
-                                            disabled={loading}
-                                        >
-                                            + Agregar Socio
-                                        </button>
-                                    )}
-                                </div>
-
-                                {formData.datos_adicionales.socios.map((socio, index) => (
-                                    <div key={index} className="form-row partner-row">
-                                        <div className="form-group">
-                                            <label>Nombre del Socio {index + 1} *</label>
-                                            <input
-                                                type="text"
-                                                value={socio.nombre}
-                                                onChange={(e) => handlePartnerChange(index, 'nombre', e.target.value)}
-                                                placeholder="Nombre de la empresa"
-                                                disabled={loading || (index === 0 && socio.nombre === 'Pinellas, S.A.')}
-                                            />
-                                        </div>
-                                        <div className="form-group percentage-group">
-                                            <label>Porcentaje *</label>
-                                            <div className="percentage-input-container">
-                                                <input
-                                                    type="number"
-                                                    value={socio.porcentaje}
-                                                    onChange={(e) => handlePartnerChange(index, 'porcentaje', e.target.value)}
-                                                    placeholder="0"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.01"
-                                                    disabled={loading}
-                                                />
-                                                <span className="percentage-symbol">%</span>
-                                            </div>
-                                        </div>
-                                        {formData.datos_adicionales.socios.length > 1 && 
-                                         !(index === 0 && socio.nombre === 'Pinellas, S.A.') && (
-                                            <div className="form-group remove-group">
-                                                <label>&nbsp;</label>
+                            {formData.datos_adicionales.socios.map((socio, index) => (
+                                <React.Fragment key={index}>
+                                    <div>
+                                        {formData.datos_adicionales.socios.length > 1 &&
+                                         !(index === 0 && socio.nombre === 'Pinellas, S.A.') ? (
+                                            <>
                                                 <button
                                                     type="button"
                                                     className="btn-remove"
                                                     onClick={() => removePartner(index)}
                                                     disabled={loading}
                                                     title="Eliminar socio"
+                                                    style={{width: '30px'}}
                                                 >
                                                     ✕
                                                 </button>
-                                            </div>
+                                                <label style={{width: '120px'}}>Socio {index + 1} *</label>
+                                            </>
+                                        ) : (
+                                            <label style={{width: '150px'}}>Socio {index + 1} *</label>
                                         )}
+                                        <input
+                                            type="text"
+                                            value={socio.nombre}
+                                            onChange={(e) => handlePartnerChange(index, 'nombre', e.target.value)}
+                                            placeholder="Nombre de la empresa"
+                                            disabled={loading || (index === 0 && socio.nombre === 'Pinellas, S.A.')}
+                                        />
                                     </div>
-                                ))}
+                                    <div>
+                                        <label>Porcentaje(%) *</label>
+                                        <input
+                                            type="number"
+                                            value={socio.porcentaje}
+                                            onChange={(e) => handlePartnerChange(index, 'porcentaje', e.target.value)}
+                                            placeholder="0"
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                </React.Fragment>
+                            ))}
 
-                                <div className="percentage-total">
-                                    Total: {formData.datos_adicionales.socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0).toFixed(2)}%
-                                    {Math.abs(formData.datos_adicionales.socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0) - 100) > 0.01 && (
-                                        <span className="percentage-warning">⚠️ Debe sumar 100%</span>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Adicionales */}
-                    <div className="form-section">
-                        <h3>Adicionales</h3>
-
-                        <div className="form-row">
-                            <div className="form-group full-width">
-                                <label>Observaciones</label>
-                                <textarea
-                                    name="datos_adicionales.observaciones"
-                                    value={formData.datos_adicionales.observaciones}
-                                    onChange={handleInputChange}
-                                    placeholder="Observaciones adicionales del proyecto..."
-                                    rows={3}
-                                    disabled={loading}
-                                />
+                            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px'}}>
+                                Total: {formData.datos_adicionales.socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0).toFixed(2)}%
+                                {Math.abs(formData.datos_adicionales.socios.reduce((sum, socio) => sum + (socio.porcentaje || 0), 0) - 100) > 0.01 && (
+                                    <span className="error-message" style={{marginLeft: '5px'}}>⚠️ Debe sumar 100%</span>
+                                )}
                             </div>
-                        </div>
+                        </>
+                    )}
+
+                    <div>
+                        <label>Observaciones</label>
+                        <textarea
+                            name="datos_adicionales.observaciones"
+                            value={formData.datos_adicionales.observaciones}
+                            onChange={handleInputChange}
+                            placeholder="Observaciones adicionales del proyecto..."
+                            rows={3}
+                            disabled={loading}
+                        />
                     </div>
 
                     {/* Error */}
                     {error && (
-                        <div className="form-error">
+                        <div >
                             {error}
                         </div>
                     )}
 
-                    {/* Botones */}
-                    <div className="form-actions">
-                        <div className="form-actions-left">
-                            {projectId && user?.rol === 'admin' && onDelete && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowDeleteConfirmation(true)}
-                                    className="btn-danger"
-                                    disabled={loading}
-                                >
-                                    🗑 Eliminar Proyecto
-                                </button>
-                            )}
-                        </div>
-                        <div className="form-actions-right">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="btn-secondary"
-                                disabled={loading}
-                            >
-                                Cancelar
-                            </button>
-
-                            <button
-                                type="submit"
-                                className="btn-primary"
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <>
-                                        <div className="btn-spinner"></div>
-                                        {projectId ? 'Actualizando...' : 'Creando...'}
-                                    </>
-                                ) : (
-                                    projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Modal de Confirmación de Eliminación */}
-                    {showDeleteConfirmation && (
-                        <div className="standard-modal-overlay delete-confirmation-overlay">
-                            <div className="standard-modal-content delete-confirmation-modal">
-                                <div className="standard-modal-header">
-                                    <h3>⚠️ Eliminar Proyecto</h3>
-                                </div>
-                                <div className="modal-body">
-                                    <p><strong>¿Estás seguro de que quieres eliminar este proyecto?</strong></p>
-                                    <p>Esta acción no se puede deshacer. Se eliminarán todos los datos del proyecto, incluyendo:</p>
-                                    <ul>
-                                        <li>Toda la información del proyecto</li>
-                                        <li>Adendas asociadas</li>
-                                        <li>Reportes y seguimiento</li>
-                                    </ul>
-                                    <div className="project-to-delete">
-                                        <strong>Proyecto:</strong> {formData.nombre || 'Sin nombre'}
-                                    </div>
-                                </div>
-                                <div className="modal-actions">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowDeleteConfirmation(false)}
-                                        className="btn-secondary"
-                                        disabled={loading}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            onDelete(projectId);
-                                            setShowDeleteConfirmation(false);
-                                            onClose();
-                                        }}
-                                        className="btn-danger"
-                                        disabled={loading}
-                                    >
-                                        Sí, Eliminar Proyecto
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </form>
-            </div>
-        </div>
+            </StandardModal>
+
+            {/* Delete Confirmation Modal */}
+            <StandardModal
+                isOpen={showDeleteConfirmation}
+                onClose={() => setShowDeleteConfirmation(false)}
+                title="⚠️ Eliminar Proyecto"
+                footer={deleteModalFooter}
+                size="default"
+                className="delete-confirmation-modal"
+            >
+                <p><strong>¿Estás seguro de que quieres eliminar este proyecto?</strong></p>
+                <p>Esta acción no se puede deshacer. Se eliminarán todos los datos del proyecto, incluyendo:</p>
+                <ul>
+                    <li>Toda la información del proyecto</li>
+                    <li>Adendas asociadas</li>
+                    <li>Reportes y seguimiento</li>
+                </ul>
+                <div className="project-to-delete">
+                    <strong>Proyecto:</strong> {formData.nombre || 'Sin nombre'}
+                </div>
+            </StandardModal>
+        </>
     );
 };
 

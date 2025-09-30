@@ -225,9 +225,9 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                 {/* Información del Contrato */}
                 <div className="budget-section">
                     <h3>💰 Información del Contrato</h3>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="form-label">Monto Contrato Original (USD):</label>
+                    <div>
+                        <div className="">
+                            <label className="">Monto Contrato Original (USD):</label>
                             <input
                                 type="number"
                                 step="0.01"
@@ -235,14 +235,14 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                                 value={budgetForm.monto_contrato_original}
                                 onChange={(e) => handleMainBudgetChange('monto_contrato_original', e.target.value)}
                                 required
-                                className="form-input"
+                                className=""
                                 placeholder="0.00"
                             />
-                            <small className="form-help">Monto original del contrato firmado</small>
+                            <small className="">Monto original del contrato firmado</small>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Monto Contrato Actual (USD):</label>
+                        <div className="">
+                            <label className="">Monto Contrato Actual (USD):</label>
                             <input
                                 type="number"
                                 step="0.01"
@@ -250,14 +250,14 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                                 value={budgetForm.monto_contrato_actual}
                                 onChange={(e) => handleMainBudgetChange('monto_contrato_actual', e.target.value)}
                                 required
-                                className="form-input"
+                                className=""
                                 placeholder="0.00"
                             />
-                            <small className="form-help">Monto actual incluyendo modificaciones</small>
+                            <small className="">Monto actual incluyendo modificaciones</small>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Contingencia (%):</label>
+                        <div className="">
+                            <label className="">Contingencia (%):</label>
                             <input
                                 type="number"
                                 step="0.1"
@@ -265,18 +265,18 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                                 max="100"
                                 value={budgetForm.contingencia_porcentaje}
                                 onChange={(e) => handleMainBudgetChange('contingencia_porcentaje', e.target.value)}
-                                className="form-input"
+                                className=""
                             />
-                            <small className="form-help">Porcentaje de contingencia para imprevistos</small>
+                            <small className="">Porcentaje de contingencia para imprevistos</small>
                         </div>
 
-                        <div className="form-group full-width">
-                            <label className="form-label">Notas del Presupuesto:</label>
+                        <div>
+                            <label className="">Notas del Presupuesto:</label>
                             <textarea
                                 value={budgetForm.notas}
                                 onChange={(e) => handleMainBudgetChange('notas', e.target.value)}
                                 rows="3"
-                                className="form-input"
+                                className=""
                                 placeholder="Observaciones sobre el presupuesto..."
                             />
                         </div>
@@ -342,9 +342,9 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                                     </div>
                                     
                                     <div className="category-budget-body">
-                                        <div className="form-row">
-                                            <div className="form-group">
-                                                <label className="form-label">Presupuesto Inicial:</label>
+                                        <div className="">
+                                            <div className="">
+                                                <label className="">Presupuesto Inicial:</label>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -355,13 +355,13 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                                                         'presupuesto_inicial', 
                                                         e.target.value
                                                     )}
-                                                    className="form-input"
+                                                    className=""
                                                     placeholder="0.00"
                                                 />
                                             </div>
                                             
-                                            <div className="form-group">
-                                                <label className="form-label">Presupuesto Actual:</label>
+                                            <div className="">
+                                                <label className="">Presupuesto Actual:</label>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -372,7 +372,7 @@ const BudgetSetup = ({ project, onBudgetUpdate }) => {
                                                         'presupuesto_actual', 
                                                         e.target.value
                                                     )}
-                                                    className="form-input"
+                                                    className=""
                                                     placeholder="0.00"
                                                 />
                                             </div>

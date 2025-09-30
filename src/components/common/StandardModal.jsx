@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faX } from '@fortawesome/free-solid-svg-icons';
 
 const StandardModal = ({
     isOpen,
@@ -73,7 +73,7 @@ const StandardModal = ({
                         onClick={onClose}
                         type="button"
                     >
-                        <FontAwesomeIcon icon={faTimes} />
+                        <FontAwesomeIcon icon={faX} />
                     </button>
                 </div>
 

@@ -243,7 +243,7 @@ const DocumentForm = ({ documentType }) => {
             <div className="document-form-card card-mediano">
                 <form onSubmit={handleSubmit} className="document-form">
                     {config.hasEntitySelector && (
-                        <div className="form-group">
+                        <div className="">
                             <div className="entity-selector">
                                 <div className="entity-option">
                                     <input
@@ -272,8 +272,8 @@ const DocumentForm = ({ documentType }) => {
                     )}
 
                     {config.fields.map(field => (
-                        <div key={field.name} className="form-group">
-                            <label htmlFor={field.name} className="form-label">
+                        <div key={field.name} className="">
+                            <label htmlFor={field.name} className="">
                                 {field.label}
                                 {field.required && <span className="required">*</span>}
                             </label>
@@ -284,7 +284,7 @@ const DocumentForm = ({ documentType }) => {
                                     name={field.name}
                                     value={formData[field.name] || ''}
                                     onChange={(e) => handleInputChange(field.name, e.target.value)}
-                                    className="form-control"
+                                    className=""
                                     required={field.required}
                                 />
                             ) : field.name === 'projectName' ? (
@@ -294,7 +294,7 @@ const DocumentForm = ({ documentType }) => {
                                     value={formData[field.name] || ''}
                                     onChange={(e) => handleInputChange(field.name, e.target.value)}
                                     placeholder={field.placeholder}
-                                    className="form-control"
+                                    className=""
                                     required={field.required}
                                     rows="2"
                                 />
@@ -306,7 +306,7 @@ const DocumentForm = ({ documentType }) => {
                                     value={formData[field.name] || ''}
                                     onChange={(e) => handleInputChange(field.name, e.target.value)}
                                     placeholder={field.placeholder}
-                                    className="form-control"
+                                    className=""
                                     required={field.required}
                                 />
                             )}
@@ -319,7 +319,7 @@ const DocumentForm = ({ documentType }) => {
                         </div>
                     )}
 
-                    <div className="form-actions">
+                    <div className="">
                         <button
                             type="button"
                             className="btn-preview"

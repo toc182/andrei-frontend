@@ -8,8 +8,8 @@ import logo from '../assets/logo.png';
 import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
 import SectionHeader from './common/SectionHeader';
 import StandardTable from './common/StandardTable';
+import StandardModal from './common/StandardModal';
 import '../styles/components/badges.css';
-import '../styles/components/standardModal.css';
 import '../styles/pages/status-equipos.css';
 
 const EquiposStatus = () => {
@@ -263,120 +263,77 @@ const EquiposStatus = () => {
 
 
             {/* Modal de información del equipo */}
-            {showModal && selectedEquipo && (
-                <div className="standard-modal-overlay" onClick={handleCloseModal}>
-                    <div className="standard-modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="standard-modal-header">
-                            <h2>Detalles del Equipo</h2>
-                            <button className="standard-modal-close" onClick={handleCloseModal}>
-                                ×
-                            </button>
-                        </div>
-                        <div className="standard-modal-body">
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Código:</label>
-                                    <span>{selectedEquipo.codigo || 'No especificado'}</span>
-                                </div>
-                            </div>
+            <StandardModal
+                isOpen={showModal}
+                onClose={handleCloseModal}
+                title="Detalles del Equipo"
+            >
+                <div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Descripción:</label>
+                        <span className="modal-row-value">{selectedEquipo?.descripcion}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Descripción:</label>
-                                    <span>{selectedEquipo.descripcion}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Marca:</label>
+                        <span className="modal-row-value">{selectedEquipo?.marca}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Marca:</label>
-                                    <span>{selectedEquipo.marca}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <label>Modelo:</label>
-                                    <span>{selectedEquipo.modelo}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Modelo:</label>
+                        <span className="modal-row-value">{selectedEquipo?.modelo}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Año:</label>
-                                    <span>{selectedEquipo.ano || 'No especificado'}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <label>Estado:</label>
-                                    <span className={`status-badge ${getStatusInfo(selectedEquipo.estado).class}`}>
-                                        {getStatusInfo(selectedEquipo.estado).label}
-                                    </span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Año:</label>
+                        <span className="modal-row-value">{selectedEquipo?.ano || 'No especificado'}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Motor:</label>
-                                    <span>{selectedEquipo.motor || 'No especificado'}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <label>Chasis:</label>
-                                    <span>{selectedEquipo.chasis || 'No especificado'}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Estado:</label>
+                        <span className="modal-row-value">
+                            <span className={`status-badge ${selectedEquipo ? getStatusInfo(selectedEquipo.estado).class : ''}`}>
+                                {selectedEquipo ? getStatusInfo(selectedEquipo.estado).label : ''}
+                            </span>
+                        </span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Ubicación/Proyecto:</label>
-                                    <span>{selectedEquipo.ubicacion || 'No especificada'}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <label>Responsable:</label>
-                                    <span>{selectedEquipo.responsable || 'No asignado'}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Ubicación/Proyecto:</label>
+                        <span className="modal-row-value">{selectedEquipo?.ubicacion || 'No especificada'}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Costo:</label>
-                                    <span>{selectedEquipo.costo ? `$${parseFloat(selectedEquipo.costo).toLocaleString()}` : 'No especificado'}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <label>Valor Actual:</label>
-                                    <span>{selectedEquipo.valor_actual ? `$${parseFloat(selectedEquipo.valor_actual).toLocaleString()}` : 'No especificado'}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Responsable:</label>
+                        <span className="modal-row-value">{selectedEquipo?.responsable || 'No asignado'}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Rata Mensual:</label>
-                                    <span>{selectedEquipo.rata_mes ? `$${parseFloat(selectedEquipo.rata_mes).toLocaleString()}` : 'No especificado'}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <label>Propietario:</label>
-                                    <span>{selectedEquipo.owner}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Rata Mensual:</label>
+                        <span className="modal-row-value">{selectedEquipo?.rata_mes ? `$${parseFloat(selectedEquipo.rata_mes).toLocaleString()}` : 'No especificado'}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item full-width">
-                                    <label>Observaciones:</label>
-                                    <span>{selectedEquipo.observaciones || 'Sin observaciones'}</span>
-                                </div>
-                            </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Propietario:</label>
+                        <span className="modal-row-value">{selectedEquipo?.owner}</span>
+                    </div>
 
-                            <div className="detail-row">
-                                <div className="detail-item">
-                                    <label>Última Actualización:</label>
-                                    <span>
-                                        {selectedEquipo.ultima_revision ?
-                                            new Date(selectedEquipo.ultima_revision).toLocaleDateString('es-ES') :
-                                            'Sin registro'
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Observaciones:</label>
+                        <span className="modal-row-value">{selectedEquipo?.observaciones || 'Sin observaciones'}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Última Actualización:</label>
+                        <span className="modal-row-value">
+                            {selectedEquipo?.ultima_revision ?
+                                new Date(selectedEquipo.ultima_revision).toLocaleDateString('es-ES') :
+                                'Sin registro'
+                            }
+                        </span>
                     </div>
                 </div>
-            )}
+            </StandardModal>
         </div>
     );
 };

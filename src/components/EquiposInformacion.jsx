@@ -7,8 +7,8 @@ import EquipoForm from './EquipoForm';
 import api from '../services/api';
 import SectionHeader from './common/SectionHeader';
 import StandardTable from './common/StandardTable';
+import StandardModal from './common/StandardModal';
 import '../styles/pages/informacion-equipos.css';
-import '../styles/components/standardModal.css';
 
 const EquiposInformacion = () => {
     const [selectedEquipo, setSelectedEquipo] = useState(null);
@@ -202,89 +202,77 @@ const EquiposInformacion = () => {
             />
 
             {/* Modal de detalles */}
-            {showModal && selectedEquipo && (
-                <div className="standard-modal-overlay">
-                    <div className="standard-modal-content">
-                        <div className="standard-modal-header">
-                            <h2>Detalles del Equipo</h2>
-                            <button
-                                className="standard-modal-close"
-                                onClick={closeModal}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <div className="standard-modal-body">
-                            <div className="project-details">
-                            <div className="detail-row">
-                                <label>Código:</label>
-                                <span>{selectedEquipo.codigo || 'N/A'}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Descripción:</label>
-                                <span>{selectedEquipo.descripcion}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Marca:</label>
-                                <span>{selectedEquipo.marca}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Modelo:</label>
-                                <span>{selectedEquipo.modelo}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Año:</label>
-                                <span>{selectedEquipo.ano}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label># Motor:</label>
-                                <span>{selectedEquipo.motor || 'N/A'}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label># Chasis:</label>
-                                <span>{selectedEquipo.chasis || 'N/A'}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Costo:</label>
-                                <span className="project-money">{formatMoney(selectedEquipo.costo)}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Valor Actual:</label>
-                                <span className="project-money">{formatMoney(selectedEquipo.valor_actual)}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Rata/Mes:</label>
-                                <span className="project-money">{formatMoney(selectedEquipo.rata_mes)}</span>
-                            </div>
-
-                            <div className="detail-row">
-                                <label>Propietario:</label>
-                                <span className="client-abbreviation owner-badge">{selectedEquipo.owner}</span>
-                            </div>
-
-                            {selectedEquipo.observaciones && (
-                                <div className="detail-row full-width">
-                                    <label>Observaciones:</label>
-                                    <div className="observations">
-                                        {selectedEquipo.observaciones}
-                                    </div>
-                                </div>
-                            )}
-                            </div>
-                        </div>
+            <StandardModal
+                isOpen={showModal}
+                onClose={closeModal}
+                title="Detalles del Equipo"
+            >
+                <div>
+                    <div className="modal-row">
+                        <label className="modal-row-label">Código:</label>
+                        <span className="modal-row-value">{selectedEquipo?.codigo || 'N/A'}</span>
                     </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Descripción:</label>
+                        <span className="modal-row-value">{selectedEquipo?.descripcion}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Marca:</label>
+                        <span className="modal-row-value">{selectedEquipo?.marca}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Modelo:</label>
+                        <span className="modal-row-value">{selectedEquipo?.modelo}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Año:</label>
+                        <span className="modal-row-value">{selectedEquipo?.ano}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label"># Motor:</label>
+                        <span className="modal-row-value">{selectedEquipo?.motor || 'N/A'}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label"># Chasis:</label>
+                        <span className="modal-row-value">{selectedEquipo?.chasis || 'N/A'}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Costo:</label>
+                        <span className="modal-row-value">{selectedEquipo ? formatMoney(selectedEquipo.costo) : 'N/A'}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Valor Actual:</label>
+                        <span className="modal-row-value">{selectedEquipo ? formatMoney(selectedEquipo.valor_actual) : 'N/A'}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Rata/Mes:</label>
+                        <span className="modal-row-value">{selectedEquipo ? formatMoney(selectedEquipo.rata_mes) : 'N/A'}</span>
+                    </div>
+
+                    <div className="modal-row">
+                        <label className="modal-row-label">Propietario:</label>
+                        <span className="modal-row-value">{selectedEquipo?.owner}</span>
+                    </div>
+
+                    {selectedEquipo?.observaciones && (
+                        <div className="modal-row">
+                            <label className="modal-row-label">Observaciones:</label>
+                            <div className="modal-row-value">
+                                {selectedEquipo.observaciones}
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </StandardModal>
 
             {/* Formulario de agregar/editar equipo */}
             {showForm && (

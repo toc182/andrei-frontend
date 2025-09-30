@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import '../styles/components/standardModal.css';
+import StandardModal from './common/StandardModal';
 
 const LicitacionForm = ({
     licitacionId = null,
@@ -177,33 +177,56 @@ const LicitacionForm = ({
 
     if (!isOpen) return null;
 
-    return (
-        <div className="standard-modal-overlay">
-            <div className="standard-modal-content project-form-modal">
-                <div className="standard-modal-header">
-                    <h2>{licitacionId ? 'Editar Licitación' : 'Nueva Licitación'}</h2>
-                    <button
-                        className="standard-modal-close"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        ✕
-                    </button>
-                </div>
+    const footer = (
+        <div >
+            <button
+                type="button"
+                onClick={onClose}
+                className="btn-secondary"
+                disabled={loading}
+            >
+                Cancelar
+            </button>
 
-                {loading && !formData.nombre && (
-                    <div className="form-loading">
-                        <div className="loading-spinner"></div>
-                        <p>Cargando datos de la licitación...</p>
-                    </div>
+            <button
+                type="submit"
+                form="licitacion-form"
+                className="btn-primary"
+                disabled={loading}
+            >
+                {loading ? (
+                    <>
+                        <div className="btn-spinner"></div>
+                        {licitacionId ? 'Actualizando...' : 'Creando...'}
+                    </>
+                ) : (
+                    licitacionId ? 'Actualizar Licitación' : 'Crear Licitación'
                 )}
+            </button>
+        </div>
+    );
 
-                <form onSubmit={handleSubmit} className="project-form">
-                    <div className="form-section">
+    return (
+        <StandardModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={licitacionId ? 'Editar Licitación' : 'Nueva Licitación'}
+            footer={footer}
+            className="form-container"
+        >
+            {loading && !formData.nombre && (
+                <div >
+                    <div className="loading-spinner"></div>
+                    <p>Cargando datos de la licitación...</p>
+                </div>
+            )}
+
+            <form id="licitacion-form" onSubmit={handleSubmit}>
+                    <div >
                         <h3>Información Básica</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Número de Licitación *</label>
                                 <input
                                     type="text"
@@ -216,7 +239,7 @@ const LicitacionForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Estado</label>
                                 <select
                                     name="estado_licitacion"
@@ -233,8 +256,8 @@ const LicitacionForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Nombre de la Licitación *</label>
                                 <input
                                     type="text"
@@ -248,8 +271,8 @@ const LicitacionForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Entidad Licitante *</label>
                                 <input
                                     type="text"
@@ -262,7 +285,7 @@ const LicitacionForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Tipo de Obra</label>
                                 <input
                                     type="text"
@@ -276,11 +299,11 @@ const LicitacionForm = ({
                         </div>
                     </div>
 
-                    <div className="form-section">
+                    <div >
                         <h3>Fechas y Plazos</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Fecha de Publicación</label>
                                 <input
                                     type="date"
@@ -291,7 +314,7 @@ const LicitacionForm = ({
                                 />
                             </div>
 
-                            <div className="form-group">
+                            <div >
                                 <label>Fecha de Cierre *</label>
                                 <input
                                     type="date"
@@ -304,8 +327,8 @@ const LicitacionForm = ({
                             </div>
                         </div>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Plazo de Ejecución (días)</label>
                                 <input
                                     type="number"
@@ -320,11 +343,11 @@ const LicitacionForm = ({
                         </div>
                     </div>
 
-                    <div className="form-section">
+                    <div >
                         <h3>Información Financiera</h3>
 
-                        <div className="form-row">
-                            <div className="form-group">
+                        <div >
+                            <div >
                                 <label>Presupuesto Referencial (USD)</label>
                                 <input
                                     type="number"
@@ -340,11 +363,11 @@ const LicitacionForm = ({
                         </div>
                     </div>
 
-                    <div className="form-section">
+                    <div >
                         <h3>Observaciones</h3>
 
-                        <div className="form-row">
-                            <div className="form-group full-width">
+                        <div >
+                            <div>
                                 <label>Observaciones</label>
                                 <textarea
                                     name="observaciones"
@@ -358,40 +381,13 @@ const LicitacionForm = ({
                         </div>
                     </div>
 
-                    {error && (
-                        <div className="form-error">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="form-actions">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="btn-secondary"
-                            disabled={loading}
-                        >
-                            Cancelar
-                        </button>
-
-                        <button
-                            type="submit"
-                            className="btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="btn-spinner"></div>
-                                    {licitacionId ? 'Actualizando...' : 'Creando...'}
-                                </>
-                            ) : (
-                                licitacionId ? 'Actualizar Licitación' : 'Crear Licitación'
-                            )}
-                        </button>
+                {error && (
+                    <div >
+                        {error}
                     </div>
-                </form>
-            </div>
-        </div>
+                )}
+            </form>
+        </StandardModal>
     );
 };
 

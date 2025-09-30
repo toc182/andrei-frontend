@@ -338,14 +338,14 @@ const CostsHub = () => {
                         <h2 className="section-title">💰 Registrar Nuevo Gasto</h2>
 
                         <form onSubmit={createExpense} className="seguimiento-form">
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label className="form-label">💼 Categoría:</label>
+                            <div className="">
+                                <div className="">
+                                    <label className="">💼 Categoría:</label>
                                     <select
                                         value={expenseForm.category_id}
                                         onChange={(e) => setExpenseForm({...expenseForm, category_id: e.target.value})}
                                         required
-                                        className="form-input"
+                                        className=""
                                     >
                                         <option value="">Seleccionar categoría...</option>
                                         {categories.map(category => (
@@ -356,44 +356,44 @@ const CostsHub = () => {
                                     </select>
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">📅 Fecha:</label>
+                                <div className="">
+                                    <label className="">📅 Fecha:</label>
                                     <input
                                         type="date"
                                         value={expenseForm.fecha}
                                         onChange={(e) => setExpenseForm({...expenseForm, fecha: e.target.value})}
                                         required
-                                        className="form-input"
+                                        className=""
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">📝 Concepto:</label>
+                            <div className="">
+                                <label className="">📝 Concepto:</label>
                                 <input
                                     type="text"
                                     value={expenseForm.concepto}
                                     onChange={(e) => setExpenseForm({...expenseForm, concepto: e.target.value})}
                                     required
                                     placeholder="Descripción breve del gasto"
-                                    className="form-input"
+                                    className=""
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">📄 Descripción detallada:</label>
+                            <div className="">
+                                <label className="">📄 Descripción detallada:</label>
                                 <textarea
                                     value={expenseForm.descripcion}
                                     onChange={(e) => setExpenseForm({...expenseForm, descripcion: e.target.value})}
                                     rows="3"
                                     placeholder="Detalles adicionales del gasto"
-                                    className="form-input"
+                                    className=""
                                 />
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label className="form-label">💵 Monto (USD):</label>
+                            <div className="">
+                                <div className="">
+                                    <label className="">💵 Monto (USD):</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -402,16 +402,16 @@ const CostsHub = () => {
                                         onChange={(e) => setExpenseForm({...expenseForm, monto: e.target.value})}
                                         required
                                         placeholder="0.00"
-                                        className="form-input"
+                                        className=""
                                     />
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">🏷️ Tipo de Gasto:</label>
+                                <div className="">
+                                    <label className="">🏷️ Tipo de Gasto:</label>
                                     <select
                                         value={expenseForm.tipo_gasto}
                                         onChange={(e) => setExpenseForm({...expenseForm, tipo_gasto: e.target.value})}
-                                        className="form-input"
+                                        className=""
                                     >
                                         <option value="real">Gasto Real</option>
                                         <option value="compromiso">Compromiso</option>
@@ -420,38 +420,38 @@ const CostsHub = () => {
                                 </div>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label className="form-label">🏢 Proveedor:</label>
+                            <div className="">
+                                <div className="">
+                                    <label className="">🏢 Proveedor:</label>
                                     <input
                                         type="text"
                                         value={expenseForm.proveedor}
                                         onChange={(e) => setExpenseForm({...expenseForm, proveedor: e.target.value})}
                                         placeholder="Nombre del proveedor"
-                                        className="form-input"
+                                        className=""
                                     />
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">🧾 Número de Factura:</label>
+                                <div className="">
+                                    <label className="">🧾 Número de Factura:</label>
                                     <input
                                         type="text"
                                         value={expenseForm.numero_factura}
                                         onChange={(e) => setExpenseForm({...expenseForm, numero_factura: e.target.value})}
                                         placeholder="Número de factura"
-                                        className="form-input"
+                                        className=""
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">💭 Observaciones:</label>
+                            <div className="">
+                                <label className="">💭 Observaciones:</label>
                                 <textarea
                                     value={expenseForm.observaciones}
                                     onChange={(e) => setExpenseForm({...expenseForm, observaciones: e.target.value})}
                                     rows="2"
                                     placeholder="Observaciones adicionales"
-                                    className="form-input"
+                                    className=""
                                 />
                             </div>
 

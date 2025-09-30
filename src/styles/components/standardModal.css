@@ -70,7 +70,7 @@
 /* ===== BODY ESTANDARIZADO ===== */
 
 .standard-modal-body {
-    padding: var(--space-xl);
+    padding: var(--space-sm) var(--space-xl) var(--space-xl);
 }
 
 /* ===== FOOTER ESTANDARIZADO ===== */
@@ -216,4 +216,41 @@
         padding: var(--space-md);
     }
 
+}
+
+
+/* ===== ROWS DE INFORMACION ===== */
+
+.modal-row {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.modal-row:last-child {
+    border-bottom: none;
+}
+
+.modal-row-label {
+    width: 150px;
+    text-align: right;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    padding-right: var(--space-md);
+    flex-shrink: 0;
+}
+
+.modal-row-value {
+    flex: 1;
+    color: var(--text-secondary);
+}
+
+/* ===== SECCIONES DE MODAL ===== */
+
+.modal-section {
+    background: var(--bg-primary);
+    padding: var(--space-md);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
 }
