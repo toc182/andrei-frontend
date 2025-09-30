@@ -18,22 +18,22 @@
 
 /* Button Variants */
 .btn-primary {
-    background: #28a745;
+    background: var(--success-color);
     color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #1e7e34;
+    background: var(--success-hover);
     box-shadow: var(--shadow-btn-secondary);
 }
 
 .btn-secondary {
-    background: #007bff;
+    background: var(--info-color);
     color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #0056b3;
+    background: var(--info-hover);
     box-shadow: var(--shadow-btn-secondary);
 }
 

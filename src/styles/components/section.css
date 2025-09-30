@@ -71,7 +71,7 @@
 }
 
 .section-header-container .btn-primary:hover {
-    background: var(--primary-color-dark, #1e2832);
+    background: var(--primary-color-dark);
     transform: scale(1.1);
 }
 

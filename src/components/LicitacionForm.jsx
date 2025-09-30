@@ -195,10 +195,7 @@ const LicitacionForm = ({
                 disabled={loading}
             >
                 {loading ? (
-                    <>
-                        <div className="btn-spinner"></div>
-                        {licitacionId ? 'Actualizando...' : 'Creando...'}
-                    </>
+                    licitacionId ? 'Actualizando...' : 'Creando...'
                 ) : (
                     licitacionId ? 'Actualizar Licitación' : 'Crear Licitación'
                 )}

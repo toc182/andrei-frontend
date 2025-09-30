@@ -135,8 +135,7 @@ const EquipoForm = ({ equipo = null, onClose, onSuccess }) => {
                     className="btn btn-primary"
                     disabled={loading}
                 >
-                    {loading && <div className="btn-spinner"></div>}
-                    {equipo ? 'Actualizar' : 'Guardar'} Equipo
+                    {loading ? 'Guardando...' : `${equipo ? 'Actualizar' : 'Guardar'} Equipo`}
                 </button>
             </div>
         </div>

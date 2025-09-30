@@ -190,10 +190,7 @@ const OportunidadForm = ({
                 disabled={loading}
             >
                 {loading ? (
-                    <>
-                        <div className="btn-spinner"></div>
-                        {oportunidadId ? 'Actualizando...' : 'Creando...'}
-                    </>
+                    oportunidadId ? 'Actualizando...' : 'Creando...'
                 ) : (
                     oportunidadId ? 'Actualizar Oportunidad' : 'Crear Oportunidad'
                 )}

@@ -265,10 +265,7 @@ const AdendaForm = ({
                             disabled={loading}
                         >
                             {loading ? (
-                                <>
-                                    <div className="btn-spinner"></div>
-                                    {editingAdenda ? 'Actualizando...' : 'Creando...'}
-                                </>
+                                editingAdenda ? 'Actualizando...' : 'Creando...'
                             ) : (
                                 editingAdenda ? 'Actualizar Adenda' : 'Crear Adenda'
                             )}

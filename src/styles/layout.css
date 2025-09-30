@@ -109,13 +109,13 @@
     z-index: 999;
 }
 
-/* Container-based Responsive */
-@container main (max-width: 768px) {
+/* Mobile Responsive - Media Query */
+@media (max-width: 576px) {
     .sidebar {
         transform: translateX(calc(-1 * var(--sidebar-width)));
     }
 
-    .sidebar-open {
+    .sidebar.sidebar-open {
         transform: translateX(0);
     }
 
@@ -133,13 +133,3 @@
     }
 }
 
-@container main (max-width: 480px) {
-    .sidebar {
-        width: 100%;
-        max-width: var(--sidebar-width);
-    }
-
-    .mobile-user {
-        font-size: 0.8rem;
-    }
-}

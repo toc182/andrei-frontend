@@ -358,10 +358,7 @@ const ProjectForm = ({
                     disabled={loading}
                 >
                     {loading ? (
-                        <>
-                            <div className="btn-spinner"></div>
-                            {projectId ? 'Actualizando...' : 'Creando...'}
-                        </>
+                        projectId ? 'Actualizando...' : 'Creando...'
                     ) : (
                         projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
                     )}

@@ -10,7 +10,7 @@
     margin-bottom: 4px;
     margin-right: 12px;
     font-weight: 500;
-    color: #333;
+    color: var(--text-primary);
     vertical-align: middle;
     text-align: right;
 }
@@ -22,7 +22,7 @@
     width: calc(100% - 220px);
     padding: 8px 5px;
     margin-bottom: 5px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 0.8rem;
     font-family: inherit;
@@ -34,8 +34,8 @@
 .form-container select:focus,
 .form-container textarea:focus {
     outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 2px var(--primary-alpha-10);
 }
 
 .form-container input[type="radio"] {

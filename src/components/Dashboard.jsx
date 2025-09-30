@@ -69,6 +69,11 @@ const Dashboard = () => {
         if (!submenu && expandedMenu) {
             setExpandedMenu(null);
         }
+
+        // Auto-close sidebar en pantallas móviles después de seleccionar un item
+        if (window.innerWidth <= 576) {
+            setSidebarOpen(false);
+        }
     };
 
     const formatMoney = (amount) => {
