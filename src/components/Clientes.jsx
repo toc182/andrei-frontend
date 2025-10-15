@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
 import api from '../services/api';
-import { formatDate } from '../utils/dateUtils';
-import '../styles/components/standardModal.css';
+import SectionHeader from './common/SectionHeader';
+import StandardTable from './common/StandardTable';
+import StandardModal from './common/StandardModal';
+import '../styles/pages/clientes.css';
 
 const Clientes = () => {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const [editingCliente, setEditingCliente] = useState(null);
     const [formData, setFormData] = useState({
         nombre: '',
@@ -17,7 +21,6 @@ const Clientes = () => {
         direccion: ''
     });
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
 
     useEffect(() => {
         loadClientes();
@@ -49,24 +52,15 @@ const Clientes = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
 
         try {
             if (editingCliente) {
-                const response = await api.put(`/clientes/${editingCliente.id}`, formData);
-                if (response.data.success) {
-                    setSuccess('Cliente actualizado exitosamente');
-                    loadClientes();
-                    resetForm();
-                }
+                await api.put(`/clientes/${editingCliente.id}`, formData);
             } else {
-                const response = await api.post('/clientes', formData);
-                if (response.data.success) {
-                    setSuccess('Cliente creado exitosamente');
-                    loadClientes();
-                    resetForm();
-                }
+                await api.post('/clientes', formData);
             }
+            loadClientes();
+            handleCloseModal();
         } catch (error) {
             console.error('Error guardando cliente:', error);
             setError(error.response?.data?.message || 'Error al guardar el cliente');
@@ -83,25 +77,30 @@ const Clientes = () => {
             email: cliente.email || '',
             direccion: cliente.direccion || ''
         });
-        setShowForm(true);
+        setShowModal(true);
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('¿Está seguro de eliminar este cliente?')) {
+    const handleDelete = async () => {
+        if (!editingCliente) return;
+
+        if (window.confirm(`¿Está seguro de eliminar el cliente "${editingCliente.nombre}"?`)) {
             try {
-                const response = await api.delete(`/clientes/${id}`);
+                const response = await api.delete(`/clientes/${editingCliente.id}`);
                 if (response.data.success) {
-                    setSuccess('Cliente eliminado exitosamente');
                     loadClientes();
+                    handleCloseModal();
+                } else {
+                    setError(response.data.message || 'Error al eliminar el cliente');
                 }
             } catch (error) {
                 console.error('Error eliminando cliente:', error);
-                setError('Error al eliminar el cliente');
+                setError(error.response?.data?.message || 'Error al eliminar el cliente');
             }
         }
     };
 
-    const resetForm = () => {
+    const handleNewCliente = () => {
+        setEditingCliente(null);
         setFormData({
             nombre: '',
             abreviatura: '',
@@ -110,195 +109,171 @@ const Clientes = () => {
             email: '',
             direccion: ''
         });
-        setEditingCliente(null);
-        setShowForm(false);
+        setShowModal(true);
     };
 
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <p>Cargando clientes...</p>
-            </div>
-        );
-    }
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setEditingCliente(null);
+        setError('');
+    };
+
+    const columns = [
+        {
+            header: 'Nombre',
+            accessor: 'nombre'
+        },
+        {
+            header: '',
+            accessor: 'abreviatura',
+            render: (row) => (
+                <div style={{ textAlign: 'center' }}>
+                    {row.abreviatura}
+                </div>
+            )
+        },
+        {
+            header: '',
+            accessor: 'actions',
+            render: (row) => (
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    <button
+                        className="standard-table-icon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(row);
+                        }}
+                        title="Editar"
+                    >
+                        <FontAwesomeIcon icon={faEdit} />
+                    </button>
+                </div>
+            )
+        }
+    ];
 
     return (
-        <div className="clientes-container">
-            <div className="clientes-header">
-                <h1>Gestión de Clientes</h1>
-                <button 
-                    className="btn-primary"
-                    onClick={() => setShowForm(true)}
-                >
-                    + Nuevo Cliente
-                </button>
-            </div>
+        <div className="section-container">
+            <SectionHeader
+                title="Clientes"
+                actionButton={{
+                    icon: faPlus,
+                    onClick: handleNewCliente,
+                    className: 'btn-circular'
+                }}
+            />
 
-            {error && <div className="alert alert-error">{error}</div>}
-            {success && <div className="alert alert-success">{success}</div>}
+            <StandardTable
+                tableClassName="clientes-table"
+                columns={columns}
+                data={clientes}
+                loading={loading}
+                emptyMessage="No hay clientes registrados"
+            />
 
-            {showForm && (
-                <div className="standard-modal-overlay">
-                    <div className="standard-modal-content">
-                        <div className="standard-modal-header">
-                            <h2>{editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
-                            <button className="close-btn" onClick={resetForm}>×</button>
-                        </div>
-                        
-                        <form onSubmit={handleSubmit} className="cliente-form">
-                            <div className="">
-                                <div className="">
-                                    <label htmlFor="nombre">Nombre *</label>
-                                    <input
-                                        type="text"
-                                        id="nombre"
-                                        name="nombre"
-                                        value={formData.nombre}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="">
-                                    <label htmlFor="abreviatura">Abreviatura</label>
-                                    <input
-                                        type="text"
-                                        id="abreviatura"
-                                        name="abreviatura"
-                                        value={formData.abreviatura}
-                                        onChange={handleInputChange}
-                                        maxLength="25"
-                                        placeholder="Ej: CONST_PAN"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="">
-                                <label htmlFor="contacto">Persona de Contacto</label>
-                                <input
-                                    type="text"
-                                    id="contacto"
-                                    name="contacto"
-                                    value={formData.contacto}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="">
-                                <div className="">
-                                    <label htmlFor="telefono">Teléfono</label>
-                                    <input
-                                        type="tel"
-                                        id="telefono"
-                                        name="telefono"
-                                        value={formData.telefono}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-
-                                <div className="">
-                                    <label htmlFor="email">Email</label>
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="">
-                                <label htmlFor="direccion">Dirección</label>
-                                <textarea
-                                    id="direccion"
-                                    name="direccion"
-                                    value={formData.direccion}
-                                    onChange={handleInputChange}
-                                    rows="3"
-                                />
-                            </div>
-
-                            <div className="">
-                                <button type="button" onClick={resetForm} className="btn-secondary">
+            <StandardModal
+                isOpen={showModal}
+                onClose={handleCloseModal}
+                title={editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}
+                footer={
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: editingCliente ? 'space-between' : 'flex-end' }}>
+                        {editingCliente && (
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                className="btn btn-danger"
+                            >
+                                Eliminar
+                            </button>
+                        )}
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            {!editingCliente && (
+                                <button
+                                    type="button"
+                                    onClick={handleCloseModal}
+                                    className="btn btn-secondary"
+                                >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-primary">
-                                    {editingCliente ? 'Actualizar' : 'Crear'} Cliente
-                                </button>
-                            </div>
-                        </form>
+                            )}
+                            <button
+                                type="submit"
+                                form="cliente-form"
+                                className="btn btn-primary"
+                            >
+                                {editingCliente ? 'Actualizar' : 'Crear'}
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                }
+            >
+                <form id="cliente-form" onSubmit={handleSubmit} className="form-container">
+                    {error && <div className="error-message">{error}</div>}
 
-            <div className="clientes-list">
-                {clientes.length === 0 ? (
-                    <div className="empty-state">
-                        <h3>No hay clientes registrados</h3>
-                        <p>Comience agregando su primer cliente al sistema</p>
-                        <button 
-                            className="btn-primary"
-                            onClick={() => setShowForm(true)}
-                        >
-                            + Agregar Cliente
-                        </button>
+                    <div>
+                        <label>Nombre *</label>
+                        <input
+                            type="text"
+                            name="nombre"
+                            value={formData.nombre}
+                            onChange={handleInputChange}
+                            required
+                        />
                     </div>
-                ) : (
-                    <div className="clientes-grid">
-                        {clientes.map(cliente => (
-                            <div key={cliente.id} className="cliente-card">
-                                <div className="cliente-header">
-                                    <div>
-                                        <h3>{cliente.nombre}</h3>
-                                        {cliente.abreviatura && (
-                                            <span className="cliente-abreviatura">{cliente.abreviatura}</span>
-                                        )}
-                                    </div>
-                                    <div className="cliente-actions">
-                                        <button 
-                                            onClick={() => handleEdit(cliente)}
-                                            className="btn-edit"
-                                            title="Editar"
-                                        >
-                                            ✏️
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDelete(cliente.id)}
-                                            className="btn-delete"
-                                            title="Eliminar"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div className="cliente-info">
-                                    {cliente.contacto && (
-                                        <p><strong>Contacto:</strong> {cliente.contacto}</p>
-                                    )}
-                                    {cliente.telefono && (
-                                        <p><strong>Teléfono:</strong> {cliente.telefono}</p>
-                                    )}
-                                    {cliente.email && (
-                                        <p><strong>Email:</strong> {cliente.email}</p>
-                                    )}
-                                    {cliente.direccion && (
-                                        <p><strong>Dirección:</strong> {cliente.direccion}</p>
-                                    )}
-                                </div>
-                                
-                                <div className="cliente-footer">
-                                    <small>
-                                        Registrado: {formatDate(cliente.created_at)}
-                                    </small>
-                                </div>
-                            </div>
-                        ))}
+
+                    <div>
+                        <label>Abreviatura</label>
+                        <input
+                            type="text"
+                            name="abreviatura"
+                            value={formData.abreviatura}
+                            onChange={handleInputChange}
+                            maxLength="25"
+                            placeholder="Ej: CONST_PAN"
+                        />
                     </div>
-                )}
-            </div>
+
+                    <div>
+                        <label>Persona de Contacto</label>
+                        <input
+                            type="text"
+                            name="contacto"
+                            value={formData.contacto}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Teléfono</label>
+                        <input
+                            type="tel"
+                            name="telefono"
+                            value={formData.telefono}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+
+                    <div>
+                        <label>Dirección</label>
+                        <textarea
+                            name="direccion"
+                            value={formData.direccion}
+                            onChange={handleInputChange}
+                            rows="3"
+                        />
+                    </div>
+                </form>
+            </StandardModal>
         </div>
     );
 };

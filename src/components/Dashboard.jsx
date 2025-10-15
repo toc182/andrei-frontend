@@ -3,13 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import ProjectsHub from './ProjectsHub';
 import ProjectForm from './ProjectForm';
 import api from '../services/api';
-import SeguimientoHub from './SeguimientoHub';
 import Clientes from './Clientes';
-import CostsHub from './CostsHub';
 import DocumentForm from './DocumentForm';
 import DocumentosHub from './DocumentosHub';
 import EquiposInformacion from './EquiposInformacion';
 import EquiposStatus from './EquiposStatus';
+import AsignacionesEquipos from './AsignacionesEquipos';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText, faTruckPickup, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
@@ -145,16 +144,6 @@ const Dashboard = () => {
                     </button>
                 </div>
                 <div className="action-card">
-                    <h3>⟨ Seguimiento de Tuberías</h3>
-                    <p>Control de avance de instalación de tuberías por frentes de trabajo</p>
-                    <button
-                        className="action-btn"
-                        onClick={() => setCurrentView('seguimiento')}
-                    >
-                        Ver Seguimiento
-                    </button>
-                </div>
-                <div className="action-card">
                     <h3>◉ Gestión de Clientes</h3>
                     <p>Administrar información de clientes y contactos</p>
                     <button
@@ -162,17 +151,6 @@ const Dashboard = () => {
                         onClick={() => setCurrentView('clientes')}
                     >
                         Ver Clientes
-                    </button>
-                </div>
-
-                <div className="action-card">
-                    <h3>$ Control de Costos</h3>
-                    <p>Presupuestos, gastos y control financiero de proyectos</p>
-                    <button
-                        className="action-btn"
-                        onClick={() => setCurrentView('costs')}
-                    >
-                        Ver Costos
                     </button>
                 </div>
 
@@ -218,12 +196,8 @@ const Dashboard = () => {
             case 'projects-licitaciones':
             case 'projects-oportunidades':
                 return <ProjectsHub onStatsUpdate={loadDashboardStats} activeTab={currentView.includes('-') ? currentView.split('-')[1] : 'proyectos'} />;
-            case 'seguimiento':
-                return <SeguimientoHub />;
             case 'clientes':
                 return <Clientes />;
-            case 'costs':
-                return <CostsHub />;
             case 'equipos':
                 return (
                     <div className="section-container">
@@ -239,6 +213,8 @@ const Dashboard = () => {
                 return <EquiposInformacion />;
             case 'equipos-status':
                 return <EquiposStatus />;
+            case 'equipos-asignaciones':
+                return <AsignacionesEquipos />;
             case 'documentos':
                 return <DocumentosHub onDocumentClick={(docId) => setCurrentView(docId)} />;
             case 'doc-acuerdo-consorcio':
@@ -321,14 +297,6 @@ const Dashboard = () => {
                     </div>
 
                     <button
-                        className={`nav-item ${currentView === 'seguimiento' ? 'active' : ''}`}
-                        onClick={() => handleMenuClick('seguimiento')}
-                    >
-                        <span className="nav-icon"><FontAwesomeIcon icon={faChartLine} /></span>
-                        <span className="nav-text">Seguimiento</span>
-                    </button>
-
-                    <button
                         className={`nav-item ${currentView === 'clientes' ? 'active' : ''}`}
                         onClick={() => handleMenuClick('clientes')}
                     >
@@ -336,17 +304,9 @@ const Dashboard = () => {
                         <span className="nav-text">Clientes</span>
                     </button>
 
-                    <button
-                        className={`nav-item ${currentView === 'costs' ? 'active' : ''}`}
-                        onClick={() => handleMenuClick('costs')}
-                    >
-                        <span className="nav-icon">$</span>
-                        <span className="nav-text">Costos</span>
-                    </button>
-
                     <div className="nav-group">
                         <button
-                            className={`nav-item nav-parent ${expandedMenu === 'equipos' ? 'expanded' : ''} ${['equipos', 'equipos-informacion', 'equipos-status'].includes(currentView) ? 'active' : ''}`}
+                            className={`nav-item nav-parent ${expandedMenu === 'equipos' ? 'expanded' : ''} ${['equipos', 'equipos-informacion', 'equipos-status', 'equipos-asignaciones'].includes(currentView) ? 'active' : ''}`}
                             onClick={() => {
                                 setCurrentView('equipos');
                                 setExpandedMenu('equipos');
@@ -370,6 +330,12 @@ const Dashboard = () => {
                                     onClick={() => handleMenuClick('equipos', 'equipos-status')}
                                 >
                                     <span className="nav-text">Status de Equipos</span>
+                                </button>
+                                <button
+                                    className={`nav-subitem ${currentView === 'equipos-asignaciones' ? 'active' : ''}`}
+                                    onClick={() => handleMenuClick('equipos', 'equipos-asignaciones')}
+                                >
+                                    <span className="nav-text">Asignaciones</span>
                                 </button>
                             </div>
                         )}

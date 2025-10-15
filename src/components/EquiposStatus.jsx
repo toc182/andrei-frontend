@@ -20,6 +20,16 @@ const EquiposStatus = () => {
     const [lastUpdate, setLastUpdate] = useState(null);
     const [selectedEquipo, setSelectedEquipo] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showStatusForm, setShowStatusForm] = useState(false);
+    const [equipoToEdit, setEquipoToEdit] = useState(null);
+    const [formData, setFormData] = useState({
+        estado: '',
+        proyecto: '',
+        responsable: '',
+        rata_mes: '',
+        observaciones_status: ''
+    });
+    const [submitting, setSubmitting] = useState(false);
 
     // Mapeo de estados desde BD a estados estandarizados
     const getEstadoEstandarizado = (estado) => {
@@ -52,22 +62,12 @@ const EquiposStatus = () => {
 
             if (response.data.success) {
                 // Mapear los datos para que coincidan con lo que espera el componente
-                const equiposConStatus = response.data.data.map((equipo, index) => {
-                    // Estados manuales para testing - distribuir diferentes estados
-                    let estadoTesting;
-                    switch(index % 4) {
-                        case 0: estadoTesting = 'en_operacion'; break;
-                        case 1: estadoTesting = 'standby'; break;
-                        case 2: estadoTesting = 'en_mantenimiento'; break;
-                        case 3: estadoTesting = 'fuera_de_servicio'; break;
-                        default: estadoTesting = 'en_operacion';
-                    }
-
+                const equiposConStatus = response.data.data.map((equipo) => {
                     return {
                         ...equipo,
                         ubicacion: equipo.proyecto || 'No especificada',
                         ultima_revision: equipo.updated_at,
-                        estado: estadoTesting // Estados distribuidos para visualización
+                        estado: equipo.estado || 'en_operacion'
                     };
                 });
 
@@ -106,13 +106,16 @@ const EquiposStatus = () => {
     // Función para formatear fecha de última actualización
     const formatLastUpdate = (date) => {
         if (!date) return '';
-        return new Intl.DateTimeFormat('es-ES', {
-            hour: '2-digit',
-            minute: '2-digit',
+        const formatted = new Intl.DateTimeFormat('es-ES', {
             day: '2-digit',
-            month: '2-digit',
+            month: 'short',
             year: 'numeric'
         }).format(date);
+        // Reemplazar espacios con guiones y acortar mes si es necesario
+        return formatted
+            .replace(/\s/g, '-')
+            .replace('sept', 'sep')
+            .replace('dic', 'dic');
     };
 
     // Función para refrescar manualmente
@@ -130,6 +133,58 @@ const EquiposStatus = () => {
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedEquipo(null);
+    };
+
+    // Función para abrir formulario de status
+    const handleOpenStatusForm = () => {
+        setEquipoToEdit(selectedEquipo);
+        setFormData({
+            estado: selectedEquipo?.estado || 'en_operacion',
+            proyecto: selectedEquipo?.ubicacion || '',
+            responsable: selectedEquipo?.responsable || '',
+            rata_mes: selectedEquipo?.rata_mes || '',
+            observaciones_status: selectedEquipo?.observaciones_status || ''
+        });
+        setShowStatusForm(true);
+        setShowModal(false);
+    };
+
+    // Función para cerrar formulario de status
+    const handleCloseStatusForm = () => {
+        setShowStatusForm(false);
+        setEquipoToEdit(null);
+    };
+
+    // Función para manejar cambios en el formulario
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Función para manejar submit del formulario
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+
+        try {
+            await api.put(`/equipos/${equipoToEdit.id}/status`, formData);
+
+            // Recargar los datos
+            await loadEquiposStatus();
+
+            // Cerrar formulario
+            setShowStatusForm(false);
+            setEquipoToEdit(null);
+
+        } catch (error) {
+            console.error('Error al actualizar status:', error);
+            setError('Error al actualizar el status del equipo');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
 
@@ -181,20 +236,23 @@ const EquiposStatus = () => {
             </div>
             <StandardTable
                 className=""
-                tableClassName="equipos-table"
+                tableClassName=""
                 columns={[
-                    { header: 'Código', accessor: 'codigo' },
+                    {
+                        header: 'Código',
+                        render: (equipo) => equipo.codigo || 'Sin código'
+                    },
                     {
                         header: 'Descripción',
                         render: (equipo) => (
-                            <div className="equipo-description-cell">
-                                <div className="equipo-description-row">
+                            <div>
+                                <div>
                                     {equipo.descripcion}
                                 </div>
-                                <div className="equipo-marca-modelo-row">
+                                <div>
                                     {equipo.marca} {equipo.modelo}
                                 </div>
-                                <div className="equipo-ano-row">
+                                <div>
                                     {equipo.ano || ''}
                                 </div>
                             </div>
@@ -211,7 +269,16 @@ const EquiposStatus = () => {
                             );
                         }
                     },
-                    { header: 'Ubicación', render: (equipo) => equipo.ubicacion || 'No especificada' }
+                    { header: 'Ubicación', render: (equipo) => equipo.ubicacion || 'No especificada' },
+                    {
+                        header: 'Última Actualización',
+                        render: (equipo) => {
+                            if (equipo.updated_at) {
+                                return formatLastUpdate(new Date(equipo.updated_at));
+                            }
+                            return formatLastUpdate(lastUpdate);
+                        }
+                    }
                 ]}
                 data={equiposPinellas}
                 onRowClick={handleRowClick}
@@ -224,20 +291,23 @@ const EquiposStatus = () => {
             </div>
             <StandardTable
                 className=""
-                tableClassName="equipos-table"
+                tableClassName=""
                 columns={[
-                    { header: 'Código', accessor: 'codigo' },
+                    {
+                        header: 'Código',
+                        render: (equipo) => equipo.codigo || 'Sin código'
+                    },
                     {
                         header: 'Descripción',
                         render: (equipo) => (
-                            <div className="equipo-description-cell">
-                                <div className="equipo-description-row">
+                            <div>
+                                <div>
                                     {equipo.descripcion}
                                 </div>
-                                <div className="equipo-marca-modelo-row">
+                                <div>
                                     {equipo.marca} {equipo.modelo}
                                 </div>
-                                <div className="equipo-ano-row">
+                                <div>
                                     {equipo.ano || ''}
                                 </div>
                             </div>
@@ -254,7 +324,16 @@ const EquiposStatus = () => {
                             );
                         }
                     },
-                    { header: 'Ubicación', render: (equipo) => equipo.ubicacion || 'No especificada' }
+                    { header: 'Ubicación', render: (equipo) => equipo.ubicacion || 'No especificada' },
+                    {
+                        header: 'Última Actualización',
+                        render: (equipo) => {
+                            if (equipo.updated_at) {
+                                return formatLastUpdate(new Date(equipo.updated_at));
+                            }
+                            return formatLastUpdate(lastUpdate);
+                        }
+                    }
                 ]}
                 data={equiposCOCP}
                 onRowClick={handleRowClick}
@@ -267,6 +346,17 @@ const EquiposStatus = () => {
                 isOpen={showModal}
                 onClose={handleCloseModal}
                 title="Detalles del Equipo"
+                footer={
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleOpenStatusForm}
+                        >
+                            Actualizar Status
+                        </button>
+                    </div>
+                }
             >
                 <div>
                     <div className="modal-row">
@@ -327,13 +417,109 @@ const EquiposStatus = () => {
                         <label className="modal-row-label">Última Actualización:</label>
                         <span className="modal-row-value">
                             {selectedEquipo?.ultima_revision ?
-                                new Date(selectedEquipo.ultima_revision).toLocaleDateString('es-ES') :
+                                formatLastUpdate(new Date(selectedEquipo.ultima_revision)) :
                                 'Sin registro'
                             }
                         </span>
                     </div>
                 </div>
             </StandardModal>
+
+            {/* Modal del formulario de status */}
+            {showStatusForm && equipoToEdit && (
+                <StandardModal
+                    isOpen={showStatusForm}
+                    onClose={handleCloseStatusForm}
+                    title="Actualizar Status del Equipo"
+                    footer={
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                className="btn btn-danger"
+                                onClick={handleCloseStatusForm}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                form="status-form"
+                                className="btn btn-primary"
+                                disabled={submitting}
+                            >
+                                {submitting ? 'Guardando...' : 'Guardar Cambios'}
+                            </button>
+                        </div>
+                    }
+                >
+                    <form id="status-form" className="form-container" onSubmit={handleFormSubmit}>
+                        <div>
+                            <label>Equipo:</label>
+                            <span style={{ fontWeight: 'bold' }}>
+                                {equipoToEdit.codigo || 'Sin código'} - {equipoToEdit.descripcion}
+                            </span>
+                        </div>
+
+                        <div>
+                            <label>Estado:</label>
+                            <select
+                                name="estado"
+                                value={formData.estado}
+                                onChange={handleFormChange}
+                            >
+                                <option value="en_operacion">En Operación</option>
+                                <option value="standby">Standby</option>
+                                <option value="en_mantenimiento">En Mantenimiento</option>
+                                <option value="fuera_de_servicio">Fuera de Servicio</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label>Ubicación/Proyecto:</label>
+                            <input
+                                type="text"
+                                name="proyecto"
+                                value={formData.proyecto}
+                                onChange={handleFormChange}
+                                placeholder="Proyecto donde se encuentra el equipo"
+                            />
+                        </div>
+
+                        <div>
+                            <label>Responsable:</label>
+                            <input
+                                type="text"
+                                name="responsable"
+                                value={formData.responsable}
+                                onChange={handleFormChange}
+                                placeholder="Persona responsable del equipo"
+                            />
+                        </div>
+
+                        <div>
+                            <label>Rata Mensual:</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                name="rata_mes"
+                                value={formData.rata_mes}
+                                onChange={handleFormChange}
+                                placeholder="0.00"
+                            />
+                        </div>
+
+                        <div>
+                            <label>Observaciones:</label>
+                            <textarea
+                                rows="3"
+                                name="observaciones_status"
+                                value={formData.observaciones_status}
+                                onChange={handleFormChange}
+                                placeholder="Observaciones sobre el status actual del equipo..."
+                            />
+                        </div>
+                    </form>
+                </StandardModal>
+            )}
         </div>
     );
 };

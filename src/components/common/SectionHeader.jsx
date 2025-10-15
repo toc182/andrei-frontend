@@ -13,6 +13,7 @@ const SectionHeader = ({ title, icon, actionButton }) => {
                     <button
                         className={actionButton.className || 'btn-circular'}
                         onClick={actionButton.onClick}
+                        title={actionButton.title}
                     >
                         {actionButton.icon && (
                             <FontAwesomeIcon icon={actionButton.icon} />

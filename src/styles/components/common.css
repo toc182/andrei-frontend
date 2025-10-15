@@ -66,3 +66,10 @@
     background: var(--danger-color);
 }
 
+/* Logo Styles */
+.equipos-logo {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+}
+
