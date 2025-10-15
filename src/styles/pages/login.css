@@ -1,5 +1,17 @@
 /* ===== LOGIN PAGE STYLES ===== */
 
+/* Login Card */
+.card-login {
+    background: white;
+    border-radius: var(--border-radius-xl);
+    padding: var(--space-2xl) var(--space-md);
+    box-shadow: var(--shadow-card);
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 5rem;
+}
+
 /* Login Header */
 .login-header {
     text-align: center;
@@ -13,15 +25,11 @@
     display: block;
 }
 
-.card-login {
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 5rem;
+.form-container.login-form label {
+    width: 25%;
+    max-width: 150px;
 }
 
-.login-form .btn-submit {
-    width: 100%;
-    text-align: center;
-    margin: 0 auto;
+.form-container.login-form input {
+    width: 70%;
 }

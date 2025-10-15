@@ -11,7 +11,9 @@ const Clientes = () => {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [editingCliente, setEditingCliente] = useState(null);
+    const [selectedCliente, setSelectedCliente] = useState(null);
     const [formData, setFormData] = useState({
         nombre: '',
         abreviatura: '',
@@ -118,6 +120,16 @@ const Clientes = () => {
         setError('');
     };
 
+    const handleRowClick = (cliente) => {
+        setSelectedCliente(cliente);
+        setShowDetailsModal(true);
+    };
+
+    const handleCloseDetailsModal = () => {
+        setShowDetailsModal(false);
+        setSelectedCliente(null);
+    };
+
     const columns = [
         {
             header: 'Nombre',
@@ -169,6 +181,7 @@ const Clientes = () => {
                 data={clientes}
                 loading={loading}
                 emptyMessage="No hay clientes registrados"
+                onRowClick={handleRowClick}
             />
 
             <StandardModal
@@ -273,6 +286,71 @@ const Clientes = () => {
                         />
                     </div>
                 </form>
+            </StandardModal>
+
+            <StandardModal
+                isOpen={showDetailsModal}
+                onClose={handleCloseDetailsModal}
+                title="Detalles del Cliente"
+                size="default"
+                footer={
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                handleCloseDetailsModal();
+                                handleEdit(selectedCliente);
+                            }}
+                            className="btn btn-primary"
+                        >
+                            Editar
+                        </button>
+                    </div>
+                }
+            >
+                {selectedCliente && (
+                    <div>
+                        <div className="modal-row">
+                            <label className="modal-row-label">Nombre:</label>
+                            <span className="modal-row-value">{selectedCliente.nombre}</span>
+                        </div>
+
+                        {selectedCliente.abreviatura && (
+                            <div className="modal-row">
+                                <label className="modal-row-label">Abreviatura:</label>
+                                <span className="modal-row-value">{selectedCliente.abreviatura}</span>
+                            </div>
+                        )}
+
+                        {selectedCliente.contacto && (
+                            <div className="modal-row">
+                                <label className="modal-row-label">Persona de Contacto:</label>
+                                <span className="modal-row-value">{selectedCliente.contacto}</span>
+                            </div>
+                        )}
+
+                        {selectedCliente.telefono && (
+                            <div className="modal-row">
+                                <label className="modal-row-label">Teléfono:</label>
+                                <span className="modal-row-value">{selectedCliente.telefono}</span>
+                            </div>
+                        )}
+
+                        {selectedCliente.email && (
+                            <div className="modal-row">
+                                <label className="modal-row-label">Email:</label>
+                                <span className="modal-row-value">{selectedCliente.email}</span>
+                            </div>
+                        )}
+
+                        {selectedCliente.direccion && (
+                            <div className="modal-row">
+                                <label className="modal-row-label">Dirección:</label>
+                                <span className="modal-row-value">{selectedCliente.direccion}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </StandardModal>
         </div>
     );

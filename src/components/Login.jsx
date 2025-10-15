@@ -37,14 +37,14 @@ const Login = () => {
 
     return (
         <div className="section-container">
-            <div className="document-form-card card-login">
+            <div className="card-login">
                 <div className="login-header">
                     <img src={logo} alt="Pinellas" className="login-logo" />
                 </div>
 
-                <form onSubmit={handleSubmit} >
-                    <div >
-                        <label >Email:</label>
+                <form onSubmit={handleSubmit} className="form-container login-form">
+                    <div>
+                        <label>Email:</label>
                         <input
                             type="email"
                             name="email"
@@ -53,11 +53,11 @@ const Login = () => {
                             required
                             placeholder="admin@andrei.com"
                             disabled={loading}
-                                                    />
+                        />
                     </div>
 
-                    <div >
-                        <label >Contraseña:</label>
+                    <div>
+                        <label>Contraseña:</label>
                         <input
                             type="password"
                             name="password"
@@ -66,7 +66,7 @@ const Login = () => {
                             required
                             placeholder="123456"
                             disabled={loading}
-                                                    />
+                        />
                     </div>
 
                     {error && (
@@ -78,7 +78,7 @@ const Login = () => {
                     <div style={{textAlign: 'center', marginTop: '1rem'}}>
                         <button
                             type="submit"
-                            className={`btn-submit ${loading ? 'loading' : ''}`}
+                            className={`btn btn-primary ${loading ? 'loading' : ''}`}
                             disabled={loading}
                         >
                             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}

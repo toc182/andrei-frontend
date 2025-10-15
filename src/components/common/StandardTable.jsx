@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StandardTable = ({ className, tableClassName, columns, data, onRowClick, emptyMessage = "No hay datos disponibles" }) => {
+const StandardTable = ({ className, tableClassName, columns, data, onRowClick, loading, emptyMessage = "No hay datos disponibles" }) => {
     return (
         <div className={`standard-table-container ${className || ''}`}>
             <table className={`standard-table ${tableClassName || ''}`}>
@@ -14,7 +14,13 @@ const StandardTable = ({ className, tableClassName, columns, data, onRowClick, e
                     </tr>
                 </thead>
                 <tbody>
-                    {data && data.length > 0 ? (
+                    {loading ? (
+                        <tr>
+                            <td colSpan={columns.length} className="no-data">
+                                Cargando...
+                            </td>
+                        </tr>
+                    ) : data && data.length > 0 ? (
                         data.map((row, rowIndex) => (
                             <tr
                                 key={rowIndex}
