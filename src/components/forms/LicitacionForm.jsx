@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import StandardModal from './common/StandardModal';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+import StandardModal from '../common/StandardModal';
 
 const LicitacionForm = ({
     licitacionId = null,

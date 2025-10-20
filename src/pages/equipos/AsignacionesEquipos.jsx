@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTruckPickup, faPlus, faEdit, faTrash, faClock } from '@fortawesome/free-solid-svg-icons';
-import SectionHeader from './common/SectionHeader';
-import StandardTable from './common/StandardTable';
-import AsignacionForm from './AsignacionForm';
-import RegistroUsoForm from './RegistroUsoForm';
-import api from '../services/api';
-import '../styles/pages/asignaciones_equipos.css';
+import SectionHeader from '../../components/common/SectionHeader';
+import StandardTable from '../../components/common/StandardTable';
+import AsignacionForm from '../../components/forms/AsignacionForm';
+import RegistroUsoForm from '../../components/forms/RegistroUsoForm';
+import api from '../../services/api';
+import '../../styles/pages/asignaciones_equipos.css';
 
 const AsignacionesEquipos = () => {
     const [showForm, setShowForm] = useState(false);
@@ -172,31 +172,35 @@ const AsignacionesEquipos = () => {
             ) : (
                 <>
                     {/* Tabla de Equipos en Alquiler */}
-                    <div style={{ marginTop: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)', fontSize: '1.2rem' }}>
+                    <div className="table-title-section">
+                        <h3 className="table-title-header">
                             Equipos en Alquiler
                         </h3>
-                        <StandardTable
-                            className="asig-table"
-                            columns={columnsAlquiler}
-                            data={asignaciones.alquiler}
-                            onRowClick={handleRegistroUso}
-                            emptyMessage="No hay equipos en alquiler"
-                        />
+                        <div className="table-title-content">
+                            <StandardTable
+                                className="asig-table"
+                                columns={columnsAlquiler}
+                                data={asignaciones.alquiler}
+                                onRowClick={handleRegistroUso}
+                                emptyMessage="No hay equipos en alquiler"
+                            />
+                        </div>
                     </div>
 
                     {/* Tabla de Equipos Propios */}
-                    <div style={{ marginTop: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem', color: 'var(--primary-color)', fontSize: '1.2rem' }}>
+                    <div className="table-title-section">
+                        <h3 className="table-title-header">
                             Equipos en Proyectos Propios
                         </h3>
-                        <StandardTable
-                            className="asig-table"
-                            columns={columnsPropios}
-                            data={asignaciones.propios}
-                            onRowClick={handleEditAsignacion}
-                            emptyMessage="No hay equipos propios asignados"
-                        />
+                        <div className="table-title-content">
+                            <StandardTable
+                                className="asig-table"
+                                columns={columnsPropios}
+                                data={asignaciones.propios}
+                                onRowClick={handleEditAsignacion}
+                                emptyMessage="No hay equipos propios asignados"
+                            />
+                        </div>
                     </div>
                 </>
             )}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import api from '../services/api';
-import StandardModal from './common/StandardModal';
+import api from '../../services/api';
+import StandardModal from '../common/StandardModal';
 
 const EquipoForm = ({ equipo = null, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({

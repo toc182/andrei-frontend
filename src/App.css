@@ -1,10 +1,5 @@
-/* ===== ANDREI PROJECT - MAIN STYLES ===== */
-
-/* Import Component Styles */
-@import "./styles/components/common.css";
-@import "./styles/components/section.css";
-@import "./styles/components/forms.css";
-@import "./styles/components/buttons.css";
+/* ===== ANDREI PROJECT - APP SPECIFIC STYLES ===== */
+/* Imports centralizados en index.css */
 
 /* App Root */
 .App {

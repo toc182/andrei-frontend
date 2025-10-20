@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProjectsHub from './ProjectsHub';
-import ProjectForm from './ProjectForm';
 import api from '../services/api';
 import Clientes from './Clientes';
-import DocumentForm from './DocumentForm';
 import DocumentosHub from './DocumentosHub';
-import EquiposInformacion from './EquiposInformacion';
-import EquiposStatus from './EquiposStatus';
-import AsignacionesEquipos from './AsignacionesEquipos';
+import DocumentForm from '../components/forms/DocumentForm';
+import EquiposInformacion from './equipos/EquiposInformacion';
+import EquiposStatus from './equipos/EquiposStatus';
+import AsignacionesEquipos from './equipos/AsignacionesEquipos';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText, faTruckPickup, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
-import '../styles/globals.css';
-import '../styles/layout.css';
-import '../styles/navigation.css';
-import '../App.css';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/components/standardModal.css';
+import '../../styles/components/standardModal.css';
 
 const AdendaForm = ({ 
     projectId, 

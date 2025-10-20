@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import LicitacionForm from './LicitacionForm';
+import LicitacionForm from './forms/LicitacionForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import '../styles/components/badges.css';

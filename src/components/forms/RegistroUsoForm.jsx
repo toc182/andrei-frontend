@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import api from '../services/api';
-import StandardModal from './common/StandardModal';
-import '../styles/pages/asignaciones_equipos.css';
+import api from '../../services/api';
+import StandardModal from '../common/StandardModal';
+import '../../styles/pages/asignaciones_equipos.css';
 
 const RegistroUsoForm = ({ asignacion, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({

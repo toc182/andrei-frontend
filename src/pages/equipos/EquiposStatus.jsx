@@ -3,14 +3,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faRefresh, faTruckPickup
 } from '@fortawesome/free-solid-svg-icons';
-import api from '../services/api';
-import logo from '../assets/logo.png';
-import cocpLogo from '../assets/LogoCOCPfondoblanco.png';
-import SectionHeader from './common/SectionHeader';
-import StandardTable from './common/StandardTable';
-import StandardModal from './common/StandardModal';
-import '../styles/components/badges.css';
-import '../styles/pages/status-equipos.css';
+import api from '../../services/api';
+import logo from '../../assets/logo.png';
+import cocpLogo from '../../assets/LogoCOCPfondoblanco.png';
+import SectionHeader from '../../components/common/SectionHeader';
+import StandardTable from '../../components/common/StandardTable';
+import StandardModal from '../../components/common/StandardModal';
+import '../../styles/components/badges.css';
+import '../../styles/pages/status-equipos.css';
 
 const EquiposStatus = () => {
     const [equiposPinellas, setEquiposPinellas] = useState([]);

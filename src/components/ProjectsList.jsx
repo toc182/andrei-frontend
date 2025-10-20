@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import ProjectForm from './ProjectForm';
-import AdendaForm from './AdendaForm';
+import ProjectForm from './forms/ProjectForm';
+import AdendaForm from './forms/AdendaForm';
 import StandardModal from './common/StandardModal';
 import StandardTable from './common/StandardTable';
 import SectionHeader from './common/SectionHeader';

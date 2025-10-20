@@ -59,7 +59,7 @@
 .standard-table td {
     padding: 0.75rem 0.625rem; /* Copiado de projects.css */
     border-bottom: 1px solid var(--border-color);
-    vertical-align: top;
+    vertical-align: middle;
     background: white;
     word-wrap: break-word;
     overflow: visible;
@@ -123,6 +123,46 @@
     color: var(--text-muted);
     font-style: italic;
     padding: 2rem;
+}
+
+/* ===== TABLA CON TÍTULO ===== */
+
+/* Contenedor de tabla con título */
+.table-title-section {
+    margin-top: 2rem;
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Título de la tabla */
+.table-title-header {
+    background-color: white;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Wrapper del contenido de la tabla */
+.table-title-content {
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+/* Eliminar border-radius superior de la tabla para conectar con el título */
+.table-title-content .standard-table-container {
+    border-radius: 0 0 8px 8px;
+}
+
+.table-title-content .standard-table {
+    border-radius: 0;
 }
 
 

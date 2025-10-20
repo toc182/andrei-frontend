@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import StandardModal from './common/StandardModal';
-import '../styles/components/standardModal.css';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+import StandardModal from '../common/StandardModal';
+import '../../styles/components/standardModal.css';
 
 const ProjectForm = ({
                          projectId = null,

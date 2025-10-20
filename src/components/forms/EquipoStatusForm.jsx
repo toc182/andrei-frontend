@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
-import api from '../services/api';
-import StandardModal from './common/StandardModal';
+import api from '../../services/api';
+import StandardModal from '../common/StandardModal';
 
 const EquipoStatusForm = ({ equipo, onClose, onSuccess }) => {
     const [selectedStatus, setSelectedStatus] = useState(equipo?.estado || 'en_operacion');

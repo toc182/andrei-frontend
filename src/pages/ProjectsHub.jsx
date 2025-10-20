@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import ProjectsList from './ProjectsList';
-import LicitacionesList from './LicitacionesList';
-import OportunidadesList from './OportunidadesList';
+import ProjectsList from '../components/ProjectsList';
+import LicitacionesList from '../components/LicitacionesList';
+import OportunidadesList from '../components/OportunidadesList';
 
 const ProjectsHub = ({ onStatsUpdate, activeTab: propActiveTab }) => {
     const [activeTab, setActiveTab] = useState(propActiveTab || 'proyectos');

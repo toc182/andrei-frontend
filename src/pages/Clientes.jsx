@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
 import api from '../services/api';
-import SectionHeader from './common/SectionHeader';
-import StandardTable from './common/StandardTable';
-import StandardModal from './common/StandardModal';
+import SectionHeader from '../components/common/SectionHeader';
+import StandardTable from '../components/common/StandardTable';
+import StandardModal from '../components/common/StandardModal';
 import '../styles/pages/clientes.css';
 
 const Clientes = () => {

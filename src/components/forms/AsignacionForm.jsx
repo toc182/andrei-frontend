@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../services/api';
-import StandardModal from './common/StandardModal';
+import api from '../../services/api';
+import StandardModal from '../common/StandardModal';
 
 const AsignacionForm = ({ asignacion = null, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
