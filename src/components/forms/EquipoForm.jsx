@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import api from '../../services/api';
 import StandardModal from '../common/StandardModal';
 
@@ -106,38 +104,26 @@ const EquipoForm = ({ equipo = null, onClose, onSuccess }) => {
     };
 
     const footer = (
-        <div>
-            <div>
-                {equipo && (
-                    <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={handleDelete}
-                        disabled={loading}
-                    >
-                        <FontAwesomeIcon icon={faTrash} />
-                        Eliminar Equipo
-                    </button>
-                )}
-            </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
+            {equipo && (
                 <button
                     type="button"
-                    className="btn btn-danger"
-                    onClick={onClose}
+                    className="btn btn-danger btn-sm"
+                    onClick={handleDelete}
                     disabled={loading}
                 >
-                    Cancelar
+                    Eliminar Equipo
                 </button>
-                <button
-                    type="submit"
-                    form="equipo-form"
-                    className="btn btn-primary"
-                    disabled={loading}
-                >
-                    {loading ? 'Guardando...' : `${equipo ? 'Actualizar' : 'Guardar'} Equipo`}
-                </button>
-            </div>
+            )}
+            <button
+                type="submit"
+                form="equipo-form"
+                className="btn btn-primary btn-sm"
+                disabled={loading}
+                style={{ marginLeft: 'auto' }}
+            >
+                {loading ? 'Guardando...' : `${equipo ? 'Actualizar' : 'Guardar'} Equipo`}
+            </button>
         </div>
     );
 

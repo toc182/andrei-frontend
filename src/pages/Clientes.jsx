@@ -17,6 +17,7 @@ const Clientes = () => {
     const [formData, setFormData] = useState({
         nombre: '',
         abreviatura: '',
+        tipo: 'privado',
         contacto: '',
         telefono: '',
         email: '',
@@ -74,6 +75,7 @@ const Clientes = () => {
         setFormData({
             nombre: cliente.nombre,
             abreviatura: cliente.abreviatura || '',
+            tipo: cliente.tipo || 'privado',
             contacto: cliente.contacto || '',
             telefono: cliente.telefono || '',
             email: cliente.email || '',
@@ -106,6 +108,7 @@ const Clientes = () => {
         setFormData({
             nombre: '',
             abreviatura: '',
+            tipo: 'privado',
             contacto: '',
             telefono: '',
             email: '',
@@ -194,29 +197,18 @@ const Clientes = () => {
                             <button
                                 type="button"
                                 onClick={handleDelete}
-                                className="btn btn-danger"
+                                className="btn btn-danger btn-sm"
                             >
                                 Eliminar
                             </button>
                         )}
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            {!editingCliente && (
-                                <button
-                                    type="button"
-                                    onClick={handleCloseModal}
-                                    className="btn btn-secondary"
-                                >
-                                    Cancelar
-                                </button>
-                            )}
-                            <button
-                                type="submit"
-                                form="cliente-form"
-                                className="btn btn-primary"
-                            >
-                                {editingCliente ? 'Actualizar' : 'Crear'}
-                            </button>
-                        </div>
+                        <button
+                            type="submit"
+                            form="cliente-form"
+                            className="btn btn-primary btn-sm"
+                        >
+                            {editingCliente ? 'Actualizar' : 'Crear'}
+                        </button>
                     </div>
                 }
             >
@@ -245,6 +237,21 @@ const Clientes = () => {
                             placeholder="Ej: CONST_PAN"
                         />
                     </div>
+
+                    {!editingCliente && (
+                        <div>
+                            <label>Tipo de Cliente *</label>
+                            <select
+                                name="tipo"
+                                value={formData.tipo}
+                                onChange={handleInputChange}
+                                required
+                            >
+                                <option value="privado">Privado</option>
+                                <option value="estado">Estado</option>
+                            </select>
+                        </div>
+                    )}
 
                     <div>
                         <label>Persona de Contacto</label>
@@ -301,7 +308,7 @@ const Clientes = () => {
                                 handleCloseDetailsModal();
                                 handleEdit(selectedCliente);
                             }}
-                            className="btn btn-primary"
+                            className="btn btn-primary btn-sm"
                         >
                             Editar
                         </button>
@@ -319,6 +326,15 @@ const Clientes = () => {
                             <div className="modal-row">
                                 <label className="modal-row-label">Abreviatura:</label>
                                 <span className="modal-row-value">{selectedCliente.abreviatura}</span>
+                            </div>
+                        )}
+
+                        {selectedCliente.tipo && (
+                            <div className="modal-row">
+                                <label className="modal-row-label">Tipo:</label>
+                                <span className="modal-row-value">
+                                    {selectedCliente.tipo === 'estado' ? 'Estado' : 'Privado'}
+                                </span>
                             </div>
                         )}
 

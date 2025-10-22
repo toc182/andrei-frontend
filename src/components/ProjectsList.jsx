@@ -364,7 +364,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 footer={(
                     (user?.rol === 'admin' || user?.rol === 'project_manager') && (
                         <button
-                            className="btn btn-primary"
+                            className="btn btn-primary btn-sm"
                             onClick={() => setShowAdendaForm(true)}
                         >
                             + Agregar Adenda

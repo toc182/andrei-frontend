@@ -150,37 +150,26 @@ const AsignacionForm = ({ asignacion = null, onClose, onSuccess }) => {
     };
 
     const footer = (
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: asignacion ? 'space-between' : 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
             {asignacion && (
                 <button
                     type="button"
-                    className="btn btn-danger"
+                    className="btn btn-danger btn-sm"
                     onClick={handleDelete}
                     disabled={loading}
                 >
                     Eliminar
                 </button>
             )}
-            <div style={{ display: 'flex', gap: '1rem' }}>
-                {!asignacion && (
-                    <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        Cancelar
-                    </button>
-                )}
-                <button
-                    type="submit"
-                    form="asignacion-form"
-                    className="btn btn-primary"
-                    disabled={loading}
-                >
-                    {loading ? 'Guardando...' : (asignacion ? 'Actualizar' : 'Crear Asignación')}
-                </button>
-            </div>
+            <button
+                type="submit"
+                form="asignacion-form"
+                className="btn btn-primary btn-sm"
+                disabled={loading}
+                style={{ marginLeft: 'auto' }}
+            >
+                {loading ? 'Guardando...' : (asignacion ? 'Actualizar' : 'Crear Asignación')}
+            </button>
         </div>
     );
 

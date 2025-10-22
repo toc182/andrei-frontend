@@ -329,41 +329,30 @@ const ProjectForm = ({
 
     // Footer for the main form
     const mainModalFooter = (
-        <div>
-            <div>
-                {projectId && user?.rol === 'admin' && onDelete && (
-                    <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={() => setShowDeleteConfirmation(true)}
-                        disabled={loading}
-                    >
-                        🗑 Eliminar Proyecto
-                    </button>
-                )}
-            </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
+            {projectId && user?.rol === 'admin' && onDelete && (
                 <button
                     type="button"
-                    className="btn btn-danger"
-                    onClick={onClose}
+                    className="btn btn-danger btn-sm"
+                    onClick={() => setShowDeleteConfirmation(true)}
                     disabled={loading}
                 >
-                    Cancelar
+                    Eliminar Proyecto
                 </button>
-                <button
-                    type="submit"
-                    form="project-form"
-                    className="btn btn-primary"
-                    disabled={loading}
-                >
-                    {loading ? (
-                        projectId ? 'Actualizando...' : 'Creando...'
-                    ) : (
-                        projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
-                    )}
-                </button>
-            </div>
+            )}
+            <button
+                type="submit"
+                form="project-form"
+                className="btn btn-primary btn-sm"
+                disabled={loading}
+                style={{ marginLeft: 'auto' }}
+            >
+                {loading ? (
+                    projectId ? 'Actualizando...' : 'Creando...'
+                ) : (
+                    projectId ? 'Actualizar Proyecto' : 'Crear Proyecto'
+                )}
+            </button>
         </div>
     );
 

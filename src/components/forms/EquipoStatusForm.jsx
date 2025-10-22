@@ -50,17 +50,9 @@ const EquipoStatusForm = ({ equipo, onClose, onSuccess }) => {
     const footer = (
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
             <button
-                type="button"
-                className="btn btn-danger"
-                onClick={onClose}
-                disabled={loading}
-            >
-                Cancelar
-            </button>
-            <button
                 type="submit"
                 form="status-form"
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm"
                 disabled={loading || selectedStatus === equipo?.estado}
             >
                 {loading ? 'Actualizando...' : 'Actualizar Estado'}

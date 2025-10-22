@@ -1,10 +1,200 @@
-/* ===== DOCUMENTOS PAGE STYLES ===== */
+/* =============================================================================
+   DOCUMENTOS PAGE STYLES
+   - Estilos específicos para la página de documentos
+   - Usa variables globales de globals.css y clases de components
+   ============================================================================= */
 
-/* Card Mediano - Para las paginas de documentos */
-.card-mediano {
+/* Max width para documentos - aplica a header y cards */
+.documentos-max-width .section-header-container {
     max-width: 650px;
-    margin-left: auto;
-    margin-right: auto;
+}
+
+/* Permitir wrap del título en documentos */
+.documentos-max-width .section-header-title {
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.3;
+}
+
+/* Contenedor principal de documentos */
+.documents-main-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-card);
+    max-width: 650px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+/* Lista de documentos */
+.documents-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Item de documento */
+.document-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-lg) var(--space-xl);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.document-item-row:hover {
+    background: var(--hover-bg);
+}
+
+.document-content {
+    flex: 1;
+}
+
+.document-title {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+}
+
+.document-arrow {
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    margin-left: var(--space-md);
+}
+
+/* Separador entre documentos */
+.document-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 0 var(--space-xl);
+}
+
+/* Document Form Card */
+.document-form-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-card);
+    max-width: 650px;
+    margin: 0 auto;
+    padding: var(--space-xl);
+}
+
+/* Entity Selector */
+.entity-selector {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    margin-left: 162px;
+}
+
+.entity-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.entity-option input[type="radio"] {
+    cursor: pointer;
+    margin: 0;
+}
+
+.entity-option label {
+    cursor: pointer;
+    margin: 0;
+    width: auto;
+    text-align: left;
+    font-weight: var(--font-weight-normal);
+}
+
+/* Buttons Container */
+.document-form-card .form-container > div:last-child {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+/* Buttons */
+.btn-preview,
+.btn-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--border-radius-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-preview {
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-preview:hover:not(:disabled) {
+    background: var(--info-hover);
+}
+
+.btn-submit {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background: var(--primary-color-dark);
+}
+
+.btn-preview:disabled,
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--text-muted);
+    color: white;
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--border-radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--text-secondary);
+}
+
+.required {
+    color: var(--danger-color);
+    margin-left: var(--space-xs);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .documentos-max-width .section-header-container .section-header-title {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 690px) {
+    .documentos-max-width .section-header-container .section-header-title {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .documentos-max-width .section-header-container .section-header-title {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .documentos-max-width .section-header-container .section-header-title {
+        font-size: 0.8rem;
+    }
 }
 
 /* Preview Modal */

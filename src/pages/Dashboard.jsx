@@ -5,12 +5,15 @@ import api from '../services/api';
 import Clientes from './Clientes';
 import DocumentosHub from './DocumentosHub';
 import DocumentForm from '../components/forms/DocumentForm';
+import Equipos from './equipos/Equipos';
 import EquiposInformacion from './equipos/EquiposInformacion';
 import EquiposStatus from './equipos/EquiposStatus';
 import AsignacionesEquipos from './equipos/AsignacionesEquipos';
+import SectionHeader from '../components/common/SectionHeader';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText, faTruckPickup, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import '../styles/pages/dashboard.css';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -71,112 +74,114 @@ const Dashboard = () => {
     };
 
     const formatMoney = (amount) => {
-        return new Intl.NumberFormat('es-ES', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0
+        const formatted = new Intl.NumberFormat('es-PA', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(amount || 0);
+        return `B/. ${formatted}`;
     };
 
     const renderDashboardHome = () => (
-        <div className="dashboard-content">
-            <div className="dashboard-header">
-                <h1>Panel de Control</h1>
-                <p>Sistema de gestión de proyectos de construcción</p>
-            </div>
+        <div className="section-container">
+            <SectionHeader
+                title="Panel de Control"
+                className="dashboard-header-centered"
+            />
 
-            <div className="dashboard-stats">
-                <div className="stat-card">
+            <div className="dashboard-stats-grid">
+                <div className="dashboard-stat-card">
                     <h3>Proyectos Activos</h3>
-                    <div className="stat-number">
+                    <div className="dashboard-stat-number">
                         {loadingStats ? '...' : stats.proyectos_activos}
                     </div>
                     <p>En ejecución</p>
                 </div>
 
-                <div className="stat-card">
+                <div className="dashboard-stat-card">
                     <h3>En Planificación</h3>
-                    <div className="stat-number">
+                    <div className="dashboard-stat-number">
                         {loadingStats ? '...' : stats.proyectos_planificacion}
                     </div>
                     <p>Por iniciar</p>
                 </div>
 
-                <div className="stat-card">
+                <div className="dashboard-stat-card">
                     <h3>Completados</h3>
-                    <div className="stat-number">
+                    <div className="dashboard-stat-number">
                         {loadingStats ? '...' : stats.proyectos_completados}
                     </div>
                     <p>Finalizados</p>
                 </div>
 
-                <div className="stat-card">
+                <div className="dashboard-stat-card">
                     <h3>Total Proyectos</h3>
-                    <div className="stat-number">
+                    <div className="dashboard-stat-number">
                         {loadingStats ? '...' : stats.total_proyectos}
                     </div>
                     <p>En el sistema</p>
                 </div>
 
-                <div className="stat-card stat-card-wide">
+                <div className="dashboard-stat-card">
                     <h3>Valor Total de Contratos</h3>
-                    <div className="stat-number stat-money">
+                    <div className="dashboard-stat-number dashboard-stat-money">
                         {loadingStats ? '...' : formatMoney(stats.monto_contratos_total)}
                     </div>
-                    <p>Suma de todos los contratos</p>
                 </div>
             </div>
 
-            <div className="dashboard-actions">
-                <div className="action-card">
-                    <h3>■ Gestión de Proyectos</h3>
+            <div className="dashboard-actions-grid">
+                <div className="dashboard-action-card">
+                    <h3><FontAwesomeIcon icon={faBuilding} /> Gestión de Proyectos</h3>
                     <p>Administra todos los proyectos de construcción, desde planificación hasta finalización</p>
                     <button
-                        className="action-btn"
+                        className="dashboard-action-btn"
                         onClick={() => setCurrentView('projects')}
                     >
                         Ver Proyectos
                     </button>
                 </div>
-                <div className="action-card">
-                    <h3>◉ Gestión de Clientes</h3>
+                <div className="dashboard-action-card">
+                    <h3><FontAwesomeIcon icon={faUsers} /> Gestión de Clientes</h3>
                     <p>Administrar información de clientes y contactos</p>
                     <button
-                        className="action-btn"
+                        className="dashboard-action-btn"
                         onClick={() => setCurrentView('clientes')}
                     >
                         Ver Clientes
                     </button>
                 </div>
 
-                <div className="action-card">
-                    <h3>□ Control de Materiales</h3>
+                <div className="dashboard-action-card">
+                    <h3><FontAwesomeIcon icon={faTruckPickup} /> Gestión de Equipos</h3>
+                    <p>Administrar equipos, asignaciones y estado de equipos</p>
+                    <button
+                        className="dashboard-action-btn"
+                        onClick={() => setCurrentView('equipos')}
+                    >
+                        Ver Equipos
+                    </button>
+                </div>
+
+                <div className="dashboard-action-card">
+                    <h3><FontAwesomeIcon icon={faBoxes} /> Control de Materiales</h3>
                     <p>Inventario y control de materiales de construcción</p>
-                    <button className="action-btn" disabled>
+                    <button className="dashboard-action-btn" disabled>
                         Próximamente
                     </button>
                 </div>
 
-                <div className="action-card">
-                    <h3>◎ Gestión de Usuarios</h3>
+                <div className="dashboard-action-card">
+                    <h3><FontAwesomeIcon icon={faUserCog} /> Gestión de Usuarios</h3>
                     <p>Administración de usuarios del sistema</p>
-                    <button className="action-btn" disabled>
+                    <button className="dashboard-action-btn" disabled>
                         Próximamente
                     </button>
                 </div>
 
-                <div className="action-card">
-                    <h3>◰ Reportes y Analytics</h3>
+                <div className="dashboard-action-card">
+                    <h3><FontAwesomeIcon icon={faChartLine} /> Reportes y Analytics</h3>
                     <p>Informes detallados y análisis de proyectos</p>
-                    <button className="action-btn" disabled>
-                        Próximamente
-                    </button>
-                </div>
-
-                <div className="action-card">
-                    <h3>◆ Configuración</h3>
-                    <p>Configuración del sistema y preferencias</p>
-                    <button className="action-btn" disabled>
+                    <button className="dashboard-action-btn" disabled>
                         Próximamente
                     </button>
                 </div>
@@ -194,16 +199,7 @@ const Dashboard = () => {
             case 'clientes':
                 return <Clientes />;
             case 'equipos':
-                return (
-                    <div className="section-container">
-                        <div className="section-header">
-                            <h1>Equipos</h1>
-                        </div>
-                        <div className="placeholder-content">
-                            <p>Página principal de Equipos - Próximamente</p>
-                        </div>
-                    </div>
-                );
+                return <Equipos />;
             case 'equipos-informacion':
                 return <EquiposInformacion />;
             case 'equipos-status':

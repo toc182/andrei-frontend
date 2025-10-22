@@ -1,4 +1,6 @@
 import React from 'react';
+import { faFileText } from '@fortawesome/free-solid-svg-icons';
+import SectionHeader from '../components/common/SectionHeader';
 import '../styles/pages/documentos.css';
 
 const DocumentosHub = ({ onDocumentClick }) => {
@@ -41,12 +43,13 @@ const DocumentosHub = ({ onDocumentClick }) => {
     };
 
     return (
-        <div className="section-container">
-            <div className="section-header card-mediano">
-                <h1>Documentos</h1>
-            </div>
+        <div className="section-container documentos-max-width">
+            <SectionHeader
+                title="Documentos"
+                icon={faFileText}
+            />
 
-            <div className="documents-main-card card-mediano">
+            <div className="documents-main-card">
                 <div className="documents-list">
                     {availableDocuments.map((doc, index) => (
                         <div key={doc.id}>

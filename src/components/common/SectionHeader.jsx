@@ -1,9 +1,9 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-const SectionHeader = ({ title, icon, actionButton }) => {
+const SectionHeader = ({ title, icon, actionButton, className }) => {
     return (
-        <div className="section-header-container">
+        <div className={`section-header-container ${className || ''}`}>
             <div className="section-header-left">
                 {icon && <FontAwesomeIcon icon={icon} className="section-header-icon" />}
                 <h1 className="section-header-title">{title}</h1>

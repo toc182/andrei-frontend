@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFileText, faDownload, faSpinner, faEye } from '@fortawesome/free-solid-svg-icons';
+import SectionHeader from '../common/SectionHeader';
 import api from '../../services/api';
 import '../../styles/components/standardModal.css';
 import '../../styles/pages/documentos.css';
@@ -235,13 +236,14 @@ const DocumentForm = ({ documentType }) => {
     };
 
     return (
-        <div className="section-container">
-            <div className="section-header card-mediano">
-                <h1>{config.title}</h1>
-            </div>
+        <div className="section-container documentos-max-width">
+            <SectionHeader
+                title={config.title}
+                icon={faFileText}
+            />
 
-            <div className="document-form-card card-mediano">
-                <form onSubmit={handleSubmit} className="document-form">
+            <div className="document-form-card">
+                <form onSubmit={handleSubmit} className="form-container">
                     {config.hasEntitySelector && (
                         <div className="">
                             <div className="entity-selector">
