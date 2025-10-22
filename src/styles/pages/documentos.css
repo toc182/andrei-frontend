@@ -81,26 +81,76 @@
     padding: var(--space-xl);
 }
 
-/* Entity Selector */
-.entity-selector {
-    display: flex;
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
-    margin-left: 162px;
+/* Document Form */
+.document-form {
+    font-size: 0.8rem;
 }
 
-.entity-option {
+/* Form Groups */
+.document-form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.document-form-label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+.document-form-input {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+}
+
+/* Date input inline with label */
+.document-form-input[type="date"] {
+    display: inline-block;
+    width: auto;
+    margin-left: var(--space-md);
+}
+
+.document-form-group:has(input[type="date"]) .document-form-label {
+    display: inline-block;
+    margin-bottom: 0;
+}
+
+.document-form-input:focus {
+    outline: none;
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 2px var(--primary-alpha-10);
+}
+
+.document-required {
+    color: var(--danger-color);
+    margin-left: var(--space-xs);
+}
+
+/* Entity Selector */
+.document-entity-selector {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.document-entity-option {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
 }
 
-.entity-option input[type="radio"] {
+.document-entity-option input[type="radio"] {
     cursor: pointer;
     margin: 0;
+    width: auto;
 }
 
-.entity-option label {
+.document-entity-option label {
     cursor: pointer;
     margin: 0;
     width: auto;
@@ -108,16 +158,16 @@
     font-weight: var(--font-weight-normal);
 }
 
-/* Buttons Container */
-.document-form-card .form-container > div:last-child {
+/* Form Actions (Buttons) */
+.document-form-actions {
     display: flex;
     gap: var(--space-md);
     margin-top: var(--space-lg);
+    justify-content: center;
 }
 
-/* Buttons */
-.btn-preview,
-.btn-submit {
+.document-btn-preview,
+.document-btn-submit {
     display: inline-flex;
     align-items: center;
     gap: var(--space-sm);
@@ -129,26 +179,26 @@
     border: none;
 }
 
-.btn-preview {
+.document-btn-preview {
     background: var(--info-color);
     color: white;
 }
 
-.btn-preview:hover:not(:disabled) {
+.document-btn-preview:hover:not(:disabled) {
     background: var(--info-hover);
 }
 
-.btn-submit {
+.document-btn-submit {
     background: var(--primary-color);
     color: white;
 }
 
-.btn-submit:hover:not(:disabled) {
+.document-btn-submit:hover:not(:disabled) {
     background: var(--primary-color-dark);
 }
 
-.btn-preview:disabled,
-.btn-submit:disabled {
+.document-btn-preview:disabled,
+.document-btn-submit:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -165,11 +215,6 @@
 
 .btn-secondary:hover {
     background: var(--text-secondary);
-}
-
-.required {
-    color: var(--danger-color);
-    margin-left: var(--space-xs);
 }
 
 /* Responsive Design */

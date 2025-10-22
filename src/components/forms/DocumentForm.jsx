@@ -243,11 +243,11 @@ const DocumentForm = ({ documentType }) => {
             />
 
             <div className="document-form-card">
-                <form onSubmit={handleSubmit} className="form-container">
+                <form onSubmit={handleSubmit} className="document-form">
                     {config.hasEntitySelector && (
-                        <div className="">
-                            <div className="entity-selector">
-                                <div className="entity-option">
+                        <div className="document-form-group">
+                            <div className="document-entity-selector">
+                                <div className="document-entity-option">
                                     <input
                                         type="radio"
                                         id="pinellas"
@@ -258,7 +258,7 @@ const DocumentForm = ({ documentType }) => {
                                     />
                                     <label htmlFor="pinellas">Pinellas S.A.</label>
                                 </div>
-                                <div className="entity-option">
+                                <div className="document-entity-option">
                                     <input
                                         type="radio"
                                         id="consorcio"
@@ -274,10 +274,10 @@ const DocumentForm = ({ documentType }) => {
                     )}
 
                     {config.fields.map(field => (
-                        <div key={field.name} className="">
-                            <label htmlFor={field.name} className="">
+                        <div key={field.name} className="document-form-group">
+                            <label htmlFor={field.name} className="document-form-label">
                                 {field.label}
-                                {field.required && <span className="required">*</span>}
+                                {field.required && <span className="document-required">*</span>}
                             </label>
                             {field.type === 'date' ? (
                                 <input
@@ -286,7 +286,7 @@ const DocumentForm = ({ documentType }) => {
                                     name={field.name}
                                     value={formData[field.name] || ''}
                                     onChange={(e) => handleInputChange(field.name, e.target.value)}
-                                    className=""
+                                    className="document-form-input"
                                     required={field.required}
                                 />
                             ) : field.name === 'projectName' ? (
@@ -296,7 +296,7 @@ const DocumentForm = ({ documentType }) => {
                                     value={formData[field.name] || ''}
                                     onChange={(e) => handleInputChange(field.name, e.target.value)}
                                     placeholder={field.placeholder}
-                                    className=""
+                                    className="document-form-input"
                                     required={field.required}
                                     rows="2"
                                 />
@@ -308,7 +308,7 @@ const DocumentForm = ({ documentType }) => {
                                     value={formData[field.name] || ''}
                                     onChange={(e) => handleInputChange(field.name, e.target.value)}
                                     placeholder={field.placeholder}
-                                    className=""
+                                    className="document-form-input"
                                     required={field.required}
                                 />
                             )}
@@ -321,10 +321,10 @@ const DocumentForm = ({ documentType }) => {
                         </div>
                     )}
 
-                    <div className="">
+                    <div className="document-form-actions">
                         <button
                             type="button"
-                            className="btn-preview"
+                            className="document-btn-preview"
                             onClick={handlePreview}
                             disabled={loadingPreview || loading}
                         >
@@ -342,7 +342,7 @@ const DocumentForm = ({ documentType }) => {
                         </button>
                         <button
                             type="submit"
-                            className="btn-submit"
+                            className="document-btn-submit"
                             disabled={loading || loadingPreview}
                         >
                             {loading ? (
