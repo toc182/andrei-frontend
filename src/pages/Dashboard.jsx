@@ -10,6 +10,7 @@ import EquiposInformacion from './equipos/EquiposInformacion';
 import EquiposStatus from './equipos/EquiposStatus';
 import AsignacionesEquipos from './equipos/AsignacionesEquipos';
 import SectionHeader from '../components/common/SectionHeader';
+import { TailwindTest } from '../components/TailwindTest';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faBuilding, faChartLine, faUsers, faDollarSign, faBoxes, faUserCog, faSignOutAlt, faFileText, faTruckPickup, faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
@@ -87,6 +88,9 @@ const Dashboard = () => {
                 title="Panel de Control"
                 className="dashboard-header-centered"
             />
+
+            {/* PRUEBA TEMPORAL DE TAILWIND - ELIMINAR DESPUÉS */}
+            <TailwindTest />
 
             <div className="dashboard-stats-grid">
                 <div className="dashboard-stat-card">
