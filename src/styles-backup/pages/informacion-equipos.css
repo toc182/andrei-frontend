@@ -1,0 +1,149 @@
+/* Estilos específicos para la página de Información de Equipos */
+
+/* ===== ESTILOS ESPECÍFICOS PARA TABLA DE EQUIPOS ===== */
+
+/* Tabla de Equipos - 6 columnas */
+.equipos-standard-table th:nth-child(1),
+.equipos-standard-table td:nth-child(1) {
+    width: 15%; /* Código */
+}
+
+.equipos-standard-table th:nth-child(2),
+.equipos-standard-table td:nth-child(2) {
+    width: 30%; /* Descripción */
+}
+
+.equipos-standard-table th:nth-child(3),
+.equipos-standard-table td:nth-child(3) {
+    width: 18%; /* Marca */
+}
+
+.equipos-standard-table th:nth-child(4),
+.equipos-standard-table td:nth-child(4) {
+    width: 18%; /* Modelo */
+}
+
+.equipos-standard-table th:nth-child(5),
+.equipos-standard-table td:nth-child(5) {
+    width: 12%; /* Año */
+}
+
+.equipos-standard-table th:nth-child(6),
+.equipos-standard-table td:nth-child(6) {
+    width: 7%; /* Icono */
+}
+
+/* Estilos específicos para la tabla de equipos */
+.equipos-standard-table-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 2rem auto;
+}
+
+/* Header con logo para equipos */
+.equipos-standard-table .equipos-title-header {
+    background: var(--primary-gradient);
+    padding: 1rem;
+    text-align: center;
+    border: none;
+}
+
+.equipos-standard-table .equipos-title-row {
+    background: var(--primary-gradient);
+}
+
+.equipos-standard-table .equipos-logo {
+    max-height: 60px;
+    width: auto;
+}
+
+/* ===== RESPONSIVE QUERIES ESPECÍFICAS PARA EQUIPOS ===== */
+
+/* Tablets Portrait (≤768px disponible en contenedor) */
+@container main (max-width: 768px) {
+    /* Reglas específicas para tabla de equipos en tablets */
+    .equipos-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .equipos-standard-table th:first-child,
+    .equipos-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+}
+
+/* Large Phones (≤576px) */
+@container main (max-width: 576px) {
+    /* Reglas específicas para tabla de equipos en ≤576px */
+    .equipos-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .equipos-standard-table th:first-child,
+    .equipos-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .equipos-standard-table th:last-child,
+    .equipos-standard-table td:last-child {
+        padding-right: 1.5rem;
+    }
+
+    /* Ocultar columnas Marca y Modelo, mantener botón editar */
+    .equipos-standard-table th:nth-child(3), /* Marca */
+    .equipos-standard-table td:nth-child(3),
+    .equipos-standard-table th:nth-child(4), /* Modelo */
+    .equipos-standard-table td:nth-child(4) {
+        display: none;
+    }
+}
+
+/* Small Phones (≤480px) */
+@container main (max-width: 480px) {
+    /* Reglas específicas para tabla de equipos en ≤480px */
+    .equipos-standard-table-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .equipos-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .equipos-standard-table th:first-child,
+    .equipos-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .equipos-standard-table th:last-child,
+    .equipos-standard-table td:last-child {
+        padding-right: 1.5rem;
+    }
+
+    /* Ocultar columnas Marca, Modelo y botón editar en ≤480px */
+    .equipos-standard-table th:nth-child(3), /* Marca */
+    .equipos-standard-table td:nth-child(3),
+    .equipos-standard-table th:nth-child(4), /* Modelo */
+    .equipos-standard-table td:nth-child(4),
+    .equipos-standard-table th:nth-child(6), /* Botón editar */
+    .equipos-standard-table td:nth-child(6) {
+        display: none;
+    }
+
+    /* Ajustar anchos para equipos en ≤480px (Código, Descripción, Año) */
+    .equipos-standard-table th:nth-child(1),
+    .equipos-standard-table td:nth-child(1) {
+        width: 20%; /* Código */
+    }
+
+    .equipos-standard-table th:nth-child(2),
+    .equipos-standard-table td:nth-child(2) {
+        width: 60%; /* Descripción */
+    }
+
+    .equipos-standard-table th:nth-child(5),
+    .equipos-standard-table td:nth-child(5) {
+        width: 20%; /* Año */
+        text-align: center;
+    }
+}

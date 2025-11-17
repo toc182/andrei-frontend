@@ -1,0 +1,181 @@
+/* Estilos específicos para la página de Proyectos */
+
+/* ===== ESTILOS ESPECÍFICOS PARA TABLA DE PROYECTOS ===== */
+
+/* Asegurar que el contenedor specific de proyectos también sea responsive */
+.projects-standard-table-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Tabla de Proyectos - 5 columnas */
+.projects-standard-table th:nth-child(1),
+.projects-standard-table td:nth-child(1) {
+    width: 23%; /* Proyecto */
+}
+
+.projects-standard-table th:nth-child(2),
+.projects-standard-table td:nth-child(2) {
+    width: 23%; /* Cliente */
+}
+
+.projects-standard-table th:nth-child(3),
+.projects-standard-table td:nth-child(3) {
+    width: 23%; /* Estado */
+}
+
+.projects-standard-table th:nth-child(4),
+.projects-standard-table td:nth-child(4) {
+    width: 23%; /* Monto */
+}
+
+.projects-standard-table th:nth-child(5),
+.projects-standard-table td:nth-child(5) {
+    width: 8%; /* Icono */
+}
+
+/* Remover padding especial para última columna en tabla de proyectos */
+.projects-standard-table th:last-child,
+.projects-standard-table td:last-child {
+    padding-right: 0.625rem; /* Igual que las otras columnas */
+}
+
+/* Quitar bold del monto en tabla de proyectos */
+.projects-standard-table .project-money {
+    font-weight: normal;
+}
+
+/* ===== RESPONSIVE QUERIES ESPECÍFICAS PARA PROYECTOS ===== */
+
+/* Tablets Portrait (≤768px disponible en contenedor) */
+@container main (max-width: 768px) {
+    /* Reglas específicas para tabla de proyectos en móvil */
+    .projects-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .projects-standard-table .project-money {
+        font-size: 0.8rem;
+    }
+
+    /* Mantener padding original en first-child para tabla de proyectos */
+    .projects-standard-table th:first-child,
+    .projects-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+}
+
+/* Large Phones (≤576px) */
+@container main (max-width: 576px) {
+    /* Reglas específicas para tabla de proyectos */
+    .projects-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .projects-standard-table .project-money {
+        font-size: 0.8rem;
+    }
+
+    /* Mantener padding original en first-child para tabla de proyectos */
+    .projects-standard-table th:first-child,
+    .projects-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .projects-standard-table th:last-child,
+    .projects-standard-table td:last-child {
+        padding-right: 1.5rem;
+    }
+
+    /* Padding específico para columna Estado en ≤576px */
+    .projects-standard-table th:nth-child(3),
+    .projects-standard-table td:nth-child(3) {
+        padding-right: 1.5rem;
+    }
+
+    /* Alineación de contenidos y títulos en ≤576px */
+    .projects-standard-table th:nth-child(2), /* Título Cliente */
+    .projects-standard-table td:nth-child(2), /* Cliente */
+    .projects-standard-table th:nth-child(3), /* Título Estado */
+    .projects-standard-table td:nth-child(3), /* Estado */
+    .projects-standard-table th:nth-child(4), /* Título Monto */
+    .projects-standard-table td:nth-child(4) { /* Monto */
+        text-align: center;
+    }
+
+    /* Ocultar columna de botón editar en ≤576px */
+    .projects-standard-table th:nth-child(5),
+    .projects-standard-table td:nth-child(5) {
+        display: none;
+    }
+}
+
+/* Small Phones (≤480px) */
+@container main (max-width: 480px) {
+    /* Asegurar que también el contenedor específico de proyectos sea responsive en móviles */
+    .projects-standard-table-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Reglas específicas para tabla de proyectos */
+    .projects-standard-table tbody td {
+        font-size: 0.8rem;
+    }
+
+    .projects-standard-table .project-money {
+        font-size: 0.8rem;
+    }
+
+    /* Mantener padding original en first-child para tabla de proyectos */
+    .projects-standard-table th:first-child,
+    .projects-standard-table td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .projects-standard-table th:last-child,
+    .projects-standard-table td:last-child {
+        padding-right: 1.5rem;
+    }
+
+    /* Padding específico para columna Estado en ≤480px */
+    .projects-standard-table th:nth-child(3),
+    .projects-standard-table td:nth-child(3) {
+        padding-right: 1.5rem;
+    }
+
+    /* Ocultar columnas Cliente, Monto y Botón editar en ≤480px */
+    .projects-standard-table th:nth-child(2), /* Cliente */
+    .projects-standard-table td:nth-child(2),
+    .projects-standard-table th:nth-child(4), /* Monto */
+    .projects-standard-table td:nth-child(4),
+    .projects-standard-table th:nth-child(5), /* Botón editar */
+    .projects-standard-table td:nth-child(5) {
+        display: none;
+    }
+
+    /* Anchos específicos de columnas en ≤480px */
+    .projects-standard-table th:nth-child(1),
+    .projects-standard-table td:nth-child(1) {
+        width: 60%; /* Proyecto */
+    }
+
+    .projects-standard-table th:nth-child(3),
+    .projects-standard-table td:nth-child(3) {
+        width: 40%; /* Estado */
+    }
+
+    /* Alineaciones específicas en ≤480px */
+    .projects-standard-table td:nth-child(1) {
+        text-align: left; /* Proyecto a la izquierda */
+    }
+
+    .projects-standard-table th:nth-child(3) {
+        text-align: center; /* Título "ESTADO" centrado */
+    }
+
+    .projects-standard-table td:nth-child(3) {
+        text-align: center; /* Contenido estado centrado */
+    }
+}

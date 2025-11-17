@@ -1,0 +1,119 @@
+/* =============================================================================
+   SECTION COMPONENTS CSS - HEADERS Y CONTENEDORES ESTANDARIZADOS
+   - Migrado desde common.css para mejor organización
+   - Estilos para section-header, section-header-container y relacionados
+   ============================================================================= */
+
+/* Section Container - Universal for all sections */
+.section-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0.75rem;
+    background: var(--bg-primary);
+}
+
+
+/* Section Header Component - Specific styles for SectionHeader.jsx */
+.section-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    box-shadow: var(--shadow-card);
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    min-height: 3rem;
+}
+
+.section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-header-title {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.4px;
+    text-rendering: optimizeLegibility;
+}
+
+.section-header-icon {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+}
+
+/* Section Header Button - Circular style for SectionHeader.jsx */
+.section-header-container .btn-primary {
+    color: white;
+    background: var(--primary-color);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0.5rem;
+    border: none;
+    outline: none;
+    width: 2rem;
+    height: 2rem;
+}
+
+.section-header-container .btn-primary:hover {
+    background: var(--primary-color-dark);
+    transform: scale(1.1);
+}
+
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Large Tablets & Small Desktops (≤1200px) */
+@container main (max-width: 1200px) {
+    .section-container {
+        padding: 0.75rem;
+    }
+
+    .section-header-title {
+        font-size: 1.25rem;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: visible;
+    }
+
+    .section-header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .section-header-container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.25rem 0.75rem;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .section-header-container .btn-primary {
+        font-size: 0.8rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        flex-shrink: 0;
+    }
+
+}
