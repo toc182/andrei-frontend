@@ -1,39 +1,51 @@
 /* ===================================================================
-   ANDREI PROJECT - CENTRAL CSS IMPORT HUB
-   ===================================================================
-   Este archivo centraliza TODOS los imports CSS de la aplicación.
-   Importado una sola vez en main.jsx
+   ANDREI PROJECT - TAILWIND 4.x + SHADCN/UI
    ================================================================ */
 
-/* === TAILWIND CSS === */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* === BASE STYLES === */
-@import "./styles/globals.css";
+/* === SHADCN COLOR THEME === */
+@theme {
+  /* Radius */
+  --radius: 0.5rem;
 
-/* === LAYOUT === */
-@import "./styles/layout.css";
-@import "./styles/navigation.css";
+  /* Colors - Light Mode */
+  --color-background: oklch(100% 0 0);
+  --color-foreground: oklch(14.5% 0 0);
 
-/* === COMPONENTS === */
-@import "./styles/components/common.css";
-@import "./styles/components/section.css";
-@import "./styles/components/forms.css";
-@import "./styles/components/buttons.css";
-@import "./styles/components/badges.css";
-@import "./styles/components/standardModal.css";
-@import "./styles/components/standardTable.css";
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(14.5% 0 0);
 
-/* === PAGES === */
-@import "./styles/pages/login.css";
-@import "./styles/pages/proyectos.css";
-@import "./styles/pages/clientes.css";
-@import "./styles/pages/documentos.css";
-@import "./styles/pages/informacion-equipos.css";
-@import "./styles/pages/status-equipos.css";
-@import "./styles/pages/asignaciones_equipos.css";
+  --color-popover: oklch(100% 0 0);
+  --color-popover-foreground: oklch(14.5% 0 0);
 
-/* === APP SPECIFIC === */
-@import "./App.css";
+  /* Primary - Pinellas Blue #2c3e50 */
+  --color-primary: oklch(31% 0.025 235);
+  --color-primary-foreground: oklch(98.5% 0 0);
+
+  --color-secondary: oklch(97% 0 0);
+  --color-secondary-foreground: oklch(20.5% 0 0);
+
+  --color-muted: oklch(97% 0 0);
+  --color-muted-foreground: oklch(55.6% 0 0);
+
+  --color-accent: oklch(97% 0 0);
+  --color-accent-foreground: oklch(20.5% 0 0);
+
+  /* Destructive - Red */
+  --color-destructive: oklch(57.7% 0.245 27.325);
+  --color-destructive-foreground: oklch(98.5% 0 0);
+
+  --color-border: oklch(92.2% 0 0);
+  --color-input: oklch(92.2% 0 0);
+  --color-ring: oklch(70.8% 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
