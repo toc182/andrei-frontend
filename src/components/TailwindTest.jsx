@@ -6,6 +6,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { EjemploClienteModal } from "@/components/ejemplos/EjemploClienteModal"
+import { EjemploTabla } from "@/components/ejemplos/EjemploTabla"
 
 export function TailwindTest() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -62,10 +63,18 @@ export function TailwindTest() {
         </Button>
       </div>
 
-      <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
-        <p className="text-sm text-yellow-700">
-          <strong>¡Éxito!</strong> Si ves los botones de Shadcn con estilos profesionales,
-          la Fase 2 está completa. Los botones tienen hover effects, diferentes variantes y tamaños.
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-3">Ejemplo de Tabla con Datos (Fase 7):</h2>
+        <p className="text-gray-600 mb-3 text-sm">
+          Tabla responsive con badges de estado y botones de acción
+        </p>
+        <EjemploTabla />
+      </div>
+
+      <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400">
+        <p className="text-sm text-green-700">
+          <strong>¡Migración casi completa!</strong> Shadcn + Tailwind funcionando perfectamente.
+          Ya puedes usar estos componentes en tu aplicación real.
         </p>
       </div>
 
