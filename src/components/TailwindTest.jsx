@@ -3,9 +3,18 @@
  * ELIMINAR después de confirmar que todo funciona
  */
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { EjemploClienteModal } from "@/components/ejemplos/EjemploClienteModal"
 
 export function TailwindTest() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleSubmit = (data) => {
+    console.log("Cliente guardado:", data)
+    alert(`Cliente creado:\n${JSON.stringify(data, null, 2)}`)
+  }
+
   return (
     <div className="p-8 bg-gray-100 rounded-lg shadow-lg max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-blue-600 mb-4">
@@ -43,12 +52,29 @@ export function TailwindTest() {
         </div>
       </div>
 
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-3">Ejemplo Modal con Formulario (Fase 5):</h2>
+        <p className="text-gray-600 mb-3 text-sm">
+          Modal con Dialog + Form + Input + validación con Zod
+        </p>
+        <Button onClick={() => setIsModalOpen(true)}>
+          Abrir Modal de Ejemplo
+        </Button>
+      </div>
+
       <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
         <p className="text-sm text-yellow-700">
           <strong>¡Éxito!</strong> Si ves los botones de Shadcn con estilos profesionales,
           la Fase 2 está completa. Los botones tienen hover effects, diferentes variantes y tamaños.
         </p>
       </div>
+
+      {/* Modal de ejemplo */}
+      <EjemploClienteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }
