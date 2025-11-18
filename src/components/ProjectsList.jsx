@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import ProjectForm from './forms/ProjectForm';
+import ProjectFormNew from './forms/ProjectFormNew';
 import AdendaForm from './forms/AdendaForm';
-import StandardModal from './common/StandardModal';
-import StandardTable from './common/StandardTable';
-import SectionHeader from './common/SectionHeader';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faPenToSquare, faCog, faWrench, faTools, faPlus, faBuilding, faTrash } from '@fortawesome/free-solid-svg-icons';
-import '../styles/pages/proyectos.css';
-import '../styles/components/badges.css';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { Pencil, Trash2, Plus } from 'lucide-react';
+// Shadcn Components
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 const ProjectsList = ({ onStatsUpdate }) => {
     const { user } = useAuth();
@@ -20,28 +35,10 @@ const ProjectsList = ({ onStatsUpdate }) => {
     const [pagination, setPagination] = useState({});
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
-    const [projectToDelete, setProjectToDelete] = useState(null);
-    const [viewingProject, setViewingProject] = useState(null); // Tabla original
-    const [viewingProjectExperimental, setViewingProjectExperimental] = useState(null); // Tabla experimental
+    const [viewingProject, setViewingProject] = useState(null);
     const [projectAdendas, setProjectAdendas] = useState([]);
     const [showAdendaForm, setShowAdendaForm] = useState(false);
     const [editingAdenda, setEditingAdenda] = useState(null);
-
-    // Función para abrir modal de detalles (todas las pantallas)
-    const handleRowClick = (projectId, event) => {
-        // Siempre abrir el modal de detalles
-        handleViewProject(projectId);
-    };
-
-    // Estados disponibles
-    const estados = [
-        { value: '', label: 'Todos los estados' },
-        { value: 'planificacion', label: 'Planificación' },
-        { value: 'en_curso', label: 'En Curso' },
-        { value: 'pausado', label: 'Pausado' },
-        { value: 'completado', label: 'Completado' },
-        { value: 'cancelado', label: 'Cancelado' }
-    ];
 
     // Cargar proyectos
     const loadProjects = async () => {
@@ -69,18 +66,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
         loadProjects();
     }, []);
 
-    // Cerrar acordeones en pantallas grandes
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth > 768) {
-                setExpandedRows(new Set());
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
     // Manejar guardado de proyecto
     const handleProjectSave = (savedProject) => {
         // Recargar la lista
@@ -93,7 +78,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
         setEditingProject(null);
     };
 
-    // Manejar visualización de detalles
+    // Manejar visualización de detalles del proyecto
     const handleViewProject = async (projectId) => {
         try {
             setLoading(true);
@@ -101,41 +86,12 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 api.get(`/projects/${projectId}`),
                 api.get(`/adendas/project/${projectId}`)
             ]);
-            
+
             if (projectResponse.data.success) {
                 setViewingProject(projectResponse.data.proyecto);
             } else {
                 setError('Error al cargar los detalles del proyecto');
             }
-            
-            if (adendasResponse.data.success) {
-                setProjectAdendas(adendasResponse.data.adendas);
-            } else {
-                setProjectAdendas([]);
-            }
-        } catch (error) {
-            console.error('Error cargando proyecto:', error);
-            setError('Error de conexión al cargar el proyecto');
-            setProjectAdendas([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Función para ver proyecto - TABLA EXPERIMENTAL
-    const handleViewProjectExperimental = async (projectId) => {
-        try {
-            setLoading(true);
-            const [projectResponse, adendasResponse] = await Promise.all([
-                api.get(`/projects/${projectId}`),
-                api.get(`/adendas/project/${projectId}`)
-            ]);
-
-            if (projectResponse.data.success) {
-                setViewingProjectExperimental(projectResponse.data.proyecto);
-            } else {
-                setError('Error al cargar los detalles del proyecto');
-            }
 
             if (adendasResponse.data.success) {
                 setProjectAdendas(adendasResponse.data.adendas);
@@ -149,11 +105,6 @@ const ProjectsList = ({ onStatsUpdate }) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Función para abrir modal - TABLA EXPERIMENTAL
-    const handleRowClickExperimental = (projectId, event) => {
-        handleViewProjectExperimental(projectId);
     };
 
     // Manejar edición
@@ -200,16 +151,16 @@ const ProjectsList = ({ onStatsUpdate }) => {
         }).format(amount).replace('PAB', 'B/.');
     };
 
-    // Obtener clase CSS para estado
-    const getStatusClass = (estado) => {
-        const statusClasses = {
-            'planificacion': 'status-yellow',
-            'en_curso': 'status-green',
-            'pausado': 'status-blue',
-            'completado': 'status-gray',
-            'cancelado': 'status-red'
+    // Obtener variante de badge para estado (Shadcn)
+    const getStatusBadgeVariant = (estado) => {
+        const variants = {
+            'planificacion': 'secondary',     // Amarillo/gris
+            'en_curso': 'default',            // Verde (primary)
+            'pausado': 'outline',             // Azul outline
+            'completado': 'secondary',        // Gris
+            'cancelado': 'destructive'        // Rojo
         };
-        return statusClasses[estado] || '';
+        return variants[estado] || 'secondary';
     };
 
     // Obtener texto del estado
@@ -225,13 +176,13 @@ const ProjectsList = ({ onStatsUpdate }) => {
     };
 
     // Funciones para adendas
-    const getAdendaStatusClass = (estado) => {
-        const statusClasses = {
-            'en_proceso': 'status-yellow',
-            'aprobada': 'status-green',
-            'rechazada': 'status-red'
+    const getAdendaStatusBadgeVariant = (estado) => {
+        const variants = {
+            'en_proceso': 'secondary',
+            'aprobada': 'default',
+            'rechazada': 'destructive'
         };
-        return statusClasses[estado] || 'status-yellow';
+        return variants[estado] || 'secondary';
     };
 
     const getAdendaStatusText = (estado) => {
@@ -266,7 +217,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
             
             if (response.data.success) {
                 // Recargar adendas del proyecto
-                const adendasResponse = await api.get(`/adendas/project/${viewingProjectExperimental.id}`);
+                const adendasResponse = await api.get(`/adendas/project/${viewingProject.id}`);
                 if (adendasResponse.data.success) {
                     setProjectAdendas(adendasResponse.data.adendas);
                 }
@@ -288,8 +239,8 @@ const ProjectsList = ({ onStatsUpdate }) => {
             await api.delete(`/adendas/${adendaId}`);
             
             // Recargar adendas del proyecto
-            if (viewingProjectExperimental) {
-                const adendasResponse = await api.get(`/adendas/project/${viewingProjectExperimental.id}`);
+            if (viewingProject) {
+                const adendasResponse = await api.get(`/adendas/project/${viewingProject.id}`);
                 if (adendasResponse.data.success) {
                     setProjectAdendas(adendasResponse.data.adendas);
                 }
@@ -314,24 +265,26 @@ const ProjectsList = ({ onStatsUpdate }) => {
     }
 
     return (
-        <div className="section-container">
-            {/* Header */}
-            <SectionHeader
-                title="Proyectos"
-                icon={faBuilding}
-                actionButton={(user?.rol === 'admin' || user?.rol === 'project_manager') ? {
-                    icon: faPlus,
-                    onClick: () => setShowCreateForm(true),
-                    className: 'btn-circular'
-                } : null}
-            />
-
+        <div className="space-y-6">
+            {/* Botón de acción */}
+            {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                <div className="flex justify-end">
+                    <Button onClick={() => setShowCreateForm(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nuevo Proyecto
+                    </Button>
+                </div>
+            )}
 
             {/* Error */}
             {error && (
-                <div className="error-message">
-                    {error}
-                    <button onClick={loadProjects}>Reintentar</button>
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
+                    <div className="flex items-center justify-between">
+                        <span>{error}</span>
+                        <Button variant="outline" size="sm" onClick={loadProjects}>
+                            Reintentar
+                        </Button>
+                    </div>
                 </div>
             )}
 
@@ -339,14 +292,14 @@ const ProjectsList = ({ onStatsUpdate }) => {
 
 
             {/* Modal para crear proyecto */}
-            <ProjectForm
+            <ProjectFormNew
                 isOpen={showCreateForm}
                 onClose={() => setShowCreateForm(false)}
                 onSave={handleProjectSave}
             />
 
             {/* Modal para editar proyecto */}
-            <ProjectForm
+            <ProjectFormNew
                 projectId={editingProject?.id}
                 isOpen={!!editingProject}
                 onClose={() => setEditingProject(null)}
@@ -355,256 +308,262 @@ const ProjectsList = ({ onStatsUpdate }) => {
             />
 
 
-            {/* Modal para ver detalles del proyecto - TABLA EXPERIMENTAL (Nuevo Sistema) */}
-            <StandardModal
-                isOpen={!!viewingProjectExperimental}
-                onClose={() => setViewingProjectExperimental(null)}
-                title={viewingProjectExperimental?.nombre_corto || "Detalles del Proyecto"}
-                size="large"
-                footer={(
-                    (user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                        <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => setShowAdendaForm(true)}
-                        >
-                            + Agregar Adenda
-                        </button>
-                    )
-                )}
-            >
-                {viewingProjectExperimental && (
-                    <div>
-                        <div className="modal-row">
-                            <label className="modal-row-label">Proyecto:</label>
-                            <span className="modal-row-value">{viewingProjectExperimental.nombre}</span>
+            {/* Modal para ver detalles del proyecto - Shadcn Dialog */}
+            <Dialog open={!!viewingProject} onOpenChange={() => setViewingProject(null)}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{viewingProject?.nombre_corto || "Detalles del Proyecto"}</DialogTitle>
+                    </DialogHeader>
+
+                    {viewingProject && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Proyecto:</label>
+                                <span className="text-sm">{viewingProject.nombre}</span>
+                            </div>
+
+                        {viewingProject.codigo_proyecto && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Código:</label>
+                                <span className="text-sm">{viewingProject.codigo_proyecto}</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                            <label className="font-medium text-sm text-muted-foreground">Estado:</label>
+                            <div>
+                                <Badge variant={getStatusBadgeVariant(viewingProject.estado)}>
+                                    {getStatusText(viewingProject.estado)}
+                                </Badge>
+                            </div>
                         </div>
 
-                        {viewingProjectExperimental.codigo_proyecto && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Código:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.codigo_proyecto}</span>
+                        {viewingProject.cliente_nombre && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Cliente:</label>
+                                <span className="text-sm">{viewingProject.cliente_nombre}</span>
                             </div>
                         )}
 
-                        <div className="modal-row">
-                            <label className="modal-row-label">Estado:</label>
-                            <span className="modal-row-value">
-                                <span className={`status-badge ${getStatusClass(viewingProjectExperimental.estado)}`}>
-                                    {getStatusText(viewingProjectExperimental.estado)}
-                                </span>
-                            </span>
-                        </div>
-
-                        {viewingProjectExperimental.cliente_nombre && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Cliente:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.cliente_nombre}</span>
+                        {viewingProject.cliente_abreviatura && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Abreviatura:</label>
+                                <span className="text-sm">{viewingProject.cliente_abreviatura}</span>
                             </div>
                         )}
 
-                        {viewingProjectExperimental.cliente_abreviatura && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Abreviatura:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.cliente_abreviatura}</span>
+                        {viewingProject.cliente_contacto && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Contacto:</label>
+                                <span className="text-sm">{viewingProject.cliente_contacto}</span>
                             </div>
                         )}
 
-                        {viewingProjectExperimental.cliente_contacto && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Contacto:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.cliente_contacto}</span>
+                        {viewingProject.cliente_telefono && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Teléfono:</label>
+                                <span className="text-sm">{viewingProject.cliente_telefono}</span>
                             </div>
                         )}
 
-                        {viewingProjectExperimental.cliente_telefono && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Teléfono:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.cliente_telefono}</span>
+                        {viewingProject.cliente_email && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Email:</label>
+                                <span className="text-sm">{viewingProject.cliente_email}</span>
                             </div>
                         )}
 
-                        {viewingProjectExperimental.cliente_email && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Email:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.cliente_email}</span>
+                        {viewingProject.contratista && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Contratista:</label>
+                                <span className="text-sm">{viewingProject.contratista}</span>
                             </div>
                         )}
 
-                        {viewingProjectExperimental.contratista && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Contratista:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.contratista}</span>
-                            </div>
-                        )}
-
-                        {viewingProjectExperimental.ingeniero_residente && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Ingeniero Residente:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.ingeniero_residente}</span>
+                        {viewingProject.ingeniero_residente && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Ingeniero Residente:</label>
+                                <span className="text-sm">{viewingProject.ingeniero_residente}</span>
                             </div>
                         )}
 
                         {/* Fecha de Inicio */}
-                        {viewingProjectExperimental.fecha_inicio && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Fecha de Inicio:</label>
-                                <span className="modal-row-value">{formatDate(viewingProjectExperimental.fecha_inicio)}</span>
+                        {viewingProject.fecha_inicio && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Fecha de Inicio:</label>
+                                <span className="text-sm">{formatDate(viewingProject.fecha_inicio)}</span>
                             </div>
                         )}
 
                         {/* Fecha de Terminación */}
-                        {viewingProjectExperimental.fecha_fin_estimada && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Fecha de Terminación:</label>
-                                <span className="modal-row-value">{formatDate(viewingProjectExperimental.fecha_fin_estimada)}</span>
+                        {viewingProject.fecha_fin_estimada && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Fecha de Terminación:</label>
+                                <span className="text-sm">{formatDate(viewingProject.fecha_fin_estimada)}</span>
                             </div>
                         )}
 
                         {/* Presupuesto Base */}
-                        {viewingProjectExperimental.presupuesto_base && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Presupuesto Base:</label>
-                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.presupuesto_base)}</span>
+                        {viewingProject.presupuesto_base && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Presupuesto Base:</label>
+                                <span className="text-sm">{formatMoney(viewingProject.presupuesto_base)}</span>
                             </div>
                         )}
 
                         {/* ITBMS */}
-                        {viewingProjectExperimental.itbms && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">ITBMS (7%):</label>
-                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.itbms)}</span>
+                        {viewingProject.itbms && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">ITBMS (7%):</label>
+                                <span className="text-sm">{formatMoney(viewingProject.itbms)}</span>
                             </div>
                         )}
 
                         {/* Monto Total */}
-                        {viewingProjectExperimental.monto_total && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Monto Total:</label>
-                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.monto_total)}</span>
+                        {viewingProject.monto_total && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Monto Total:</label>
+                                <span className="text-sm">{formatMoney(viewingProject.monto_total)}</span>
                             </div>
                         )}
 
                         {/* Monto del Contrato (alternativo) */}
-                        {!viewingProjectExperimental.monto_total && viewingProjectExperimental.monto_contrato_original && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Monto del Contrato:</label>
-                                <span className="modal-row-value">{formatMoney(viewingProjectExperimental.monto_contrato_original)}</span>
+                        {!viewingProject.monto_total && viewingProject.monto_contrato_original && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Monto del Contrato:</label>
+                                <span className="text-sm">{formatMoney(viewingProject.monto_contrato_original)}</span>
                             </div>
                         )}
 
                         {/* Número de Contrato */}
-                        {viewingProjectExperimental.contrato && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Número de Contrato:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.contrato}</span>
+                        {viewingProject.contrato && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Número de Contrato:</label>
+                                <span className="text-sm">{viewingProject.contrato}</span>
                             </div>
                         )}
 
                         {/* Acto Público */}
-                        {viewingProjectExperimental.acto_publico && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Acto Público:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.acto_publico}</span>
+                        {viewingProject.acto_publico && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Acto Público:</label>
+                                <span className="text-sm">{viewingProject.acto_publico}</span>
                             </div>
                         )}
 
                         {/* Observaciones */}
-                        {viewingProjectExperimental.datos_adicionales?.observaciones && (
-                            <div className="modal-row">
-                                <label className="modal-row-label">Observaciones:</label>
-                                <span className="modal-row-value">{viewingProjectExperimental.datos_adicionales.observaciones}</span>
+                        {viewingProject.datos_adicionales?.observaciones && (
+                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                <label className="font-medium text-sm text-muted-foreground">Observaciones:</label>
+                                <span className="text-sm">{viewingProject.datos_adicionales.observaciones}</span>
                             </div>
                         )}
 
                         {/* Adendas */}
                         {projectAdendas.length > 0 && (
-                            <div className="modal-section">
+                            <div className="space-y-6 mt-6 pt-6 border-t">
+                                <h3 className="font-semibold text-base">Adendas del Proyecto</h3>
                                 {projectAdendas.map(adenda => (
-                                    <React.Fragment key={adenda.id}>
-                                            <div className="modal-row">
-                                                <label className="modal-row-label">Adenda #{adenda.numero_adenda}:</label>
-                                                <div className="modal-row-value">
-                                                    <>
-                                                        <span className={`status-badge ${getAdendaStatusClass(adenda.estado)}`}>
-                                                            {getAdendaStatusText(adenda.estado)}
-                                                        </span>
-                                                        {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                                            <>
-                                                                <button
-                                                                    className="btn-icon btn-edit"
-                                                                    onClick={() => {
-                                                                        setEditingAdenda(adenda);
-                                                                        setShowAdendaForm(true);
-                                                                    }}
-                                                                    title="Editar adenda"
-                                                                >
-                                                                    <FontAwesomeIcon icon={faEdit} />
-                                                                </button>
-                                                                <button
-                                                                    className="btn-icon btn-delete"
-                                                                    onClick={() => handleDeleteAdenda(adenda.id)}
-                                                                    title="Eliminar adenda"
-                                                                >
-                                                                    <FontAwesomeIcon icon={faTrash} />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </>
-                                                </div>
+                                    <div key={adenda.id} className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                                        <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                            <label className="font-medium text-sm text-muted-foreground">Adenda #{adenda.numero_adenda}:</label>
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant={getAdendaStatusBadgeVariant(adenda.estado)}>
+                                                    {getAdendaStatusText(adenda.estado)}
+                                                </Badge>
+                                                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingAdenda(adenda);
+                                                                setShowAdendaForm(true);
+                                                            }}
+                                                            className="inline-flex items-center justify-center p-0 border-0 bg-transparent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                                                            title="Editar adenda"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteAdenda(adenda.id)}
+                                                            className="inline-flex items-center justify-center p-0 border-0 bg-transparent text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                                                            title="Eliminar adenda"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="modal-row">
-                                                <label className="modal-row-label">Tipo:</label>
-                                                <span className="modal-row-value">{getAdendaTypeText(adenda.tipo)}</span>
-                                            </div>
-                                            {adenda.nueva_fecha_fin && (
-                                                <div className="modal-row">
-                                                    <label className="modal-row-label">Nueva Fecha de Terminación:</label>
-                                                    <span className="modal-row-value">
-                                                        {formatDate(adenda.nueva_fecha_fin)}
-                                                        {adenda.dias_extension && (
-                                                            <span> (+{adenda.dias_extension} días)</span>
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {adenda.nuevo_monto && (
-                                                <div className="modal-row">
-                                                    <label className="modal-row-label">Nuevo Monto:</label>
-                                                    <span className="modal-row-value">{formatMoney(adenda.nuevo_monto)}</span>
-                                                </div>
-                                            )}
-                                            {adenda.monto_adicional && (
-                                                <div className="modal-row">
-                                                    <label className="modal-row-label">Monto Adicional:</label>
-                                                    <span className="modal-row-value">{formatMoney(adenda.monto_adicional)}</span>
-                                                </div>
-                                            )}
-                                            {adenda.observaciones && (
-                                                <div className="modal-row">
-                                                    <label className="modal-row-label">Observaciones:</label>
-                                                    <span className="modal-row-value">{adenda.observaciones}</span>
-                                                </div>
-                                            )}
-                                            <div className="modal-row">
-                                                <label className="modal-row-label">Solicitada:</label>
-                                                <span className="modal-row-value">
-                                                    {formatDate(adenda.fecha_solicitud)}
-                                                    {adenda.fecha_aprobacion && (
-                                                        <span> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                            <label className="font-medium text-sm text-muted-foreground">Tipo:</label>
+                                            <span className="text-sm">{getAdendaTypeText(adenda.tipo)}</span>
+                                        </div>
+
+                                        {adenda.nueva_fecha_fin && (
+                                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                                <label className="font-medium text-sm text-muted-foreground">Nueva Fecha de Terminación:</label>
+                                                <span className="text-sm">
+                                                    {formatDate(adenda.nueva_fecha_fin)}
+                                                    {adenda.dias_extension && (
+                                                        <span className="text-muted-foreground"> (+{adenda.dias_extension} días)</span>
                                                     )}
                                                 </span>
                                             </div>
-                                    </React.Fragment>
-                                    ))}
+                                        )}
+
+                                        {adenda.nuevo_monto && (
+                                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                                <label className="font-medium text-sm text-muted-foreground">Nuevo Monto:</label>
+                                                <span className="text-sm">{formatMoney(adenda.nuevo_monto)}</span>
+                                            </div>
+                                        )}
+
+                                        {adenda.monto_adicional && (
+                                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                                <label className="font-medium text-sm text-muted-foreground">Monto Adicional:</label>
+                                                <span className="text-sm">{formatMoney(adenda.monto_adicional)}</span>
+                                            </div>
+                                        )}
+
+                                        {adenda.observaciones && (
+                                            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                                <label className="font-medium text-sm text-muted-foreground">Observaciones:</label>
+                                                <span className="text-sm">{adenda.observaciones}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
+                                            <label className="font-medium text-sm text-muted-foreground">Solicitada:</label>
+                                            <span className="text-sm">
+                                                {formatDate(adenda.fecha_solicitud)}
+                                                {adenda.fecha_aprobacion && (
+                                                    <span className="text-muted-foreground"> | Aprobada: {formatDate(adenda.fecha_aprobacion)}</span>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
                 )}
-            </StandardModal>
+
+                {/* Footer con botón de agregar adenda */}
+                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                    <DialogFooter>
+                        <Button onClick={() => setShowAdendaForm(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Agregar Adenda
+                        </Button>
+                    </DialogFooter>
+                )}
+            </DialogContent>
+        </Dialog>
 
             {/* Modal para crear/editar adenda */}
             <AdendaForm
-                projectId={viewingProjectExperimental?.id}
+                projectId={viewingProject?.id}
                 isOpen={showAdendaForm}
                 onClose={() => {
                     setShowAdendaForm(false);
@@ -614,51 +573,65 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 editingAdenda={editingAdenda}
             />
 
-            {/* ===== TABLA DE PROYECTOS (StandardTable Component) ===== */}
-            <StandardTable
-                className="projects-standard-table-container"
-                tableClassName="projects-standard-table"
-                columns={[
-                        { header: 'Proyecto', accessor: 'nombre_corto' },
-                        { header: 'Cliente', accessor: 'cliente_abreviatura' },
-                        {
-                            header: 'Estado',
-                            render: (project) => (
-                                <span className={`status-badge ${getStatusClass(project.estado)}`}>
-                                    {getStatusText(project.estado)}
-                                </span>
-                            )
-                        },
-                        {
-                            header: 'Monto',
-                            render: (project) => (
-                                <span>
-                                    {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
-                                </span>
-                            )
-                        },
-                        {
-                            header: '',
-                            render: (project) => (
-                                (user?.rol === 'admin' || user?.rol === 'project_manager') && (
-                                    <button
-                                        className="standard-table-icon"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEditProject(project);
-                                        }}
-                                        title="Editar proyecto"
-                                    >
-                                        <FontAwesomeIcon icon={faEdit} />
-                                    </button>
-                                )
-                            )
-                        }
-                    ]}
-                    data={projects}
-                    onRowClick={(project) => handleRowClickExperimental(project.id)}
-                    emptyMessage="No hay proyectos disponibles"
-                />
+            {/* ===== TABLA DE PROYECTOS (Shadcn Table) ===== */}
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Proyecto</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead className="text-right">Monto</TableHead>
+                            {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                <TableHead className="w-[50px]"></TableHead>
+                            )}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {projects.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                    No hay proyectos disponibles
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            projects.map((project) => (
+                                <TableRow
+                                    key={project.id}
+                                    className="cursor-pointer hover:bg-muted/50"
+                                    onClick={() => handleViewProject(project.id)}
+                                >
+                                    <TableCell className="font-medium">{project.nombre_corto}</TableCell>
+                                    <TableCell>{project.cliente_abreviatura}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={getStatusBadgeVariant(project.estado)}>
+                                            {getStatusText(project.estado)}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
+                                    </TableCell>
+                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditProject(project);
+                                                }}
+                                                title="Editar proyecto"
+                                            >
+                                                <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 };
