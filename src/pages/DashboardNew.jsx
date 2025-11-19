@@ -3,12 +3,14 @@
  * TEMPORAL - Para probar el nuevo layout antes de migrar todo
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AppLayout } from "../components/layout/AppLayout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TailwindTest } from "../components/TailwindTest"
-import { Building2, Users, Truck, TrendingUp } from "lucide-react"
+import { Building2, Users, Truck, TrendingUp, AlertCircle } from "lucide-react"
 import ProjectsHub from "./ProjectsHub"
 import ClientesN from "./ClientesN"
 import DocumentosHubN from "./DocumentosHubN"
@@ -16,9 +18,49 @@ import DocumentFormN from "../components/forms/DocumentFormN"
 import EquiposInformacionN from "./equipos/EquiposInformacionN"
 import EquiposStatusN from "./equipos/EquiposStatusN"
 import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
+import api from "../services/api"
 
 export default function DashboardNew() {
   const [currentView, setCurrentView] = useState("dashboard")
+  const [stats, setStats] = useState({
+    proyectos: null,
+    clientes: null,
+    equipos: null
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Cargar estadísticas del dashboard
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Llamadas en paralelo para mejor performance
+        const [proyectosRes, clientesRes, equiposRes] = await Promise.all([
+          api.get('/projects/stats/dashboard'),
+          api.get('/clientes/stats/dashboard'),
+          api.get('/equipos/')
+        ])
+
+        setStats({
+          proyectos: proyectosRes.data.stats,
+          clientes: clientesRes.data.stats,
+          equipos: { total: equiposRes.data.total || equiposRes.data.data?.length || 0 }
+        })
+      } catch (err) {
+        console.error('Error cargando estadísticas:', err)
+        setError('Error al cargar las estadísticas del dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (currentView === "dashboard") {
+      fetchStats()
+    }
+  }, [currentView])
 
   const renderContent = () => {
     switch (currentView) {
@@ -32,49 +74,105 @@ export default function DashboardNew() {
               </p>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* Proyectos Activos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">En ejecución</p>
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-8 w-16 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {stats.proyectos?.proyectos_activos || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">En ejecución</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* En Planificación */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">En Planificación</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">5</div>
-                  <p className="text-xs text-muted-foreground">Por iniciar</p>
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-8 w-16 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {stats.proyectos?.proyectos_planificacion || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Por iniciar</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* Total Clientes */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">48</div>
-                  <p className="text-xs text-muted-foreground">Registrados</p>
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-8 w-16 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {stats.clientes?.total_clientes || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Registrados</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* Equipos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Equipos</CardTitle>
                   <Truck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">24</div>
-                  <p className="text-xs text-muted-foreground">Disponibles</p>
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-8 w-16 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">
+                        {stats.equipos?.total || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Disponibles</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
