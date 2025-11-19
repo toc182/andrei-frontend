@@ -4,8 +4,6 @@ import ProjectFormNew from './forms/ProjectFormNew';
 import AdendaForm from './forms/AdendaForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit } from '@fortawesome/free-solid-svg-icons';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 // Shadcn Components
 import { Button } from '@/components/ui/button';
@@ -622,7 +620,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                                 }}
                                                 title="Editar proyecto"
                                             >
-                                                <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
+                                                <Pencil className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
                                     )}
