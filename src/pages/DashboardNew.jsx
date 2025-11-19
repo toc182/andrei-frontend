@@ -12,6 +12,10 @@ import { Building2, Users, Truck, TrendingUp } from "lucide-react"
 import ProjectsHub from "./ProjectsHub"
 import ClientesN from "./ClientesN"
 import DocumentosHubN from "./DocumentosHubN"
+import DocumentFormN from "../components/forms/DocumentFormN"
+import EquiposInformacionN from "./equipos/EquiposInformacionN"
+import EquiposStatusN from "./equipos/EquiposStatusN"
+import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
 
 export default function DashboardNew() {
   const [currentView, setCurrentView] = useState("dashboard")
@@ -149,46 +153,34 @@ export default function DashboardNew() {
 
       case "equipos":
       case "equipos-informacion":
+        return <EquiposInformacionN />
+
       case "equipos-status":
+        return <EquiposStatusN />
+
       case "equipos-asignaciones":
-        return (
-          <div>
-            <h2 className="text-2xl font-bold">Equipos</h2>
-            <p className="text-muted-foreground mt-2">
-              Aquí irá el contenido de equipos (se migrará después)
-            </p>
-            <Card className="mt-4">
-              <CardContent className="pt-6">
-                <p>Vista de {currentView}</p>
-              </CardContent>
-            </Card>
-          </div>
-        )
+        return <AsignacionesEquiposN />
 
       case "documentos":
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
 
       case "doc-acuerdo-consorcio":
+        return <DocumentFormN documentType="acuerdo-consorcio" />
+
       case "doc-carta-adhesion":
+        return <DocumentFormN documentType="carta-adhesion" />
+
       case "doc-medidas-retorsion":
+        return <DocumentFormN documentType="medidas-retorsion" />
+
       case "doc-no-incapacidad":
+        return <DocumentFormN documentType="no-incapacidad" />
+
       case "doc-pacto-integridad":
+        return <DocumentFormN documentType="pacto-integridad" />
+
       case "doc-carta-compromiso-verde":
-        return (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">
-              {currentView === "doc-acuerdo-consorcio" && "Acuerdo de Consorcio"}
-              {currentView === "doc-carta-adhesion" && "Carta de Adhesión a Principios de Sostenibilidad"}
-              {currentView === "doc-medidas-retorsion" && "Declaración Jurada de Medidas de Retorsión"}
-              {currentView === "doc-no-incapacidad" && "Declaración Jurada de No Incapacidad para Contratar"}
-              {currentView === "doc-pacto-integridad" && "Pacto de Integridad"}
-              {currentView === "doc-carta-compromiso-verde" && "Carta de Compromiso Verde"}
-            </h2>
-            <p className="text-muted-foreground">
-              Formulario para generar este documento (se migrará después)
-            </p>
-          </div>
-        )
+        return <DocumentFormN documentType="carta-compromiso-verde" />
 
       default:
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />

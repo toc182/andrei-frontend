@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "../../context/AuthContext"
+import logo from "../../assets/logo.png"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
@@ -207,8 +208,8 @@ export function AppLayout({ children, currentView, onNavigate }) {
         {sidebarOpen && (
           <>
             {/* Logo */}
-            <div className="flex h-16 items-center border-b px-6">
-              <h1 className="text-xl font-bold text-primary">Andrei</h1>
+            <div className="flex h-16 items-center justify-center border-b px-6">
+              <img src={logo} alt="Pinellas" className="h-10 object-contain" />
             </div>
 
             {/* Navigation */}
@@ -240,8 +241,8 @@ export function AppLayout({ children, currentView, onNavigate }) {
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
               <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
-              <div className="flex h-16 items-center border-b px-6">
-                <h1 className="text-xl font-bold text-primary">Andrei</h1>
+              <div className="flex h-16 items-center justify-center border-b px-6">
+                <img src={logo} alt="Pinellas" className="h-10 object-contain" />
               </div>
               <Navigation onItemClick={() => setMobileSheetOpen(false)} />
             </SheetContent>
