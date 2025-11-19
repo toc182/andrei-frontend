@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TailwindTest } from "../components/TailwindTest"
 import { Building2, Users, Truck, TrendingUp, AlertCircle } from "lucide-react"
 import ProjectsHub from "./ProjectsHub"
 import ClientesN from "./ClientesN"
@@ -221,19 +220,6 @@ export default function DashboardNew() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Demo de Componentes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Demo de Componentes Shadcn</CardTitle>
-                <CardDescription>
-                  Ejemplos de botones, modales y tablas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TailwindTest />
-              </CardContent>
-            </Card>
           </div>
         )
 
