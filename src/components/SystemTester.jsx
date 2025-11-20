@@ -277,6 +277,26 @@ export default function SystemTester() {
     // ========== NIVEL 4: ADMIN & LIMPIEZA ==========
     {
       level: 4,
+      name: '🔍 DIAGNÓSTICO - Verificar columna activo',
+      description: 'GET /admin/check-activo-column',
+      test: async () => {
+        try {
+          const response = await api.get('/admin/check-activo-column')
+          return {
+            success: true,
+            message: `${response.data.message} (exists: ${response.data.exists})`,
+            exists: response.data.exists
+          }
+        } catch (error) {
+          return {
+            success: false,
+            message: `Error: ${error.response?.data?.message || error.message}`
+          }
+        }
+      }
+    },
+    {
+      level: 4,
       name: '⚙️ ADMIN - Forzar Migración 022',
       description: 'POST /admin/force-migration-022 (Agregar columna activo a clientes)',
       test: async () => {
