@@ -230,36 +230,6 @@ export default function SystemTester() {
       }
     },
 
-    // ========== NIVEL 2: LICITACIONES ==========
-    {
-      level: 2,
-      name: '📄 Licitaciones - Listar',
-      description: 'GET /licitaciones',
-      test: async () => {
-        const response = await api.get('/licitaciones')
-        return {
-          success: response.data.success,
-          count: response.data.licitaciones?.length || 0,
-          data: response.data
-        }
-      }
-    },
-
-    // ========== NIVEL 2: OPORTUNIDADES ==========
-    {
-      level: 2,
-      name: '💡 Oportunidades - Listar',
-      description: 'GET /oportunidades',
-      test: async () => {
-        const response = await api.get('/oportunidades')
-        return {
-          success: response.data.success,
-          count: response.data.oportunidades?.length || 0,
-          data: response.data
-        }
-      }
-    },
-
     // ========== NIVEL 3: VALIDACIONES ==========
     {
       level: 3,
