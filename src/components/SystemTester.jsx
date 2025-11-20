@@ -112,14 +112,23 @@ export default function SystemTester() {
       description: 'PUT /projects/:id',
       test: async (context) => {
         if (!context.testProjectId) throw new Error('No hay proyecto de prueba')
-        const updateData = {
-          estado: 'en_curso',
-          observaciones: 'Actualizado por test automático'
-        }
-        const response = await api.put(`/projects/${context.testProjectId}`, updateData)
-        return {
-          success: response.data.success,
-          data: response.data
+        try {
+          const updateData = {
+            estado: 'en_curso'
+          }
+          const response = await api.put(`/projects/${context.testProjectId}`, updateData)
+          return {
+            success: response.data.success,
+            data: response.data
+          }
+        } catch (error) {
+          const errorData = error.response?.data || {}
+          return {
+            success: false,
+            message: `Error: ${errorData.message || error.message}`,
+            errorDetails: errorData.error,
+            fullDetails: errorData.details
+          }
         }
       }
     },
