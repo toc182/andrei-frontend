@@ -274,7 +274,26 @@ export default function SystemTester() {
       }
     },
 
-    // ========== NIVEL 4: LIMPIEZA ==========
+    // ========== NIVEL 4: ADMIN & LIMPIEZA ==========
+    {
+      level: 4,
+      name: '⚙️ ADMIN - Forzar Migración 022',
+      description: 'POST /admin/force-migration-022 (Agregar columna activo a clientes)',
+      test: async () => {
+        try {
+          const response = await api.post('/admin/force-migration-022')
+          return {
+            success: response.data.success,
+            message: response.data.message
+          }
+        } catch (error) {
+          return {
+            success: false,
+            message: `Error: ${error.response?.data?.message || error.message}`
+          }
+        }
+      }
+    },
     {
       level: 4,
       name: '🧹 LIMPIEZA - Eliminar Proyecto TEST',
