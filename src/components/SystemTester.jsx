@@ -299,10 +299,18 @@ export default function SystemTester() {
         if (!context.testClienteId) {
           return { success: true, message: 'No hay cliente que limpiar' }
         }
-        const response = await api.delete(`/clientes/${context.testClienteId}`)
-        return {
-          success: response.data.success,
-          message: 'Cliente de prueba eliminado'
+        try {
+          const response = await api.delete(`/clientes/${context.testClienteId}`)
+          return {
+            success: response.data.success,
+            message: 'Cliente de prueba eliminado'
+          }
+        } catch (error) {
+          // Capturar error y mostrarlo claramente
+          return {
+            success: false,
+            message: `Error al eliminar: ${error.response?.data?.message || error.message}`
+          }
         }
       }
     },
