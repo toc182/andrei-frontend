@@ -346,10 +346,13 @@ export default function SystemTester() {
             message: 'Cliente de prueba eliminado'
           }
         } catch (error) {
-          // Capturar error y mostrarlo claramente
+          // Capturar error y mostrarlo claramente con TODOS los detalles
+          const errorData = error.response?.data || {}
           return {
             success: false,
-            message: `Error al eliminar: ${error.response?.data?.message || error.message}`
+            message: `Error: ${errorData.message || error.message}`,
+            errorDetails: errorData.error,
+            fullDetails: errorData.details
           }
         }
       }
