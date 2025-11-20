@@ -17,6 +17,7 @@ import DocumentFormN from "../components/forms/DocumentFormN"
 import EquiposInformacionN from "./equipos/EquiposInformacionN"
 import EquiposStatusN from "./equipos/EquiposStatusN"
 import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
+import SystemTester from "../components/SystemTester"
 import api from "../services/api"
 
 export default function DashboardNew() {
@@ -265,6 +266,9 @@ export default function DashboardNew() {
 
       case "doc-carta-compromiso-verde":
         return <DocumentFormN documentType="carta-compromiso-verde" />
+
+      case "sistema-debug":
+        return <SystemTester />
 
       default:
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
