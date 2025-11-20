@@ -151,12 +151,13 @@ export default function SystemTester() {
           direccion: 'Dirección de prueba'
         }
         const response = await api.post('/clientes', testData)
-        if (response.data.success) {
-          context.testClienteId = response.data.data?.id
+        // FIX: El backend devuelve { success, cliente, message }, no { success, data }
+        if (response.data.success && response.data.cliente) {
+          context.testClienteId = response.data.cliente.id
         }
         return {
           success: response.data.success,
-          clienteId: response.data.data?.id,
+          clienteId: response.data.cliente?.id,
           data: response.data
         }
       }
