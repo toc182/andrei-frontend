@@ -9,6 +9,12 @@ import { Pencil, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
     Table,
     TableBody,
     TableCell,
@@ -571,8 +577,67 @@ const ProjectsList = ({ onStatsUpdate }) => {
                 editingAdenda={editingAdenda}
             />
 
-            {/* ===== TABLA DE PROYECTOS (Shadcn Table) ===== */}
-            <div className="rounded-md border">
+            {/* ===== CARDS MÓVIL ===== */}
+            <div className="md:hidden space-y-3">
+                {projects.length === 0 ? (
+                    <Card>
+                        <CardContent className="pt-6 text-center text-muted-foreground">
+                            No hay proyectos disponibles
+                        </CardContent>
+                    </Card>
+                ) : (
+                    projects.map((project) => (
+                        <Card
+                            key={project.id}
+                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => handleViewProject(project.id)}
+                        >
+                            <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <CardTitle className="text-base leading-tight">
+                                        {project.nombre_corto}
+                                    </CardTitle>
+                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0 shrink-0"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditProject(project);
+                                            }}
+                                            title="Editar proyecto"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2 text-sm">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Cliente:</span>
+                                    <span className="font-medium">{project.cliente_abreviatura}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Estado:</span>
+                                    <Badge variant={getStatusBadgeVariant(project.estado)}>
+                                        {getStatusText(project.estado)}
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Monto:</span>
+                                    <span className="font-medium">
+                                        {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))
+                )}
+            </div>
+
+            {/* ===== TABLA DE PROYECTOS DESKTOP (Shadcn Table) ===== */}
+            <div className="hidden md:block rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>
