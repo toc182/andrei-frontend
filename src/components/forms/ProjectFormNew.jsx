@@ -324,7 +324,7 @@ const ProjectFormNew = ({
         <>
             {/* Modal Principal */}
             <Dialog open={isOpen && !showDeleteConfirmation} onOpenChange={onClose}>
-                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
                     <DialogHeader>
                         <DialogTitle>
                             {projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}
@@ -815,7 +815,7 @@ const ProjectFormNew = ({
 
             {/* Modal de Confirmación de Eliminación */}
             <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
-                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[500px]">
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[500px] overflow-x-hidden">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-destructive">
                             <Trash2 className="h-5 w-5" />
