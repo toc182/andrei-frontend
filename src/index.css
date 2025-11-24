@@ -49,3 +49,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* iOS Safari Safe Area Support for Modals */
+  .safe-top {
+    @media (max-width: 640px) {
+      top: max(env(safe-area-inset-top, 1rem), 1rem) !important;
+      transform: translateX(-50%) translateY(0) !important;
+      max-height: calc(100vh - env(safe-area-inset-top, 1rem) - env(safe-area-inset-bottom, 1rem) - 2rem);
+    }
+  }
+}
