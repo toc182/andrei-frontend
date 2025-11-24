@@ -324,7 +324,7 @@ const ProjectFormNew = ({
         <>
             {/* Modal Principal */}
             <Dialog open={isOpen && !showDeleteConfirmation} onOpenChange={onClose}>
-                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
                             {projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}
@@ -685,7 +685,7 @@ const ProjectFormNew = ({
                                 </div>
 
                                 {watchSocios.map((socio, index) => (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_150px_40px] gap-3 items-start">
+                                    <div key={index} className="space-y-3 md:space-y-0 md:grid md:grid-cols-[1fr_120px_40px] md:gap-3 md:items-start">
                                         {/* Nombre del Socio */}
                                         <div>
                                             <Label htmlFor={`socio-nombre-${index}`}>
@@ -700,40 +700,42 @@ const ProjectFormNew = ({
                                             />
                                         </div>
 
-                                        {/* Porcentaje */}
-                                        <div>
-                                            <Label htmlFor={`socio-porcentaje-${index}`}>
-                                                Porcentaje (%) *
-                                            </Label>
-                                            <Input
-                                                id={`socio-porcentaje-${index}`}
-                                                type="number"
-                                                value={socio.porcentaje}
-                                                onChange={(e) => handlePartnerChange(index, 'porcentaje', e.target.value)}
-                                                placeholder="0"
-                                                min="0"
-                                                max="100"
-                                                step="0.01"
-                                                disabled={loading}
-                                            />
-                                        </div>
-
-                                        {/* Botón Eliminar */}
-                                        <div className="flex items-end h-full pb-0.5">
-                                            {watchSocios.length > 1 && !(index === 0 && socio.nombre === 'Pinellas, S.A.') ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => removePartner(index)}
+                                        {/* Porcentaje y Botón Eliminar en móvil */}
+                                        <div className="flex gap-2 items-end md:contents">
+                                            <div className="flex-1 md:flex-none">
+                                                <Label htmlFor={`socio-porcentaje-${index}`}>
+                                                    Porcentaje (%) *
+                                                </Label>
+                                                <Input
+                                                    id={`socio-porcentaje-${index}`}
+                                                    type="number"
+                                                    value={socio.porcentaje}
+                                                    onChange={(e) => handlePartnerChange(index, 'porcentaje', e.target.value)}
+                                                    placeholder="0"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.01"
                                                     disabled={loading}
-                                                    className="h-10 w-10 p-0"
-                                                >
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            ) : (
-                                                <div className="h-10 w-10" />
-                                            )}
+                                                />
+                                            </div>
+
+                                            {/* Botón Eliminar */}
+                                            <div className="flex items-end pb-0.5">
+                                                {watchSocios.length > 1 && !(index === 0 && socio.nombre === 'Pinellas, S.A.') ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removePartner(index)}
+                                                        disabled={loading}
+                                                        className="h-10 w-10 p-0"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                ) : (
+                                                    <div className="h-10 w-10" />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -776,15 +778,14 @@ const ProjectFormNew = ({
                         />
 
                         {/* Footer */}
-                        <DialogFooter className="gap-2">
+                        <DialogFooter className="gap-2 flex-col sm:flex-row">
                             {projectId && user?.rol === 'admin' && onDelete && (
                                 <Button
                                     type="button"
                                     variant="destructive"
-                                    size="sm"
                                     onClick={() => setShowDeleteConfirmation(true)}
                                     disabled={loading}
-                                    className="mr-auto"
+                                    className="sm:mr-auto w-full sm:w-auto"
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Eliminar Proyecto
@@ -795,10 +796,11 @@ const ProjectFormNew = ({
                                 variant="outline"
                                 onClick={onClose}
                                 disabled={loading}
+                                className="w-full sm:w-auto"
                             >
                                 Cancelar
                             </Button>
-                            <Button type="submit" disabled={loading}>
+                            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {loading
                                     ? (projectId ? 'Actualizando...' : 'Creando...')
@@ -813,7 +815,7 @@ const ProjectFormNew = ({
 
             {/* Modal de Confirmación de Eliminación */}
             <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-destructive">
                             <Trash2 className="h-5 w-5" />
@@ -843,12 +845,13 @@ const ProjectFormNew = ({
                         </Alert>
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="gap-2 flex-col sm:flex-row">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setShowDeleteConfirmation(false)}
                             disabled={loading}
+                            className="w-full sm:w-auto"
                         >
                             Cancelar
                         </Button>
@@ -857,6 +860,7 @@ const ProjectFormNew = ({
                             variant="destructive"
                             onClick={handleDelete}
                             disabled={loading}
+                            className="w-full sm:w-auto"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Sí, Eliminar Proyecto
