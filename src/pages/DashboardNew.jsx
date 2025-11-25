@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Building2, Users, Truck, TrendingUp, AlertCircle, Shield } from "lucide-react"
+import { Building2, Users, Truck, TrendingUp, AlertCircle } from "lucide-react"
 import ProjectsHub from "./ProjectsHub"
 import ClientesN from "./ClientesN"
 import DocumentosHubN from "./DocumentosHubN"
@@ -17,7 +17,6 @@ import DocumentFormN from "../components/forms/DocumentFormN"
 import EquiposInformacionN from "./equipos/EquiposInformacionN"
 import EquiposStatusN from "./equipos/EquiposStatusN"
 import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
-import SystemTester from "../components/SystemTester"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 
@@ -222,29 +221,6 @@ export default function DashboardNew() {
                   </Button>
                 </CardContent>
               </Card>
-
-              {/* Admin-only Testing System - Only visible for admin/gerente */}
-              {(user?.rol === 'admin' || user?.rol === 'gerente') && (
-                <Card className="border-orange-500/50">
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-orange-600" />
-                      <CardTitle>Sistema de Pruebas</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Testing automatizado - Solo Administradores
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentView("sistema-debug")}
-                    >
-                      Ejecutar Pruebas
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
         )
@@ -291,9 +267,6 @@ export default function DashboardNew() {
 
       case "doc-carta-compromiso-verde":
         return <DocumentFormN documentType="carta-compromiso-verde" />
-
-      case "sistema-debug":
-        return <SystemTester />
 
       default:
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
