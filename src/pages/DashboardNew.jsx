@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Building2, Users, Truck, TrendingUp, AlertCircle } from "lucide-react"
-import ProjectsHub from "./ProjectsHub"
+import ProjectsList from "../components/ProjectsList"
 import ClientesN from "./ClientesN"
 import DocumentosHubN from "./DocumentosHubN"
 import DocumentFormN from "../components/forms/DocumentFormN"
@@ -226,13 +226,13 @@ export default function DashboardNew() {
         )
 
       case "projects":
-        return <ProjectsHub activeTab="proyectos" />
+        return <ProjectsList activeTab="proyectos" />
 
       case "projects-licitaciones":
-        return <ProjectsHub activeTab="licitaciones" />
+        return <ProjectsList activeTab="licitaciones" />
 
       case "projects-oportunidades":
-        return <ProjectsHub activeTab="oportunidades" />
+        return <ProjectsList activeTab="oportunidades" />
 
       case "clientes":
         return <ClientesN />
