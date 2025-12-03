@@ -17,6 +17,7 @@ import DocumentFormN from "../components/forms/DocumentFormN"
 import EquiposInformacionN from "./equipos/EquiposInformacionN"
 import EquiposStatusN from "./equipos/EquiposStatusN"
 import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
+import ProjectDetailLayout from "./project/ProjectDetailLayout"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 
@@ -30,6 +31,7 @@ export default function DashboardNew() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [pageTitle, setPageTitle] = useState(null)
 
   // Cargar estadísticas del dashboard
   useEffect(() => {
@@ -64,6 +66,23 @@ export default function DashboardNew() {
   }, [currentView])
 
   const renderContent = () => {
+    // Check if it's a project view (pattern: project-{id}-{subview})
+    if (currentView.startsWith('project-')) {
+      const parts = currentView.split('-')
+      if (parts.length >= 3) {
+        const projectId = parseInt(parts[1], 10)
+        const subview = parts.slice(2).join('-') // Handle subviews with dashes
+        return (
+          <ProjectDetailLayout
+            projectId={projectId}
+            subview={subview}
+            onNavigate={setCurrentView}
+            onTitleChange={setPageTitle}
+          />
+        )
+      }
+    }
+
     switch (currentView) {
       case "dashboard":
         return (
@@ -226,7 +245,7 @@ export default function DashboardNew() {
         )
 
       case "projects":
-        return <ProjectsList activeTab="proyectos" />
+        return <ProjectsList activeTab="proyectos" onNavigate={setCurrentView} />
 
       case "projects-licitaciones":
         return <ProjectsList activeTab="licitaciones" />
@@ -274,7 +293,7 @@ export default function DashboardNew() {
   }
 
   return (
-    <AppLayout currentView={currentView} onNavigate={setCurrentView}>
+    <AppLayout currentView={currentView} onNavigate={setCurrentView} pageTitle={pageTitle}>
       {renderContent()}
     </AppLayout>
   )

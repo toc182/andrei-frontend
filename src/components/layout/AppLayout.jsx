@@ -8,8 +8,20 @@
  * - Submenús colapsables
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, createContext, useContext } from "react"
 import { useAuth } from "../../context/AuthContext"
+
+// Create SidebarContext
+const SidebarContext = createContext({ sidebarOpen: true })
+
+// Custom hook to use sidebar context
+export const useSidebar = () => {
+  const context = useContext(SidebarContext)
+  if (!context) {
+    throw new Error('useSidebar must be used within SidebarContext.Provider')
+  }
+  return context
+}
 import logo from "../../assets/logo.png"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -37,7 +49,7 @@ import {
   User
 } from "lucide-react"
 
-export function AppLayout({ children, currentView, onNavigate }) {
+export function AppLayout({ children, currentView, onNavigate, pageTitle }) {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
@@ -250,8 +262,8 @@ export function AppLayout({ children, currentView, onNavigate }) {
 
           {/* Title */}
           <div className="flex-1">
-            <h2 className="text-lg font-semibold">
-              {menuItems.find(item =>
+            <h2 className="text-lg font-semibold truncate">
+              {pageTitle || menuItems.find(item =>
                 item.view === currentView ||
                 item.submenu?.some(sub => sub.view === currentView)
               )?.label || "Dashboard"}
@@ -294,7 +306,9 @@ export function AppLayout({ children, currentView, onNavigate }) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto bg-muted/10 p-6">
-          {children}
+          <SidebarContext.Provider value={{ sidebarOpen }}>
+            {children}
+          </SidebarContext.Provider>
         </main>
       </div>
     </div>

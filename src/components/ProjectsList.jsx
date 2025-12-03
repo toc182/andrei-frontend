@@ -31,7 +31,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-const ProjectsList = ({ onStatsUpdate }) => {
+const ProjectsList = ({ onStatsUpdate, onNavigate }) => {
     const { user } = useAuth();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -590,7 +590,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                         <Card
                             key={project.id}
                             className="cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => handleViewProject(project.id)}
+                            onClick={() => onNavigate && onNavigate(`project-${project.id}-resumen`)}
                         >
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between gap-2">
@@ -662,7 +662,7 @@ const ProjectsList = ({ onStatsUpdate }) => {
                                 <TableRow
                                     key={project.id}
                                     className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => handleViewProject(project.id)}
+                                    onClick={() => onNavigate && onNavigate(`project-${project.id}-resumen`)}
                                 >
                                     <TableCell className="font-medium">{project.nombre_corto}</TableCell>
                                     <TableCell>{project.cliente_abreviatura}</TableCell>
