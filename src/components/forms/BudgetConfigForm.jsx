@@ -1,9 +1,3 @@
-/**
- * BudgetConfigForm Component
- * Form to configure project budget and distribute among categories
- * Features: Automatic budget from project contract, category distribution
- */
-
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -14,137 +8,78 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import api from "../../services/api"
 
-export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave, existingBudget = null }) {
+export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [categories, setCategories] = useState([])
-  const [projectData, setProjectData] = useState(null)
+  const [budgets, setBudgets] = useState({})
+  const [notes, setNotes] = useState('')
+  const [totalBudget, setTotalBudget] = useState(0)
 
-  // Form data
-  const [formData, setFormData] = useState({
-    presupuesto_total: '',
-    notas: '',
-    categories: []
-  })
-
-  // Presupuesto total: usa el del proyecto si existe, sino permite ingresarlo
-  const montoContratoProyecto = projectData?.monto_contrato_actual || 0
-  const presupuestoTotal = parseFloat(formData.presupuesto_total || montoContratoProyecto || 0)
-
-  // Total assigned to categories
-  const totalAsignado = formData.categories.reduce((sum, cat) => sum + parseFloat(cat.presupuesto_actual || 0), 0)
-  const diferencia = presupuestoTotal - totalAsignado
-
+  // Cargar categorías cuando el modal se abre
   useEffect(() => {
-    loadProjectData()
-    loadCategories()
-    if (existingBudget) {
-      loadExistingBudget()
+    if (isOpen) {
+      loadCategories()
     }
-  }, [existingBudget])
-
-  const loadProjectData = async () => {
-    try {
-      const response = await api.get(`/projects/${projectId}`)
-      if (response.data.success) {
-        setProjectData(response.data.project)
-      }
-    } catch (err) {
-      console.error('Error loading project data:', err)
-      setError('Error al cargar los datos del proyecto')
-    }
-  }
+  }, [isOpen])
 
   const loadCategories = async () => {
     try {
+      setLoading(true)
       const response = await api.get('/costs/categories')
+
       if (response.data.success) {
         setCategories(response.data.categories)
 
-        // Initialize categories array in form data
-        setFormData(prev => ({
-          ...prev,
-          categories: response.data.categories.map(cat => ({
-            category_id: cat.id,
-            nombre: cat.nombre,
-            codigo: cat.codigo,
-            presupuesto_inicial: '0',
-            presupuesto_actual: '0'
-          }))
-        }))
+        // Inicializar budgets en 0
+        const initialBudgets = {}
+        response.data.categories.forEach(cat => {
+          initialBudgets[cat.id] = '0'
+        })
+        setBudgets(initialBudgets)
       }
     } catch (err) {
       console.error('Error loading categories:', err)
-      setError('Error al cargar las categorías de gastos')
+      setError('Error al cargar las categorías')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const loadExistingBudget = async () => {
-    try {
-      const response = await api.get(`/costs/projects/${projectId}/budget`)
-      if (response.data.success && response.data.budget) {
-        setFormData({
-          presupuesto_total: '',
-          notas: response.data.budget.notas || '',
-          categories: response.data.categories.map(cat => ({
-            category_id: cat.category_id,
-            nombre: cat.categoria_nombre,
-            codigo: cat.categoria_codigo,
-            presupuesto_inicial: cat.presupuesto_inicial || '0',
-            presupuesto_actual: cat.presupuesto_actual || '0'
-          }))
-        })
-      }
-    } catch (err) {
-      console.error('Error loading existing budget:', err)
-    }
-  }
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+  const handleBudgetChange = (categoryId, value) => {
+    setBudgets(prev => ({
       ...prev,
-      [field]: value
+      [categoryId]: value
     }))
   }
 
-  const handleCategoryChange = (categoryId, value) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.map(cat =>
-        cat.category_id === categoryId
-          ? { ...cat, presupuesto_actual: value, presupuesto_inicial: value }
-          : cat
-      )
-    }))
-  }
+  // Calcular total asignado
+  const totalAssigned = Object.values(budgets).reduce((sum, val) => sum + (parseFloat(val) || 0), 0)
+  const difference = totalBudget - totalAssigned
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError(null)
 
-    // Validation
-    if (!presupuestoTotal || presupuestoTotal <= 0) {
-      setError('El proyecto debe tener un monto de contrato configurado')
+    if (totalBudget <= 0) {
+      setError('Debes ingresar un presupuesto total mayor a 0')
       return
     }
 
-    if (Math.abs(diferencia) > 0.01) {
-      setError(`El total asignado a categorías debe ser igual al presupuesto total. Diferencia: B/. ${diferencia.toFixed(2)}`)
+    if (Math.abs(difference) > 0.01) {
+      setError(`La suma de categorías debe igualar el presupuesto total. Diferencia: B/. ${difference.toFixed(2)}`)
       return
     }
 
     try {
       setLoading(true)
+      setError(null)
 
       const payload = {
-        monto_contrato_original: presupuestoTotal,
-        monto_contrato_actual: presupuestoTotal,
-        contingencia_porcentaje: 0,
-        notas: formData.notas,
-        categories: formData.categories.map(cat => ({
-          category_id: cat.category_id,
-          presupuesto_inicial: parseFloat(cat.presupuesto_inicial),
-          presupuesto_actual: parseFloat(cat.presupuesto_actual)
+        notas: notes,
+        categories: categories.map(cat => ({
+          category_id: cat.id,
+          presupuesto_inicial: parseFloat(budgets[cat.id] || 0),
+          presupuesto_actual: parseFloat(budgets[cat.id] || 0)
         }))
       }
 
@@ -164,7 +99,6 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave, e
   }
 
   const formatMoney = (amount) => {
-    if (!amount && amount !== 0) return 'B/. 0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'PAB',
@@ -187,96 +121,91 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave, e
           )}
 
           {/* Presupuesto Total */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Presupuesto del Proyecto</h3>
-
-            {montoContratoProyecto > 0 ? (
-              // Si el proyecto tiene monto de contrato, mostrarlo
-              <div className="bg-muted p-4 rounded-md">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Presupuesto Total (del contrato):</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatMoney(montoContratoProyecto)}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              // Si NO tiene monto de contrato, permitir ingresarlo
-              <div>
-                <Label htmlFor="presupuesto_total">Presupuesto Total *</Label>
-                <Input
-                  id="presupuesto_total"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.presupuesto_total}
-                  onChange={(e) => handleInputChange('presupuesto_total', e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Ingresa el presupuesto total para este proyecto
-                </p>
-              </div>
-            )}
+          <div>
+            <Label htmlFor="total_budget">Presupuesto Total *</Label>
+            <Input
+              id="total_budget"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={totalBudget}
+              onChange={(e) => setTotalBudget(parseFloat(e.target.value) || 0)}
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Ingresa el presupuesto total para este proyecto
+            </p>
           </div>
 
-          {/* Category Distribution */}
+          {/* Categorías */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Distribución por Categorías</h3>
             <p className="text-xs text-muted-foreground">
               Asigna el presupuesto entre las categorías de gastos
             </p>
 
-            <div className="space-y-3">
-              {formData.categories.map((category) => (
-                <div key={category.category_id} className="grid grid-cols-[1fr_2fr] gap-3 items-center">
-                  <Label htmlFor={`cat_${category.category_id}`} className="text-sm">
-                    {category.nombre} <span className="text-muted-foreground">({category.codigo})</span>
-                  </Label>
-                  <Input
-                    id={`cat_${category.category_id}`}
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={category.presupuesto_actual}
-                    onChange={(e) => handleCategoryChange(category.category_id, e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
+            {loading ? (
+              <div className="bg-muted p-8 rounded-md text-center">
+                <p className="text-sm text-muted-foreground">Cargando categorías...</p>
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="bg-muted p-8 rounded-md text-center">
+                <p className="text-sm text-muted-foreground">No hay categorías disponibles</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {categories.map((category) => (
+                  <div key={category.id} className="grid grid-cols-[1fr_2fr] gap-3 items-center">
+                    <Label htmlFor={`cat_${category.id}`} className="text-sm">
+                      {category.nombre} <span className="text-muted-foreground">({category.codigo})</span>
+                    </Label>
+                    <Input
+                      id={`cat_${category.id}`}
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={budgets[category.id] || '0'}
+                      onChange={(e) => handleBudgetChange(category.id, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Summary */}
-            <div className="bg-muted p-4 rounded-md space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Suma de Categorías:</span>
-                <span className="font-semibold">{formatMoney(totalAsignado)}</span>
+            {/* Resumen */}
+            {categories.length > 0 && (
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Suma de Categorías:</span>
+                  <span className="font-semibold">{formatMoney(totalAssigned)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>Presupuesto Total:</span>
+                  <span className="font-semibold">{formatMoney(totalBudget)}</span>
+                </div>
+                <div className={`flex items-center justify-between text-sm font-bold ${
+                  Math.abs(difference) < 0.01 ? 'text-green-600' : 'text-destructive'
+                }`}>
+                  <span>Falta Asignar:</span>
+                  <span>{formatMoney(difference)}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span>Presupuesto Total:</span>
-                <span className="font-semibold">{formatMoney(presupuestoTotal)}</span>
-              </div>
-              <div className={`flex items-center justify-between text-sm font-bold ${
-                Math.abs(diferencia) < 0.01 ? 'text-green-600' : 'text-destructive'
-              }`}>
-                <span>Falta Asignar:</span>
-                <span>{formatMoney(diferencia)}</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Notes */}
+          {/* Notas */}
           <div>
-            <Label htmlFor="notas">Notas (opcional)</Label>
+            <Label htmlFor="notes">Notas (opcional)</Label>
             <Textarea
-              id="notas"
+              id="notes"
               placeholder="Observaciones sobre el presupuesto..."
-              value={formData.notas}
-              onChange={(e) => handleInputChange('notas', e.target.value)}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               rows={3}
             />
           </div>
 
-          {/* Actions */}
+          {/* Botones */}
           <div className="flex gap-2 flex-col sm:flex-row justify-end">
             <Button
               type="button"
@@ -289,7 +218,7 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave, e
             </Button>
             <Button
               type="submit"
-              disabled={loading || Math.abs(diferencia) > 0.01}
+              disabled={loading || Math.abs(difference) > 0.01}
               className="w-full sm:w-auto"
             >
               {loading ? 'Guardando...' : 'Guardar Presupuesto'}

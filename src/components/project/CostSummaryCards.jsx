@@ -30,7 +30,8 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
     return 'bg-blue-500'
   }
 
-  const budgetTotal = budget?.presupuesto_aprobado || budget?.monto_contrato_actual || 0
+  // El presupuesto total viene de presupuesto_aprobado (suma de categorías o monto contrato)
+  const budgetTotal = budget?.presupuesto_aprobado || budget?.total_presupuestado || 0
   const spentAmount = spent || 0
   const availableAmount = available ?? (budgetTotal - spentAmount)
   const percentageUsed = percentage ?? (budgetTotal > 0 ? (spentAmount / budgetTotal) * 100 : 0)

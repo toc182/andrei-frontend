@@ -186,15 +186,13 @@ export default function ProjectCostos({ projectId }) {
       )}
 
       {/* Budget Config Modal */}
-      {showBudgetConfig && (
-        <BudgetConfigForm
-          projectId={projectId}
-          isOpen={showBudgetConfig}
-          onClose={() => setShowBudgetConfig(false)}
-          onSave={loadDashboard}
-          existingBudget={dashboard.budget}
-        />
-      )}
+      <BudgetConfigForm
+        projectId={projectId}
+        isOpen={showBudgetConfig}
+        onClose={() => setShowBudgetConfig(false)}
+        onSave={loadDashboard}
+        existingBudget={dashboard.budget}
+      />
     </div>
   )
 }
