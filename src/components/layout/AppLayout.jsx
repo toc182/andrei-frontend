@@ -46,7 +46,8 @@ import {
   ChevronRight,
   Menu,
   LogOut,
-  User
+  User,
+  ClipboardList
 } from "lucide-react"
 
 export function AppLayout({ children, currentView, onNavigate, pageTitle }) {
@@ -86,6 +87,12 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }) {
         { id: "licitaciones", label: "Licitaciones", view: "projects-licitaciones" },
         { id: "oportunidades", label: "Oportunidades", view: "projects-oportunidades" }
       ]
+    },
+    {
+      id: "requisiciones",
+      label: "Requisiciones",
+      icon: ClipboardList,
+      view: "requisiciones"
     },
     {
       id: "clientes",

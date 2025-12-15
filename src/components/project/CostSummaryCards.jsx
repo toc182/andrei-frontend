@@ -37,53 +37,56 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
   const percentageUsed = percentage ?? (budgetTotal > 0 ? (spentAmount / budgetTotal) * 100 : 0)
 
   return (
-    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-3">
-      {/* Total Budget Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Presupuesto Total</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatMoney(budgetTotal)}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Presupuesto aprobado
-          </p>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      <div className="flex flex-wrap gap-4">
+        {/* Total Budget Card */}
+        <Card className="flex-1 min-w-[200px]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Presupuesto Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(budgetTotal)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Presupuesto aprobado
+            </p>
+          </CardContent>
+        </Card>
 
-      {/* Total Spent Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Gastado</CardTitle>
-          <TrendingDown className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${getStatusColor(percentageUsed)}`}>
-            {formatMoney(spentAmount)}
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {percentageUsed.toFixed(1)}% del presupuesto
-          </p>
-        </CardContent>
-      </Card>
+        {/* Total Spent Card */}
+        <Card className="flex-1 min-w-[200px]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Gastado</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-xl font-bold whitespace-nowrap ${getStatusColor(percentageUsed)}`}>
+              {formatMoney(spentAmount)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {percentageUsed.toFixed(1)}% del presupuesto
+            </p>
+          </CardContent>
+        </Card>
 
-      {/* Available Balance Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Disponible</CardTitle>
-          <Wallet className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatMoney(availableAmount)}</div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {(100 - percentageUsed).toFixed(1)}% restante
-          </p>
-        </CardContent>
-      </Card>
+        {/* Available Balance Card */}
+        <Card className="flex-1 min-w-[200px]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Disponible</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground shrink-0" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(availableAmount)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {(100 - percentageUsed).toFixed(1)}% restante
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Progress Bar (spans all columns on desktop) */}
-      <Card className="md:col-span-3">
+      {/* Progress Bar */}
+      <Card>
         <CardContent className="pt-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">

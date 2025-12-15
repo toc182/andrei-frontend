@@ -18,6 +18,7 @@ import EquiposInformacionN from "./equipos/EquiposInformacionN"
 import EquiposStatusN from "./equipos/EquiposStatusN"
 import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
 import ProjectDetailLayout from "./project/ProjectDetailLayout"
+import RequisicionesGeneral from "./RequisicionesGeneral"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 
@@ -255,6 +256,9 @@ export default function DashboardNew() {
 
       case "clientes":
         return <ClientesN />
+
+      case "requisiciones":
+        return <RequisicionesGeneral />
 
       case "equipos":
       case "equipos-informacion":

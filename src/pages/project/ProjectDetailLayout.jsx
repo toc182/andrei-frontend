@@ -20,6 +20,8 @@ import ProjectSubMenu from "../../components/project/ProjectSubMenu"
 import ProjectSummary from "./ProjectSummary"
 import ProjectAdendas from "./ProjectAdendas"
 import ProjectCostos from "./ProjectCostos"
+import ProjectRequisiciones from "./ProjectRequisiciones"
+import ProjectMembers from "./ProjectMembers"
 import AdendaForm from "../../components/forms/AdendaForm"
 import api from "../../services/api"
 import { formatDate } from "../../utils/dateUtils"
@@ -93,11 +95,11 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
       const subviewTitles = {
         'resumen': 'Resumen',
         'costos': 'Control de Costos',
-        'compras': 'Compras y Materiales',
-        'avance': 'Avance Físico',
+        'requisiciones': 'Requisiciones',
+        'avance': 'Avance Fisico',
         'equipos': 'Equipos',
         'adendas': 'Adendas',
-        'configuracion': 'Configuración'
+        'configuracion': 'Miembros'
       }
 
       const subviewLabel = subviewTitles[subview] || 'Resumen'
@@ -168,13 +170,8 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
       case 'costos':
         return <ProjectCostos projectId={projectId} onNavigate={onNavigate} />
 
-      case 'compras':
-        return (
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg">Compras y Materiales</p>
-            <p className="text-sm mt-2">Esta funcionalidad se implementará en la Fase 3</p>
-          </div>
-        )
+      case 'requisiciones':
+        return <ProjectRequisiciones projectId={projectId} />
 
       case 'avance':
         return (
@@ -207,12 +204,7 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
         )
 
       case 'configuracion':
-        return (
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg">Configuración del Proyecto</p>
-            <p className="text-sm mt-2">Ajustes y opciones del proyecto</p>
-          </div>
-        )
+        return <ProjectMembers projectId={projectId} />
 
       default:
         return <ProjectSummary project={project} onNavigate={onNavigate} />
