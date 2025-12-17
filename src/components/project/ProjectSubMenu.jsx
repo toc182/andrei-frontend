@@ -13,6 +13,7 @@ import {
   Truck,
   FileText,
   Users,
+  BookOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -21,6 +22,7 @@ const MENU_ITEMS = [
   { key: 'costos', label: 'Costos', icon: DollarSign },
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
   { key: 'tareas', label: 'Tareas', icon: CheckSquare },
+  { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
   { key: 'avance', label: 'Avance', icon: TrendingUp },
   { key: 'equipos', label: 'Equipos', icon: Truck },
   { key: 'adendas', label: 'Adendas', icon: FileText },
