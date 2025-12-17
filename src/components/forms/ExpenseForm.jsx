@@ -41,10 +41,12 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
   })
   const [validationErrors, setValidationErrors] = useState({})
 
-  // Load categories on mount
+  // Load project categories when modal opens
   useEffect(() => {
-    loadCategories()
-  }, [])
+    if (isOpen && projectId) {
+      loadCategories()
+    }
+  }, [isOpen, projectId])
 
   // Populate form when editing
   useEffect(() => {
@@ -79,12 +81,17 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
 
   const loadCategories = async () => {
     try {
-      const response = await api.get('/costs/categories')
+      // Load project-specific categories (only the ones configured for this project)
+      const response = await api.get(`/costs/projects/${projectId}/categories`)
       if (response.data.success) {
-        setCategories(response.data.categories || [])
+        // Filter to only include categories with a global category_id
+        // (custom categories without category_id can't be used for expenses yet)
+        const validCategories = (response.data.categories || []).filter(cat => cat.category_id)
+        setCategories(validCategories)
       }
     } catch (err) {
       console.error('Error loading categories:', err)
+      setError('Error al cargar las categorías del proyecto')
     }
   }
 
@@ -179,7 +186,7 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
+                  <SelectItem key={category.id} value={category.category_id.toString()}>
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full"

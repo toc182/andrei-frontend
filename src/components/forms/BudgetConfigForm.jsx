@@ -139,8 +139,14 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave })
     // Remove from pending removals if it was there
     setPendingRemovals(prev => prev.filter(id => id !== category.id))
 
+    // Add to pending activations to be saved later
+    setPendingActivations(prev => [...prev, category.id])
+
     // Remove from available list
     setAvailableCategories(prev => prev.filter(c => c.id !== category.id))
+
+    // Add back to categories list so it shows up
+    setCategories(prev => [...prev, category])
 
     // Re-add budget entry
     setBudgets(prev => ({ ...prev, [category.id]: '' }))

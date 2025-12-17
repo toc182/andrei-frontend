@@ -57,8 +57,8 @@ export default function ExpensesByCategory({ categories }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
+              {categories.map((category, index) => (
+                <TableRow key={category.project_category_id || category.id || index}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div
@@ -100,8 +100,8 @@ export default function ExpensesByCategory({ categories }) {
 
         {/* Mobile Card View */}
         <div className="md:hidden space-y-3">
-          {categories.map((category) => (
-            <Card key={category.id}>
+          {categories.map((category, index) => (
+            <Card key={category.project_category_id || category.id || index}>
               <CardContent className="pt-4 space-y-3">
                 {/* Category Name with Color */}
                 <div className="flex items-center gap-2">

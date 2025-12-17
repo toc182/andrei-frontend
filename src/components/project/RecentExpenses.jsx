@@ -129,11 +129,11 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
                         variant="outline"
                         className="shrink-0"
                         style={{
-                          borderColor: expense.category_color,
-                          color: expense.category_color
+                          borderColor: expense.categoria_color,
+                          color: expense.categoria_color
                         }}
                       >
-                        {expense.category_nombre || 'Sin categoría'}
+                        {expense.categoria_nombre || 'Sin categoría'}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
                         {formatDate(expense.fecha)}
