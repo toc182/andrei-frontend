@@ -22,6 +22,7 @@ import ProjectAdendas from "./ProjectAdendas"
 import ProjectCostos from "./ProjectCostos"
 import ProjectRequisiciones from "./ProjectRequisiciones"
 import ProjectMembers from "./ProjectMembers"
+import ProjectTodos from "./ProjectTodos"
 import AdendaForm from "../../components/forms/AdendaForm"
 import api from "../../services/api"
 import { formatDate } from "../../utils/dateUtils"
@@ -96,6 +97,7 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
         'resumen': 'Resumen',
         'costos': 'Control de Costos',
         'requisiciones': 'Requisiciones',
+        'tareas': 'Tareas',
         'avance': 'Avance Fisico',
         'equipos': 'Equipos',
         'adendas': 'Adendas',
@@ -172,6 +174,9 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
 
       case 'requisiciones':
         return <ProjectRequisiciones projectId={projectId} />
+
+      case 'tareas':
+        return <ProjectTodos projectId={projectId} />
 
       case 'avance':
         return (
