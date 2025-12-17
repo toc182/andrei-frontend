@@ -11,7 +11,6 @@ import {
   CheckSquare,
   TrendingUp,
   Truck,
-  FileText,
   Users,
   BookOpen,
 } from "lucide-react"
@@ -25,8 +24,7 @@ const MENU_ITEMS = [
   { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
   { key: 'avance', label: 'Avance', icon: TrendingUp },
   { key: 'equipos', label: 'Equipos', icon: Truck },
-  { key: 'adendas', label: 'Adendas', icon: FileText },
-  { key: 'configuracion', label: 'Miembros', icon: Users },
+  { key: 'configuracion', label: 'Personal', icon: Users },
 ]
 
 export default function ProjectSubMenu({ projectId, currentSubview, onNavigate }) {

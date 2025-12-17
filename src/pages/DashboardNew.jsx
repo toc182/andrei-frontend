@@ -34,6 +34,13 @@ export default function DashboardNew() {
   const [error, setError] = useState(null)
   const [pageTitle, setPageTitle] = useState(null)
 
+  // Limpiar pageTitle cuando no estamos en un proyecto
+  useEffect(() => {
+    if (!currentView.startsWith('project-')) {
+      setPageTitle(null)
+    }
+  }, [currentView])
+
   // Cargar estadísticas del dashboard
   useEffect(() => {
     const fetchStats = async () => {

@@ -280,28 +280,28 @@ export default function ProjectRequisiciones({ projectId }) {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="flex flex-wrap gap-4">
+        <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-xl font-bold">{stats.total}</div>
             <div className="text-sm text-muted-foreground">Total Requisiciones</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-yellow-600">{stats.porAprobar}</div>
+            <div className="text-xl font-bold text-yellow-600">{stats.porAprobar}</div>
             <div className="text-sm text-muted-foreground">Por Aprobar</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold text-green-600">{stats.pagadas}</div>
+            <div className="text-xl font-bold text-green-600">{stats.pagadas}</div>
             <div className="text-sm text-muted-foreground">Pagadas</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{formatMoney(stats.montoPagado)}</div>
+            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(stats.montoPagado)}</div>
             <div className="text-sm text-muted-foreground">Total Pagado</div>
           </CardContent>
         </Card>

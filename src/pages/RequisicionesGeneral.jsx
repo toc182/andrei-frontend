@@ -330,37 +330,37 @@ export default function RequisicionesGeneral() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="flex flex-wrap gap-4">
+        <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Por Aprobar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.porAprobar}</div>
+            <div className="text-xl font-bold text-yellow-600">{stats.porAprobar}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Pagadas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.pagadas}</div>
+            <div className="text-xl font-bold text-green-600">{stats.pagadas}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Monto Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMoney(stats.montoTotal)}</div>
+            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(stats.montoTotal)}</div>
           </CardContent>
         </Card>
       </div>

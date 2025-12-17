@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { Info, ArrowLeft } from "lucide-react"
+import { Info, ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/dialog"
 import ProjectSubMenu from "../../components/project/ProjectSubMenu"
 import ProjectSummary from "./ProjectSummary"
-import ProjectAdendas from "./ProjectAdendas"
 import ProjectCostos from "./ProjectCostos"
 import ProjectRequisiciones from "./ProjectRequisiciones"
 import ProjectMembers from "./ProjectMembers"
@@ -102,8 +101,7 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
         'bitacora': 'Bitácora',
         'avance': 'Avance Fisico',
         'equipos': 'Equipos',
-        'adendas': 'Adendas',
-        'configuracion': 'Miembros'
+        'configuracion': 'Personal'
       }
 
       const subviewLabel = subviewTitles[subview] || 'Resumen'
@@ -197,20 +195,6 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
             <p className="text-lg">Equipos Asignados</p>
             <p className="text-sm mt-2">Vista filtrada de equipos del proyecto</p>
           </div>
-        )
-
-      case 'adendas':
-        return (
-          <ProjectAdendas
-            projectId={projectId}
-            adendas={projectAdendas}
-            onOpenForm={() => setShowAdendaForm(true)}
-            onEditAdenda={(adenda) => {
-              setEditingAdenda(adenda)
-              setShowAdendaForm(true)
-            }}
-            onDeleteAdenda={handleDeleteAdenda}
-          />
         )
 
       case 'configuracion':
@@ -422,10 +406,22 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
             )}
 
             {/* Adendas Section */}
-            {projectAdendas.length > 0 && (
-              <div className="space-y-4 mt-6 pt-6 border-t">
-                <h3 className="font-semibold text-base">Adendas del Proyecto</h3>
-                {projectAdendas.map(adenda => {
+            <div className="space-y-4 mt-6 pt-6 border-t">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-base">Adendas</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowInfoModal(false)
+                    setShowAdendaForm(true)
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Agregar
+                </Button>
+              </div>
+              {projectAdendas.map(adenda => {
                   // Helper functions for adenda display
                   const getAdendaStatusBadgeVariant = (estado) => {
                     const variants = {
@@ -455,13 +451,37 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
                   }
 
                   return (
-                    <div key={adenda.id} className="space-y-3 p-4 bg-muted/50 rounded-lg">
-                      <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                        <label className="font-medium text-sm text-muted-foreground">Adenda #{adenda.numero_adenda}:</label>
-                        <div>
+                    <div key={adenda.id} className="space-y-3 p-4 bg-card border rounded-lg">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <label className="font-medium text-sm">Adenda #{adenda.numero_adenda}</label>
                           <Badge variant={getAdendaStatusBadgeVariant(adenda.estado)}>
                             {getAdendaStatusText(adenda.estado)}
                           </Badge>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              setEditingAdenda(adenda)
+                              setShowInfoModal(false)
+                              setShowAdendaForm(true)
+                            }}
+                            title="Editar adenda"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteAdenda(adenda.id)}
+                            title="Eliminar adenda"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
 
@@ -518,8 +538,7 @@ export default function ProjectDetailLayout({ projectId, subview, onNavigate, on
                     </div>
                   )
                 })}
-              </div>
-            )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
