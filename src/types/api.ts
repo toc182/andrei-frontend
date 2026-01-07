@@ -63,14 +63,21 @@ export interface Project {
   codigo_proyecto?: string;
   cliente_id?: number;
   cliente_nombre?: string;
+  cliente_abreviatura?: string;
+  cliente_contacto?: string;
+  cliente_telefono?: string;
+  cliente_email?: string;
   estado: 'planificacion' | 'en_curso' | 'pausado' | 'completado' | 'cancelado';
   fecha_inicio?: string;
   fecha_fin_estimada?: string;
   presupuesto_base?: number;
   itbms?: number;
   monto_total?: number;
+  monto_contrato_original?: number;
   contrato?: string;
   acto_publico?: string;
+  contratista?: string;
+  ingeniero_residente?: string;
   es_consorcio?: boolean;
   consorcio_data?: {
     empresas: Array<{
@@ -211,23 +218,34 @@ export interface CostDashboard {
 export interface Requisicion {
   id: number;
   project_id: number;
-  numero_requisicion: string;
-  fecha_solicitud: string;
+  numero?: string;
+  numero_requisicion?: string;
+  fecha?: string;
+  fecha_solicitud?: string;
   fecha_necesidad?: string;
-  descripcion: string;
-  estado: 'pendiente' | 'aprobada' | 'rechazada' | 'completada' | 'cancelada';
-  prioridad: 'baja' | 'media' | 'alta' | 'urgente';
-  solicitante_id: number;
+  descripcion?: string;
+  concepto?: string;
+  proveedor?: string;
+  estado: 'pendiente' | 'en_cotizacion' | 'por_aprobar' | 'aprobada' | 'pagada' | 'rechazada' | 'completada' | 'cancelada';
+  prioridad?: 'baja' | 'media' | 'alta' | 'urgente';
+  solicitante_id?: number;
   aprobador_id?: number;
+  categoria_id?: number;
   monto_estimado?: number;
   monto_real?: number;
+  subtotal?: number;
+  itbms?: number;
+  monto_total?: number;
   observaciones?: string;
+  archivada?: boolean;
   created_at: string;
   updated_at: string;
   // Joined fields
   proyecto_nombre?: string;
   solicitante_nombre?: string;
   aprobador_nombre?: string;
+  categoria_nombre?: string;
+  categoria_color?: string;
   items_count?: number;
 }
 
@@ -240,6 +258,7 @@ export interface RequisicionItem {
   precio_unitario_estimado?: number;
   precio_unitario_real?: number;
   observaciones?: string;
+  aplica_itbms?: boolean;
 }
 
 // ============================================
@@ -389,4 +408,105 @@ export interface ExternalContact {
   activo: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================
+// OPORTUNIDADES
+// ============================================
+
+export interface Oportunidad {
+  id: number;
+  nombre_oportunidad: string;
+  cliente_potencial: string;
+  contacto_referido?: string;
+  valor_estimado?: number;
+  estado_oportunidad: 'prospecto' | 'calificada' | 'propuesta' | 'negociacion' | 'cerrada' | 'perdida';
+  fecha_identificacion?: string;
+  fecha_siguiente_seguimiento?: string;
+  probabilidad_cierre?: number;
+  tipo_trabajo?: string;
+  notas_comerciales?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// LICITACIONES
+// ============================================
+
+export interface Licitacion {
+  id: number;
+  numero_licitacion: string;
+  nombre: string;
+  entidad_licitante: string;
+  fecha_cierre: string;
+  presupuesto_referencial?: number;
+  estado_licitacion: 'activa' | 'presentada' | 'ganada' | 'perdida' | 'sin_interes' | 'cancelada';
+  fecha_publicacion?: string;
+  tipo_obra?: string;
+  plazo_ejecucion?: number;
+  observaciones?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// EQUIPOS (Extended)
+// ============================================
+
+export interface EquipoExtended {
+  id: number;
+  codigo?: string;
+  descripcion: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  motor?: string;
+  chasis?: string;
+  costo?: number;
+  valor_actual?: number;
+  rata_mes?: number;
+  observaciones?: string;
+  owner: 'Pinellas' | 'COCP';
+  estado?: 'en_operacion' | 'standby' | 'en_mantenimiento' | 'fuera_de_servicio';
+  proyecto?: string;
+  ubicacion?: string;
+  responsable?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AsignacionExtended {
+  id: number;
+  equipo_id: number;
+  cliente_id?: number;
+  proyecto_id: number;
+  responsable_id?: string;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  tipo_uso: 'propio' | 'alquiler';
+  tipo_cobro?: 'hora' | 'dia' | 'semana' | 'mes' | 'costo_fijo';
+  tarifa?: number;
+  incluye_operador?: boolean;
+  costo_operador?: number;
+  incluye_combustible?: boolean;
+  costo_combustible?: number;
+  ajuste_monto?: number;
+  motivo_ajuste?: string;
+  observaciones?: string;
+  // Joined fields
+  equipo_codigo?: string;
+  equipo_descripcion?: string;
+  cliente_nombre?: string;
+  proyecto_nombre?: string;
+}
+
+export interface RegistroUsoExtended {
+  id: number;
+  asignacion_id: number;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  cantidad?: number;
+  observaciones?: string;
+  created_at?: string;
 }
