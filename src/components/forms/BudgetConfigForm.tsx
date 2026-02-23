@@ -34,6 +34,19 @@ interface BudgetConfigFormProps {
   onSave?: () => Promise<void>;
 }
 
+const COLOR_PALETTE = [
+  '#e74c3c', '#3498db', '#f39c12', '#9b59b6',
+  '#1abc9c', '#34495e', '#e67e22', '#95a5a6',
+  '#27ae60', '#e91e63', '#00bcd4', '#8bc34a',
+  '#ff5722', '#607d8b', '#795548', '#673ab7',
+  '#009688', '#ff9800',
+]
+
+function getFirstUnusedColor(usedColors: string[]): string {
+  const used = new Set(usedColors.map(c => c.toLowerCase()))
+  return COLOR_PALETTE.find(c => !used.has(c.toLowerCase())) || COLOR_PALETTE[0]
+}
+
 export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }: BudgetConfigFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +58,7 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }:
 
   // State for new category form
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false)
-  const [newCategory, setNewCategory] = useState<NewCategory>({ nombre: '', codigo: '', color: '#808080' })
+  const [newCategory, setNewCategory] = useState<NewCategory>({ nombre: '', codigo: '', color: COLOR_PALETTE[0] })
 
   // Track pending changes (only applied on save)
   const [pendingRemovals, setPendingRemovals] = useState<number[]>([]) // IDs of categories to remove
@@ -196,7 +209,7 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }:
     setBudgets(prev => ({ ...prev, [tempId]: '' }))
 
     // Reset form
-    setNewCategory({ nombre: '', codigo: '', color: '#808080' })
+    setNewCategory({ nombre: '', codigo: '', color: COLOR_PALETTE[0] })
     setShowNewCategoryForm(false)
   }
 
@@ -356,7 +369,12 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }:
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  <DropdownMenuItem onClick={() => setShowNewCategoryForm(true)}>
+                  <DropdownMenuItem onClick={() => {
+                    const usedColors = visibleCategories.map(c => c.color).filter(Boolean)
+                    const suggested = getFirstUnusedColor(usedColors)
+                    setNewCategory({ nombre: '', codigo: '', color: suggested })
+                    setShowNewCategoryForm(true)
+                  }}>
                     <PlusCircle className="h-4 w-4 mr-2" />
                     Crear nueva categoría
                   </DropdownMenuItem>
@@ -388,22 +406,27 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }:
                       onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategory(prev => ({ ...prev, codigo: e.target.value.toUpperCase() }))}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="new_cat_color" className="text-xs">Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="new_cat_color"
-                        type="color"
-                        className="w-12 h-9 p-1"
-                        value={newCategory.color}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategory(prev => ({ ...prev, color: e.target.value }))}
+                </div>
+                <div>
+                  <Label className="text-xs">Color</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {COLOR_PALETTE.filter(color => {
+                      const usedColors = new Set(visibleCategories.map(c => c.color?.toLowerCase()).filter(Boolean))
+                      return !usedColors.has(color.toLowerCase())
+                    }).map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`w-7 h-7 rounded-full border-2 transition-all ${
+                          newCategory.color.toLowerCase() === color.toLowerCase()
+                            ? 'border-foreground scale-110'
+                            : 'border-transparent hover:border-muted-foreground/50'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => setNewCategory(prev => ({ ...prev, color }))}
+                        title={color}
                       />
-                      <Input
-                        value={newCategory.color}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategory(prev => ({ ...prev, color: e.target.value }))}
-                        className="flex-1"
-                      />
-                    </div>
+                    ))}
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -413,7 +436,7 @@ export default function BudgetConfigForm({ projectId, isOpen, onClose, onSave }:
                     size="sm"
                     onClick={() => {
                       setShowNewCategoryForm(false)
-                      setNewCategory({ nombre: '', codigo: '', color: '#808080' })
+                      setNewCategory({ nombre: '', codigo: '', color: COLOR_PALETTE[0] })
                     }}
                   >
                     Cancelar

@@ -29,7 +29,7 @@ export default function ProjectAdendas({
   onDeleteAdenda
 }: ProjectAdendasProps) {
   const { user } = useAuth()
-  const canManage = user?.rol === 'admin' || user?.rol === 'project_manager'
+  const canManage = !!user
 
   const getAdendaStatusBadgeVariant = (estado: string): string => {
     const variants: Record<string, string> = {

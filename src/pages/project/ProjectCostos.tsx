@@ -34,7 +34,7 @@ interface ApiError {
 
 export default function ProjectCostos({ projectId }: ProjectCostosProps) {
   const { user } = useAuth()
-  const canManage = user?.rol === 'admin' || user?.rol === 'project_manager'
+  const canManage = !!user
 
   const [dashboard, setDashboard] = useState<CostDashboard | null>(null)
   const [loading, setLoading] = useState<boolean>(true)

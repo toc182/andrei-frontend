@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Layout Principal de la Aplicación - Shadcn/ui + Tailwind
  *
@@ -52,7 +53,9 @@ import {
   Menu,
   LogOut,
   User,
-  ClipboardList
+  ClipboardList,
+  Banknote,
+  UserCog
 } from "lucide-react"
 
 interface SubMenuItem {
@@ -125,6 +128,12 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
       view: "requisiciones"
     },
     {
+      id: "solicitudes-pago",
+      label: "Solicitudes de Pago",
+      icon: Banknote,
+      view: "solicitudes-pago"
+    },
+    {
       id: "clientes",
       label: "Clientes",
       icon: Users,
@@ -154,7 +163,13 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
         { id: "doc-incapacidad", label: "No Incapacidad", view: "doc-no-incapacidad" },
         { id: "doc-integridad", label: "Pacto Integridad", view: "doc-pacto-integridad" }
       ]
-    }
+    },
+    ...(user?.rol === 'admin' ? [{
+      id: "usuarios",
+      label: "Usuarios",
+      icon: UserCog as LucideIcon,
+      view: "usuarios"
+    }] : [])
   ]
 
   const toggleSubmenu = (menuId: string) => {

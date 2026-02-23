@@ -47,8 +47,8 @@ const EquipoStatusForm = ({ equipo, onClose, onSuccess }: EquipoStatusFormProps)
 
             await api.put(`/equipos/${equipo.id}/status`, updateData);
 
-            onSuccess && onSuccess();
-            onClose && onClose();
+            if (onSuccess) { onSuccess(); }
+            if (onClose) { onClose(); }
         } catch (err: unknown) {
             console.error('Error al actualizar estado del equipo:', err);
             const apiError = err as { response?: { data?: { message?: string } } };

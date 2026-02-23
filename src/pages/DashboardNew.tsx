@@ -19,6 +19,8 @@ import EquiposStatusN from "./equipos/EquiposStatusN"
 import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
 import ProjectDetailLayout from "./project/ProjectDetailLayout"
 import RequisicionesGeneral from "./RequisicionesGeneral"
+import UsuariosPage from "./UsuariosPage"
+import SolicitudesPagoGeneral from "./SolicitudesPagoGeneral"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 
@@ -280,6 +282,9 @@ export default function DashboardNew() {
       case "requisiciones":
         return <RequisicionesGeneral />
 
+      case "solicitudes-pago":
+        return <SolicitudesPagoGeneral />
+
       case "equipos":
       case "equipos-informacion":
         return <EquiposInformacionN />
@@ -310,6 +315,9 @@ export default function DashboardNew() {
 
       case "doc-carta-compromiso-verde":
         return <DocumentFormN documentType="carta-compromiso-verde" />
+
+      case "usuarios":
+        return user?.rol === 'admin' ? <UsuariosPage /> : null
 
       default:
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />

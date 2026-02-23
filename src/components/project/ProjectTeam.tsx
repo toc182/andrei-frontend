@@ -28,9 +28,7 @@ export default function ProjectTeam({ project }: ProjectTeamProps) {
   const getRoleBadge = (role: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
       'admin': { variant: 'destructive', label: 'Administrador' },
-      'project_manager': { variant: 'default', label: 'Gerente de Proyecto' },
-      'supervisor': { variant: 'secondary', label: 'Supervisor' },
-      'operario': { variant: 'outline', label: 'Operario' }
+      'usuario': { variant: 'default', label: 'Usuario' }
     }
 
     const config = variants[role] || { variant: 'outline' as const, label: role }

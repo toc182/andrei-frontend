@@ -23,6 +23,7 @@ import ProjectRequisiciones from "./ProjectRequisiciones"
 import ProjectMembers from "./ProjectMembers"
 import ProjectTodos from "./ProjectTodos"
 import ProjectBitacora from "./ProjectBitacora"
+import ProjectSolicitudesPago from "./ProjectSolicitudesPago"
 import AdendaForm from "../../components/forms/AdendaForm"
 import api from "../../services/api"
 import { formatDate } from "../../utils/dateUtils"
@@ -110,6 +111,7 @@ export default function ProjectDetailLayout({
         'resumen': 'Resumen',
         'costos': 'Control de Costos',
         'requisiciones': 'Requisiciones',
+        'solicitudes-pago': 'Solicitudes de Pago',
         'tareas': 'Tareas',
         'bitacora': 'Bitácora',
         'avance': 'Avance Fisico',
@@ -187,6 +189,9 @@ export default function ProjectDetailLayout({
 
       case 'requisiciones':
         return <ProjectRequisiciones projectId={projectId} />
+
+      case 'solicitudes-pago':
+        return <ProjectSolicitudesPago projectId={projectId} />
 
       case 'tareas':
         return <ProjectTodos projectId={projectId} />

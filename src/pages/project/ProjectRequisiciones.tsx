@@ -149,7 +149,7 @@ const estadoLabels: Record<EstadoRequisicion, string> = {
 
 export default function ProjectRequisiciones({ projectId }: ProjectRequisicionesProps) {
   const { user } = useAuth()
-  const canManage = user?.rol === 'admin' || user?.rol === 'project_manager'
+  const canManage = !!user
 
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([])
   const [loading, setLoading] = useState(true)

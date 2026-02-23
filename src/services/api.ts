@@ -61,7 +61,7 @@ export const authAPI = {
         nombre: string,
         email: string,
         password: string,
-        rol: User['rol'] = 'field_user'
+        rol: User['rol'] = 'usuario'
     ): Promise<RegisterResponse> => {
         const response = await api.post<RegisterResponse>('/auth/register', {
             nombre,

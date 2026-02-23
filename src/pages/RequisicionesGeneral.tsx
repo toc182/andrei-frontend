@@ -222,19 +222,15 @@ export default function RequisicionesGeneral() {
   }
 
   const handleSaveRequisicion = async (data: Record<string, unknown>) => {
-    try {
-      if (editingRequisicion) {
-        await api.put(`/requisiciones/${editingRequisicion.id}`, data)
-      } else {
-        await api.post('/requisiciones', data)
-      }
-      setShowForm(false)
-      setEditingRequisicion(null)
-      setSelectedProjectId(null)
-      loadData()
-    } catch (err) {
-      throw err
+    if (editingRequisicion) {
+      await api.put(`/requisiciones/${editingRequisicion.id}`, data)
+    } else {
+      await api.post('/requisiciones', data)
     }
+    setShowForm(false)
+    setEditingRequisicion(null)
+    setSelectedProjectId(null)
+    loadData()
   }
 
   const handleEditRequisicion = async (requisicion: Requisicion) => {

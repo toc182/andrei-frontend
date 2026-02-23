@@ -45,7 +45,14 @@ interface Pagination {
     totalPages?: number;
 }
 
-const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }) => {
+const tabConfig: Record<string, { tipoOrigen: string; labelNuevo: string; labelVacio: string }> = {
+    proyectos: { tipoOrigen: 'directo', labelNuevo: 'Nuevo Proyecto', labelVacio: '{config.labelVacio}' },
+    licitaciones: { tipoOrigen: 'licitacion', labelNuevo: 'Nueva Licitación', labelVacio: 'No hay licitaciones disponibles' },
+    oportunidades: { tipoOrigen: 'oportunidad', labelNuevo: 'Nueva Oportunidad', labelVacio: 'No hay oportunidades disponibles' },
+};
+
+const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', onStatsUpdate, onNavigate }) => {
+    const config = tabConfig[activeTab] || tabConfig.proyectos;
     const { user } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,7 +69,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
     const loadProjects = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/projects');
+            const response = await api.get('/projects', { params: { tipo_origen: config.tipoOrigen } });
 
             if (response.data.success) {
                 setProjects(response.data.proyectos);
@@ -79,10 +86,10 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
         }
     };
 
-    // Cargar proyectos al montar
+    // Cargar proyectos al montar o cambiar de tab
     useEffect(() => {
         loadProjects();
-    }, []);
+    }, [activeTab]);
 
     // Manejar guardado de proyecto
     const handleProjectSave = () => {
@@ -272,11 +279,11 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
     return (
         <div className="space-y-6">
             {/* Botón de acción */}
-            {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+            {(!!user) && (
                 <div className="flex justify-end">
                     <Button onClick={() => setShowCreateForm(true)}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Nuevo Proyecto
+                        {config.labelNuevo}
                     </Button>
                 </div>
             )}
@@ -476,7 +483,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                                                 <Badge variant={getAdendaStatusBadgeVariant(adenda.estado)}>
                                                     {getAdendaStatusText(adenda.estado)}
                                                 </Badge>
-                                                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                                {(!!user) && (
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => {
@@ -555,7 +562,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                 )}
 
                 {/* Footer con botón de agregar adenda */}
-                {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                {(!!user) && (
                     <DialogFooter>
                         <Button onClick={() => setShowAdendaForm(true)}>
                             <Plus className="mr-2 h-4 w-4" />
@@ -583,7 +590,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                 {projects.length === 0 ? (
                     <Card>
                         <CardContent className="pt-6 text-center text-muted-foreground">
-                            No hay proyectos disponibles
+                            {config.labelVacio}
                         </CardContent>
                     </Card>
                 ) : (
@@ -598,7 +605,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                                     <CardTitle className="text-base leading-tight">
                                         {project.nombre_corto}
                                     </CardTitle>
-                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                    {(!!user) && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -646,7 +653,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                             <TableHead>Cliente</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
-                            {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                            {(!!user) && (
                                 <TableHead className="w-[50px]"></TableHead>
                             )}
                         </TableRow>
@@ -655,7 +662,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                         {projects.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                    No hay proyectos disponibles
+                                    {config.labelVacio}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -675,7 +682,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ onStatsUpdate, onNavigate }
                                     <TableCell className="text-right">
                                         {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
                                     </TableCell>
-                                    {(user?.rol === 'admin' || user?.rol === 'project_manager') && (
+                                    {(!!user) && (
                                         <TableCell>
                                             <Button
                                                 variant="ghost"

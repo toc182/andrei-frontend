@@ -13,6 +13,7 @@ import {
   Truck,
   Users,
   BookOpen,
+  Banknote,
   LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'resumen', label: 'Resumen', icon: LayoutDashboard },
   { key: 'costos', label: 'Costos', icon: DollarSign },
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
+  { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
   { key: 'tareas', label: 'Tareas', icon: CheckSquare },
   { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
   { key: 'avance', label: 'Avance', icon: TrendingUp },

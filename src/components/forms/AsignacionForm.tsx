@@ -139,7 +139,7 @@ const AsignacionForm = ({ asignacion = null, onClose, onSuccess }: AsignacionFor
             }
 
             if (response.data.success) {
-                onSuccess && onSuccess();
+                if (onSuccess) { onSuccess(); }
                 onClose();
             } else {
                 setError(response.data.message || 'Error al guardar la asignación');
@@ -164,7 +164,7 @@ const AsignacionForm = ({ asignacion = null, onClose, onSuccess }: AsignacionFor
                 const response = await api.delete(`/asignaciones/${asignacion.id}`);
 
                 if (response.data.success) {
-                    onSuccess && onSuccess();
+                    if (onSuccess) { onSuccess(); }
                     onClose();
                 } else {
                     setError('Error al eliminar la asignación');

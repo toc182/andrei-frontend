@@ -177,7 +177,7 @@ const OportunidadForm = ({
             }
 
             if (response.data.success) {
-                onSave && onSave(response.data.oportunidad);
+                if (onSave) { onSave(response.data.oportunidad); }
                 onClose();
             } else {
                 setError(response.data.message || 'Error al guardar la oportunidad');

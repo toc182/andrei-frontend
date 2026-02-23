@@ -310,7 +310,7 @@ const ProjectFormNew = ({
             }
 
             if (response.data.success) {
-                onSave && onSave(response.data.proyecto);
+                if (onSave) { onSave(response.data.proyecto); }
                 form.reset();
                 onClose();
             } else {

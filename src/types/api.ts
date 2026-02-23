@@ -39,7 +39,7 @@ export interface User {
   id: number;
   email: string;
   nombre: string;
-  rol: 'admin' | 'project_manager' | 'field_user' | 'viewer';
+  rol: 'admin' | 'usuario';
   activo: boolean;
   created_at: string;
   updated_at: string;

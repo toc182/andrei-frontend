@@ -100,8 +100,8 @@ const EquipoForm = ({ equipo = null, onClose, onSuccess }: EquipoFormProps) => {
                 await api.post('/equipos', equipoData);
             }
 
-            onSuccess && onSuccess();
-            onClose && onClose();
+            if (onSuccess) { onSuccess(); }
+            if (onClose) { onClose(); }
         } catch (err: unknown) {
             console.error('Error al guardar equipo:', err);
             const apiError = err as { response?: { data?: { message?: string } } };
@@ -116,8 +116,8 @@ const EquipoForm = ({ equipo = null, onClose, onSuccess }: EquipoFormProps) => {
             try {
                 setLoading(true);
                 await api.delete(`/equipos/${equipo!.id}`);
-                onSuccess && onSuccess();
-                onClose && onClose();
+                if (onSuccess) { onSuccess(); }
+                if (onClose) { onClose(); }
             } catch (err) {
                 console.error('Error deleting equipo:', err);
                 setError('Error al eliminar el equipo');

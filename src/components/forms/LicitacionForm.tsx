@@ -182,7 +182,7 @@ const LicitacionForm = ({
             }
 
             if (response.data.success) {
-                onSave && onSave(response.data.licitacion);
+                if (onSave) { onSave(response.data.licitacion); }
                 onClose();
             } else {
                 setError(response.data.message || 'Error al guardar la licitación');

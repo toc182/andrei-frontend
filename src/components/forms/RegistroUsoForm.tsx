@@ -110,7 +110,7 @@ const RegistroUsoForm = ({ asignacion, onClose, onSuccess }: RegistroUsoFormProp
                     cantidad: '',
                     observaciones: ''
                 });
-                onSuccess && onSuccess();
+                if (onSuccess) { onSuccess(); }
             } else {
                 setError(response.data.message || 'Error al guardar el registro');
             }
