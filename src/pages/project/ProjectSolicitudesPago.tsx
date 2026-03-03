@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef, ReactNode } from "react"
 import { useAuth } from "../../context/AuthContext"
-import { Plus, Check, X, Clock, Pencil, Banknote, Send, CreditCard, AlertCircle, Paperclip, FileText, Trash2, Download } from "lucide-react"
+import { Plus, Check, X, Clock, Pencil, Settings, Banknote, Send, CreditCard, AlertCircle, Paperclip, FileText, Trash2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -128,6 +128,7 @@ interface BadgeConfig {
 
 interface ProjectSolicitudesPagoProps {
   projectId: number
+  onNavigate?: (view: string) => void
 }
 
 // --- Helpers ---
@@ -158,7 +159,7 @@ const getEstadoBadge = (estado: string): ReactNode => {
   )
 }
 
-export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudesPagoProps) {
+export default function ProjectSolicitudesPago({ projectId, onNavigate }: ProjectSolicitudesPagoProps) {
   const { user } = useAuth()
   const canManage = !!user
 
@@ -539,8 +540,15 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
         {canManage && hasApprovers === false && (
           <Alert className="flex-1 sm:flex-none">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Configure aprobadores en la seccion de Miembros
+            <AlertDescription className="text-xs flex items-center gap-2">
+              Para crear solicitudes de pago, primero configure los aprobadores del proyecto.
+              <Button
+                variant="link"
+                className="h-auto p-0 text-xs"
+                onClick={() => onNavigate?.(`project-${projectId}-miembros`)}
+              >
+                Ir a Miembros
+              </Button>
             </AlertDescription>
           </Alert>
         )}

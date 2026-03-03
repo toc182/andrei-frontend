@@ -195,7 +195,7 @@ export default function ProjectDetailLayout({
         return <ProjectRequisiciones projectId={projectId} />
 
       case 'solicitudes-pago':
-        return <ProjectSolicitudesPago projectId={projectId} />
+        return <ProjectSolicitudesPago projectId={projectId} onNavigate={onNavigate} />
 
       case 'tareas':
         return <ProjectTodos projectId={projectId} />
