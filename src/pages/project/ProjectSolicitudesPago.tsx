@@ -4,11 +4,12 @@
  * Features: Prefix config, list with filters, create/edit/detail modals, state changes
  */
 
-import { useState, useEffect, ReactNode } from "react"
+import { useState, useEffect, useRef, ReactNode } from "react"
 import { useAuth } from "../../context/AuthContext"
-import { Plus, Check, X, Clock, Settings, Banknote, Send, CreditCard } from "lucide-react"
+import { Plus, Check, X, Clock, Pencil, Banknote, Send, CreditCard, AlertCircle, Paperclip, FileText, Trash2, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -63,6 +64,7 @@ interface SolicitudPago {
   banco: string | null
   tipo_cuenta: string | null
   numero_cuenta: string | null
+  urgente?: boolean
   preparado_nombre?: string
   solicitado_nombre?: string
   requisicion_numero?: string
@@ -88,6 +90,36 @@ interface SolicitudAjuste {
   monto: number
 }
 
+interface Aprobacion {
+  id: number
+  solicitud_pago_id: number
+  user_id: number
+  orden: number
+  accion: 'aprobado' | 'rechazado'
+  comentario: string | null
+  fecha: string
+  usuario_nombre: string
+}
+
+interface AprobadorProyecto {
+  user_id: number
+  orden: number
+  nombre: string
+  email: string
+}
+
+interface Adjunto {
+  id: number
+  solicitud_pago_id: number
+  nombre_original: string
+  r2_key: string
+  tipo_mime: string
+  tamano: number
+  subido_por: number
+  subido_por_nombre: string
+  created_at: string
+}
+
 interface BadgeConfig {
   variant: 'secondary' | 'outline' | 'default' | 'destructive'
   label: string
@@ -104,22 +136,6 @@ const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
-const TRANSICIONES: Record<string, string[]> = {
-  'borrador': ['pendiente', 'rechazada'],
-  'pendiente': ['aprobada', 'rechazada'],
-  'aprobada': ['pagada', 'rechazada'],
-  'rechazada': ['borrador'],
-  'pagada': []
-}
-
-const estadoLabels: Record<string, string> = {
-  'borrador': 'Borrador',
-  'pendiente': 'Pendiente',
-  'aprobada': 'Aprobada',
-  'rechazada': 'Rechazada',
-  'pagada': 'Pagada'
 }
 
 const getEstadoBadge = (estado: string): ReactNode => {
@@ -171,11 +187,27 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
   const [detailItems, setDetailItems] = useState<SolicitudItem[]>([])
   const [detailAjustes, setDetailAjustes] = useState<SolicitudAjuste[]>([])
 
-  // Estado change
-  const [showEstadoModal, setShowEstadoModal] = useState(false)
-  const [estadoTarget, setEstadoTarget] = useState<SolicitudPago | null>(null)
-  const [nuevoEstado, setNuevoEstado] = useState('')
-  const [changingEstado, setChangingEstado] = useState(false)
+  // Approval data
+  const [detailAprobaciones, setDetailAprobaciones] = useState<Aprobacion[]>([])
+  const [detailAprobadores, setDetailAprobadores] = useState<AprobadorProyecto[]>([])
+  const [hasApprovers, setHasApprovers] = useState<boolean | null>(null)
+
+  // Adjuntos
+  const [detailAdjuntos, setDetailAdjuntos] = useState<Adjunto[]>([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const adjuntoInputRef = useRef<HTMLInputElement>(null)
+
+  // Approve/Reject
+  const [approvingId, setApprovingId] = useState<number | null>(null)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectComment, setRejectComment] = useState('')
+  const [rejectingId, setRejectingId] = useState<number | null>(null)
+
+  // Marking as paid
+  const [markingPaid, setMarkingPaid] = useState(false)
+
+  // Resubmit (rechazada -> pendiente)
+  const [resubmitting, setResubmitting] = useState(false)
 
   // Delete confirmation
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -184,7 +216,19 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
 
   useEffect(() => {
     loadSolicitudes()
+    checkApprovers()
   }, [projectId, filterEstado])
+
+  const checkApprovers = async () => {
+    try {
+      const response = await api.get(`/approval-settings/project/${projectId}`)
+      if (response.data.success) {
+        setHasApprovers(response.data.approvers.length > 0)
+      }
+    } catch {
+      setHasApprovers(false)
+    }
+  }
 
   const loadSolicitudes = async () => {
     try {
@@ -227,6 +271,9 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
         setDetailSolicitud(response.data.solicitud)
         setDetailItems(response.data.items || [])
         setDetailAjustes(response.data.ajustes || [])
+        setDetailAdjuntos(response.data.adjuntos || [])
+        setDetailAprobaciones(response.data.aprobaciones || [])
+        setDetailAprobadores(response.data.aprobadores_proyecto || [])
         setShowDetail(true)
       }
     } catch (err) {
@@ -250,21 +297,116 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
     }
   }
 
-  const handleChangeEstado = async () => {
-    if (!nuevoEstado || !estadoTarget) return
+  const handleAprobar = async (solicitudId: number) => {
     try {
-      setChangingEstado(true)
-      await api.patch(`/solicitudes-pago/${estadoTarget.id}/estado`, { estado: nuevoEstado })
-      setShowEstadoModal(false)
+      setApprovingId(solicitudId)
+      await api.post(`/solicitudes-pago/${solicitudId}/aprobar`)
       setShowDetail(false)
       await loadSolicitudes()
     } catch (err) {
-      console.error('Error changing estado:', err)
+      console.error('Error approving:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al cambiar el estado')
+      alert(apiError.response?.data?.message || 'Error al aprobar')
     } finally {
-      setChangingEstado(false)
+      setApprovingId(null)
     }
+  }
+
+  const handleRechazar = async () => {
+    if (!rejectingId || !rejectComment.trim()) return
+    try {
+      await api.post(`/solicitudes-pago/${rejectingId}/rechazar`, { comentario: rejectComment })
+      setShowRejectModal(false)
+      setRejectComment('')
+      setRejectingId(null)
+      setShowDetail(false)
+      await loadSolicitudes()
+    } catch (err) {
+      console.error('Error rejecting:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al rechazar')
+    }
+  }
+
+  const handleMarcarPagada = async (solicitudId: number) => {
+    try {
+      setMarkingPaid(true)
+      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pagada' })
+      setShowDetail(false)
+      await loadSolicitudes()
+    } catch (err) {
+      console.error('Error marking as paid:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al marcar como pagada')
+    } finally {
+      setMarkingPaid(false)
+    }
+  }
+
+  const handleReenviar = async (solicitudId: number) => {
+    try {
+      setResubmitting(true)
+      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pendiente' })
+      setShowDetail(false)
+      await loadSolicitudes()
+    } catch (err) {
+      console.error('Error resubmitting:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al reenviar')
+    } finally {
+      setResubmitting(false)
+    }
+  }
+
+  const handleUploadAdjuntos = async (files: FileList) => {
+    if (!detailSolicitud || files.length === 0) return
+    try {
+      setUploadingFiles(true)
+      const formData = new FormData()
+      for (let i = 0; i < files.length; i++) {
+        formData.append('archivos', files[i])
+      }
+      const response = await api.post(`/solicitudes-pago/${detailSolicitud.id}/adjuntos`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      if (response.data.success) {
+        setDetailAdjuntos(prev => [...response.data.adjuntos, ...prev])
+      }
+    } catch (err) {
+      console.error('Error uploading:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al subir archivos')
+    } finally {
+      setUploadingFiles(false)
+      if (adjuntoInputRef.current) adjuntoInputRef.current.value = ''
+    }
+  }
+
+  const handleDownloadAdjunto = async (adjuntoId: number) => {
+    try {
+      const response = await api.get(`/solicitudes-pago/adjuntos/${adjuntoId}/download`)
+      if (response.data.success) {
+        window.open(response.data.url, '_blank')
+      }
+    } catch (err) {
+      console.error('Error downloading:', err)
+      alert('Error al descargar el archivo')
+    }
+  }
+
+  const handleDeleteAdjunto = async (adjuntoId: number) => {
+    try {
+      await api.delete(`/solicitudes-pago/adjuntos/${adjuntoId}`)
+      setDetailAdjuntos(prev => prev.filter(a => a.id !== adjuntoId))
+    } catch (err) {
+      console.error('Error deleting adjunto:', err)
+      alert('Error al eliminar el adjunto')
+    }
+  }
+
+  const handleDownloadPDF = (solicitudId: number) => {
+    const token = localStorage.getItem('token')
+    window.open(`${api.defaults.baseURL}/solicitudes-pago/${solicitudId}/pdf?token=${token}`, '_blank')
   }
 
   const handleDelete = async () => {
@@ -394,7 +536,15 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
           <span className="text-xs text-muted-foreground">Prefijo: {spPrefijo}</span>
         </div>
 
-        {canManage && (
+        {canManage && hasApprovers === false && (
+          <Alert className="flex-1 sm:flex-none">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Configure aprobadores en la seccion de Miembros
+            </AlertDescription>
+          </Alert>
+        )}
+        {canManage && hasApprovers && (
           <Button onClick={() => { setEditingSolicitud(null); setEditingItems([]); setEditingAjustes([]); setShowForm(true) }}>
             <Plus className="mr-2 h-4 w-4" />
             Nueva Solicitud
@@ -420,7 +570,7 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
               <CardContent className="pt-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <div className="font-semibold">{sol.numero}</div>
+                    <div className="font-semibold">{sol.numero}{sol.urgente && <span className="text-red-600 font-bold ml-1">!</span>}</div>
                     <div className="text-sm text-muted-foreground">{sol.proveedor}</div>
                   </div>
                   {getEstadoBadge(sol.estado)}
@@ -441,6 +591,7 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
               <TableHeader>
                 <TableRow>
                   <TableHead>Numero</TableHead>
+                  <TableHead className="w-6 px-0"></TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Proveedor</TableHead>
                   <TableHead className="text-right">Monto Total</TableHead>
@@ -450,7 +601,7 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
               <TableBody>
                 {solicitudes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No hay solicitudes de pago
                     </TableCell>
                   </TableRow>
@@ -462,6 +613,7 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
                       onClick={() => openDetail(sol)}
                     >
                       <TableCell className="font-medium">{sol.numero}</TableCell>
+                      <TableCell className="px-0 text-center">{sol.urgente && <span className="text-red-600 font-bold">!</span>}</TableCell>
                       <TableCell>{formatDate(sol.fecha)}</TableCell>
                       <TableCell>{sol.proveedor}</TableCell>
                       <TableCell className="text-right font-medium">{formatMoney(sol.monto_total)}</TableCell>
@@ -492,7 +644,18 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Detalle de Solicitud
-              {canManage && detailSolicitud && ['borrador', 'pendiente'].includes(detailSolicitud.estado) && (
+              {detailSolicitud && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
+                  onClick={() => handleDownloadPDF(detailSolicitud.id)}
+                  title="Descargar PDF"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              )}
+              {canManage && detailSolicitud && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -500,13 +663,18 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
                   onClick={() => openEditForm(detailSolicitud)}
                   title="Editar solicitud"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Pencil className="h-4 w-4" />
                 </Button>
               )}
             </DialogTitle>
             <DialogDescription>
               {detailSolicitud && (
-                <><strong>{detailSolicitud.numero}</strong> - {detailSolicitud.proveedor}</>
+                <>
+                  <strong>{detailSolicitud.numero}</strong>
+                  {detailSolicitud.urgente && (
+                    <Badge variant="destructive" className="ml-2 text-xs">Urgente</Badge>
+                  )}
+                </>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -514,24 +682,30 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
           {detailSolicitud && (
             <div className="space-y-4 py-4">
               {/* Basic info */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-3">
                 <div>
-                  <div className="text-sm text-muted-foreground">Fecha</div>
+                  <div className="text-muted-foreground">Fecha</div>
                   <div className="font-medium">{formatDate(detailSolicitud.fecha)}</div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Preparado por</div>
-                  <div className="font-medium">{detailSolicitud.preparado_nombre || '-'}</div>
-                </div>
-                {detailSolicitud.solicitado_nombre && (
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-sm text-muted-foreground">Solicitado por</div>
-                    <div className="font-medium">{detailSolicitud.solicitado_nombre}</div>
+                    <div className="text-muted-foreground">Preparado por</div>
+                    <div className="font-medium">{detailSolicitud.preparado_nombre || '-'}</div>
                   </div>
-                )}
+                  {detailSolicitud.solicitado_nombre && (
+                    <div>
+                      <div className="text-muted-foreground">Solicitado por</div>
+                      <div className="font-medium">{detailSolicitud.solicitado_nombre}</div>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Proveedor</div>
+                  <div className="font-medium">{detailSolicitud.proveedor}</div>
+                </div>
                 {detailSolicitud.requisicion_numero && (
                   <div>
-                    <div className="text-sm text-muted-foreground">Requisicion</div>
+                    <div className="text-muted-foreground">Requisicion</div>
                     <div className="font-medium">{detailSolicitud.requisicion_numero}</div>
                   </div>
                 )}
@@ -544,13 +718,12 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
                 </div>
               )}
 
-              {/* Items */}
-              {detailItems.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Items ({detailItems.length})</h4>
-                  <div className="space-y-2">
+              {/* Items + Totals */}
+              <div className="border rounded-lg overflow-hidden">
+                {detailItems.length > 0 && (
+                  <div className="divide-y">
                     {detailItems.map((item) => (
-                      <div key={item.id} className="p-3 border rounded-lg text-sm">
+                      <div key={item.id} className="p-3 text-sm">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="font-medium">{item.descripcion}</div>
@@ -566,53 +739,24 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Ajustes */}
-              {detailAjustes.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Ajustes</h4>
-                  <div className="space-y-1">
-                    {detailAjustes.map((ajuste) => (
-                      <div key={ajuste.id} className="flex justify-between items-center text-sm p-2 border rounded">
-                        <div>
-                          <Badge variant={ajuste.tipo === 'impuesto' ? 'outline' : 'secondary'} className="mr-2 text-xs">
-                            {ajuste.tipo === 'impuesto' ? 'Imp' : 'Desc'}
-                          </Badge>
-                          {ajuste.descripcion}
-                          {ajuste.porcentaje && <span className="text-muted-foreground ml-1">({ajuste.porcentaje}%)</span>}
-                        </div>
-                        <span className={`font-medium ${ajuste.tipo === 'descuento' ? 'text-red-600' : ''}`}>
-                          {ajuste.tipo === 'descuento' ? '-' : '+'}{formatMoney(ajuste.monto)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Totals */}
-              <div className="border-t pt-3 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span>{formatMoney(detailSolicitud.subtotal)}</span>
-                </div>
-                {parseFloat(String(detailSolicitud.descuentos)) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Descuentos:</span>
-                    <span className="text-red-600">-{formatMoney(detailSolicitud.descuentos)}</span>
-                  </div>
                 )}
-                {parseFloat(String(detailSolicitud.impuestos)) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Impuestos:</span>
-                    <span>+{formatMoney(detailSolicitud.impuestos)}</span>
+                <div className="p-4 space-y-2 text-sm border-t">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span>{formatMoney(detailSolicitud.subtotal)}</span>
                   </div>
-                )}
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>TOTAL:</span>
-                  <span>{formatMoney(detailSolicitud.monto_total)}</span>
+                  {detailAjustes.map((ajuste) => (
+                    <div key={ajuste.id} className="flex justify-between">
+                      <span className="text-muted-foreground">{ajuste.descripcion}:</span>
+                      <span className={ajuste.tipo === 'descuento' ? 'text-red-600' : ''}>
+                        {ajuste.tipo === 'descuento' ? '-' : '+'}{formatMoney(ajuste.monto)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
+                    <span>TOTAL:</span>
+                    <span>{formatMoney(detailSolicitud.monto_total)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -651,29 +795,174 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
                 </div>
               )}
 
-              {/* Estado section */}
-              <div className="space-y-3">
-                <h4 className="font-medium">Estado</h4>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>{getEstadoBadge(detailSolicitud.estado)}</div>
-                  {canManage && (TRANSICIONES[detailSolicitud.estado] || []).length > 0 && (
+              {/* Adjuntos */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Paperclip className="h-4 w-4" /> Adjuntos
+                  </h4>
+                  <div>
+                    <input
+                      ref={adjuntoInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => e.target.files && handleUploadAdjuntos(e.target.files)}
+                    />
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setEstadoTarget(detailSolicitud)
-                        setNuevoEstado('')
-                        setShowEstadoModal(true)
-                      }}
+                      onClick={() => adjuntoInputRef.current?.click()}
+                      disabled={uploadingFiles}
                     >
-                      Cambiar Estado
+                      <Plus className="h-3 w-3 mr-1" />
+                      {uploadingFiles ? 'Subiendo...' : 'Adjuntar'}
                     </Button>
+                  </div>
+                </div>
+                {detailAdjuntos.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin adjuntos</p>
+                ) : (
+                  <div className="space-y-1">
+                    {detailAdjuntos.map((adj) => (
+                      <div key={adj.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                        <div
+                          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:text-primary"
+                          onClick={() => handleDownloadAdjunto(adj.id)}
+                        >
+                          <FileText className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{adj.nombre_original}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {(adj.tamano / 1024).toFixed(0)} KB
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteAdjunto(adj.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Approval section */}
+              <div className="space-y-3">
+                <h4 className="font-medium">Estado y Aprobaciones</h4>
+                <div className="p-4 border rounded-lg space-y-3">
+                  <div>{getEstadoBadge(detailSolicitud.estado)}</div>
+
+                  {/* Show approval progress */}
+                  {detailAprobadores.length > 0 && (
+                    <div className="space-y-2">
+                      {detailAprobadores.map((aprobador) => {
+                        const aprobacion = detailAprobaciones.find(a => a.user_id === aprobador.user_id)
+                        return (
+                          <div key={aprobador.user_id} className="flex items-center gap-2 text-sm">
+                            {aprobacion ? (
+                              aprobacion.accion === 'aprobado' ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <X className="h-4 w-4 text-red-600" />
+                              )
+                            ) : (
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="font-medium">{aprobador.orden}. {aprobador.nombre}</span>
+                            {aprobacion ? (
+                              <span className="text-muted-foreground">
+                                — {new Date(aprobacion.fecha).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">(pendiente)</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   )}
+
+                  {/* Rejection comment */}
+                  {detailSolicitud.estado === 'rechazada' && detailAprobaciones.filter(a => a.accion === 'rechazado').map(rechazo => (
+                    <div key={rechazo.id} className="p-3 bg-red-50 border border-red-200 rounded text-sm">
+                      <div className="font-medium text-red-800">Rechazada por {rechazo.usuario_nombre}</div>
+                      <div className="text-red-700 mt-1">{rechazo.comentario}</div>
+                    </div>
+                  ))}
+
+                  {/* Action buttons */}
+                  {(() => {
+                    if (!user || !detailSolicitud) return null
+                    const aprobacionesHechas = detailAprobaciones.filter(a => a.accion === 'aprobado').length
+                    const siguienteAprobador = detailAprobadores[aprobacionesHechas]
+                    const esMiTurno = detailSolicitud.estado === 'pendiente' && siguienteAprobador?.user_id === user.id
+
+                    return (
+                      <>
+                        {esMiTurno && (
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              onClick={() => handleAprobar(detailSolicitud.id)}
+                              disabled={approvingId === detailSolicitud.id}
+                              className="flex-1"
+                            >
+                              <Check className="h-4 w-4 mr-2" />
+                              {approvingId === detailSolicitud.id ? 'Aprobando...' : 'Aprobar'}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              onClick={() => {
+                                setRejectingId(detailSolicitud.id)
+                                setRejectComment('')
+                                setShowRejectModal(true)
+                              }}
+                              className="flex-1"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Rechazar
+                            </Button>
+                          </div>
+                        )}
+
+                        {detailSolicitud.estado === 'aprobada' && canManage && (
+                          <div className="pt-2">
+                            <Button
+                              onClick={() => handleMarcarPagada(detailSolicitud.id)}
+                              disabled={markingPaid}
+                              className="w-full"
+                            >
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              {markingPaid ? 'Marcando...' : 'Marcar como Pagada'}
+                            </Button>
+                          </div>
+                        )}
+
+                        {detailSolicitud.estado === 'rechazada' && canManage && (
+                          <div className="pt-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleReenviar(detailSolicitud.id)}
+                              disabled={resubmitting}
+                              className="w-full"
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              {resubmitting ? 'Reenviando...' : 'Reenviar para Aprobacion'}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
 
-              {/* Delete (only borrador) */}
-              {canManage && detailSolicitud.estado === 'borrador' && (
+              {/* Delete (only pendiente) */}
+              {canManage && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && (
                 <div className="pt-4 border-t">
                   <Button
                     variant="outline"
@@ -692,40 +981,31 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
         </DialogContent>
       </Dialog>
 
-      {/* Estado Change Modal */}
-      <Dialog open={showEstadoModal} onOpenChange={setShowEstadoModal}>
+      {/* Reject Modal */}
+      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Cambiar Estado</DialogTitle>
+            <DialogTitle>Rechazar Solicitud</DialogTitle>
             <DialogDescription>
-              {estadoTarget && <>Solicitud: <strong>{estadoTarget.numero}</strong></>}
+              Indique el motivo del rechazo
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Estado Actual</Label>
-              <div className="mt-1">{estadoTarget && getEstadoBadge(estadoTarget.estado)}</div>
-            </div>
-            <div>
-              <Label>Nuevo Estado</Label>
-              <Select value={nuevoEstado} onValueChange={setNuevoEstado}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Seleccionar estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {estadoTarget && (TRANSICIONES[estadoTarget.estado] || []).map(estado => (
-                    <SelectItem key={estado} value={estado}>{estadoLabels[estado]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="py-4">
+            <Label>Comentario *</Label>
+            <Textarea
+              value={rejectComment}
+              onChange={(e) => setRejectComment(e.target.value)}
+              placeholder="Motivo del rechazo..."
+              className="mt-1"
+              rows={3}
+            />
           </div>
           <DialogFooter className="flex gap-2 flex-col sm:flex-row">
-            <Button variant="outline" onClick={() => setShowEstadoModal(false)} disabled={changingEstado} className="w-full sm:w-auto">
+            <Button variant="outline" onClick={() => setShowRejectModal(false)} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button onClick={handleChangeEstado} disabled={!nuevoEstado || changingEstado} className="w-full sm:w-auto">
-              {changingEstado ? 'Guardando...' : 'Confirmar'}
+            <Button variant="destructive" onClick={handleRechazar} disabled={!rejectComment.trim()} className="w-full sm:w-auto">
+              Rechazar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -737,7 +1017,7 @@ export default function ProjectSolicitudesPago({ projectId }: ProjectSolicitudes
           <DialogHeader>
             <DialogTitle>Eliminar Solicitud</DialogTitle>
             <DialogDescription>
-              Esta accion no se puede deshacer. Solo se pueden eliminar solicitudes en borrador.
+              Esta accion no se puede deshacer. Solo se pueden eliminar solicitudes en estado pendiente.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

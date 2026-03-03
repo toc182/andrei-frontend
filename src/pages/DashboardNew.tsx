@@ -1,6 +1,6 @@
 /**
  * Dashboard Nuevo - Usando AppLayout con Shadcn
- * TEMPORAL - Para probar el nuevo layout antes de migrar todo
+ * Router central de la aplicación con sidebar contextual
  */
 
 import { useState, useEffect, ReactNode } from "react"
@@ -21,6 +21,7 @@ import ProjectDetailLayout from "./project/ProjectDetailLayout"
 import RequisicionesGeneral from "./RequisicionesGeneral"
 import UsuariosPage from "./UsuariosPage"
 import SolicitudesPagoGeneral from "./SolicitudesPagoGeneral"
+import OportunidadesPage from "./OportunidadesPage"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 
@@ -37,6 +38,11 @@ interface DashboardStats {
   } | null;
 }
 
+interface ProjectContext {
+  id: number
+  name: string
+}
+
 export default function DashboardNew() {
   const { user } = useAuth()
   const [currentView, setCurrentView] = useState("dashboard")
@@ -48,11 +54,15 @@ export default function DashboardNew() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pageTitle, setPageTitle] = useState<string | null>(null)
+  const [projectContext, setProjectContext] = useState<ProjectContext | null>(null)
+  const [showProjectInfo, setShowProjectInfo] = useState(false)
 
-  // Limpiar pageTitle cuando no estamos en un proyecto
+  // Clear project context and pageTitle when leaving project views
   useEffect(() => {
     if (!currentView.startsWith('project-')) {
       setPageTitle(null)
+      setProjectContext(null)
+      setShowProjectInfo(false)
     }
   }, [currentView])
 
@@ -63,7 +73,6 @@ export default function DashboardNew() {
         setLoading(true)
         setError(null)
 
-        // Llamadas en paralelo para mejor performance
         const [proyectosRes, clientesRes, equiposRes] = await Promise.all([
           api.get('/projects/stats/dashboard'),
           api.get('/clientes/stats/dashboard'),
@@ -94,13 +103,16 @@ export default function DashboardNew() {
       const parts = currentView.split('-')
       if (parts.length >= 3) {
         const projectId = parseInt(parts[1], 10)
-        const subview = parts.slice(2).join('-') // Handle subviews with dashes
+        const subview = parts.slice(2).join('-')
         return (
           <ProjectDetailLayout
             projectId={projectId}
             subview={subview}
             onNavigate={setCurrentView}
             onTitleChange={setPageTitle}
+            onProjectLoad={(ctx) => setProjectContext(ctx)}
+            showInfo={showProjectInfo}
+            onCloseInfo={() => setShowProjectInfo(false)}
           />
         )
       }
@@ -117,7 +129,6 @@ export default function DashboardNew() {
               </p>
             </div>
 
-            {/* Error Message */}
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -125,9 +136,7 @@ export default function DashboardNew() {
               </Alert>
             )}
 
-            {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* Proyectos Activos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -150,7 +159,6 @@ export default function DashboardNew() {
                 </CardContent>
               </Card>
 
-              {/* En Planificación */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">En Planificación</CardTitle>
@@ -173,7 +181,6 @@ export default function DashboardNew() {
                 </CardContent>
               </Card>
 
-              {/* Total Clientes */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
@@ -196,7 +203,6 @@ export default function DashboardNew() {
                 </CardContent>
               </Card>
 
-              {/* Equipos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Equipos</CardTitle>
@@ -220,7 +226,6 @@ export default function DashboardNew() {
               </Card>
             </div>
 
-            {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Card>
                 <CardHeader>
@@ -270,11 +275,8 @@ export default function DashboardNew() {
       case "projects":
         return <ProjectsList activeTab="proyectos" onNavigate={setCurrentView} />
 
-      case "projects-licitaciones":
-        return <ProjectsList activeTab="licitaciones" />
-
-      case "projects-oportunidades":
-        return <ProjectsList activeTab="oportunidades" />
+      case "oportunidades":
+        return <OportunidadesPage />
 
       case "clientes":
         return <ClientesN />
@@ -325,7 +327,13 @@ export default function DashboardNew() {
   }
 
   return (
-    <AppLayout currentView={currentView} onNavigate={setCurrentView} pageTitle={pageTitle ?? undefined}>
+    <AppLayout
+      currentView={currentView}
+      onNavigate={setCurrentView}
+      pageTitle={pageTitle ?? undefined}
+      projectContext={projectContext}
+      onShowProjectInfo={() => setShowProjectInfo(true)}
+    >
       {renderContent()}
     </AppLayout>
   )

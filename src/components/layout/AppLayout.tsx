@@ -2,11 +2,9 @@
 /**
  * Layout Principal de la Aplicación - Shadcn/ui + Tailwind
  *
- * Incluye:
- * - Sidebar colapsable con navegación
- * - Topbar con usuario y logout
- * - Responsive (Sheet para mobile)
- * - Submenús colapsables
+ * Sidebar contextual:
+ * - General: Dashboard, Proyectos, Oportunidades, Clientes, etc.
+ * - Proyecto: se transforma mostrando subvistas del proyecto
  */
 
 import { useState, useEffect, createContext, useContext, ReactNode } from "react"
@@ -45,6 +43,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Home,
   Building2,
+  Target,
   Users,
   Truck,
   FileText,
@@ -55,7 +54,14 @@ import {
   User,
   ClipboardList,
   Banknote,
-  UserCog
+  UserCog,
+  ArrowLeft,
+  Info,
+  LayoutDashboard,
+  DollarSign,
+  CheckSquare,
+  BookOpen,
+  Layers,
 } from "lucide-react"
 
 interface SubMenuItem {
@@ -72,18 +78,25 @@ interface MenuItem {
   submenu?: SubMenuItem[]
 }
 
+interface ProjectContext {
+  id: number
+  name: string
+}
+
 interface AppLayoutProps {
   children: ReactNode
   currentView: string
   onNavigate: (view: string) => void
   pageTitle?: string
+  projectContext?: ProjectContext | null
+  onShowProjectInfo?: () => void
 }
 
 interface NavigationProps {
   onItemClick?: () => void
 }
 
-export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppLayoutProps) {
+export function AppLayout({ children, currentView, onNavigate, pageTitle, projectContext, onShowProjectInfo }: AppLayoutProps) {
   const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
@@ -92,7 +105,6 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
   // Close mobile sheet when screen becomes desktop size
   useEffect(() => {
     const handleResize = () => {
-      // md breakpoint is 768px
       if (window.innerWidth >= 768 && mobileSheetOpen) {
         setMobileSheetOpen(false)
       }
@@ -102,8 +114,8 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
     return () => window.removeEventListener('resize', handleResize)
   }, [mobileSheetOpen])
 
-  // Configuración del menú
-  const menuItems: MenuItem[] = [
+  // ── General menu items ──
+  const generalMenuItems: MenuItem[] = [
     {
       id: "dashboard",
       label: "Dashboard",
@@ -114,12 +126,19 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
       id: "proyectos",
       label: "Proyectos",
       icon: Building2,
-      view: "projects",
-      submenu: [
-        { id: "projects", label: "Proyectos", view: "projects" },
-        { id: "licitaciones", label: "Licitaciones", view: "projects-licitaciones" },
-        { id: "oportunidades", label: "Oportunidades", view: "projects-oportunidades" }
-      ]
+      view: "projects"
+    },
+    {
+      id: "oportunidades",
+      label: "Oportunidades",
+      icon: Target,
+      view: "oportunidades"
+    },
+    {
+      id: "clientes",
+      label: "Clientes",
+      icon: Users,
+      view: "clientes"
     },
     {
       id: "requisiciones",
@@ -132,12 +151,6 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
       label: "Solicitudes de Pago",
       icon: Banknote,
       view: "solicitudes-pago"
-    },
-    {
-      id: "clientes",
-      label: "Clientes",
-      icon: Users,
-      view: "clientes"
     },
     {
       id: "equipos",
@@ -172,6 +185,19 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
     }] : [])
   ]
 
+  // ── Project submenu items ──
+  const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
+    { key: 'resumen', label: 'Resumen', icon: LayoutDashboard },
+    { key: 'costos', label: 'Costos', icon: DollarSign },
+    { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
+    { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
+    { key: 'tareas', label: 'Tareas', icon: CheckSquare },
+    { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
+    { key: 'miembros', label: 'Miembros', icon: Users },
+    { key: 'equipos', label: 'Equipos', icon: Truck },
+    { key: 'adendas', label: 'Adendas', icon: Layers },
+  ]
+
   const toggleSubmenu = (menuId: string) => {
     setExpandedMenus(prev => ({
       ...prev,
@@ -179,19 +205,25 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
     }))
   }
 
-  const handleNavigation = (view: string) => {
+  const handleNavigation = (view: string, closeSheet?: boolean) => {
     onNavigate(view)
-    // Auto-close mobile sidebar
-    if (window.innerWidth < 768) {
-      // En mobile usamos Sheet, no necesitamos cerrar manualmente
+    if (closeSheet) {
+      setMobileSheetOpen(false)
     }
   }
 
-  const isActive = (item: MenuItem): boolean => {
+  const isGeneralActive = (item: MenuItem): boolean => {
     if (item.submenu) {
       return item.submenu.some(sub => sub.view === currentView) || item.view === currentView
     }
     return item.view === currentView
+  }
+
+  // Get active project subview from currentView
+  const getActiveProjectSubview = (): string => {
+    if (!projectContext || !currentView.startsWith('project-')) return ''
+    const parts = currentView.split('-')
+    return parts.slice(2).join('-')
   }
 
   const getInitials = (name?: string): string => {
@@ -204,13 +236,13 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
       .slice(0, 2)
   }
 
-  // Componente de navegación (reutilizable para desktop y mobile)
-  const Navigation = ({ onItemClick }: NavigationProps) => (
+  // ── General Navigation (no project context) ──
+  const GeneralNavigation = ({ onItemClick }: NavigationProps) => (
     <ScrollArea className="flex-1 px-3">
       <div className="space-y-1 py-4">
-        {menuItems.map((item) => {
+        {generalMenuItems.map((item) => {
           const Icon = item.icon
-          const active = isActive(item)
+          const active = isGeneralActive(item)
           const hasSubmenu = item.submenu && item.submenu.length > 0
           const expanded = expandedMenus[item.id]
 
@@ -260,6 +292,107 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
       </div>
     </ScrollArea>
   )
+
+  // ── Project Navigation (inside a project) ──
+  // Three visual zones: general nav (white), project title (strong), subviews (tinted)
+  const ProjectNavigation = ({ onItemClick }: NavigationProps) => {
+    const activeSubview = getActiveProjectSubview()
+
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Zone 1: Back buttons — white/clear background */}
+        <div className="px-3 py-3 space-y-1">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground"
+            onClick={() => {
+              handleNavigation("dashboard")
+              onItemClick?.()
+            }}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Dashboard
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground"
+            onClick={() => {
+              handleNavigation("projects")
+              onItemClick?.()
+            }}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Proyectos
+          </Button>
+        </div>
+
+        {/* Zone 2: Project name — strong primary background */}
+        <div className="bg-primary px-4 py-3 flex items-center gap-2">
+          <span className="flex-1 text-sm font-semibold truncate text-primary-foreground">
+            {projectContext?.name || 'Proyecto'}
+          </span>
+          {onShowProjectInfo && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => {
+                onShowProjectInfo()
+                onItemClick?.()
+              }}
+              title="Ver información del proyecto"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Zone 3: Project subviews — tinted background */}
+        <ScrollArea className="flex-1 bg-primary/10">
+          <div className="px-3 py-3 space-y-1">
+            {projectMenuItems.map((item) => {
+              const Icon = item.icon
+              const isActive = activeSubview === item.key
+
+              return (
+                <Button
+                  key={item.key}
+                  variant={isActive ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => {
+                    handleNavigation(`project-${projectContext!.id}-${item.key}`)
+                    onItemClick?.()
+                  }}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                </Button>
+              )
+            })}
+          </div>
+        </ScrollArea>
+      </div>
+    )
+  }
+
+  // Choose which navigation to render based on context
+  const Navigation = ({ onItemClick }: NavigationProps) => {
+    if (projectContext) {
+      return <ProjectNavigation onItemClick={onItemClick} />
+    }
+    return <GeneralNavigation onItemClick={onItemClick} />
+  }
+
+  // Compute topbar title
+  const getTopbarTitle = (): string => {
+    if (pageTitle) return pageTitle
+    if (projectContext) return projectContext.name
+    const found = generalMenuItems.find(item =>
+      item.view === currentView ||
+      item.submenu?.some(sub => sub.view === currentView)
+    )
+    return found?.label || "Dashboard"
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -315,10 +448,7 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle }: AppL
           {/* Title */}
           <div className="flex-1">
             <h2 className="text-lg font-semibold truncate">
-              {pageTitle || menuItems.find(item =>
-                item.view === currentView ||
-                item.submenu?.some(sub => sub.view === currentView)
-              )?.label || "Dashboard"}
+              {getTopbarTitle()}
             </h2>
           </div>
 

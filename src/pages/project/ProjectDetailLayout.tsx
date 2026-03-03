@@ -1,10 +1,11 @@
 /**
  * ProjectDetailLayout Component
  * Main container for all project-specific views
+ * Header and submenu removed — navigation is now in the sidebar
  */
 
 import { useState, useEffect } from "react"
-import { Info, ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,7 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import ProjectSubMenu from "../../components/project/ProjectSubMenu"
 import ProjectSummary from "./ProjectSummary"
 import ProjectCostos from "./ProjectCostos"
 import ProjectRequisiciones from "./ProjectRequisiciones"
@@ -24,6 +24,7 @@ import ProjectMembers from "./ProjectMembers"
 import ProjectTodos from "./ProjectTodos"
 import ProjectBitacora from "./ProjectBitacora"
 import ProjectSolicitudesPago from "./ProjectSolicitudesPago"
+import ProjectAdendas from "./ProjectAdendas"
 import AdendaForm from "../../components/forms/AdendaForm"
 import api from "../../services/api"
 import { formatDate } from "../../utils/dateUtils"
@@ -35,14 +36,9 @@ interface ProjectDetailLayoutProps {
   subview: string
   onNavigate: (view: string) => void
   onTitleChange?: (title: string) => void
-}
-
-interface ApiError {
-  response?: {
-    data?: {
-      message?: string
-    }
-  }
+  onProjectLoad?: (ctx: { id: number; name: string }) => void
+  showInfo?: boolean
+  onCloseInfo?: () => void
 }
 
 const getEstadoBadge = (estado: string) => {
@@ -62,13 +58,15 @@ export default function ProjectDetailLayout({
   projectId,
   subview,
   onNavigate,
-  onTitleChange
+  onTitleChange,
+  onProjectLoad,
+  showInfo = false,
+  onCloseInfo
 }: ProjectDetailLayoutProps) {
   const [project, setProject] = useState<Project | null>(null)
   const [projectAdendas, setProjectAdendas] = useState<Adenda[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [showInfoModal, setShowInfoModal] = useState<boolean>(false)
   const [showAdendaForm, setShowAdendaForm] = useState<boolean>(false)
   const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null)
 
@@ -85,7 +83,11 @@ export default function ProjectDetailLayout({
         ])
 
         if (projectResponse.data.success) {
-          setProject(projectResponse.data.proyecto)
+          const proj = projectResponse.data.proyecto
+          setProject(proj)
+          // Notify parent of project context
+          const name = proj.nombre_corto || proj.nombre
+          onProjectLoad?.({ id: projectId, name })
         } else {
           setError('Error al cargar el proyecto')
         }
@@ -116,6 +118,8 @@ export default function ProjectDetailLayout({
         'bitacora': 'Bitácora',
         'avance': 'Avance Fisico',
         'equipos': 'Equipos',
+        'miembros': 'Miembros',
+        'adendas': 'Adendas',
         'configuracion': 'Personal'
       }
 
@@ -215,31 +219,42 @@ export default function ProjectDetailLayout({
           </div>
         )
 
+      case 'miembros':
       case 'configuracion':
         return <ProjectMembers projectId={projectId} />
+
+      case 'adendas':
+        return (
+          <ProjectAdendas
+            projectId={projectId}
+            adendas={projectAdendas}
+            onOpenForm={() => setShowAdendaForm(true)}
+            onEditAdenda={(adenda) => {
+              setEditingAdenda(adenda)
+              setShowAdendaForm(true)
+            }}
+            onDeleteAdenda={handleDeleteAdenda}
+          />
+        )
 
       default:
         return <ProjectSummary project={project} onNavigate={onNavigate} />
     }
   }
 
-  if (loading) {
+  if (loading && !project) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="p-6 space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-6 w-48" />
-        </div>
-        <div className="flex-1 p-6">
-          <Skeleton className="h-32 w-full" />
-        </div>
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-32 w-full" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="p-6">
+      <div>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -249,7 +264,6 @@ export default function ProjectDetailLayout({
           className="mt-4"
           onClick={() => onNavigate('projects')}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
           Volver a Proyectos
         </Button>
       </div>
@@ -258,7 +272,7 @@ export default function ProjectDetailLayout({
 
   if (!project) {
     return (
-      <div className="p-6">
+      <div>
         <Alert>
           <AlertDescription>Proyecto no encontrado</AlertDescription>
         </Alert>
@@ -267,7 +281,6 @@ export default function ProjectDetailLayout({
           className="mt-4"
           onClick={() => onNavigate('projects')}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
           Volver a Proyectos
         </Button>
       </div>
@@ -275,67 +288,18 @@ export default function ProjectDetailLayout({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-x-hidden">
-      {/* Project Header */}
-      <div className="border-b bg-background px-6 py-4 overflow-x-hidden">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-bold truncate">
-                {project.nombre_corto || project.nombre}
-              </h1>
-              {getEstadoBadge(project.estado)}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowInfoModal(true)}
-                title="Ver información completa del proyecto"
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              {project.cliente_nombre && (
-                <span>Cliente: {project.cliente_nombre}</span>
-              )}
-              {project.codigo_proyecto && (
-                <span>Código: {project.codigo_proyecto}</span>
-              )}
-            </div>
-          </div>
+    <>
+      {/* Content — no header, no submenu */}
+      {renderSubview()}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onNavigate('projects')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-        </div>
-      </div>
-
-      {/* Project SubMenu */}
-      <ProjectSubMenu
-        projectId={projectId}
-        currentSubview={subview}
-        onNavigate={onNavigate}
-      />
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-muted/20">
-        {renderSubview()}
-      </div>
-
-      {/* Info Modal */}
-      <Dialog open={showInfoModal} onOpenChange={setShowInfoModal}>
+      {/* Info Modal — triggered from sidebar (i) button */}
+      <Dialog open={showInfo} onOpenChange={(open) => { if (!open) onCloseInfo?.() }}>
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Información del Proyecto</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Basic Info */}
             <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
               <label className="font-medium text-sm text-muted-foreground">Nombre:</label>
               <span className="text-sm">{project.nombre}</span>
@@ -423,7 +387,7 @@ export default function ProjectDetailLayout({
               </div>
             )}
 
-            {/* Adendas Section */}
+            {/* Adendas Section in Info Modal */}
             <div className="space-y-4 mt-6 pt-6 border-t">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-base">Adendas</h3>
@@ -431,7 +395,7 @@ export default function ProjectDetailLayout({
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    setShowInfoModal(false)
+                    onCloseInfo?.()
                     setShowAdendaForm(true)
                   }}
                 >
@@ -440,7 +404,6 @@ export default function ProjectDetailLayout({
                 </Button>
               </div>
               {projectAdendas.map(adenda => {
-                  // Helper functions for adenda display
                   const getAdendaStatusBadgeVariant = (estado: string) => {
                     const variants: Record<string, string> = {
                       'en_proceso': 'secondary',
@@ -484,7 +447,7 @@ export default function ProjectDetailLayout({
                             className="h-7 w-7"
                             onClick={() => {
                               setEditingAdenda(adenda)
-                              setShowInfoModal(false)
+                              onCloseInfo?.()
                               setShowAdendaForm(true)
                             }}
                             title="Editar adenda"
@@ -572,6 +535,6 @@ export default function ProjectDetailLayout({
         onSave={handleAdendaSave}
         editingAdenda={editingAdenda}
       />
-    </div>
+    </>
   )
 }

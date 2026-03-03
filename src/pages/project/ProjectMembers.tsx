@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, UserCircle, AlertCircle } from "lucide-react"
+import { Plus, Trash2, UserCircle, AlertCircle, Settings, ArrowUp, ArrowDown, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -75,6 +75,14 @@ interface NewExternalForm {
   telefono: string
 }
 
+interface Approver {
+  id?: number
+  user_id: number
+  orden: number
+  nombre: string
+  email?: string
+}
+
 interface ProjectMembersProps {
   projectId: number
 }
@@ -110,6 +118,13 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
   const [editingMember, setEditingMember] = useState<ProjectMember | null>(null)
   const [editRol, setEditRol] = useState('')
 
+  // Approvers state
+  const [approvers, setApprovers] = useState<Approver[]>([])
+  const [showApproversModal, setShowApproversModal] = useState(false)
+  const [editApprovers, setEditApprovers] = useState<Approver[]>([])
+  const [selectedApproverUserId, setSelectedApproverUserId] = useState('')
+  const [savingApprovers, setSavingApprovers] = useState(false)
+
   // Load members
   const loadMembers = async () => {
     try {
@@ -142,10 +157,89 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     }
   }
 
+  // Load approvers
+  const loadApprovers = async () => {
+    try {
+      const response = await api.get(`/approval-settings/project/${projectId}`)
+      if (response.data.success) {
+        setApprovers(response.data.approvers)
+      }
+    } catch (err) {
+      console.error('Error loading approvers:', err)
+    }
+  }
+
+  // Save approvers
+  const handleSaveApprovers = async () => {
+    setSavingApprovers(true)
+    try {
+      const payload = editApprovers.map((a, index) => ({
+        user_id: a.user_id,
+        orden: index + 1
+      }))
+      const response = await api.put(`/approval-settings/project/${projectId}`, { approvers: payload })
+      if (response.data.success) {
+        setApprovers(response.data.approvers)
+        setShowApproversModal(false)
+      }
+    } catch (err) {
+      console.error('Error saving approvers:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      setError(apiError.response?.data?.message || 'Error al guardar aprobadores')
+    } finally {
+      setSavingApprovers(false)
+    }
+  }
+
+  // Open approvers modal
+  const openApproversModal = () => {
+    setEditApprovers([...approvers])
+    setSelectedApproverUserId('')
+    setShowApproversModal(true)
+  }
+
+  // Add approver to edit list
+  const addApproverToList = () => {
+    if (!selectedApproverUserId) return
+    const userId = parseInt(selectedApproverUserId)
+    const user = users.find(u => u.id === userId)
+    if (!user) return
+    if (editApprovers.some(a => a.user_id === userId)) return
+
+    setEditApprovers([...editApprovers, {
+      user_id: userId,
+      orden: editApprovers.length + 1,
+      nombre: user.nombre,
+      email: user.email
+    }])
+    setSelectedApproverUserId('')
+  }
+
+  // Remove approver from edit list
+  const removeApproverFromList = (userId: number) => {
+    setEditApprovers(editApprovers.filter(a => a.user_id !== userId))
+  }
+
+  // Move approver up/down
+  const moveApprover = (index: number, direction: 'up' | 'down') => {
+    const newList = [...editApprovers]
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= newList.length) return
+    const temp = newList[index]
+    newList[index] = newList[targetIndex]
+    newList[targetIndex] = temp
+    setEditApprovers(newList)
+  }
+
+  // Users available as approvers (not already in edit list)
+  const availableApproverUsers = users.filter(
+    u => !editApprovers.some(a => a.user_id === u.id)
+  )
+
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true)
-      await Promise.all([loadMembers(), loadOptions()])
+      await Promise.all([loadMembers(), loadOptions(), loadApprovers()])
       setLoading(false)
     }
     loadAll()
@@ -432,6 +526,119 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           ))
         )}
       </div>
+
+      {/* Approvers Section */}
+      <div className="space-y-3 pt-4 border-t">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-sm">Aprobadores de Solicitudes de Pago</h3>
+          <Button variant="outline" size="sm" onClick={openApproversModal}>
+            <Settings className="h-4 w-4 mr-2" />
+            Configurar
+          </Button>
+        </div>
+        {approvers.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay aprobadores configurados</p>
+        ) : (
+          <div className="space-y-1">
+            {approvers.map((approver, index) => (
+              <div key={approver.user_id} className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded">
+                <span className="font-medium text-muted-foreground w-6">{index + 1}.</span>
+                <span>{approver.nombre}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Approvers Config Modal */}
+      <Dialog open={showApproversModal} onOpenChange={setShowApproversModal}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Configurar Aprobadores</DialogTitle>
+            <DialogDescription>
+              Los aprobadores revisan las solicitudes de pago en el orden configurado
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Add approver */}
+            <div className="flex gap-2">
+              <Select value={selectedApproverUserId} onValueChange={setSelectedApproverUserId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Seleccionar usuario..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableApproverUsers.length === 0 ? (
+                    <SelectItem value="-" disabled>No hay usuarios disponibles</SelectItem>
+                  ) : (
+                    availableApproverUsers.map(user => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        {user.nombre}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Button onClick={addApproverToList} disabled={!selectedApproverUserId} size="sm">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Ordered list */}
+            {editApprovers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Agregue al menos un aprobador
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {editApprovers.map((approver, index) => (
+                  <div key={approver.user_id} className="flex items-center gap-2 p-2 border rounded">
+                    <span className="font-medium text-muted-foreground w-6 text-sm">{index + 1}.</span>
+                    <span className="flex-1 text-sm">{approver.nombre}</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => moveApprover(index, 'up')}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => moveApprover(index, 'down')}
+                        disabled={index === editApprovers.length - 1}
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        onClick={() => removeApproverFromList(approver.user_id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApproversModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveApprovers} disabled={savingApprovers}>
+              {savingApprovers ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Member Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>

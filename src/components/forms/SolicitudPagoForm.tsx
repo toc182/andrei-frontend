@@ -1,10 +1,10 @@
 /**
  * SolicitudPagoForm Component
  * Modal form for creating and editing solicitudes de pago
- * Sections: Datos principales, Items dinámicos, Ajustes (impuestos/descuentos), Datos bancarios
+ * Sections: Datos principales, Items dinámicos, ITBMS, Ajustes, Datos bancarios
  */
 
-import { useState, useEffect, FormEvent, ChangeEvent } from "react"
+import { useState, useEffect, useRef, FormEvent, ChangeEvent } from "react"
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, Trash2, ChevronDown, ChevronRight, MinusCircle, PlusCircle, Paperclip, X } from "lucide-react"
 import api from "../../services/api"
 import { formatMoney } from "../../utils/formatters"
 import { useAuth } from "../../context/AuthContext"
@@ -49,6 +49,7 @@ interface SolicitudPago {
   banco: string | null
   tipo_cuenta: string | null
   numero_cuenta: string | null
+  urgente?: boolean
 }
 
 interface SolicitudItem {
@@ -89,9 +90,8 @@ interface ItemFormData {
 }
 
 interface AjusteFormData {
-  tipo: string
+  tipo: 'aumento' | 'disminucion'
   descripcion: string
-  porcentaje: string
   monto: string
 }
 
@@ -115,9 +115,8 @@ const emptyItem: ItemFormData = {
 }
 
 const emptyAjuste: AjusteFormData = {
-  tipo: 'impuesto',
+  tipo: 'disminucion',
   descripcion: '',
-  porcentaje: '',
   monto: ''
 }
 
@@ -133,20 +132,24 @@ export default function SolicitudPagoForm({
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const adjuntoFormRef = useRef<HTMLInputElement>(null)
 
   // Form data
   const [fecha, setFecha] = useState('')
   const [proveedor, setProveedor] = useState('')
-  const [solicitadoPor, setSolicitadoPor] = useState<string>('')
-  const [requisicionId, setRequisicionId] = useState<string>('')
+  const [solicitadoPor, setSolicitadoPor] = useState<string>('none')
+  const [requisicionId, setRequisicionId] = useState<string>('none')
   const [observaciones, setObservaciones] = useState('')
+  const [urgente, setUrgente] = useState(false)
   const [beneficiario, setBeneficiario] = useState('')
   const [banco, setBanco] = useState('')
-  const [tipoCuenta, setTipoCuenta] = useState('')
+  const [tipoCuenta, setTipoCuenta] = useState('none')
   const [numeroCuenta, setNumeroCuenta] = useState('')
 
   // Dynamic items & ajustes
   const [items, setItems] = useState<ItemFormData[]>([{ ...emptyItem }])
+  const [itbmsActivo, setItbmsActivo] = useState(true)
   const [ajustes, setAjustes] = useState<AjusteFormData[]>([])
 
   // Options
@@ -166,12 +169,13 @@ export default function SolicitudPagoForm({
     if (editingSolicitud) {
       setFecha(editingSolicitud.fecha ? editingSolicitud.fecha.split('T')[0] : '')
       setProveedor(editingSolicitud.proveedor || '')
-      setSolicitadoPor(editingSolicitud.solicitado_por?.toString() || '')
-      setRequisicionId(editingSolicitud.requisicion_id?.toString() || '')
+      setSolicitadoPor(editingSolicitud.solicitado_por?.toString() || 'none')
+      setRequisicionId(editingSolicitud.requisicion_id?.toString() || 'none')
       setObservaciones(editingSolicitud.observaciones || '')
+      setUrgente(editingSolicitud.urgente || false)
       setBeneficiario(editingSolicitud.beneficiario || '')
       setBanco(editingSolicitud.banco || '')
-      setTipoCuenta(editingSolicitud.tipo_cuenta || '')
+      setTipoCuenta(editingSolicitud.tipo_cuenta || 'none')
       setNumeroCuenta(editingSolicitud.numero_cuenta || '')
 
       if (existingItems.length > 0) {
@@ -187,11 +191,14 @@ export default function SolicitudPagoForm({
         setItems([{ ...emptyItem }])
       }
 
-      if (existingAjustes.length > 0) {
-        setAjustes(existingAjustes.map(a => ({
-          tipo: a.tipo || 'impuesto',
+      // Separar ITBMS de ajustes normales
+      const itbmsAjuste = existingAjustes.find(a => a.tipo === 'impuesto' && a.porcentaje === 7)
+      setItbmsActivo(!!itbmsAjuste)
+      const otrosAjustes = existingAjustes.filter(a => a !== itbmsAjuste)
+      if (otrosAjustes.length > 0) {
+        setAjustes(otrosAjustes.map(a => ({
+          tipo: (a.tipo === 'impuesto' ? 'aumento' : 'disminucion') as 'aumento' | 'disminucion',
           descripcion: a.descripcion || '',
-          porcentaje: a.porcentaje?.toString() || '',
           monto: a.monto?.toString() || ''
         })))
       } else {
@@ -202,18 +209,21 @@ export default function SolicitudPagoForm({
       const today = new Date().toISOString().split('T')[0]
       setFecha(today)
       setProveedor('')
-      setSolicitadoPor(user?.id?.toString() || '')
-      setRequisicionId('')
+      setSolicitadoPor(user?.id?.toString() || 'none')
+      setRequisicionId('none')
       setObservaciones('')
+      setUrgente(false)
       setBeneficiario('')
       setBanco('')
-      setTipoCuenta('')
+      setTipoCuenta('none')
       setNumeroCuenta('')
       setItems([{ ...emptyItem }])
+      setItbmsActivo(true)
       setAjustes([])
+      setPendingFiles([])
     }
     setError(null)
-  }, [editingSolicitud, existingItems, existingAjustes, isOpen, user])
+  }, [editingSolicitud, isOpen, user])
 
   const loadOptions = async () => {
     try {
@@ -249,22 +259,17 @@ export default function SolicitudPagoForm({
 
   const subtotal = items.reduce((sum, item) => sum + calculateItemTotal(item), 0)
 
-  const calculateAjusteMonto = (ajuste: AjusteFormData): number => {
-    if (ajuste.porcentaje && parseFloat(ajuste.porcentaje) > 0) {
-      return subtotal * parseFloat(ajuste.porcentaje) / 100
-    }
-    return parseFloat(ajuste.monto) || 0
-  }
+  const itbmsMonto = itbmsActivo ? subtotal * 0.07 : 0
 
-  const totalDescuentos = ajustes
-    .filter(a => a.tipo === 'descuento')
-    .reduce((sum, a) => sum + Math.abs(calculateAjusteMonto(a)), 0)
+  const totalAumentos = ajustes
+    .filter(a => a.tipo === 'aumento')
+    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0)
 
-  const totalImpuestos = ajustes
-    .filter(a => a.tipo === 'impuesto')
-    .reduce((sum, a) => sum + Math.abs(calculateAjusteMonto(a)), 0)
+  const totalDisminuciones = ajustes
+    .filter(a => a.tipo === 'disminucion')
+    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0)
 
-  const montoTotal = subtotal - totalDescuentos + totalImpuestos
+  const montoTotal = subtotal + itbmsMonto + totalAumentos - totalDisminuciones
 
   // Item handlers
   const handleItemChange = (index: number, field: keyof ItemFormData, value: string | boolean) => {
@@ -288,6 +293,17 @@ export default function SolicitudPagoForm({
     setAjustes(prev => {
       const newAjustes = [...prev]
       newAjustes[index] = { ...newAjustes[index], [field]: value }
+      return newAjustes
+    })
+  }
+
+  const toggleAjusteTipo = (index: number) => {
+    setAjustes(prev => {
+      const newAjustes = [...prev]
+      newAjustes[index] = {
+        ...newAjustes[index],
+        tipo: newAjustes[index].tipo === 'aumento' ? 'disminucion' : 'aumento'
+      }
       return newAjustes
     })
   }
@@ -321,12 +337,13 @@ export default function SolicitudPagoForm({
         proyecto_id: projectId,
         fecha,
         proveedor: proveedor.trim(),
-        solicitado_por: solicitadoPor ? parseInt(solicitadoPor) : null,
-        requisicion_id: requisicionId ? parseInt(requisicionId) : null,
+        solicitado_por: solicitadoPor && solicitadoPor !== 'none' ? parseInt(solicitadoPor) : null,
+        requisicion_id: requisicionId && requisicionId !== 'none' ? parseInt(requisicionId) : null,
         observaciones: observaciones.trim() || null,
+        urgente,
         beneficiario: beneficiario.trim() || null,
         banco: banco.trim() || null,
-        tipo_cuenta: tipoCuenta || null,
+        tipo_cuenta: tipoCuenta && tipoCuenta !== 'none' ? tipoCuenta : null,
         numero_cuenta: numeroCuenta.trim() || null,
         items: validItems.map(item => ({
           cantidad: parseFloat(item.cantidad) || 1,
@@ -335,20 +352,43 @@ export default function SolicitudPagoForm({
           descripcion_detallada: item.descripcion_detallada.trim() || null,
           precio_unitario: parseFloat(item.precio_unitario)
         })),
-        ajustes: ajustes
-          .filter(a => a.descripcion.trim() && (parseFloat(a.monto) > 0 || parseFloat(a.porcentaje) > 0))
-          .map(a => ({
-            tipo: a.tipo,
-            descripcion: a.descripcion.trim(),
-            porcentaje: a.porcentaje ? parseFloat(a.porcentaje) : null,
-            monto: calculateAjusteMonto(a)
-          }))
+        ajustes: [
+          // ITBMS como ajuste de tipo impuesto
+          ...(itbmsActivo ? [{
+            tipo: 'impuesto',
+            descripcion: 'ITBMS 7%',
+            porcentaje: 7,
+            monto: subtotal * 0.07
+          }] : []),
+          // Ajustes normales (mapear a tipos de DB: aumento→impuesto, disminucion→descuento)
+          ...ajustes
+            .filter(a => a.descripcion.trim() && parseFloat(a.monto) > 0)
+            .map(a => ({
+              tipo: a.tipo === 'aumento' ? 'impuesto' : 'descuento',
+              descripcion: a.descripcion.trim(),
+              porcentaje: null,
+              monto: parseFloat(a.monto)
+            }))
+        ]
       }
 
       if (editingSolicitud) {
         await api.put(`/solicitudes-pago/${editingSolicitud.id}`, payload)
       } else {
-        await api.post('/solicitudes-pago', payload)
+        const createRes = await api.post('/solicitudes-pago', payload)
+
+        // Upload pending files if any
+        if (pendingFiles.length > 0 && createRes.data.solicitud?.id) {
+          try {
+            const formData = new FormData()
+            pendingFiles.forEach(f => formData.append('archivos', f))
+            await api.post(`/solicitudes-pago/${createRes.data.solicitud.id}/adjuntos`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            })
+          } catch (uploadErr) {
+            console.error('Error uploading adjuntos:', uploadErr)
+          }
+        }
       }
 
       onSave()
@@ -413,6 +453,7 @@ export default function SolicitudPagoForm({
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Seleccionar</SelectItem>
                     {usuarios.map(u => (
                       <SelectItem key={u.id} value={u.id.toString()}>{u.nombre}</SelectItem>
                     ))}
@@ -445,24 +486,28 @@ export default function SolicitudPagoForm({
                 onChange={(e) => setObservaciones(e.target.value)}
               />
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={urgente}
+                onChange={(e) => setUrgente(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <span className="text-sm text-muted-foreground">Marcar como urgente</span>
+            </label>
           </div>
 
           {/* Section 2: Items */}
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Items</h3>
-              <Button type="button" variant="outline" size="sm" onClick={addItem} className="h-7 text-xs">
-                <Plus className="h-3 w-3 mr-1" />
-                Agregar Item
-              </Button>
-            </div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Items</h3>
 
             {/* Table Header */}
             <div className="hidden sm:grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 text-xs font-medium text-muted-foreground px-1">
               <span>Descripcion</span>
               <span>Cant.</span>
               <span>Unidad</span>
-              <span>P. Unit.</span>
+              <span>P. Unit. (B/.)</span>
               <span className="text-right">Total</span>
               <span></span>
             </div>
@@ -633,17 +678,81 @@ export default function SolicitudPagoForm({
               })}
             </div>
 
-            {/* Subtotal */}
-            <div className="flex justify-end text-sm pt-1">
-              <span className="text-muted-foreground mr-4">Subtotal:</span>
-              <span className="font-medium w-24 text-right">{formatMoney(subtotal)}</span>
+            {/* Summary rows — desktop: same grid as items */}
+            <div className="hidden sm:block border-t pt-2 mt-2 space-y-1">
+              {/* Agregar Item + Subtotal */}
+              <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
+                <div>
+                  <Button type="button" variant="outline" size="sm" onClick={addItem} className="h-7 text-xs">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Agregar Item
+                  </Button>
+                </div>
+                <div></div>
+                <div></div>
+                <div className="text-sm text-muted-foreground text-right">Subtotal:</div>
+                <div className="text-sm font-medium text-right">{formatMoney(subtotal)}</div>
+                <div></div>
+              </div>
+              {/* ITBMS */}
+              <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div className="text-sm text-muted-foreground text-right flex items-center justify-end gap-1">
+                  {itbmsActivo ? (
+                    <MinusCircle className="h-4 w-4 text-red-400 cursor-pointer shrink-0" onClick={() => setItbmsActivo(false)} />
+                  ) : (
+                    <PlusCircle className="h-4 w-4 text-green-600 cursor-pointer shrink-0" onClick={() => setItbmsActivo(true)} />
+                  )}
+                  <span className={itbmsActivo ? '' : 'text-muted-foreground/50'}>ITBMS (7%):</span>
+                </div>
+                <div className={`text-sm font-medium text-right ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}>{itbmsActivo ? formatMoney(itbmsMonto) : '—'}</div>
+                <div></div>
+              </div>
+              {/* Total */}
+              <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center border-t pt-1">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div className="text-base font-bold text-right">TOTAL:</div>
+                <div className="text-base font-bold text-right">{formatMoney(montoTotal)}</div>
+                <div></div>
+              </div>
+            </div>
+
+            {/* Summary rows — mobile */}
+            <div className="sm:hidden border-t pt-2 mt-2 space-y-2">
+              <Button type="button" variant="outline" size="sm" onClick={addItem} className="h-8 text-xs">
+                <Plus className="h-3 w-3 mr-1" />
+                Agregar Item
+              </Button>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal:</span>
+                <span className="font-medium">{formatMoney(subtotal)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  {itbmsActivo ? (
+                    <MinusCircle className="h-4 w-4 text-red-400 cursor-pointer shrink-0" onClick={() => setItbmsActivo(false)} />
+                  ) : (
+                    <PlusCircle className="h-4 w-4 text-green-600 cursor-pointer shrink-0" onClick={() => setItbmsActivo(true)} />
+                  )}
+                  <span className={itbmsActivo ? '' : 'text-muted-foreground/50'}>ITBMS (7%):</span>
+                </span>
+                <span className={`font-medium ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}>{itbmsActivo ? formatMoney(itbmsMonto) : '—'}</span>
+              </div>
+              <div className="flex justify-between text-base font-bold border-t pt-1">
+                <span>TOTAL:</span>
+                <span>{formatMoney(montoTotal)}</span>
+              </div>
             </div>
           </div>
 
-          {/* Section 3: Ajustes */}
+          {/* Section 4: Ajustes */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ajustes (Impuestos / Descuentos)</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ajustes</h3>
               <Button type="button" variant="outline" size="sm" onClick={addAjuste} className="h-7 text-xs">
                 <Plus className="h-3 w-3 mr-1" />
                 Agregar Ajuste
@@ -651,53 +760,47 @@ export default function SolicitudPagoForm({
             </div>
 
             {ajustes.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sin ajustes. Agrega impuestos o descuentos si aplica.</p>
+              <p className="text-xs text-muted-foreground">Sin ajustes.</p>
             ) : (
               <div className="space-y-2">
-                {ajustes.map((ajuste, index) => {
-                  const montoCalculado = calculateAjusteMonto(ajuste)
-                  return (
-                    <div key={index} className="grid grid-cols-[100px_1fr_80px_90px_30px] gap-2 items-center">
-                      <Select value={ajuste.tipo} onValueChange={(v) => handleAjusteChange(index, 'tipo', v)}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="impuesto">Impuesto</SelectItem>
-                          <SelectItem value="descuento">Descuento</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        placeholder="Descripcion (ej: ITBMS 7%)"
-                        value={ajuste.descripcion}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleAjusteChange(index, 'descripcion', e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="%"
-                        value={ajuste.porcentaje}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleAjusteChange(index, 'porcentaje', e.target.value)}
-                        className="h-8 text-sm"
-                        title="Porcentaje (calcula automaticamente)"
-                      />
-                      <div className="text-sm text-right font-medium">
-                        {ajuste.tipo === 'descuento' ? '-' : '+'}{formatMoney(montoCalculado)}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeAjuste(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )
-                })}
+                {ajustes.map((ajuste, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`}
+                      onClick={() => toggleAjusteTipo(index)}
+                      title={ajuste.tipo === 'aumento' ? 'Aumento (click para cambiar)' : 'Disminucion (click para cambiar)'}
+                    >
+                      {ajuste.tipo === 'aumento' ? '+' : '-'}
+                    </Button>
+                    <Input
+                      placeholder="Descripcion del ajuste"
+                      value={ajuste.descripcion}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleAjusteChange(index, 'descripcion', e.target.value)}
+                      className="h-8 text-sm flex-1"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={ajuste.monto}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleAjusteChange(index, 'monto', e.target.value)}
+                      className="h-8 text-sm w-28"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeAjuste(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -733,6 +836,7 @@ export default function SolicitudPagoForm({
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Seleccionar</SelectItem>
                     <SelectItem value="ahorro">Ahorro</SelectItem>
                     <SelectItem value="corriente">Corriente</SelectItem>
                   </SelectContent>
@@ -751,29 +855,63 @@ export default function SolicitudPagoForm({
             </div>
           </div>
 
-          {/* Totals Summary */}
-          <div className="border-t pt-3 space-y-1">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Subtotal:</span>
-              <span className="font-medium">{formatMoney(subtotal)}</span>
-            </div>
-            {totalDescuentos > 0 && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Descuentos:</span>
-                <span className="font-medium text-red-600">-{formatMoney(totalDescuentos)}</span>
+          {/* Section 5: Adjuntos (solo creacion) */}
+          {!editingSolicitud && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <Paperclip className="h-3 w-3" /> Adjuntos
+              </h3>
+              <div>
+                <input
+                  ref={adjuntoFormRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)])
+                      e.target.value = ''
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => adjuntoFormRef.current?.click()}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Agregar Adjuntos
+                </Button>
+                <span className="text-xs text-muted-foreground ml-2">PDF, JPG o PNG. Max 10MB por archivo.</span>
               </div>
-            )}
-            {totalImpuestos > 0 && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Impuestos:</span>
-                <span className="font-medium">+{formatMoney(totalImpuestos)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
-              <span>TOTAL:</span>
-              <span>{formatMoney(montoTotal)}</span>
+              {pendingFiles.length > 0 && (
+                <div className="space-y-1">
+                  {pendingFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 border rounded text-sm">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Paperclip className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{file.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== index))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Form Actions */}
           <div className="flex gap-2 justify-end pt-2">

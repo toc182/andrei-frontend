@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProjectFormNew from './forms/ProjectFormNew';
 import AdendaForm from './forms/AdendaForm';
+import LicitacionForm from './forms/LicitacionForm';
+import OportunidadForm from './forms/OportunidadForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { formatMoney } from '../utils/formatters';
 import { Pencil, Trash2, Plus } from 'lucide-react';
-import type { Project, Adenda, User } from '@/types';
+import type { Project, Adenda } from '@/types';
 // Shadcn Components
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,10 +47,10 @@ interface Pagination {
     totalPages?: number;
 }
 
-const tabConfig: Record<string, { tipoOrigen: string; labelNuevo: string; labelVacio: string }> = {
-    proyectos: { tipoOrigen: 'directo', labelNuevo: 'Nuevo Proyecto', labelVacio: '{config.labelVacio}' },
-    licitaciones: { tipoOrigen: 'licitacion', labelNuevo: 'Nueva Licitación', labelVacio: 'No hay licitaciones disponibles' },
-    oportunidades: { tipoOrigen: 'oportunidad', labelNuevo: 'Nueva Oportunidad', labelVacio: 'No hay oportunidades disponibles' },
+const tabConfig: Record<string, { labelNuevo: string; labelVacio: string; formType: 'project' | 'licitacion' | 'oportunidad' }> = {
+    proyectos: { labelNuevo: 'Nuevo Proyecto', labelVacio: 'No hay proyectos disponibles', formType: 'project' },
+    licitaciones: { labelNuevo: 'Nueva Licitación', labelVacio: 'No hay licitaciones disponibles', formType: 'licitacion' },
+    oportunidades: { labelNuevo: 'Nueva Oportunidad', labelVacio: 'No hay oportunidades disponibles', formType: 'oportunidad' },
 };
 
 const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', onStatsUpdate, onNavigate }) => {
@@ -57,7 +59,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [pagination, setPagination] = useState<Pagination>({});
+    const [, setPagination] = useState<Pagination>({});
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [viewingProject, setViewingProject] = useState<Project | null>(null);
@@ -65,22 +67,48 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
     const [showAdendaForm, setShowAdendaForm] = useState(false);
     const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null);
 
-    // Cargar proyectos
+    // Cargar datos según tab activo
     const loadProjects = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/projects', { params: { tipo_origen: config.tipoOrigen } });
+            let items: Project[];
+            let paginationData = {};
 
-            if (response.data.success) {
-                setProjects(response.data.proyectos);
-                setPagination(response.data.pagination);
-                setError('');
+            if (activeTab === 'licitaciones') {
+                const response = await api.get('/licitaciones');
+                if (!response.data.success) { setError('Error cargando licitaciones'); return; }
+                items = response.data.licitaciones.map((l: Record<string, unknown>) => ({
+                    id: l.id,
+                    nombre_corto: l.nombre,
+                    cliente_abreviatura: l.entidad_licitante,
+                    estado: l.estado_licitacion,
+                    monto_total: l.presupuesto_referencial || 0,
+                } as unknown as Project));
+                paginationData = response.data.pagination;
+            } else if (activeTab === 'oportunidades') {
+                const response = await api.get('/oportunidades');
+                if (!response.data.success) { setError('Error cargando oportunidades'); return; }
+                items = response.data.oportunidades.map((o: Record<string, unknown>) => ({
+                    id: o.id,
+                    nombre_corto: o.nombre_oportunidad,
+                    cliente_abreviatura: o.cliente_potencial,
+                    estado: o.estado_oportunidad,
+                    monto_total: o.valor_estimado || 0,
+                } as unknown as Project));
+                paginationData = response.data.pagination;
             } else {
-                setError('Error cargando proyectos');
+                const response = await api.get('/projects', { params: { tipo_origen: 'directo' } });
+                if (!response.data.success) { setError('Error cargando proyectos'); return; }
+                items = response.data.proyectos;
+                paginationData = response.data.pagination;
             }
+
+            setProjects(items);
+            setPagination(paginationData);
+            setError('');
         } catch (err) {
             console.error('Error:', err);
-            setError('Error de conexión al cargar proyectos');
+            setError('Error de conexión al cargar datos');
         } finally {
             setLoading(false);
         }
@@ -104,7 +132,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
     };
 
     // Manejar visualización de detalles del proyecto
-    const handleViewProject = async (projectId: number) => {
+    const _handleViewProject = async (projectId: number) => {
         try {
             setLoading(true);
             const [projectResponse, adendasResponse] = await Promise.all([
@@ -139,12 +167,15 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
 
     // Manejar eliminación
     const handleDeleteProject = async (projectId: number) => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer.')) {
+        if (!window.confirm('¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer.')) {
             return;
         }
 
         try {
-            const response = await api.delete(`/projects/${projectId}`);
+            const endpoint = config.formType === 'licitacion' ? `/licitaciones/${projectId}`
+                : config.formType === 'oportunidad' ? `/oportunidades/${projectId}`
+                : `/projects/${projectId}`;
+            const response = await api.delete(endpoint);
 
             if (response.data.success) {
                 // Recargar la lista
@@ -166,11 +197,25 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
     // Obtener variante de badge para estado (Shadcn)
     const getStatusBadgeVariant = (estado: string): "default" | "secondary" | "outline" | "destructive" => {
         const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+            // Proyectos
             'planificacion': 'secondary',
             'en_curso': 'default',
             'pausado': 'outline',
             'completado': 'secondary',
-            'cancelado': 'destructive'
+            'cancelado': 'destructive',
+            // Licitaciones
+            'activa': 'default',
+            'presentada': 'secondary',
+            'ganada': 'default',
+            'perdida': 'destructive',
+            'sin_interes': 'outline',
+            'cancelada': 'destructive',
+            // Oportunidades
+            'prospecto': 'secondary',
+            'calificada': 'default',
+            'propuesta': 'secondary',
+            'negociacion': 'default',
+            'cerrada': 'default',
         };
         return variants[estado] || 'secondary';
     };
@@ -178,11 +223,25 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
     // Obtener texto del estado
     const getStatusText = (estado: string) => {
         const statusTexts: Record<string, string> = {
+            // Proyectos
             'planificacion': 'Planificación',
             'en_curso': 'En Curso',
             'pausado': 'Pausado',
             'completado': 'Completado',
-            'cancelado': 'Cancelado'
+            'cancelado': 'Cancelado',
+            // Licitaciones
+            'activa': 'Activa',
+            'presentada': 'Presentada',
+            'ganada': 'Ganada',
+            'perdida': 'Perdida',
+            'sin_interes': 'Sin Interés',
+            'cancelada': 'Cancelada',
+            // Oportunidades
+            'prospecto': 'Prospecto',
+            'calificada': 'Calificada',
+            'propuesta': 'En Propuesta',
+            'negociacion': 'En Negociación',
+            'cerrada': 'Cerrada',
         };
         return statusTexts[estado] || estado;
     };
@@ -303,21 +362,55 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
 
 
 
-            {/* Modal para crear proyecto */}
-            <ProjectFormNew
-                isOpen={showCreateForm}
-                onClose={() => setShowCreateForm(false)}
-                onSave={handleProjectSave}
-            />
+            {/* Modal para crear */}
+            {config.formType === 'project' && (
+                <ProjectFormNew
+                    isOpen={showCreateForm}
+                    onClose={() => setShowCreateForm(false)}
+                    onSave={handleProjectSave}
+                />
+            )}
+            {config.formType === 'licitacion' && (
+                <LicitacionForm
+                    isOpen={showCreateForm}
+                    onClose={() => setShowCreateForm(false)}
+                    onSave={handleProjectSave}
+                />
+            )}
+            {config.formType === 'oportunidad' && (
+                <OportunidadForm
+                    isOpen={showCreateForm}
+                    onClose={() => setShowCreateForm(false)}
+                    onSave={handleProjectSave}
+                />
+            )}
 
-            {/* Modal para editar proyecto */}
-            <ProjectFormNew
-                projectId={editingProject?.id}
-                isOpen={!!editingProject}
-                onClose={() => setEditingProject(null)}
-                onSave={handleProjectSave}
-                onDelete={handleDeleteProject}
-            />
+            {/* Modal para editar */}
+            {config.formType === 'project' && (
+                <ProjectFormNew
+                    projectId={editingProject?.id}
+                    isOpen={!!editingProject}
+                    onClose={() => setEditingProject(null)}
+                    onSave={handleProjectSave}
+                    onDelete={handleDeleteProject}
+                />
+            )}
+            {config.formType === 'licitacion' && (
+                <LicitacionForm
+                    licitacionId={editingProject?.id}
+                    isOpen={!!editingProject}
+                    onClose={() => setEditingProject(null)}
+                    onSave={handleProjectSave}
+                />
+            )}
+            {config.formType === 'oportunidad' && (
+                <OportunidadForm
+                    oportunidadId={editingProject?.id}
+                    isOpen={!!editingProject}
+                    onClose={() => setEditingProject(null)}
+                    onSave={handleProjectSave}
+                />
+            )}
 
 
             {/* Modal para ver detalles del proyecto - Shadcn Dialog */}
@@ -598,7 +691,13 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                         <Card
                             key={project.id}
                             className="cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => onNavigate && onNavigate(`project-${project.id}-resumen`)}
+                            onClick={() => {
+                                if (activeTab === 'proyectos') {
+                                    if (onNavigate) onNavigate(`project-${project.id}-resumen`);
+                                } else {
+                                    handleEditProject(project);
+                                }
+                            }}
                         >
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between gap-2">
@@ -670,7 +769,13 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                                 <TableRow
                                     key={project.id}
                                     className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => onNavigate && onNavigate(`project-${project.id}-resumen`)}
+                                    onClick={() => {
+                                        if (activeTab === 'proyectos') {
+                                            if (onNavigate) onNavigate(`project-${project.id}-resumen`);
+                                        } else {
+                                            handleEditProject(project);
+                                        }
+                                    }}
                                 >
                                     <TableCell className="font-medium">{project.nombre_corto}</TableCell>
                                     <TableCell>{project.cliente_abreviatura}</TableCell>
