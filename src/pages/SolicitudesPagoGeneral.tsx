@@ -6,7 +6,7 @@
 
 import { useState, useEffect, ReactNode } from "react"
 import { useAuth } from "../context/AuthContext"
-import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil } from "lucide-react"
+import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil, Eye, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import api from "../services/api"
 import { formatMoney } from "../utils/formatters"
 import type { SolicitudPagoAdjunto } from "../types/api"
@@ -65,6 +66,7 @@ interface SolicitudPago {
   tipo_cuenta: string | null
   numero_cuenta: string | null
   urgente?: boolean
+  revisada?: boolean
   proyecto_nombre?: string
   preparado_nombre?: string
   solicitado_nombre?: string
@@ -190,6 +192,17 @@ export default function SolicitudesPagoGeneral() {
   // Adjuntos
   const [detailAdjuntos, setDetailAdjuntos] = useState<SolicitudPagoAdjunto[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [detailRevisada, setDetailRevisada] = useState(false)
+  const [togglingRevisada, setTogglingRevisada] = useState(false)
+
+  // Selection for bulk approval
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+
+  // Bulk approval
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [bulkPassword, setBulkPassword] = useState('')
+  const [bulkApproving, setBulkApproving] = useState(false)
+  const [bulkError, setBulkError] = useState<string | null>(null)
 
   // Approve/Reject
   const [approvingId, setApprovingId] = useState<number | null>(null)
@@ -214,6 +227,7 @@ export default function SolicitudesPagoGeneral() {
 
   const loadData = async () => {
     try {
+      setSelectedIds(new Set())
       setLoading(true)
       setError(null)
 
@@ -288,6 +302,7 @@ export default function SolicitudesPagoGeneral() {
         setDetailAdjuntos(response.data.adjuntos || [])
         setDetailAprobaciones(response.data.aprobaciones || [])
         setDetailAprobadores(response.data.aprobadores_proyecto || [])
+        setDetailRevisada(!!solicitud.revisada)
         setShowDetail(true)
       }
     } catch (err) {
@@ -407,6 +422,63 @@ export default function SolicitudesPagoGeneral() {
     } catch (err) {
       console.error('Error deleting adjunto:', err)
       alert('Error al eliminar el adjunto')
+    }
+  }
+
+  const handleToggleRevisada = async (solicitudId: number) => {
+    try {
+      setTogglingRevisada(true)
+      if (detailRevisada) {
+        await api.delete(`/solicitudes-pago/${solicitudId}/revisar`)
+        setDetailRevisada(false)
+      } else {
+        await api.post(`/solicitudes-pago/${solicitudId}/revisar`)
+        setDetailRevisada(true)
+      }
+      setSolicitudes(prev => prev.map(s =>
+        s.id === solicitudId ? { ...s, revisada: !detailRevisada } : s
+      ))
+    } catch (err) {
+      console.error('Error toggling review:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al cambiar estado de revisión')
+    } finally {
+      setTogglingRevisada(false)
+    }
+  }
+
+  const toggleSelection = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleBulkApprove = async () => {
+    if (!bulkPassword.trim() || selectedIds.size === 0) return
+    try {
+      setBulkApproving(true)
+      setBulkError(null)
+      const response = await api.post('/solicitudes-pago/aprobar-masivo', {
+        ids: Array.from(selectedIds),
+        password: bulkPassword
+      })
+      if (response.data.success) {
+        setShowPasswordModal(false)
+        setBulkPassword('')
+        setSelectedIds(new Set())
+        alert(`${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`)
+        loadData()
+        window.dispatchEvent(new Event('solicitud-status-changed'))
+      }
+    } catch (err) {
+      console.error('Error bulk approving:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      setBulkError(apiError.response?.data?.message || 'Error al aprobar')
+    } finally {
+      setBulkApproving(false)
     }
   }
 
@@ -538,6 +610,7 @@ export default function SolicitudesPagoGeneral() {
         <Table>
           <TableHeader>
             <TableRow>
+              {filterEstado === 'mi_aprobacion' && <TableHead className="w-10 px-2"></TableHead>}
               <TableHead className="w-[100px]">Numero</TableHead>
               <TableHead className="w-6 px-0"></TableHead>
               <TableHead>Proyecto</TableHead>
@@ -549,7 +622,7 @@ export default function SolicitudesPagoGeneral() {
           <TableBody>
             {filteredSolicitudes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={filterEstado === 'mi_aprobacion' ? 7 : 6} className="text-center py-8 text-muted-foreground">
                   No se encontraron solicitudes de pago
                 </TableCell>
               </TableRow>
@@ -560,9 +633,19 @@ export default function SolicitudesPagoGeneral() {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => openDetail(sol)}
                 >
+                  {filterEstado === 'mi_aprobacion' && (
+                    <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(sol.id)}
+                        onCheckedChange={() => toggleSelection(sol.id)}
+                        disabled={!sol.revisada}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-1">
                       {sol.numero}
+                      {sol.revisada && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
                     </div>
                     <div className="text-xs text-muted-foreground">{formatDate(sol.fecha)}</div>
                   </TableCell>
@@ -586,6 +669,27 @@ export default function SolicitudesPagoGeneral() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Bulk Approval Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-3">
+          <span className="text-sm font-medium">{selectedIds.size} seleccionada{selectedIds.size > 1 ? 's' : ''}</span>
+          <Button
+            onClick={() => { setBulkError(null); setBulkPassword(''); setShowPasswordModal(true) }}
+            size="sm"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            Aprobar seleccionadas
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
 
       {/* Project Selector Modal */}
       <Dialog open={showProjectSelector} onOpenChange={setShowProjectSelector}>
@@ -823,27 +927,38 @@ export default function SolicitudesPagoGeneral() {
                     return (
                       <>
                         {esMiTurno && (
-                          <div className="flex gap-2 pt-2">
+                          <div className="space-y-2 pt-2">
                             <Button
-                              onClick={() => handleAprobar(detailSolicitud.id)}
-                              disabled={approvingId === detailSolicitud.id}
-                              className="flex-1"
+                              variant={detailRevisada ? "secondary" : "outline"}
+                              onClick={() => handleToggleRevisada(detailSolicitud.id)}
+                              disabled={togglingRevisada}
+                              className="w-full"
                             >
-                              <Check className="h-4 w-4 mr-2" />
-                              {approvingId === detailSolicitud.id ? 'Aprobando...' : 'Aprobar'}
+                              <Eye className="h-4 w-4 mr-2" />
+                              {togglingRevisada ? 'Procesando...' : detailRevisada ? '✓ Revisada' : 'Marcar como Revisada'}
                             </Button>
-                            <Button
-                              variant="destructive"
-                              onClick={() => {
-                                setRejectingId(detailSolicitud.id)
-                                setRejectComment('')
-                                setShowRejectModal(true)
-                              }}
-                              className="flex-1"
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              Rechazar
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => handleAprobar(detailSolicitud.id)}
+                                disabled={approvingId === detailSolicitud.id}
+                                className="flex-1"
+                              >
+                                <Check className="h-4 w-4 mr-2" />
+                                {approvingId === detailSolicitud.id ? 'Aprobando...' : 'Aprobar'}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={() => {
+                                  setRejectingId(detailSolicitud.id)
+                                  setRejectComment('')
+                                  setShowRejectModal(true)
+                                }}
+                                className="flex-1"
+                              >
+                                <X className="h-4 w-4 mr-2" />
+                                Rechazar
+                              </Button>
+                            </div>
                           </div>
                         )}
 
@@ -944,6 +1059,44 @@ export default function SolicitudesPagoGeneral() {
             </Button>
             <Button variant="destructive" onClick={handleRechazar} disabled={!rejectComment.trim()}>
               Rechazar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Confirmation Modal */}
+      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Confirmar Aprobacion Masiva</DialogTitle>
+            <DialogDescription>
+              Vas a aprobar {selectedIds.size} solicitud{selectedIds.size > 1 ? 'es' : ''}. Ingresa tu contraseña para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <div>
+              <Label>Contraseña</Label>
+              <Input
+                type="password"
+                value={bulkPassword}
+                onChange={(e) => setBulkPassword(e.target.value)}
+                placeholder="Tu contraseña"
+                className="mt-1"
+                onKeyDown={(e) => e.key === 'Enter' && handleBulkApprove()}
+              />
+            </div>
+            {bulkError && (
+              <Alert variant="destructive">
+                <AlertDescription>{bulkError}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowPasswordModal(false)} disabled={bulkApproving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleBulkApprove} disabled={!bulkPassword.trim() || bulkApproving}>
+              {bulkApproving ? 'Aprobando...' : 'Confirmar'}
             </Button>
           </DialogFooter>
         </DialogContent>
