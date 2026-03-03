@@ -757,7 +757,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                     <div key={ajuste.id} className="flex justify-between">
                       <span className="text-muted-foreground">{ajuste.descripcion}:</span>
                       <span className={ajuste.tipo === 'descuento' ? 'text-red-600' : ''}>
-                        {ajuste.tipo === 'descuento' ? '-' : '+'}{formatMoney(ajuste.monto)}
+                        {ajuste.tipo === 'descuento' ? '-' : ''}{formatMoney(ajuste.monto)}
                       </span>
                     </div>
                   ))}
