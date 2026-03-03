@@ -4,9 +4,9 @@
  * Accesible desde el sidebar principal
  */
 
-import { useState, useEffect, useRef, ReactNode } from "react"
+import { useState, useEffect, ReactNode } from "react"
 import { useAuth } from "../context/AuthContext"
-import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Paperclip, FileText, Trash2, Download, Pencil } from "lucide-react"
+import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -41,6 +41,7 @@ import api from "../services/api"
 import { formatMoney } from "../utils/formatters"
 import type { SolicitudPagoAdjunto } from "../types/api"
 import SolicitudPagoForm from "../components/forms/SolicitudPagoForm"
+import AdjuntosPreview from "../components/AdjuntosPreview"
 
 // --- Types ---
 
@@ -189,7 +190,6 @@ export default function SolicitudesPagoGeneral() {
   // Adjuntos
   const [detailAdjuntos, setDetailAdjuntos] = useState<SolicitudPagoAdjunto[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
-  const adjuntoInputRef = useRef<HTMLInputElement>(null)
 
   // Approve/Reject
   const [approvingId, setApprovingId] = useState<number | null>(null)
@@ -397,19 +397,6 @@ export default function SolicitudesPagoGeneral() {
       alert(apiError.response?.data?.message || 'Error al subir archivos')
     } finally {
       setUploadingFiles(false)
-      if (adjuntoInputRef.current) adjuntoInputRef.current.value = ''
-    }
-  }
-
-  const handleDownloadAdjunto = async (adjuntoId: number) => {
-    try {
-      const response = await api.get(`/solicitudes-pago/adjuntos/${adjuntoId}/download`)
-      if (response.data.success) {
-        window.open(response.data.url, '_blank')
-      }
-    } catch (err) {
-      console.error('Error downloading:', err)
-      alert('Error al descargar el archivo')
     }
   }
 
@@ -641,7 +628,7 @@ export default function SolicitudesPagoGeneral() {
 
       {/* Detail Modal */}
       <Dialog open={showDetail} onOpenChange={setShowDetail}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Detalle de Solicitud
@@ -777,60 +764,13 @@ export default function SolicitudesPagoGeneral() {
               )}
 
               {/* Adjuntos */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Paperclip className="h-4 w-4" /> Adjuntos
-                  </h4>
-                  <div>
-                    <input
-                      ref={adjuntoInputRef}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => e.target.files && handleUploadAdjuntos(e.target.files)}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => adjuntoInputRef.current?.click()}
-                      disabled={uploadingFiles}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      {uploadingFiles ? 'Subiendo...' : 'Adjuntar'}
-                    </Button>
-                  </div>
-                </div>
-                {detailAdjuntos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sin adjuntos</p>
-                ) : (
-                  <div className="space-y-1">
-                    {detailAdjuntos.map((adj) => (
-                      <div key={adj.id} className="flex items-center justify-between p-2 border rounded text-sm">
-                        <div
-                          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:text-primary"
-                          onClick={() => handleDownloadAdjunto(adj.id)}
-                        >
-                          <FileText className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{adj.nombre_original}</span>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {(adj.tamano / 1024).toFixed(0)} KB
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeleteAdjunto(adj.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <AdjuntosPreview
+                adjuntos={detailAdjuntos}
+                solicitudPagoId={detailSolicitud.id}
+                onUpload={handleUploadAdjuntos}
+                onDelete={handleDeleteAdjunto}
+                uploading={uploadingFiles}
+              />
 
               {/* Approval section */}
               <div className="space-y-3">
