@@ -235,7 +235,12 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
     try {
       setLoading(true)
       setError(null)
-      const params = filterEstado !== 'all' ? `?estado=${filterEstado}` : ''
+      let params = ''
+      if (filterEstado === 'mi_aprobacion') {
+        params = '?pending_my_approval=true'
+      } else if (filterEstado !== 'all') {
+        params = `?estado=${filterEstado}`
+      }
       const response = await api.get(`/solicitudes-pago/project/${projectId}${params}`)
       if (response.data.success) {
         setSolicitudes(response.data.solicitudes || [])
@@ -304,6 +309,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       await api.post(`/solicitudes-pago/${solicitudId}/aprobar`)
       setShowDetail(false)
       await loadSolicitudes()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error approving:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -322,6 +328,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       setRejectingId(null)
       setShowDetail(false)
       await loadSolicitudes()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error rejecting:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -335,6 +342,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pagada' })
       setShowDetail(false)
       await loadSolicitudes()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error marking as paid:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -350,6 +358,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pendiente' })
       setShowDetail(false)
       await loadSolicitudes()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error resubmitting:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -527,6 +536,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="mi_aprobacion">Mi aprobación</SelectItem>
               <SelectItem value="borrador">Borradores</SelectItem>
               <SelectItem value="pendiente">Pendientes</SelectItem>
               <SelectItem value="aprobada">Aprobadas</SelectItem>

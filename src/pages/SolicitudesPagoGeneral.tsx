@@ -138,6 +138,7 @@ const formatDate = (dateString: string | null | undefined): string => {
 }
 
 const estadoLabels: Record<string, string> = {
+  'mi_aprobacion': 'Mi aprobación',
   'pendiente': 'Pendiente',
   'aprobada': 'Aprobada',
   'rechazada': 'Rechazada',
@@ -227,7 +228,12 @@ export default function SolicitudesPagoGeneral() {
       setLoading(true)
       setError(null)
 
-      const params = filterEstado !== 'all' ? `?estado=${filterEstado}` : ''
+      let params = ''
+      if (filterEstado === 'mi_aprobacion') {
+        params = '?pending_my_approval=true'
+      } else if (filterEstado !== 'all') {
+        params = `?estado=${filterEstado}`
+      }
       const [solRes, projRes] = await Promise.all([
         api.get(`/solicitudes-pago${params}`),
         api.get('/projects')
@@ -323,6 +329,7 @@ export default function SolicitudesPagoGeneral() {
       await api.post(`/solicitudes-pago/${solicitudId}/aprobar`)
       setShowDetail(false)
       await loadData()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error approving:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -341,6 +348,7 @@ export default function SolicitudesPagoGeneral() {
       setRejectingId(null)
       setShowDetail(false)
       await loadData()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error rejecting:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -354,6 +362,7 @@ export default function SolicitudesPagoGeneral() {
       await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pagada' })
       setShowDetail(false)
       await loadData()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error marking as paid:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
@@ -369,6 +378,7 @@ export default function SolicitudesPagoGeneral() {
       await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pendiente' })
       setShowDetail(false)
       await loadData()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
       console.error('Error resubmitting:', err)
       const apiError = err as { response?: { data?: { message?: string } } }

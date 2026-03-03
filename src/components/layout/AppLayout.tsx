@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import api from "../../services/api"
 import {
   Home,
   Building2,
@@ -101,6 +102,8 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({})
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0)
+  const [pendingByProject, setPendingByProject] = useState<Record<number, number>>({})
 
   // Close mobile sheet when screen becomes desktop size
   useEffect(() => {
@@ -113,6 +116,32 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [mobileSheetOpen])
+
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const res = await api.get('/solicitudes-pago/pending-approval-count')
+        if (res.data.success) {
+          setPendingApprovalCount(res.data.total)
+          const byProject: Record<number, number> = {}
+          for (const row of res.data.por_proyecto) {
+            byProject[row.proyecto_id] = row.total
+          }
+          setPendingByProject(byProject)
+        }
+      } catch { /* silencio */ }
+    }
+    if (user) {
+      loadPendingCount()
+      const interval = setInterval(loadPendingCount, 30000)
+      const handleStatusChange = () => loadPendingCount()
+      window.addEventListener('solicitud-status-changed', handleStatusChange)
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('solicitud-status-changed', handleStatusChange)
+      }
+    }
+  }, [user, currentView])
 
   // ── General menu items ──
   const generalMenuItems: MenuItem[] = [
@@ -263,6 +292,11 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
               >
                 <Icon className="mr-2 h-4 w-4" />
                 <span className="flex-1 text-left">{item.label}</span>
+                {item.id === 'solicitudes-pago' && pendingApprovalCount > 0 && (
+                  <span className="ml-auto h-5 min-w-5 px-1.5 text-[10px] font-semibold bg-red-500 text-white rounded-full flex items-center justify-center leading-none pb-px">
+                    {pendingApprovalCount}
+                  </span>
+                )}
                 {hasSubmenu && (
                   expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
                 )}
@@ -366,6 +400,11 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
                 >
                   <Icon className="mr-2 h-4 w-4" />
                   <span className="flex-1 text-left">{item.label}</span>
+                  {item.key === 'solicitudes-pago' && projectContext && pendingByProject[projectContext.id] > 0 && (
+                    <span className="ml-auto h-5 min-w-5 px-1.5 text-[10px] font-semibold bg-red-500 text-white rounded-full flex items-center justify-center leading-none pb-px">
+                      {pendingByProject[projectContext.id]}
+                    </span>
+                  )}
                 </Button>
               )
             })}
