@@ -39,6 +39,7 @@ import {
 import { Label } from "@/components/ui/label"
 import api from "../../services/api"
 import { formatMoney } from "../../utils/formatters"
+import type { SolicitudPagoAdjunto } from "../../types/api"
 import SolicitudPagoForm from "../../components/forms/SolicitudPagoForm"
 
 // --- Types ---
@@ -106,18 +107,6 @@ interface AprobadorProyecto {
   orden: number
   nombre: string
   email: string
-}
-
-interface Adjunto {
-  id: number
-  solicitud_pago_id: number
-  nombre_original: string
-  r2_key: string
-  tipo_mime: string
-  tamano: number
-  subido_por: number
-  subido_por_nombre: string
-  created_at: string
 }
 
 interface BadgeConfig {
@@ -194,7 +183,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
   const [hasApprovers, setHasApprovers] = useState<boolean | null>(null)
 
   // Adjuntos
-  const [detailAdjuntos, setDetailAdjuntos] = useState<Adjunto[]>([])
+  const [detailAdjuntos, setDetailAdjuntos] = useState<SolicitudPagoAdjunto[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const adjuntoInputRef = useRef<HTMLInputElement>(null)
 

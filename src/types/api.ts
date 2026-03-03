@@ -510,3 +510,19 @@ export interface RegistroUsoExtended {
   observaciones?: string;
   created_at?: string;
 }
+
+// ============================================
+// ADJUNTOS (Solicitudes de Pago)
+// ============================================
+
+export interface SolicitudPagoAdjunto {
+  id: number;
+  solicitud_pago_id: number;
+  nombre_original: string;
+  r2_key: string;
+  tipo_mime: string;
+  tamano: number;
+  subido_por: number;
+  subido_por_nombre: string;
+  created_at: string;
+}
