@@ -3,6 +3,7 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { Pencil, Plus, Loader2, UserX, UserCheck } from 'lucide-react';
 
 // Shadcn Components
@@ -47,7 +48,7 @@ interface Usuario {
     id: number;
     nombre: string;
     email: string;
-    rol: 'admin' | 'usuario';
+    rol: 'admin' | 'co-admin' | 'usuario';
     activo: boolean;
     created_at: string;
     updated_at: string;
@@ -58,20 +59,21 @@ const createSchema = z.object({
     nombre: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
     email: z.string().email('Email inválido'),
     password: z.string().min(6, 'Contraseña debe tener al menos 6 caracteres'),
-    rol: z.enum(['admin', 'usuario']),
+    rol: z.enum(['admin', 'co-admin', 'usuario']),
 });
 
 // Schema para editar usuario (sin contraseña)
 const editSchema = z.object({
     nombre: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
     email: z.string().email('Email inválido'),
-    rol: z.enum(['admin', 'usuario']),
+    rol: z.enum(['admin', 'co-admin', 'usuario']),
 });
 
 type CreateFormData = z.infer<typeof createSchema>;
 type EditFormData = z.infer<typeof editSchema>;
 
 const UsuariosPage = () => {
+    const { user: currentUser } = useAuth();
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -201,9 +203,16 @@ const UsuariosPage = () => {
     };
 
     const getRolBadge = (rol: string) => {
-        return rol === 'admin'
-            ? <Badge variant="destructive">Admin</Badge>
-            : <Badge variant="secondary">Usuario</Badge>;
+        if (rol === 'admin') return <Badge variant="destructive">Admin</Badge>;
+        if (rol === 'co-admin') return <Badge className="bg-orange-500 text-white hover:bg-orange-600">Co-Admin</Badge>;
+        return <Badge variant="secondary">Usuario</Badge>;
+    };
+
+    // Co-admin no puede editar/desactivar admins
+    const canManageUser = (usuario: Usuario): boolean => {
+        if (currentUser?.rol === 'admin') return true;
+        if (currentUser?.rol === 'co-admin' && usuario.rol === 'admin') return false;
+        return true;
     };
 
     const getEstadoBadge = (activo: boolean) => {
@@ -265,6 +274,7 @@ const UsuariosPage = () => {
                                     <TableCell className="text-center">{getRolBadge(usuario.rol)}</TableCell>
                                     <TableCell className="text-center">{getEstadoBadge(usuario.activo)}</TableCell>
                                     <TableCell>
+                                        {canManageUser(usuario) && (
                                         <div className="flex items-center gap-1">
                                             <Button
                                                 variant="ghost"
@@ -284,6 +294,7 @@ const UsuariosPage = () => {
                                                 {usuario.activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                                             </Button>
                                         </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -313,6 +324,7 @@ const UsuariosPage = () => {
                                             {getEstadoBadge(usuario.activo)}
                                         </div>
                                     </div>
+                                    {canManageUser(usuario) && (
                                     <div className="flex items-center gap-1">
                                         <Button
                                             variant="ghost"
@@ -330,6 +342,7 @@ const UsuariosPage = () => {
                                             {usuario.activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                                         </Button>
                                     </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -411,6 +424,7 @@ const UsuariosPage = () => {
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="usuario">Usuario</SelectItem>
+                                                <SelectItem value="co-admin">Co-Admin</SelectItem>
                                                 <SelectItem value="admin">Admin</SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -493,6 +507,7 @@ const UsuariosPage = () => {
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="usuario">Usuario</SelectItem>
+                                                <SelectItem value="co-admin">Co-Admin</SelectItem>
                                                 <SelectItem value="admin">Admin</SelectItem>
                                             </SelectContent>
                                         </Select>

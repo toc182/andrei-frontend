@@ -55,7 +55,7 @@ const tabConfig: Record<string, { labelNuevo: string; labelVacio: string; formTy
 
 const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', onStatsUpdate, onNavigate }) => {
     const config = tabConfig[activeTab] || tabConfig.proyectos;
-    const { user } = useAuth();
+    const { hasPermission } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -338,7 +338,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
     return (
         <div className="space-y-6">
             {/* Botón de acción */}
-            {(!!user) && (
+            {hasPermission('proyectos_crear') && (
                 <div className="flex justify-end">
                     <Button onClick={() => setShowCreateForm(true)}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -576,7 +576,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                                                 <Badge variant={getAdendaStatusBadgeVariant(adenda.estado)}>
                                                     {getAdendaStatusText(adenda.estado)}
                                                 </Badge>
-                                                {(!!user) && (
+                                                {hasPermission('proyectos_editar') && (
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={() => {
@@ -655,7 +655,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                 )}
 
                 {/* Footer con botón de agregar adenda */}
-                {(!!user) && (
+                {hasPermission('proyectos_editar') && (
                     <DialogFooter>
                         <Button onClick={() => setShowAdendaForm(true)}>
                             <Plus className="mr-2 h-4 w-4" />
@@ -704,7 +704,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                                     <CardTitle className="text-base leading-tight">
                                         {project.nombre_corto}
                                     </CardTitle>
-                                    {(!!user) && (
+                                    {hasPermission('proyectos_editar') && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -752,7 +752,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                             <TableHead>Cliente</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
-                            {(!!user) && (
+                            {hasPermission('proyectos_editar') && (
                                 <TableHead className="w-[50px]"></TableHead>
                             )}
                         </TableRow>
@@ -787,7 +787,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ activeTab = 'proyectos', on
                                     <TableCell className="text-right">
                                         {formatMoney(project.monto_total || project.monto_contrato_original || 0)}
                                     </TableCell>
-                                    {(!!user) && (
+                                    {hasPermission('proyectos_editar') && (
                                         <TableCell>
                                             <Button
                                                 variant="ghost"

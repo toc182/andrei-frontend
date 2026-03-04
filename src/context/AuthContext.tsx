@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { authAPI } from '../services/api';
-import type { User } from '@/types';
+import type { User, UserPermissions } from '@/types';
 
 // Types for auth context
 interface AuthContextType {
@@ -10,6 +10,8 @@ interface AuthContextType {
     loading: boolean;
     login: (email: string, password: string) => Promise<LoginResult>;
     logout: () => void;
+    hasPermission: (permiso: keyof UserPermissions) => boolean;
+    isAdminOrCoAdmin: boolean;
 }
 
 interface LoginResult {
@@ -84,12 +86,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
     };
 
+    const isAdminOrCoAdmin = useMemo(() => {
+        return user?.rol === 'admin' || user?.rol === 'co-admin';
+    }, [user?.rol]);
+
+    const hasPermission = useCallback((permiso: keyof UserPermissions): boolean => {
+        // admin y co-admin tienen todos los permisos
+        if (user?.rol === 'admin' || user?.rol === 'co-admin') return true;
+        // usuario verifica su permiso específico
+        return user?.permissions?.[permiso] ?? false;
+    }, [user?.rol, user?.permissions]);
+
     const value: AuthContextType = {
         user,
         isAuthenticated,
         loading,
         login,
         logout,
+        hasPermission,
+        isAdminOrCoAdmin,
     };
 
     return (

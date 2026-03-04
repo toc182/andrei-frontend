@@ -3,6 +3,7 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
 
 // Shadcn Components
@@ -63,6 +64,7 @@ const clienteSchema = z.object({
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
 const ClientesN = () => {
+    const { hasPermission } = useAuth();
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [loading, setLoading] = useState(true);
     const [showFormModal, setShowFormModal] = useState(false);
@@ -226,12 +228,14 @@ const ClientesN = () => {
     return (
         <div className="space-y-6">
             {/* Header con botón */}
+            {hasPermission('clientes_agregar') && (
             <div className="flex justify-end">
                 <Button onClick={handleNewCliente}>
                     <Plus className="mr-2 h-4 w-4" />
                     Nuevo Cliente
                 </Button>
             </div>
+            )}
 
             {/* Error global */}
             {error && !showFormModal && !showDeleteConfirmation && (
@@ -267,6 +271,7 @@ const ClientesN = () => {
                                     <TableCell className="font-medium">{cliente.nombre}</TableCell>
                                     <TableCell className="text-center">{cliente.abreviatura}</TableCell>
                                     <TableCell>
+                                        {hasPermission('clientes_editar') && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -278,6 +283,7 @@ const ClientesN = () => {
                                         >
                                             <Pencil className="h-4 w-4" />
                                         </Button>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -455,7 +461,7 @@ const ClientesN = () => {
 
                             {/* Footer */}
                             <DialogFooter className="gap-2">
-                                {editingCliente && (
+                                {editingCliente && hasPermission('clientes_eliminar') && (
                                     <Button
                                         type="button"
                                         variant="destructive"

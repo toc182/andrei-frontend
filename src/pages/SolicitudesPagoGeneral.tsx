@@ -157,9 +157,15 @@ const getEstadoBadge = (estado: string): ReactNode => {
   )
 }
 
-export default function SolicitudesPagoGeneral() {
-  const { user } = useAuth()
+interface SolicitudesPagoGeneralProps {
+  onNavigate?: (view: string) => void
+}
+
+export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGeneralProps) {
+  const { user, hasPermission, isAdminOrCoAdmin } = useAuth()
   const canManage = !!user
+  const canManageSolicitud = (sol: SolicitudPago) =>
+    isAdminOrCoAdmin || hasPermission('solicitudes_editar_todas') || sol.preparado_por === user?.id
 
   const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>([])
   const [proyectos, setProyectos] = useState<ProjectOption[]>([])
@@ -175,6 +181,8 @@ export default function SolicitudesPagoGeneral() {
   const [showForm, setShowForm] = useState(false)
   const [showProjectSelector, setShowProjectSelector] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
+  const [selectorNoApprovers, setSelectorNoApprovers] = useState(false)
+  const [checkingApprovers, setCheckingApprovers] = useState(false)
   const [editingSolicitud, setEditingSolicitud] = useState<SolicitudPago | null>(null)
   const [editingItems, setEditingItems] = useState<SolicitudItem[]>([])
   const [editingAjustes, setEditingAjustes] = useState<SolicitudAjuste[]>([])
@@ -200,12 +208,13 @@ export default function SolicitudesPagoGeneral() {
 
   // Bulk approval
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [pendingApprovalId, setPendingApprovalId] = useState<number | null>(null)
   const [bulkPassword, setBulkPassword] = useState('')
   const [bulkApproving, setBulkApproving] = useState(false)
   const [bulkError, setBulkError] = useState<string | null>(null)
 
   // Approve/Reject
-  const [approvingId, setApprovingId] = useState<number | null>(null)
+
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectComment, setRejectComment] = useState('')
   const [rejectingId, setRejectingId] = useState<number | null>(null)
@@ -283,12 +292,24 @@ export default function SolicitudesPagoGeneral() {
     setShowProjectSelector(true)
   }
 
-  const handleProjectSelected = (projectIdStr: string) => {
+  const handleProjectSelected = async (projectIdStr: string) => {
     const pid = parseInt(projectIdStr)
     setSelectedProjectId(pid)
-    setShowProjectSelector(false)
-    // Delay para que el Dialog del selector cierre antes de abrir el form
-    setTimeout(() => setShowForm(true), 150)
+    setSelectorNoApprovers(false)
+    setCheckingApprovers(true)
+    try {
+      const response = await api.get(`/approval-settings/project/${pid}`)
+      if (response.data.success && response.data.approvers.length > 0) {
+        setShowProjectSelector(false)
+        setTimeout(() => setShowForm(true), 150)
+      } else {
+        setSelectorNoApprovers(true)
+      }
+    } catch {
+      setSelectorNoApprovers(true)
+    } finally {
+      setCheckingApprovers(false)
+    }
   }
 
   // Detail
@@ -327,20 +348,11 @@ export default function SolicitudesPagoGeneral() {
   }
 
   // Approval actions
-  const handleAprobar = async (solicitudId: number) => {
-    try {
-      setApprovingId(solicitudId)
-      await api.post(`/solicitudes-pago/${solicitudId}/aprobar`)
-      setShowDetail(false)
-      await loadData()
-      window.dispatchEvent(new Event('solicitud-status-changed'))
-    } catch (err) {
-      console.error('Error approving:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al aprobar')
-    } finally {
-      setApprovingId(null)
-    }
+  const handleAprobar = (solicitudId: number) => {
+    setPendingApprovalId(solicitudId)
+    setBulkError(null)
+    setBulkPassword('')
+    setShowPasswordModal(true)
   }
 
   const handleRechazar = async () => {
@@ -456,25 +468,37 @@ export default function SolicitudesPagoGeneral() {
     })
   }
 
-  const handleBulkApprove = async () => {
-    if (!bulkPassword.trim() || selectedIds.size === 0) return
+  const handleConfirmApproval = async () => {
+    if (!bulkPassword.trim()) return
     try {
       setBulkApproving(true)
       setBulkError(null)
-      const response = await api.post('/solicitudes-pago/aprobar-masivo', {
-        ids: Array.from(selectedIds),
-        password: bulkPassword
-      })
-      if (response.data.success) {
+      if (pendingApprovalId) {
+        // Individual approval
+        await api.post(`/solicitudes-pago/${pendingApprovalId}/aprobar`, { password: bulkPassword })
         setShowPasswordModal(false)
         setBulkPassword('')
-        setSelectedIds(new Set())
-        alert(`${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`)
-        loadData()
+        setPendingApprovalId(null)
+        setShowDetail(false)
+        await loadData()
         window.dispatchEvent(new Event('solicitud-status-changed'))
+      } else if (selectedIds.size > 0) {
+        // Bulk approval
+        const response = await api.post('/solicitudes-pago/aprobar-masivo', {
+          ids: Array.from(selectedIds),
+          password: bulkPassword
+        })
+        if (response.data.success) {
+          setShowPasswordModal(false)
+          setBulkPassword('')
+          setSelectedIds(new Set())
+          alert(`${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`)
+          loadData()
+          window.dispatchEvent(new Event('solicitud-status-changed'))
+        }
       }
     } catch (err) {
-      console.error('Error bulk approving:', err)
+      console.error('Error approving:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
       setBulkError(apiError.response?.data?.message || 'Error al aprobar')
     } finally {
@@ -672,27 +696,29 @@ export default function SolicitudesPagoGeneral() {
 
       {/* Bulk Approval Bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-3">
-          <span className="text-sm font-medium">{selectedIds.size} seleccionada{selectedIds.size > 1 ? 's' : ''}</span>
-          <Button
-            onClick={() => { setBulkError(null); setBulkPassword(''); setShowPasswordModal(true) }}
-            size="sm"
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Aprobar seleccionadas
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            Cancelar
-          </Button>
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t shadow-lg">
+          <div className="flex items-center justify-center gap-3 px-4 py-2.5">
+            <span className="text-sm font-medium whitespace-nowrap">{selectedIds.size} seleccionada{selectedIds.size > 1 ? 's' : ''}</span>
+            <Button
+              onClick={() => { setPendingApprovalId(null); setBulkError(null); setBulkPassword(''); setShowPasswordModal(true) }}
+              size="sm"
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Aprobar seleccionadas
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Cancelar
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Project Selector Modal */}
-      <Dialog open={showProjectSelector} onOpenChange={setShowProjectSelector}>
+      <Dialog open={showProjectSelector} onOpenChange={(open) => { setShowProjectSelector(open); if (!open) setSelectorNoApprovers(false) }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Seleccionar Proyecto</DialogTitle>
@@ -700,10 +726,10 @@ export default function SolicitudesPagoGeneral() {
               Selecciona el proyecto para la nueva solicitud de pago
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Select onValueChange={handleProjectSelected}>
+          <div className="py-4 space-y-3">
+            <Select onValueChange={handleProjectSelected} disabled={checkingApprovers}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un proyecto" />
+                <SelectValue placeholder={checkingApprovers ? 'Verificando...' : 'Selecciona un proyecto'} />
               </SelectTrigger>
               <SelectContent>
                 {proyectos.map(p => (
@@ -713,6 +739,21 @@ export default function SolicitudesPagoGeneral() {
                 ))}
               </SelectContent>
             </Select>
+            {selectorNoApprovers && selectedProjectId && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs flex items-center gap-2">
+                  Este proyecto no tiene aprobadores configurados. Configure los aprobadores en la seccion Miembros del proyecto.
+                  <Button
+                    variant="link"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => { setShowProjectSelector(false); onNavigate?.(`project-${selectedProjectId}-miembros`) }}
+                  >
+                    Ir a Miembros
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -747,7 +788,7 @@ export default function SolicitudesPagoGeneral() {
                   <Download className="h-4 w-4" />
                 </Button>
               )}
-              {detailSolicitud && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && (
+              {detailSolicitud && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && canManageSolicitud(detailSolicitud) && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -940,11 +981,10 @@ export default function SolicitudesPagoGeneral() {
                             <div className="flex gap-2">
                               <Button
                                 onClick={() => handleAprobar(detailSolicitud.id)}
-                                disabled={approvingId === detailSolicitud.id}
                                 className="flex-1"
                               >
                                 <Check className="h-4 w-4 mr-2" />
-                                {approvingId === detailSolicitud.id ? 'Aprobando...' : 'Aprobar'}
+                                Aprobar
                               </Button>
                               <Button
                                 variant="destructive"
@@ -995,7 +1035,7 @@ export default function SolicitudesPagoGeneral() {
               </div>
 
               {/* Delete (only pendiente) */}
-              {canManage && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && (
+              {canManage && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && canManageSolicitud(detailSolicitud) && (
                 <div className="pt-4 border-t">
                   <Button
                     variant="outline"
@@ -1065,12 +1105,14 @@ export default function SolicitudesPagoGeneral() {
       </Dialog>
 
       {/* Password Confirmation Modal */}
-      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+      <Dialog open={showPasswordModal} onOpenChange={(open) => { setShowPasswordModal(open); if (!open) setPendingApprovalId(null) }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Confirmar Aprobacion Masiva</DialogTitle>
+            <DialogTitle>Confirmar Aprobacion</DialogTitle>
             <DialogDescription>
-              Vas a aprobar {selectedIds.size} solicitud{selectedIds.size > 1 ? 'es' : ''}. Ingresa tu contraseña para confirmar.
+              {pendingApprovalId
+                ? 'Ingresa tu contraseña para aprobar esta solicitud.'
+                : `Vas a aprobar ${selectedIds.size} solicitud${selectedIds.size > 1 ? 'es' : ''}. Ingresa tu contraseña para confirmar.`}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-3">
@@ -1082,7 +1124,7 @@ export default function SolicitudesPagoGeneral() {
                 onChange={(e) => setBulkPassword(e.target.value)}
                 placeholder="Tu contraseña"
                 className="mt-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleBulkApprove()}
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmApproval()}
               />
             </div>
             {bulkError && (
@@ -1095,7 +1137,7 @@ export default function SolicitudesPagoGeneral() {
             <Button variant="outline" onClick={() => setShowPasswordModal(false)} disabled={bulkApproving}>
               Cancelar
             </Button>
-            <Button onClick={handleBulkApprove} disabled={!bulkPassword.trim() || bulkApproving}>
+            <Button onClick={handleConfirmApproval} disabled={!bulkPassword.trim() || bulkApproving}>
               {bulkApproving ? 'Aprobando...' : 'Confirmar'}
             </Button>
           </DialogFooter>

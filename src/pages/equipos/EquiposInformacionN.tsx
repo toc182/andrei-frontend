@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import api from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
 import { formatMoney } from '../../utils/formatters'
 import logo from '../../assets/logo.png'
 import cocpLogo from '../../assets/LogoCOCPfondoblanco.png'
@@ -92,6 +93,7 @@ const equipoSchema = z.object({
 })
 
 export default function EquiposInformacionN() {
+  const { hasPermission } = useAuth()
   const [equiposPinellas, setEquiposPinellas] = useState<EquipoExtended[]>([])
   const [equiposCOCP, setEquiposCOCP] = useState<EquipoExtended[]>([])
   const [loading, setLoading] = useState(true)
@@ -298,14 +300,16 @@ export default function EquiposInformacionN() {
                 <TableCell>{equipo.modelo}</TableCell>
                 <TableCell>{equipo.ano}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => handleEditEquipo(equipo, e)}
-                    title="Editar equipo"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  {hasPermission('equipos_editar') && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handleEditEquipo(equipo, e)}
+                      title="Editar equipo"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))
@@ -344,12 +348,14 @@ export default function EquiposInformacionN() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-end">
-        <Button onClick={handleAddEquipo}>
-          <Plus className="mr-2 h-4 w-4" />
-          Agregar Equipo
-        </Button>
-      </div>
+      {hasPermission('equipos_agregar') && (
+        <div className="flex justify-end">
+          <Button onClick={handleAddEquipo}>
+            <Plus className="mr-2 h-4 w-4" />
+            Agregar Equipo
+          </Button>
+        </div>
+      )}
 
       {/* Tabla de Equipos de Pinellas */}
       <div className="space-y-4">
@@ -644,7 +650,7 @@ export default function EquiposInformacionN() {
               />
 
               <DialogFooter className="gap-2">
-                {editingEquipo && (
+                {editingEquipo && hasPermission('equipos_eliminar') && (
                   <Button
                     type="button"
                     variant="destructive"

@@ -148,8 +148,10 @@ const estadoLabels: Record<EstadoRequisicion, string> = {
 }
 
 export default function ProjectRequisiciones({ projectId }: ProjectRequisicionesProps) {
-  const { user } = useAuth()
+  const { user, hasPermission, isAdminOrCoAdmin } = useAuth()
   const canManage = !!user
+  const canManageRequisicion = (req: Requisicion) =>
+    isAdminOrCoAdmin || hasPermission('requisiciones_editar_todas') || req.solicitante_id === user?.id
 
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([])
   const [loading, setLoading] = useState(true)
@@ -597,7 +599,7 @@ export default function ProjectRequisiciones({ projectId }: ProjectRequisiciones
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Detalle de Requisicion
-              {canManage && historyData.requisicion && ['pendiente', 'en_cotizacion'].includes(historyData.requisicion.estado) && (
+              {canManage && historyData.requisicion && ['pendiente', 'en_cotizacion'].includes(historyData.requisicion.estado) && canManageRequisicion(historyData.requisicion) && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -762,7 +764,7 @@ export default function ProjectRequisiciones({ projectId }: ProjectRequisiciones
             </div>
 
             {/* Archivar Section */}
-            {canManage && historyData.requisicion && (
+            {canManage && historyData.requisicion && canManageRequisicion(historyData.requisicion) && (
               <div className="pt-4 border-t">
                 <Button
                   variant="outline"

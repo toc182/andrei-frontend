@@ -20,6 +20,7 @@ import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
 import ProjectDetailLayout from "./project/ProjectDetailLayout"
 import RequisicionesGeneral from "./RequisicionesGeneral"
 import UsuariosPage from "./UsuariosPage"
+import PermisosPage from "./PermisosPage"
 import SolicitudesPagoGeneral from "./SolicitudesPagoGeneral"
 import OportunidadesPage from "./OportunidadesPage"
 import { useAuth } from "../context/AuthContext"
@@ -44,7 +45,7 @@ interface ProjectContext {
 }
 
 export default function DashboardNew() {
-  const { user } = useAuth()
+  const { isAdminOrCoAdmin } = useAuth()
   const [currentView, setCurrentView] = useState("dashboard")
   const [stats, setStats] = useState<DashboardStats>({
     proyectos: null,
@@ -285,7 +286,7 @@ export default function DashboardNew() {
         return <RequisicionesGeneral />
 
       case "solicitudes-pago":
-        return <SolicitudesPagoGeneral />
+        return <SolicitudesPagoGeneral onNavigate={setCurrentView} />
 
       case "equipos":
       case "equipos-informacion":
@@ -319,7 +320,10 @@ export default function DashboardNew() {
         return <DocumentFormN documentType="carta-compromiso-verde" />
 
       case "usuarios":
-        return user?.rol === 'admin' ? <UsuariosPage /> : null
+        return isAdminOrCoAdmin ? <UsuariosPage /> : null
+
+      case "permisos":
+        return isAdminOrCoAdmin ? <PermisosPage /> : null
 
       default:
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />

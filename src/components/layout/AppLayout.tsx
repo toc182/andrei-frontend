@@ -98,7 +98,7 @@ interface NavigationProps {
 }
 
 export function AppLayout({ children, currentView, onNavigate, pageTitle, projectContext, onShowProjectInfo }: AppLayoutProps) {
-  const { user, logout } = useAuth()
+  const { user, logout, hasPermission, isAdminOrCoAdmin } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({})
@@ -157,12 +157,12 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
       icon: Building2,
       view: "projects"
     },
-    {
+    ...(hasPermission('oportunidades_ver') ? [{
       id: "oportunidades",
       label: "Oportunidades",
-      icon: Target,
+      icon: Target as LucideIcon,
       view: "oportunidades"
-    },
+    }] : []),
     {
       id: "clientes",
       label: "Clientes",
@@ -181,21 +181,21 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
       icon: Banknote,
       view: "solicitudes-pago"
     },
-    {
+    ...(hasPermission('equipos_ver') ? [{
       id: "equipos",
       label: "Equipos",
-      icon: Truck,
+      icon: Truck as LucideIcon,
       view: "equipos",
       submenu: [
         { id: "equipos-info", label: "Información de Equipos", view: "equipos-informacion" },
         { id: "equipos-status", label: "Status de Equipos", view: "equipos-status" },
         { id: "equipos-asig", label: "Asignaciones", view: "equipos-asignaciones" }
       ]
-    },
-    {
+    }] : []),
+    ...(hasPermission('documentos_acceso') ? [{
       id: "documentos",
       label: "Documentos",
-      icon: FileText,
+      icon: FileText as LucideIcon,
       view: "documentos",
       submenu: [
         { id: "doc-hub", label: "Ver Todos", view: "documentos" },
@@ -205,12 +205,16 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
         { id: "doc-incapacidad", label: "No Incapacidad", view: "doc-no-incapacidad" },
         { id: "doc-integridad", label: "Pacto Integridad", view: "doc-pacto-integridad" }
       ]
-    },
-    ...(user?.rol === 'admin' ? [{
-      id: "usuarios",
-      label: "Usuarios",
+    }] : []),
+    ...(isAdminOrCoAdmin ? [{
+      id: "administracion",
+      label: "Administración",
       icon: UserCog as LucideIcon,
-      view: "usuarios"
+      view: "usuarios",
+      submenu: [
+        { id: "admin-usuarios", label: "Usuarios", view: "usuarios" },
+        { id: "admin-permisos", label: "Permisos", view: "permisos" }
+      ]
     }] : [])
   ]
 

@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 import { formatMoney } from "../utils/formatters"
 import RequisicionForm from "../components/forms/RequisicionForm"
@@ -118,6 +119,9 @@ const estadoLabels: Record<string, string> = {
 }
 
 export default function RequisicionesGeneral() {
+  const { user, hasPermission, isAdminOrCoAdmin } = useAuth()
+  const canManageRequisicion = (req: Requisicion) =>
+    isAdminOrCoAdmin || hasPermission('requisiciones_editar_todas') || req.solicitante_id === user?.id
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([])
   const [proyectos, setProyectos] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -565,7 +569,7 @@ export default function RequisicionesGeneral() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Detalle de Requisicion
-              {historialRequisicion && ['pendiente', 'en_cotizacion'].includes(historialRequisicion.estado) && (
+              {historialRequisicion && ['pendiente', 'en_cotizacion'].includes(historialRequisicion.estado) && canManageRequisicion(historialRequisicion) && (
                 <Button
                   variant="ghost"
                   size="icon"

@@ -88,36 +88,45 @@ export default function OportunidadesPage() {
       setLoading(true)
       setError(null)
 
-      const [licRes, opRes] = await Promise.all([
+      const [licResult, opResult] = await Promise.allSettled([
         api.get('/licitaciones'),
         api.get('/oportunidades')
       ])
 
-      const licitaciones: UnifiedItem[] = (licRes.data.licitaciones || []).map(
-        (l: Record<string, unknown>) => ({
-          id: l.id as number,
-          tipo: 'licitacion' as const,
-          nombre: l.nombre as string,
-          cliente: l.entidad_licitante as string,
-          estado: l.estado_licitacion as string,
-          monto: (l.presupuesto_referencial as number) || 0,
-          fecha: l.fecha_cierre as string,
-          creado_por: (l.created_by_name as string) || '',
-        })
-      )
+      const licitaciones: UnifiedItem[] = licResult.status === 'fulfilled'
+        ? (licResult.value.data.licitaciones || []).map(
+            (l: Record<string, unknown>) => ({
+              id: l.id as number,
+              tipo: 'licitacion' as const,
+              nombre: l.nombre as string,
+              cliente: l.entidad_licitante as string,
+              estado: l.estado_licitacion as string,
+              monto: (l.presupuesto_referencial as number) || 0,
+              fecha: l.fecha_cierre as string,
+              creado_por: (l.created_by_name as string) || '',
+            })
+          )
+        : []
 
-      const oportunidades: UnifiedItem[] = (opRes.data.oportunidades || []).map(
-        (o: Record<string, unknown>) => ({
-          id: o.id as number,
-          tipo: 'oportunidad' as const,
-          nombre: o.nombre_oportunidad as string,
-          cliente: o.cliente_potencial as string,
-          estado: o.estado_oportunidad as string,
-          monto: (o.valor_estimado as number) || 0,
-          fecha: o.fecha_estimada_cierre as string || o.created_at as string,
-          creado_por: (o.created_by_name as string) || '',
-        })
-      )
+      const oportunidades: UnifiedItem[] = opResult.status === 'fulfilled'
+        ? (opResult.value.data.oportunidades || []).map(
+            (o: Record<string, unknown>) => ({
+              id: o.id as number,
+              tipo: 'oportunidad' as const,
+              nombre: o.nombre_oportunidad as string,
+              cliente: o.cliente_potencial as string,
+              estado: o.estado_oportunidad as string,
+              monto: (o.valor_estimado as number) || 0,
+              fecha: o.fecha_estimada_cierre as string || o.created_at as string,
+              creado_por: (o.created_by_name as string) || '',
+            })
+          )
+        : []
+
+      if (licResult.status === 'rejected' && opResult.status === 'rejected') {
+        setError('Error al cargar licitaciones y oportunidades')
+        return
+      }
 
       // Merge and sort by date descending
       const merged = [...licitaciones, ...oportunidades].sort((a, b) => {

@@ -35,12 +35,34 @@ export interface PaginatedResponse<T> {
 // AUTH & USERS
 // ============================================
 
+export interface UserPermissions {
+  acceso_global: boolean;
+  proyectos_crear: boolean;
+  proyectos_editar: boolean;
+  proyectos_eliminar: boolean;
+  clientes_agregar: boolean;
+  clientes_editar: boolean;
+  clientes_eliminar: boolean;
+  solicitudes_editar_todas: boolean;
+  requisiciones_editar_todas: boolean;
+  equipos_ver: boolean;
+  equipos_agregar: boolean;
+  equipos_editar: boolean;
+  equipos_eliminar: boolean;
+  equipos_asignacion: boolean;
+  equipos_uso: boolean;
+  equipos_editar_asignacion: boolean;
+  documentos_acceso: boolean;
+  oportunidades_ver: boolean;
+}
+
 export interface User {
   id: number;
   email: string;
   nombre: string;
-  rol: 'admin' | 'usuario';
+  rol: 'admin' | 'co-admin' | 'usuario';
   activo: boolean;
+  permissions?: UserPermissions;
   created_at: string;
   updated_at: string;
 }
