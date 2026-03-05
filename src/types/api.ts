@@ -64,6 +64,7 @@ export interface User {
   rol: 'admin' | 'co-admin' | 'usuario';
   activo: boolean;
   permissions?: UserPermissions;
+  debe_cambiar_password?: boolean;
   created_at: string;
   updated_at: string;
 }

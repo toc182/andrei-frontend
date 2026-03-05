@@ -2,11 +2,12 @@ import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginN from './pages/LoginN';
 import DashboardNew from './pages/DashboardNew';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { Loader2 } from 'lucide-react';
 
 // Componente principal que decide qué mostrar
 const AppContent: React.FC = () => {
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading, debeCambiarPassword } = useAuth();
 
     if (loading) {
         return (
@@ -20,7 +21,18 @@ const AppContent: React.FC = () => {
     }
 
     if (isAuthenticated) {
-        return <DashboardNew />;
+        return (
+            <>
+                <DashboardNew />
+                {debeCambiarPassword && (
+                    <ChangePasswordModal
+                        open={true}
+                        onOpenChange={() => {}}
+                        forced
+                    />
+                )}
+            </>
+        );
     }
 
     return <LoginN />;

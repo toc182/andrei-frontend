@@ -44,7 +44,6 @@ import api from "../../services/api"
 import {
   Home,
   Building2,
-  Target,
   Users,
   Truck,
   FileText,
@@ -517,9 +516,9 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
+              <DropdownMenuItem onClick={() => onNavigate('mi-cuenta')}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
+                <span>Mi Cuenta</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-red-600">

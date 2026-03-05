@@ -12,6 +12,8 @@ interface AuthContextType {
     logout: () => void;
     hasPermission: (permiso: keyof UserPermissions) => boolean;
     isAdminOrCoAdmin: boolean;
+    debeCambiarPassword: boolean;
+    clearPasswordChange: () => void;
 }
 
 interface LoginResult {
@@ -90,6 +92,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return user?.rol === 'admin' || user?.rol === 'co-admin';
     }, [user?.rol]);
 
+    const debeCambiarPassword = useMemo(() => {
+        return user?.debe_cambiar_password ?? false;
+    }, [user?.debe_cambiar_password]);
+
+    const clearPasswordChange = useCallback(() => {
+        setUser(prev => prev ? { ...prev, debe_cambiar_password: false } : null);
+    }, []);
+
     const hasPermission = useCallback((permiso: keyof UserPermissions): boolean => {
         // admin y co-admin tienen todos los permisos
         if (user?.rol === 'admin' || user?.rol === 'co-admin') return true;
@@ -105,6 +115,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout,
         hasPermission,
         isAdminOrCoAdmin,
+        debeCambiarPassword,
+        clearPasswordChange,
     };
 
     return (

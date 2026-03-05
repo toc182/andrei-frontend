@@ -80,6 +80,11 @@ export const authAPI = {
     verifyToken: async (): Promise<VerifyResponse> => {
         const response = await api.get<VerifyResponse>('/auth/verify');
         return response.data;
+    },
+
+    changePassword: async (password_actual: string | null, password_nueva: string): Promise<{ success: boolean; message: string }> => {
+        const response = await api.post<{ success: boolean; message: string }>('/auth/change-password', { password_actual, password_nueva });
+        return response.data;
     }
 };
 

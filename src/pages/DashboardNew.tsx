@@ -23,6 +23,7 @@ import UsuariosPage from "./UsuariosPage"
 import PermisosPage from "./PermisosPage"
 import SolicitudesPagoGeneral from "./SolicitudesPagoGeneral"
 import OportunidadesPage from "./OportunidadesPage"
+import MiCuentaPage from "./MiCuentaPage"
 import { useAuth } from "../context/AuthContext"
 import api from "../services/api"
 
@@ -324,6 +325,9 @@ export default function DashboardNew() {
 
       case "permisos":
         return isAdminOrCoAdmin ? <PermisosPage /> : null
+
+      case "mi-cuenta":
+        return <MiCuentaPage />
 
       default:
         return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
