@@ -75,16 +75,16 @@ export default function DashboardNew() {
         setLoading(true)
         setError(null)
 
-        const [proyectosRes, clientesRes, equiposRes] = await Promise.all([
+        const [proyectosRes, clientesRes, equiposRes] = await Promise.allSettled([
           api.get('/projects/stats/dashboard'),
           api.get('/clientes/stats/dashboard'),
           api.get('/equipos/')
         ])
 
         setStats({
-          proyectos: proyectosRes.data.stats,
-          clientes: clientesRes.data.data,
-          equipos: { total: equiposRes.data.total || equiposRes.data.data?.length || 0 }
+          proyectos: proyectosRes.status === 'fulfilled' ? proyectosRes.value.data.stats : { proyectos_activos: 0, proyectos_planificacion: 0 },
+          clientes: clientesRes.status === 'fulfilled' ? clientesRes.value.data.data : { total_clientes: 0 },
+          equipos: equiposRes.status === 'fulfilled' ? { total: equiposRes.value.data.total || equiposRes.value.data.data?.length || 0 } : { total: 0 }
         })
       } catch (err) {
         console.error('Error cargando estadísticas:', err)
