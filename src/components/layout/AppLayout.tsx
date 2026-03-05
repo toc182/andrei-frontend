@@ -157,12 +157,13 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
       icon: Building2,
       view: "projects"
     },
-    ...(hasPermission('oportunidades_ver') ? [{
-      id: "oportunidades",
-      label: "Oportunidades",
-      icon: Target as LucideIcon,
-      view: "oportunidades"
-    }] : []),
+    // Oportunidades oculto temporalmente
+    // ...(hasPermission('oportunidades_ver') ? [{
+    //   id: "oportunidades",
+    //   label: "Oportunidades",
+    //   icon: Target as LucideIcon,
+    //   view: "oportunidades"
+    // }] : []),
     {
       id: "clientes",
       label: "Clientes",
