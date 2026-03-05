@@ -14,9 +14,11 @@ import type { SolicitudPagoAdjunto } from "../types/api"
 interface AdjuntosPreviewProps {
   adjuntos: SolicitudPagoAdjunto[]
   solicitudPagoId: number
-  onUpload: (files: FileList) => void
-  onDelete: (id: number) => void
-  uploading: boolean
+  onUpload?: (files: FileList) => void
+  onDelete?: (id: number) => void
+  uploading?: boolean
+  readOnly?: boolean
+  title?: string
 }
 
 interface AdjuntoUrl {
@@ -31,6 +33,8 @@ export default function AdjuntosPreview({
   onUpload,
   onDelete,
   uploading,
+  readOnly = false,
+  title = "Adjuntos",
 }: AdjuntosPreviewProps) {
   const [adjuntoUrls, setAdjuntoUrls] = useState<AdjuntoUrl[]>([])
   const [loadingUrls, setLoadingUrls] = useState(false)
@@ -84,27 +88,29 @@ export default function AdjuntosPreview({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h4 className="font-medium flex items-center gap-2">
-          <Paperclip className="h-4 w-4" /> Adjuntos
+          <Paperclip className="h-4 w-4" /> {title}
         </h4>
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            multiple
-            className="hidden"
-            onChange={(e) => e.target.files && onUpload(e.target.files)}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            {uploading ? "Subiendo..." : "Adjuntar"}
-          </Button>
-        </div>
+        {!readOnly && (
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              multiple
+              className="hidden"
+              onChange={(e) => e.target.files && onUpload?.(e.target.files)}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              {uploading ? "Subiendo..." : "Adjuntar"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {adjuntos.length === 0 ? (
@@ -136,17 +142,19 @@ export default function AdjuntosPreview({
                       <span className="text-xs text-white truncate flex-1">
                         {adj.nombre_original}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 shrink-0 text-white/70 hover:text-red-400 hover:bg-transparent"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDelete(adj.id)
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {!readOnly && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 shrink-0 text-white/70 hover:text-red-400 hover:bg-transparent"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete?.(adj.id)
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )
@@ -179,14 +187,16 @@ export default function AdjuntosPreview({
                         Abrir
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => onDelete(adj.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {!readOnly && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => onDelete?.(adj.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 {url && !isMobile && (

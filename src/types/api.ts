@@ -54,6 +54,7 @@ export interface UserPermissions {
   equipos_editar_asignacion: boolean;
   documentos_acceso: boolean;
   oportunidades_ver: boolean;
+  registrar_pago: boolean;
 }
 
 export interface User {
@@ -547,4 +548,5 @@ export interface SolicitudPagoAdjunto {
   subido_por: number;
   subido_por_nombre: string;
   created_at: string;
+  tipo_adjunto?: string;
 }

@@ -210,7 +210,11 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
   const [rejectingId, setRejectingId] = useState<number | null>(null)
 
   // Marking as paid
-  const [markingPaid, setMarkingPaid] = useState(false)
+  const [showRegistrarPagoModal, setShowRegistrarPagoModal] = useState(false)
+  const [registroPagoFecha, setRegistroPagoFecha] = useState('')
+  const [registroPagoFiles, setRegistroPagoFiles] = useState<FileList | null>(null)
+  const [registrandoPago, setRegistrandoPago] = useState(false)
+  const [detailComprobante, setDetailComprobante] = useState<{ fecha_pago: string; registrado_por_nombre: string; adjuntos: SolicitudPagoAdjunto[] } | null>(null)
 
   // Resubmit (rechazada -> pendiente)
   const [resubmitting, setResubmitting] = useState(false)
@@ -286,6 +290,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
         setDetailAdjuntos(response.data.adjuntos || [])
         setDetailAprobaciones(response.data.aprobaciones || [])
         setDetailAprobadores(response.data.aprobadores_proyecto || [])
+        setDetailComprobante(response.data.comprobante || null)
         setDetailRevisada(!!solicitud.revisada)
         setShowDetail(true)
       }
@@ -334,19 +339,28 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
     }
   }
 
-  const handleMarcarPagada = async (solicitudId: number) => {
+  const handleRegistrarPago = async (solicitudId: number) => {
+    if (!registroPagoFecha || !registroPagoFiles || registroPagoFiles.length === 0) return
     try {
-      setMarkingPaid(true)
-      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pagada' })
+      setRegistrandoPago(true)
+      const formData = new FormData()
+      formData.append('fecha_pago', registroPagoFecha)
+      for (let i = 0; i < registroPagoFiles.length; i++) {
+        formData.append('archivos', registroPagoFiles[i])
+      }
+      await api.post(`/solicitudes-pago/${solicitudId}/registrar-pago`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setShowRegistrarPagoModal(false)
       setShowDetail(false)
       await loadSolicitudes()
       window.dispatchEvent(new Event('solicitud-status-changed'))
     } catch (err) {
-      console.error('Error marking as paid:', err)
+      console.error('Error registering payment:', err)
       const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al marcar como pagada')
+      alert(apiError.response?.data?.message || 'Error al registrar pago')
     } finally {
-      setMarkingPaid(false)
+      setRegistrandoPago(false)
     }
   }
 
@@ -927,6 +941,27 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 uploading={uploadingFiles}
               />
 
+              {/* Comprobante de Pago */}
+              {detailSolicitud.estado === 'pagada' && detailComprobante && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                    <h4 className="font-medium text-blue-900">Comprobante de Pago</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <div>Fecha de pago: {new Date(detailComprobante.fecha_pago + 'T12:00:00').toLocaleDateString('es-PA')}</div>
+                      <div>Registrado por: {detailComprobante.registrado_por_nombre}</div>
+                    </div>
+                    {detailComprobante.adjuntos.length > 0 && (
+                      <AdjuntosPreview
+                        adjuntos={detailComprobante.adjuntos}
+                        solicitudPagoId={detailSolicitud.id}
+                        readOnly
+                        title="Comprobantes"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Approval section */}
               <div className="space-y-3">
                 <h4 className="font-medium">Estado y Aprobaciones</h4>
@@ -1015,15 +1050,18 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                           </div>
                         )}
 
-                        {detailSolicitud.estado === 'aprobada' && canManage && (
+                        {detailSolicitud.estado === 'aprobada' && (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
                           <div className="pt-2">
                             <Button
-                              onClick={() => handleMarcarPagada(detailSolicitud.id)}
-                              disabled={markingPaid}
+                              onClick={() => {
+                                setRegistroPagoFecha('')
+                                setRegistroPagoFiles(null)
+                                setShowRegistrarPagoModal(true)
+                              }}
                               className="w-full"
                             >
                               <CreditCard className="h-4 w-4 mr-2" />
-                              {markingPaid ? 'Marcando...' : 'Marcar como Pagada'}
+                              Registrar Pago
                             </Button>
                           </div>
                         )}
@@ -1152,6 +1190,50 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             </Button>
             <Button onClick={handleConfirmApproval} disabled={!bulkPassword.trim() || bulkApproving}>
               {bulkApproving ? 'Aprobando...' : 'Confirmar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrar Pago Modal */}
+      <Dialog open={showRegistrarPagoModal} onOpenChange={setShowRegistrarPagoModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Pago</DialogTitle>
+            <DialogDescription>
+              Ingresa la fecha de pago y adjunta el comprobante.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label>Fecha de pago</Label>
+              <Input
+                type="date"
+                value={registroPagoFecha}
+                onChange={(e) => setRegistroPagoFecha(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Comprobante(s)</Label>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                multiple
+                onChange={(e) => setRegistroPagoFiles(e.target.files)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowRegistrarPagoModal(false)} disabled={registrandoPago}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => detailSolicitud && handleRegistrarPago(detailSolicitud.id)}
+              disabled={!registroPagoFecha || !registroPagoFiles || registroPagoFiles.length === 0 || registrandoPago}
+            >
+              {registrandoPago ? 'Registrando...' : 'Confirmar Pago'}
             </Button>
           </DialogFooter>
         </DialogContent>
