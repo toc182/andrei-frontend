@@ -73,6 +73,7 @@ interface SolicitudAjuste {
 interface UserOption {
   id: number
   nombre: string
+  tipo_usuario?: 'interno' | 'externo'
 }
 
 interface RequisicionOption {
@@ -154,6 +155,7 @@ export default function SolicitudPagoForm({
 
   // Options
   const [usuarios, setUsuarios] = useState<UserOption[]>([])
+  const [externosUsuarios, setExternosUsuarios] = useState<UserOption[]>([])
   const [requisiciones, setRequisiciones] = useState<RequisicionOption[]>([])
   const [nextNumero, setNextNumero] = useState<string>('')
 
@@ -227,14 +229,27 @@ export default function SolicitudPagoForm({
 
   const loadOptions = async () => {
     try {
-      const [usersRes, reqRes, numRes] = await Promise.all([
+      const [usersRes, externosRes, reqRes, numRes] = await Promise.all([
         api.get('/project-members/users'),
+        api.get('/users?tipo=externo'),
         api.get(`/requisiciones/project/${projectId}`),
         editingSolicitud ? Promise.resolve(null) : api.get(`/solicitudes-pago/project/${projectId}/next-number`)
       ])
 
       if (usersRes.data.success) {
         setUsuarios(usersRes.data.users || [])
+      }
+      if (externosRes.data.success) {
+        const internoIds = new Set((usersRes.data.users || []).map((u: { id: number }) => u.id))
+        setExternosUsuarios(
+          (externosRes.data.users || [])
+            .filter((u: { id: number }) => !internoIds.has(u.id))
+            .map((u: { id: number; nombre: string }) => ({
+              id: u.id,
+              nombre: u.nombre,
+              tipo_usuario: 'externo' as const
+            }))
+        )
       }
       if (reqRes.data.success) {
         setRequisiciones((reqRes.data.requisiciones || []).map((r: { id: number; numero: string }) => ({
@@ -457,9 +472,18 @@ export default function SolicitudPagoForm({
                     {usuarios.map(u => (
                       <SelectItem key={u.id} value={u.id.toString()}>{u.nombre}</SelectItem>
                     ))}
+                    {externosUsuarios.length > 0 && usuarios.length > 0 && (
+                      <div className="my-1 h-px bg-border" />
+                    )}
+                    {externosUsuarios.map(u => (
+                      <SelectItem key={`ext-${u.id}`} value={u.id.toString()}>
+                        {u.nombre}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
+              {/* Requisicion vinculada — oculto temporalmente
               <div>
                 <Label className="text-xs">Requisicion vinculada</Label>
                 <Select value={requisicionId} onValueChange={setRequisicionId}>
@@ -474,6 +498,7 @@ export default function SolicitudPagoForm({
                   </SelectContent>
                 </Select>
               </div>
+              */}
             </div>
 
             <div>

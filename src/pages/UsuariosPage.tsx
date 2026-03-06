@@ -47,19 +47,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface Usuario {
     id: number;
     nombre: string;
-    email: string;
+    email: string | null;
     rol: 'admin' | 'co-admin' | 'usuario';
+    tipo_usuario: 'interno' | 'externo';
     activo: boolean;
     created_at: string;
     updated_at: string;
 }
 
-// Schema para crear usuario
-const createSchema = z.object({
+// Schema para crear usuario interno
+const createInternoSchema = z.object({
     nombre: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
     email: z.string().email('Email inválido'),
     password: z.string().min(6, 'Contraseña debe tener al menos 6 caracteres'),
     rol: z.enum(['admin', 'co-admin', 'usuario']),
+});
+
+// Schema para crear usuario externo (solo nombre)
+const createExternoSchema = z.object({
+    nombre: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
 });
 
 // Schema para editar usuario (sin contraseña)
@@ -69,7 +75,7 @@ const editSchema = z.object({
     rol: z.enum(['admin', 'co-admin', 'usuario']),
 });
 
-type CreateFormData = z.infer<typeof createSchema>;
+type CreateInternoData = z.infer<typeof createInternoSchema>;
 type EditFormData = z.infer<typeof editSchema>;
 
 const UsuariosPage = () => {
@@ -83,9 +89,11 @@ const UsuariosPage = () => {
     const [togglingUsuario, setTogglingUsuario] = useState<Usuario | null>(null);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [createTipo, setCreateTipo] = useState<'interno' | 'externo'>('interno');
+    const [filtroTipo, setFiltroTipo] = useState<'todos' | 'interno' | 'externo'>('todos');
 
-    const createForm: UseFormReturn<CreateFormData> = useForm<CreateFormData>({
-        resolver: zodResolver(createSchema),
+    const createForm: UseFormReturn<CreateInternoData> = useForm<CreateInternoData>({
+        resolver: zodResolver(createInternoSchema),
         defaultValues: {
             nombre: '',
             email: '',
@@ -122,8 +130,13 @@ const UsuariosPage = () => {
         }
     };
 
+    const filteredUsuarios = filtroTipo === 'todos'
+        ? usuarios
+        : usuarios.filter(u => u.tipo_usuario === filtroTipo);
+
     // Abrir modal crear
     const handleNew = () => {
+        setCreateTipo('interno');
         createForm.reset({ nombre: '', email: '', password: '', rol: 'usuario' });
         setError('');
         setShowCreateModal(true);
@@ -134,7 +147,7 @@ const UsuariosPage = () => {
         setEditingUsuario(usuario);
         editForm.reset({
             nombre: usuario.nombre,
-            email: usuario.email,
+            email: usuario.email || '',
             rol: usuario.rol,
         });
         setError('');
@@ -142,11 +155,15 @@ const UsuariosPage = () => {
     };
 
     // Crear usuario
-    const handleCreate = async (data: CreateFormData) => {
+    const handleCreate = async (data: CreateInternoData) => {
         try {
             setSubmitting(true);
             setError('');
-            await api.post('/users', data);
+            if (createTipo === 'externo') {
+                await api.post('/users', { nombre: data.nombre, tipo_usuario: 'externo' });
+            } else {
+                await api.post('/users', { ...data, tipo_usuario: 'interno' });
+            }
             loadUsuarios();
             setShowCreateModal(false);
             createForm.reset();
@@ -165,7 +182,11 @@ const UsuariosPage = () => {
         try {
             setSubmitting(true);
             setError('');
-            await api.put(`/users/${editingUsuario.id}`, data);
+            if (editingUsuario.tipo_usuario === 'externo') {
+                await api.put(`/users/${editingUsuario.id}`, { nombre: data.nombre });
+            } else {
+                await api.put(`/users/${editingUsuario.id}`, data);
+            }
             loadUsuarios();
             setShowEditModal(false);
         } catch (err: unknown) {
@@ -233,7 +254,17 @@ const UsuariosPage = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-3">
+                <Select value={filtroTipo} onValueChange={(v) => setFiltroTipo(v as 'todos' | 'interno' | 'externo')}>
+                    <SelectTrigger className="w-[160px] h-9">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="interno">Internos</SelectItem>
+                        <SelectItem value="externo">Externos</SelectItem>
+                    </SelectContent>
+                </Select>
                 <Button onClick={handleNew}>
                     <Plus className="mr-2 h-4 w-4" />
                     Nuevo Usuario
@@ -260,18 +291,25 @@ const UsuariosPage = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {usuarios.length === 0 ? (
+                        {filteredUsuarios.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     No hay usuarios registrados
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            usuarios.map((usuario) => (
+                            filteredUsuarios.map((usuario) => (
                                 <TableRow key={usuario.id}>
-                                    <TableCell className="font-medium">{usuario.nombre}</TableCell>
-                                    <TableCell className="text-muted-foreground">{usuario.email}</TableCell>
-                                    <TableCell className="text-center">{getRolBadge(usuario.rol)}</TableCell>
+                                    <TableCell className="font-medium">
+                                        {usuario.nombre}
+                                        {usuario.tipo_usuario === 'externo' && (
+                                            <Badge variant="outline" className="ml-2 text-xs">Externo</Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">{usuario.email || '—'}</TableCell>
+                                    <TableCell className="text-center">
+                                        {usuario.tipo_usuario === 'externo' ? <span className="text-muted-foreground text-sm">—</span> : getRolBadge(usuario.rol)}
+                                    </TableCell>
                                     <TableCell className="text-center">{getEstadoBadge(usuario.activo)}</TableCell>
                                     <TableCell>
                                         {canManageUser(usuario) && (
@@ -284,6 +322,7 @@ const UsuariosPage = () => {
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
+                                            {usuario.tipo_usuario === 'interno' && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -293,6 +332,7 @@ const UsuariosPage = () => {
                                             >
                                                 {usuario.activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                                             </Button>
+                                            )}
                                         </div>
                                         )}
                                     </TableCell>
@@ -305,22 +345,27 @@ const UsuariosPage = () => {
 
             {/* Cards mobile */}
             <div className="md:hidden space-y-3">
-                {usuarios.length === 0 ? (
+                {filteredUsuarios.length === 0 ? (
                     <Card>
                         <CardContent className="py-8 text-center text-muted-foreground">
                             No hay usuarios registrados
                         </CardContent>
                     </Card>
                 ) : (
-                    usuarios.map((usuario) => (
+                    filteredUsuarios.map((usuario) => (
                         <Card key={usuario.id}>
                             <CardContent className="p-4">
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-1">
-                                        <div className="font-medium">{usuario.nombre}</div>
-                                        <div className="text-sm text-muted-foreground">{usuario.email}</div>
+                                        <div className="font-medium">
+                                            {usuario.nombre}
+                                            {usuario.tipo_usuario === 'externo' && (
+                                                <Badge variant="outline" className="ml-2 text-xs">Externo</Badge>
+                                            )}
+                                        </div>
+                                        <div className="text-sm text-muted-foreground">{usuario.email || '—'}</div>
                                         <div className="flex gap-2 pt-1">
-                                            {getRolBadge(usuario.rol)}
+                                            {usuario.tipo_usuario === 'interno' && getRolBadge(usuario.rol)}
                                             {getEstadoBadge(usuario.activo)}
                                         </div>
                                     </div>
@@ -333,6 +378,7 @@ const UsuariosPage = () => {
                                         >
                                             <Pencil className="h-4 w-4" />
                                         </Button>
+                                        {usuario.tipo_usuario === 'interno' && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -341,6 +387,7 @@ const UsuariosPage = () => {
                                         >
                                             {usuario.activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                                         </Button>
+                                        )}
                                     </div>
                                     )}
                                 </div>
@@ -367,7 +414,31 @@ const UsuariosPage = () => {
                     )}
 
                     <Form {...createForm}>
-                        <form onSubmit={createForm.handleSubmit(handleCreate)} className="space-y-4">
+                        <form onSubmit={createTipo === 'externo'
+                            ? async (e) => {
+                                e.preventDefault();
+                                const nombre = createForm.getValues('nombre');
+                                if (!nombre || nombre.length < 2) {
+                                    createForm.setError('nombre', { message: 'Nombre debe tener al menos 2 caracteres' });
+                                    return;
+                                }
+                                handleCreate({ nombre } as CreateInternoData);
+                            }
+                            : createForm.handleSubmit(handleCreate)
+                        } className="space-y-4">
+                            <div>
+                                <FormLabel>Tipo de usuario</FormLabel>
+                                <Select value={createTipo} onValueChange={(v) => setCreateTipo(v as 'interno' | 'externo')} disabled={submitting}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="interno">Usuario del sistema</SelectItem>
+                                        <SelectItem value="externo">Externo (solo referencia)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             <FormField
                                 control={createForm.control}
                                 name="nombre"
@@ -382,6 +453,8 @@ const UsuariosPage = () => {
                                 )}
                             />
 
+                            {createTipo === 'interno' && (
+                            <>
                             <FormField
                                 control={createForm.control}
                                 name="email"
@@ -432,6 +505,8 @@ const UsuariosPage = () => {
                                     </FormItem>
                                 )}
                             />
+                            </>
+                            )}
 
                             <DialogFooter className="gap-2">
                                 <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)} disabled={submitting}>
@@ -439,7 +514,7 @@ const UsuariosPage = () => {
                                 </Button>
                                 <Button type="submit" disabled={submitting}>
                                     {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {submitting ? 'Creando...' : 'Crear Usuario'}
+                                    {submitting ? 'Creando...' : createTipo === 'externo' ? 'Crear Externo' : 'Crear Usuario'}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -479,6 +554,8 @@ const UsuariosPage = () => {
                                 )}
                             />
 
+                            {editingUsuario?.tipo_usuario === 'interno' && (
+                            <>
                             <FormField
                                 control={editForm.control}
                                 name="email"
@@ -515,6 +592,8 @@ const UsuariosPage = () => {
                                     </FormItem>
                                 )}
                             />
+                            </>
+                            )}
 
                             <DialogFooter className="gap-2">
                                 <Button type="button" variant="outline" onClick={() => setShowEditModal(false)} disabled={submitting}>
@@ -554,7 +633,7 @@ const UsuariosPage = () => {
                     {togglingUsuario && (
                         <Alert>
                             <AlertDescription>
-                                <strong>{togglingUsuario.nombre}</strong> ({togglingUsuario.email})
+                                <strong>{togglingUsuario.nombre}</strong>{togglingUsuario.email ? ` (${togglingUsuario.email})` : ''}
                             </AlertDescription>
                         </Alert>
                     )}
