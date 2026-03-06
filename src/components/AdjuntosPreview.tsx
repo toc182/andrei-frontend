@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Paperclip, Plus, Trash2, FileText, ExternalLink, Image as ImageIcon } from "lucide-react"
+import { Paperclip, Plus, Trash2, FileText, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -42,7 +42,6 @@ export default function AdjuntosPreview({
   const [lightboxName, setLightboxName] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch signed URLs when adjuntos change
   useEffect(() => {
     if (adjuntos.length === 0) {
       setAdjuntoUrls([])
@@ -70,18 +69,6 @@ export default function AdjuntosPreview({
 
   const isImage = (tipoMime: string) =>
     tipoMime === "image/jpeg" || tipoMime === "image/png"
-
-  const isPdf = (tipoMime: string) => tipoMime === "application/pdf"
-
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768
-
-  const imageAdjuntos = adjuntos.filter((a) => isImage(a.tipo_mime))
-  const pdfAdjuntos = adjuntos.filter((a) => isPdf(a.tipo_mime))
-
-  const openLightbox = (url: string, name: string) => {
-    setLightboxUrl(url)
-    setLightboxName(name)
-  }
 
   return (
     <div className="space-y-3">
@@ -118,94 +105,63 @@ export default function AdjuntosPreview({
       ) : loadingUrls ? (
         <p className="text-sm text-muted-foreground">Cargando previews...</p>
       ) : (
-        <div className="space-y-4">
-          {/* Image Grid */}
-          {imageAdjuntos.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {imageAdjuntos.map((adj) => {
-                const url = getUrl(adj.id)
-                return (
-                  <div key={adj.id} className="relative group border rounded-lg overflow-hidden">
-                    {url ? (
-                      <img
-                        src={url}
-                        alt={adj.nombre_original}
-                        className="w-full h-28 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => openLightbox(url, adj.nombre_original)}
-                      />
-                    ) : (
-                      <div className="w-full h-28 bg-muted flex items-center justify-center">
-                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 flex items-center justify-between">
-                      <span className="text-xs text-white truncate flex-1">
-                        {adj.nombre_original}
-                      </span>
-                      {!readOnly && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0 shrink-0 text-white/70 hover:text-red-400 hover:bg-transparent"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onDelete?.(adj.id)
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* PDF Viewers */}
-          {pdfAdjuntos.map((adj) => {
+        <div className="flex flex-wrap gap-2">
+          {adjuntos.map((adj) => {
             const url = getUrl(adj.id)
+            const image = isImage(adj.tipo_mime)
+
             return (
-              <div key={adj.id} className="border rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between px-3 py-2 bg-muted/50">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-4 w-4 shrink-0 text-red-600" />
-                    <span className="text-sm truncate">{adj.nombre_original}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">
+              <div
+                key={adj.id}
+                className="relative group border rounded-lg overflow-hidden cursor-pointer w-20 h-20"
+                onClick={() => {
+                  if (!url) return
+                  if (image) {
+                    setLightboxUrl(url)
+                    setLightboxName(adj.nombre_original)
+                  } else {
+                    window.open(url, "_blank")
+                  }
+                }}
+              >
+                {image ? (
+                  url ? (
+                    <img
+                      src={url}
+                      alt={adj.nombre_original}
+                      className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )
+                ) : (
+                  <div className="w-full h-full bg-muted/50 flex flex-col items-center justify-center gap-0.5">
+                    <FileText className="h-7 w-7 text-red-600" />
+                    <span className="text-[10px] text-muted-foreground">
                       {(adj.tamano / 1024).toFixed(0)} KB
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {url && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => window.open(url, "_blank")}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Abrir
-                      </Button>
-                    )}
-                    {!readOnly && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => onDelete?.(adj.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                {url && !isMobile && (
-                  <iframe
-                    src={url}
-                    title={adj.nombre_original}
-                    className="w-full h-[300px] border-t"
-                  />
                 )}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 flex items-center justify-between">
+                  <span className="text-[10px] text-white truncate flex-1">
+                    {adj.nombre_original}
+                  </span>
+                  {!readOnly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 shrink-0 text-white/70 hover:text-red-400 hover:bg-transparent"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete?.(adj.id)
+                      }}
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
             )
           })}

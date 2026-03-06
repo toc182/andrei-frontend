@@ -352,7 +352,7 @@ export default function PermisosPage() {
                 <div className="space-y-2">
                   <PermCheckbox label="Editar todas las solicitudes de pago" checked={perms.solicitudes_editar_todas} onChange={() => togglePerm('solicitudes_editar_todas')} />
                   <PermCheckbox label="Editar todas las requisiciones" checked={perms.requisiciones_editar_todas} onChange={() => togglePerm('requisiciones_editar_todas')} />
-                  <PermCheckbox label="Registrar pagos" checked={perms.registrar_pago} onChange={() => togglePerm('registrar_pago')} />
+                  <PermCheckbox label="Registrar pagos y facturas" checked={perms.registrar_pago} onChange={() => togglePerm('registrar_pago')} />
                 </div>
               </div>
 

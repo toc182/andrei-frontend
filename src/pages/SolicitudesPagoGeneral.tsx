@@ -6,7 +6,7 @@
 
 import { useState, useEffect, ReactNode } from "react"
 import { useAuth } from "../context/AuthContext"
-import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil, Eye, CheckCircle2 } from "lucide-react"
+import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil, Eye, CheckCircle2, FileCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -143,14 +143,15 @@ const getEstadoBadge = (estado: string): ReactNode => {
     'pendiente': { variant: 'outline', label: 'Pendiente', icon: Send },
     'aprobada': { variant: 'default', label: 'Aprobada', icon: Check },
     'rechazada': { variant: 'destructive', label: 'Rechazada', icon: X },
-    'pagada': { variant: 'default', label: 'Pagada', icon: CreditCard }
+    'pagada': { variant: 'default', label: 'Pagada', icon: CreditCard },
+    'facturada': { variant: 'default', label: 'Facturada', icon: FileCheck }
   }
 
   const config = variants[estado] || { variant: 'secondary' as const, label: estado, icon: Clock }
   const Icon = config.icon
 
   return (
-    <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
+    <Badge variant={config.variant} className={`flex items-center gap-1 w-fit${estado === 'facturada' ? ' bg-emerald-600' : ''}`}>
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
@@ -225,6 +226,14 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
   const [registroPagoFiles, setRegistroPagoFiles] = useState<FileList | null>(null)
   const [registrandoPago, setRegistrandoPago] = useState(false)
   const [detailComprobante, setDetailComprobante] = useState<{ fecha_pago: string; registrado_por_nombre: string; adjuntos: SolicitudPagoAdjunto[] } | null>(null)
+
+  // Registrar factura
+  const [showRegistrarFacturaModal, setShowRegistrarFacturaModal] = useState(false)
+  const [registroFacturaFecha, setRegistroFacturaFecha] = useState('')
+  const [registroFacturaNumero, setRegistroFacturaNumero] = useState('')
+  const [registroFacturaFiles, setRegistroFacturaFiles] = useState<FileList | null>(null)
+  const [registrandoFactura, setRegistrandoFactura] = useState(false)
+  const [detailFactura, setDetailFactura] = useState<{ fecha_factura: string; numero_factura?: string; registrado_por_nombre: string; adjuntos: SolicitudPagoAdjunto[] } | null>(null)
 
   // Resubmit
   const [resubmitting, setResubmitting] = useState(false)
@@ -328,6 +337,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
         setDetailAprobaciones(response.data.aprobaciones || [])
         setDetailAprobadores(response.data.aprobadores_proyecto || [])
         setDetailComprobante(response.data.comprobante || null)
+        setDetailFactura(response.data.factura || null)
         setDetailRevisada(!!solicitud.revisada)
         setShowDetail(true)
       }
@@ -399,6 +409,34 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
       alert(apiError.response?.data?.message || 'Error al registrar pago')
     } finally {
       setRegistrandoPago(false)
+    }
+  }
+
+  const handleRegistrarFactura = async (solicitudId: number) => {
+    if (!registroFacturaFecha || !registroFacturaFiles || registroFacturaFiles.length === 0) return
+    try {
+      setRegistrandoFactura(true)
+      const formData = new FormData()
+      formData.append('fecha_factura', registroFacturaFecha)
+      if (registroFacturaNumero.trim()) {
+        formData.append('numero_factura', registroFacturaNumero.trim())
+      }
+      for (let i = 0; i < registroFacturaFiles.length; i++) {
+        formData.append('archivos', registroFacturaFiles[i])
+      }
+      await api.post(`/solicitudes-pago/${solicitudId}/registrar-factura`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setShowRegistrarFacturaModal(false)
+      setShowDetail(false)
+      await loadData()
+      window.dispatchEvent(new Event('solicitud-status-changed'))
+    } catch (err) {
+      console.error('Error registering invoice:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al registrar factura')
+    } finally {
+      setRegistrandoFactura(false)
     }
   }
 
@@ -932,7 +970,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
               />
 
               {/* Comprobante de Pago */}
-              {detailSolicitud.estado === 'pagada' && detailComprobante && (
+              {(detailSolicitud.estado === 'pagada' || detailSolicitud.estado === 'facturada') && detailComprobante && (
                 <div className="space-y-3">
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                     <h4 className="font-medium text-blue-900">Comprobante de Pago</h4>
@@ -946,6 +984,28 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                         solicitudPagoId={detailSolicitud.id}
                         readOnly
                         title="Comprobantes"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Factura */}
+              {detailSolicitud.estado === 'facturada' && detailFactura && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-3">
+                    <h4 className="font-medium text-emerald-900">Factura</h4>
+                    <div className="text-sm text-emerald-800 space-y-1">
+                      <div>Fecha de factura: {new Date(detailFactura.fecha_factura + 'T12:00:00').toLocaleDateString('es-PA')}</div>
+                      {detailFactura.numero_factura && <div>Numero de factura: {detailFactura.numero_factura}</div>}
+                      <div>Registrado por: {detailFactura.registrado_por_nombre}</div>
+                    </div>
+                    {detailFactura.adjuntos.length > 0 && (
+                      <AdjuntosPreview
+                        adjuntos={detailFactura.adjuntos}
+                        solicitudPagoId={detailSolicitud.id}
+                        readOnly
+                        title="Facturas"
                       />
                     )}
                   </div>
@@ -1049,6 +1109,23 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                             >
                               <CreditCard className="h-4 w-4 mr-2" />
                               Registrar Pago
+                            </Button>
+                          </div>
+                        )}
+
+                        {detailSolicitud.estado === 'pagada' && (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
+                          <div className="pt-2">
+                            <Button
+                              onClick={() => {
+                                setRegistroFacturaFecha('')
+                                setRegistroFacturaNumero('')
+                                setRegistroFacturaFiles(null)
+                                setShowRegistrarFacturaModal(true)
+                              }}
+                              className="w-full"
+                            >
+                              <FileCheck className="h-4 w-4 mr-2" />
+                              Registrar Factura
                             </Button>
                           </div>
                         )}
@@ -1221,6 +1298,60 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
               disabled={!registroPagoFecha || !registroPagoFiles || registroPagoFiles.length === 0 || registrandoPago}
             >
               {registrandoPago ? 'Registrando...' : 'Confirmar Pago'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrar Factura Modal */}
+      <Dialog open={showRegistrarFacturaModal} onOpenChange={setShowRegistrarFacturaModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Factura</DialogTitle>
+            <DialogDescription>
+              Ingresa los datos de la factura del proveedor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label>Fecha de factura *</Label>
+              <Input
+                type="date"
+                value={registroFacturaFecha}
+                onChange={(e) => setRegistroFacturaFecha(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Numero de factura</Label>
+              <Input
+                type="text"
+                value={registroFacturaNumero}
+                onChange={(e) => setRegistroFacturaNumero(e.target.value)}
+                placeholder="Opcional"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Archivo(s) de factura *</Label>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                multiple
+                onChange={(e) => setRegistroFacturaFiles(e.target.files)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowRegistrarFacturaModal(false)} disabled={registrandoFactura}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => detailSolicitud && handleRegistrarFactura(detailSolicitud.id)}
+              disabled={!registroFacturaFecha || !registroFacturaFiles || registroFacturaFiles.length === 0 || registrandoFactura}
+            >
+              {registrandoFactura ? 'Registrando...' : 'Confirmar Factura'}
             </Button>
           </DialogFooter>
         </DialogContent>
