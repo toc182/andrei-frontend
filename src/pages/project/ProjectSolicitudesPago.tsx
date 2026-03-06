@@ -50,7 +50,7 @@ type EstadoSP = 'borrador' | 'pendiente' | 'aprobada' | 'rechazada' | 'pagada' |
 
 interface SolicitudPago {
   id: number
-  proyecto_id: number
+  proyecto_id: number | null
   numero: string
   fecha: string
   proveedor: string
@@ -67,7 +67,7 @@ interface SolicitudPago {
   banco: string | null
   tipo_cuenta: string | null
   numero_cuenta: string | null
-  urgente?: boolean
+  urgente: boolean
   revisada?: boolean
   preparado_nombre?: string
   solicitado_nombre?: string

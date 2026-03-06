@@ -239,38 +239,41 @@ export interface CostDashboard {
 // REQUISICIONES
 // ============================================
 
+export type EstadoRequisicion = 'pendiente' | 'en_cotizacion' | 'por_aprobar' | 'aprobada' | 'pagada' | 'rechazada';
+
 export interface Requisicion {
   id: number;
+  numero: string;
   project_id: number;
-  numero?: string;
-  numero_requisicion?: string;
-  fecha?: string;
-  fecha_solicitud?: string;
-  fecha_necesidad?: string;
-  descripcion?: string;
+  proveedor: string;
   concepto?: string;
-  proveedor?: string;
-  estado: 'pendiente' | 'en_cotizacion' | 'por_aprobar' | 'aprobada' | 'pagada' | 'rechazada' | 'completada' | 'cancelada';
-  prioridad?: 'baja' | 'media' | 'alta' | 'urgente';
-  solicitante_id?: number;
-  aprobador_id?: number;
-  categoria_id?: number;
-  monto_estimado?: number;
-  monto_real?: number;
-  subtotal?: number;
-  itbms?: number;
-  monto_total?: number;
-  observaciones?: string;
-  archivada?: boolean;
+  fecha: string;
+  pdf_url?: string;
+  pdf_nombre?: string;
+  solicitado_por: number;
+  solicitante_id: number;
+  estado: EstadoRequisicion;
+  subtotal: number;
+  itbms: number;
+  monto_total: number;
+  aprobado_por?: number;
+  fecha_aprobacion?: string;
+  pagado_por?: number;
+  fecha_pago?: string;
+  expense_id?: number;
+  archivada: boolean;
+  fecha_archivado?: string;
+  archivado_por?: number;
   created_at: string;
   updated_at: string;
   // Joined fields
   proyecto_nombre?: string;
+  proyecto_corto?: string;
+  creador_nombre?: string;
   solicitante_nombre?: string;
   aprobador_nombre?: string;
-  categoria_nombre?: string;
-  categoria_color?: string;
-  items_count?: number;
+  pagador_nombre?: string;
+  items_count?: string;
 }
 
 export interface RequisicionItem {
@@ -279,57 +282,17 @@ export interface RequisicionItem {
   descripcion: string;
   cantidad: number;
   unidad: string;
-  precio_unitario_estimado?: number;
-  precio_unitario_real?: number;
-  observaciones?: string;
-  aplica_itbms?: boolean;
-}
-
-// ============================================
-// EQUIPOS
-// ============================================
-
-export interface Equipo {
-  id: number;
-  codigo: string;
-  nombre: string;
-  tipo: string;
-  marca?: string;
-  modelo?: string;
-  año?: number;
-  estado: 'disponible' | 'en_uso' | 'mantenimiento' | 'fuera_servicio';
-  ubicacion_actual?: string;
-  propietario: 'propio' | 'alquilado' | 'subcontratado';
-  costo_hora?: number;
-  observaciones?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Asignacion {
-  id: number;
-  equipo_id: number;
-  project_id: number;
-  fecha_asignacion: string;
-  fecha_devolucion?: string;
-  estado: 'activa' | 'finalizada' | 'cancelada';
-  operador?: string;
-  observaciones?: string;
+  precio_unitario: number;
+  subtotal: number;
+  aplica_itbms: boolean;
+  itbms: number;
+  total: number;
+  categoria_id?: number;
+  notas?: string;
   // Joined fields
-  equipo_nombre?: string;
-  equipo_codigo?: string;
-  proyecto_nombre?: string;
-}
-
-export interface RegistroUso {
-  id: number;
-  asignacion_id: number;
-  fecha: string;
-  horas_trabajadas: number;
-  combustible_litros?: number;
-  horometro_inicio?: number;
-  horometro_fin?: number;
-  observaciones?: string;
+  categoria_nombre?: string;
+  categoria_codigo?: string;
+  categoria_color?: string;
 }
 
 // ============================================

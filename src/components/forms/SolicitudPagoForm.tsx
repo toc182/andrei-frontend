@@ -30,9 +30,11 @@ import { useAuth } from "../../context/AuthContext"
 
 // --- Types ---
 
+type EstadoSolicitud = 'borrador' | 'pendiente' | 'aprobada' | 'rechazada' | 'pagada' | 'facturada'
+
 interface SolicitudPago {
   id: number
-  proyecto_id: number
+  proyecto_id: number | null
   numero: string
   fecha: string
   proveedor: string
@@ -43,13 +45,13 @@ interface SolicitudPago {
   descuentos: number
   impuestos: number
   monto_total: number
-  estado: string
+  estado: EstadoSolicitud
   observaciones: string | null
   beneficiario: string | null
   banco: string | null
   tipo_cuenta: string | null
   numero_cuenta: string | null
-  urgente?: boolean
+  urgente: boolean
 }
 
 interface SolicitudItem {
