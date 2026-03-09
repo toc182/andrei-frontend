@@ -72,10 +72,10 @@ interface SolicitudAjuste {
   monto: number
 }
 
-interface UserOption {
+interface MemberOption {
   id: number
   nombre: string
-  tipo_usuario?: 'interno' | 'externo'
+  tipo_usuario: string | null
 }
 
 interface RequisicionOption {
@@ -156,8 +156,7 @@ export default function SolicitudPagoForm({
   const [ajustes, setAjustes] = useState<AjusteFormData[]>([])
 
   // Options
-  const [usuarios, setUsuarios] = useState<UserOption[]>([])
-  const [externosUsuarios, setExternosUsuarios] = useState<UserOption[]>([])
+  const [miembrosProyecto, setMiembrosProyecto] = useState<MemberOption[]>([])
   const [requisiciones, setRequisiciones] = useState<RequisicionOption[]>([])
   const [nextNumero, setNextNumero] = useState<string>('')
 
@@ -231,25 +230,20 @@ export default function SolicitudPagoForm({
 
   const loadOptions = async () => {
     try {
-      const [usersRes, externosRes, reqRes, numRes] = await Promise.all([
-        api.get('/project-members/users'),
-        api.get('/users?tipo=externo'),
+      const [membersRes, reqRes, numRes] = await Promise.all([
+        api.get(`/project-members/project/${projectId}`),
         api.get(`/requisiciones/project/${projectId}`),
         editingSolicitud ? Promise.resolve(null) : api.get(`/solicitudes-pago/project/${projectId}/next-number`)
       ])
 
-      if (usersRes.data.success) {
-        setUsuarios(usersRes.data.users || [])
-      }
-      if (externosRes.data.success) {
-        const internoIds = new Set((usersRes.data.users || []).map((u: { id: number }) => u.id))
-        setExternosUsuarios(
-          (externosRes.data.users || [])
-            .filter((u: { id: number }) => !internoIds.has(u.id))
-            .map((u: { id: number; nombre: string }) => ({
-              id: u.id,
-              nombre: u.nombre,
-              tipo_usuario: 'externo' as const
+      if (membersRes.data.success) {
+        setMiembrosProyecto(
+          (membersRes.data.members || [])
+            .filter((m: { user_id?: number }) => m.user_id)
+            .map((m: { user_id: number; nombre_display: string; tipo_usuario?: string | null }) => ({
+              id: m.user_id,
+              nombre: m.nombre_display,
+              tipo_usuario: m.tipo_usuario || null
             }))
         )
       }
@@ -471,15 +465,18 @@ export default function SolicitudPagoForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Seleccionar</SelectItem>
-                    {usuarios.map(u => (
-                      <SelectItem key={u.id} value={u.id.toString()}>{u.nombre}</SelectItem>
+                    {miembrosProyecto.filter(m => m.tipo_usuario === 'interno' || !m.tipo_usuario).map(m => (
+                      <SelectItem key={m.id} value={m.id.toString()}>
+                        {m.nombre}
+                      </SelectItem>
                     ))}
-                    {externosUsuarios.length > 0 && usuarios.length > 0 && (
+                    {miembrosProyecto.some(m => m.tipo_usuario === 'externo') &&
+                      miembrosProyecto.some(m => m.tipo_usuario === 'interno' || !m.tipo_usuario) && (
                       <div className="my-1 h-px bg-border" />
                     )}
-                    {externosUsuarios.map(u => (
-                      <SelectItem key={`ext-${u.id}`} value={u.id.toString()}>
-                        {u.nombre}
+                    {miembrosProyecto.filter(m => m.tipo_usuario === 'externo').map(m => (
+                      <SelectItem key={m.id} value={m.id.toString()}>
+                        {m.nombre}
                       </SelectItem>
                     ))}
                   </SelectContent>

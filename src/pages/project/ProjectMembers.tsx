@@ -47,14 +47,7 @@ interface User {
   id: number
   nombre: string
   email?: string
-}
-
-interface ExternalContact {
-  id: number
-  nombre: string
-  cargo?: string
-  telefono?: string
-  email?: string
+  tipo_usuario?: string | null
 }
 
 interface ProjectMember {
@@ -97,7 +90,6 @@ const ROLES_PROYECTO: RolProyecto[] = [
 export default function ProjectMembers({ projectId }: ProjectMembersProps) {
   const [members, setMembers] = useState<ProjectMember[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [externalContacts, setExternalContacts] = useState<ExternalContact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -138,19 +130,12 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     }
   }
 
-  // Load users and external contacts for selectors
+  // Load users for selectors
   const loadOptions = async () => {
     try {
-      const [usersRes, externalsRes] = await Promise.all([
-        api.get('/project-members/users'),
-        api.get('/project-members/external-contacts')
-      ])
-
+      const usersRes = await api.get('/project-members/users')
       if (usersRes.data.success) {
         setUsers(usersRes.data.users)
-      }
-      if (externalsRes.data.success) {
-        setExternalContacts(externalsRes.data.contacts)
       }
     } catch (err) {
       console.error('Error loading options:', err)
@@ -253,34 +238,22 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     setSelectedRol('colaborador')
   }
 
-  // Add member (user or external)
+  // Add member (user — both internal and external are in users table)
   const handleAddMember = async () => {
+    const userId = memberType === 'usuario' ? selectedUserId : selectedExternalId
+    if (!userId) return
+
     setSaving(true)
     try {
-      if (memberType === 'usuario') {
-        if (!selectedUserId) return
-        const response = await api.post('/project-members', {
-          project_id: projectId,
-          user_id: parseInt(selectedUserId),
-          rol_proyecto: selectedRol
-        })
-        if (response.data.success) {
-          await loadMembers()
-          setShowAddModal(false)
-          resetAddModal()
-        }
-      } else {
-        if (!selectedExternalId) return
-        const response = await api.post('/project-members/external', {
-          project_id: projectId,
-          external_contact_id: parseInt(selectedExternalId),
-          rol_proyecto: selectedRol
-        })
-        if (response.data.success) {
-          await loadMembers()
-          setShowAddModal(false)
-          resetAddModal()
-        }
+      const response = await api.post('/project-members', {
+        project_id: projectId,
+        user_id: parseInt(userId),
+        rol_proyecto: selectedRol
+      })
+      if (response.data.success) {
+        await loadMembers()
+        setShowAddModal(false)
+        resetAddModal()
       }
     } catch (err) {
       console.error('Error adding member:', err)
@@ -366,14 +339,16 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     }
   }
 
-  // Get users not already members
+  // Get internal users not already members
   const availableUsers = users.filter(
-    user => !members.some(m => m.tipo_miembro === 'usuario' && m.user_id === user.id)
+    user => (user.tipo_usuario === 'interno' || !user.tipo_usuario)
+      && !members.some(m => m.user_id === user.id)
   )
 
-  // Get external contacts not already members
-  const availableExternals = externalContacts.filter(
-    ec => !members.some(m => m.tipo_miembro === 'externo' && m.external_contact_id === ec.id)
+  // Get external users not already members
+  const availableExternals = users.filter(
+    user => user.tipo_usuario === 'externo'
+      && !members.some(m => m.user_id === user.id)
   )
 
   // Format role display (handle old 'miembro' values)
@@ -702,9 +677,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                     {availableExternals.length === 0 ? (
                       <SelectItem value="-" disabled>No hay contactos disponibles</SelectItem>
                     ) : (
-                      availableExternals.map(contact => (
-                        <SelectItem key={contact.id} value={contact.id.toString()}>
-                          {contact.nombre} {contact.cargo ? `(${contact.cargo})` : ''}
+                      availableExternals.map(user => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.nombre}
                         </SelectItem>
                       ))
                     )}
