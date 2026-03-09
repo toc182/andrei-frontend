@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginN from './pages/LoginN';
 import DashboardNew from './pages/DashboardNew';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import VerificacionPublica from './pages/VerificacionPublica';
 import { Loader2 } from 'lucide-react';
 
 // Componente principal que decide qué mostrar
@@ -40,6 +41,11 @@ const AppContent: React.FC = () => {
 
 // App principal con el provider de autenticación
 const App: React.FC = () => {
+    // Rutas públicas (sin AuthProvider)
+    if (window.location.pathname.startsWith('/verificar/')) {
+        return <VerificacionPublica />;
+    }
+
     return (
         <AuthProvider>
             <div className="App">
