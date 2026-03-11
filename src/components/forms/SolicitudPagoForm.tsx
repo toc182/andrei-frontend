@@ -145,6 +145,7 @@ export default function SolicitudPagoForm({
   const [requisicionId, setRequisicionId] = useState<string>('none')
   const [observaciones, setObservaciones] = useState('')
   const [urgente, setUrgente] = useState(false)
+  const [pinellasPaga, setPinellasPaga] = useState(false)
   const [beneficiario, setBeneficiario] = useState('')
   const [banco, setBanco] = useState('')
   const [tipoCuenta, setTipoCuenta] = useState('none')
@@ -176,6 +177,7 @@ export default function SolicitudPagoForm({
       setRequisicionId(editingSolicitud.requisicion_id?.toString() || 'none')
       setObservaciones(editingSolicitud.observaciones || '')
       setUrgente(editingSolicitud.urgente || false)
+      setPinellasPaga(editingSolicitud.pinellas_paga || false)
       setBeneficiario(editingSolicitud.beneficiario || '')
       setBanco(editingSolicitud.banco || '')
       setTipoCuenta(editingSolicitud.tipo_cuenta || 'none')
@@ -352,6 +354,7 @@ export default function SolicitudPagoForm({
         requisicion_id: requisicionId && requisicionId !== 'none' ? parseInt(requisicionId) : null,
         observaciones: observaciones.trim() || null,
         urgente,
+        pinellas_paga: pinellasPaga,
         beneficiario: beneficiario.trim() || null,
         banco: banco.trim() || null,
         tipo_cuenta: tipoCuenta && tipoCuenta !== 'none' ? tipoCuenta : null,
@@ -511,15 +514,26 @@ export default function SolicitudPagoForm({
               />
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={urgente}
-                onChange={(e) => setUrgente(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <span className="text-sm text-muted-foreground">Marcar como urgente</span>
-            </label>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={urgente}
+                  onChange={(e) => setUrgente(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-muted-foreground">Marcar como urgente</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={pinellasPaga}
+                  onChange={(e) => setPinellasPaga(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-muted-foreground">Pinellas paga — pendiente de reembolso</span>
+              </label>
+            </div>
           </div>
 
           {/* Section 2: Items */}
