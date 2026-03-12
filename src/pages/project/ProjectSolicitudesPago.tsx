@@ -6,7 +6,7 @@
 
 import { useState, useEffect, ReactNode } from "react"
 import { useAuth } from "../../context/AuthContext"
-import { Plus, Check, X, Clock, Pencil, Settings, Banknote, Send, CreditCard, AlertCircle, Download, Eye, CheckCircle2, FileCheck } from "lucide-react"
+import { Plus, Check, X, Clock, Pencil, Settings, Banknote, Send, CreditCard, AlertCircle, Download, Eye, CheckCircle2, FileCheck, RefreshCw, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -68,6 +68,7 @@ interface SolicitudPago {
   tipo_cuenta: string | null
   numero_cuenta: string | null
   urgente: boolean
+  pinellas_paga: boolean
   revisada?: boolean
   preparado_nombre?: string
   solicitado_nombre?: string
@@ -225,6 +226,13 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
   const [registrandoFactura, setRegistrandoFactura] = useState(false)
   const [detailFactura, setDetailFactura] = useState<{ fecha_factura: string; numero_factura?: string; registrado_por_nombre: string; adjuntos: SolicitudPagoAdjunto[] } | null>(null)
 
+  // Reembolso Pinellas
+  const [detailReembolso, setDetailReembolso] = useState<{ id: number; comprobante_url: string | null; comprobante_nombre: string | null; fecha_reembolso: string; registrado_por_nombre: string } | null>(null)
+  const [showReembolsoModal, setShowReembolsoModal] = useState(false)
+  const [reembolsoFecha, setReembolsoFecha] = useState('')
+  const [reembolsoFile, setReembolsoFile] = useState<File | null>(null)
+  const [registrandoReembolso, setRegistrandoReembolso] = useState(false)
+
   // Resubmit (rechazada -> pendiente)
   const [resubmitting, setResubmitting] = useState(false)
 
@@ -301,6 +309,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
         setDetailAprobadores(response.data.aprobadores_proyecto || [])
         setDetailComprobante(response.data.comprobante || null)
         setDetailFactura(response.data.factura || null)
+        setDetailReembolso(response.data.reembolso || null)
         setDetailRevisada(!!solicitud.revisada)
         setShowDetail(true)
       }
@@ -399,6 +408,30 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       alert(apiError.response?.data?.message || 'Error al registrar factura')
     } finally {
       setRegistrandoFactura(false)
+    }
+  }
+
+  const handleRegistrarReembolso = async (solicitudId: number) => {
+    if (!reembolsoFecha) return
+    try {
+      setRegistrandoReembolso(true)
+      const formData = new FormData()
+      formData.append('fecha_reembolso', reembolsoFecha)
+      if (reembolsoFile) {
+        formData.append('comprobante', reembolsoFile)
+      }
+      await api.post(`/solicitudes-pago/${solicitudId}/reembolso`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setShowReembolsoModal(false)
+      // Reload detail to show reembolso data
+      if (detailSolicitud) await openDetail(detailSolicitud)
+    } catch (err) {
+      console.error('Error registering reembolso:', err)
+      const apiError = err as { response?: { data?: { message?: string } } }
+      alert(apiError.response?.data?.message || 'Error al registrar reembolso')
+    } finally {
+      setRegistrandoReembolso(false)
     }
   }
 
@@ -1022,11 +1055,59 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 </div>
               )}
 
+              {/* Comprobante de Reembolso */}
+              {detailSolicitud.pinellas_paga && ['pagada', 'facturada'].includes(detailSolicitud.estado) && (
+                <div className="space-y-3">
+                  {detailReembolso ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                      <h4 className="font-medium text-amber-900">Comprobante de Reembolso</h4>
+                      <div className="text-sm text-amber-800 space-y-1">
+                        <div>Fecha de reembolso: {new Date(detailReembolso.fecha_reembolso + 'T12:00:00').toLocaleDateString('es-PA')}</div>
+                        <div>Registrado por: {detailReembolso.registrado_por_nombre}</div>
+                        {detailReembolso.comprobante_nombre && (
+                          <div>Archivo: {detailReembolso.comprobante_nombre}</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
+                    <div className="p-4 bg-amber-50/50 border border-amber-200 border-dashed rounded-lg">
+                      <div className="text-sm text-amber-700 mb-2">Pinellas paga esta solicitud. Pendiente de registrar reembolso.</div>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setReembolsoFecha('')
+                          setReembolsoFile(null)
+                          setShowReembolsoModal(true)
+                        }}
+                        className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Registrar Reembolso
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Approval section */}
               <div className="space-y-3">
                 <h4 className="font-medium">Estado y Aprobaciones</h4>
                 <div className="p-4 border rounded-lg space-y-3">
-                  <div>{getEstadoBadge(detailSolicitud.estado)}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {getEstadoBadge(detailSolicitud.estado)}
+                    {detailSolicitud.pinellas_paga && !detailReembolso && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Reembolso pendiente
+                      </Badge>
+                    )}
+                    {detailSolicitud.pinellas_paga && detailReembolso && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                        <Check className="h-3 w-3 mr-1" />
+                        Reembolsada
+                      </Badge>
+                    )}
+                  </div>
 
                   {/* Show approval progress */}
                   {detailAprobadores.length > 0 && (
@@ -1365,6 +1446,49 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               disabled={!registroFacturaFecha || !registroFacturaFiles || registroFacturaFiles.length === 0 || registrandoFactura}
             >
               {registrandoFactura ? 'Registrando...' : 'Confirmar Factura'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrar Reembolso Modal */}
+      <Dialog open={showReembolsoModal} onOpenChange={setShowReembolsoModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Reembolso</DialogTitle>
+            <DialogDescription>
+              Registra el comprobante del reembolso a Pinellas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label>Fecha de reembolso *</Label>
+              <Input
+                type="date"
+                value={reembolsoFecha}
+                onChange={(e) => setReembolsoFecha(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Comprobante</Label>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setReembolsoFile(e.target.files?.[0] || null)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowReembolsoModal(false)} disabled={registrandoReembolso}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => detailSolicitud && handleRegistrarReembolso(detailSolicitud.id)}
+              disabled={!reembolsoFecha || registrandoReembolso}
+            >
+              {registrandoReembolso ? 'Registrando...' : 'Confirmar Reembolso'}
             </Button>
           </DialogFooter>
         </DialogContent>
