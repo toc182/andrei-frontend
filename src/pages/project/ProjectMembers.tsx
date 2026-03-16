@@ -218,7 +218,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
   // Users available as approvers (not already in edit list)
   const availableApproverUsers = users.filter(
-    u => !editApprovers.some(a => a.user_id === u.id)
+    u => u.tipo_usuario === 'interno'
+      && members.some(m => m.tipo_miembro === 'usuario' && m.user_id === u.id)
+      && !editApprovers.some(a => a.user_id === u.id)
   )
 
   useEffect(() => {
