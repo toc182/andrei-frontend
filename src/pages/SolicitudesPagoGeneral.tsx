@@ -260,6 +260,10 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
   const [showEditConfirm, setShowEditConfirm] = useState(false)
   const [pendingEditSolicitud, setPendingEditSolicitud] = useState<SolicitudPago | null>(null)
 
+  // Pinellas paga confirmation (AlertDialog)
+  const [showPinellasPagaConfirm, setShowPinellasPagaConfirm] = useState(false)
+  const [pendingPinellasPaga, setPendingPinellasPaga] = useState<boolean>(false)
+
   // Resubmit
   const [resubmitting, setResubmitting] = useState(false)
 
@@ -1120,6 +1124,19 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                     )}
                   </div>
 
+                  {(isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={detailSolicitud.pinellas_paga}
+                        onCheckedChange={(checked) => {
+                          setPendingPinellasPaga(!!checked)
+                          setShowPinellasPagaConfirm(true)
+                        }}
+                      />
+                      Pinellas paga (reembolso)
+                    </label>
+                  )}
+
                   {detailAprobadores.length > 0 && (
                     <div className="space-y-2">
                       {detailAprobadores.map((aprobador) => {
@@ -1522,6 +1539,34 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
               setPendingEditSolicitud(null)
               setShowEditConfirm(false)
             }}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AlertDialog para confirmar cambio de pinellas_paga */}
+      <AlertDialog open={showPinellasPagaConfirm} onOpenChange={setShowPinellasPagaConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar cambio</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingPinellasPaga
+                ? '¿Marcar esta solicitud como pago de Pinellas pendiente de reembolso?'
+                : '¿Quitar la marca de reembolso Pinellas a esta solicitud?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (detailSolicitud) {
+                try {
+                  await api.patch(`/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`, { pinellas_paga: pendingPinellasPaga })
+                  setDetailSolicitud({ ...detailSolicitud, pinellas_paga: pendingPinellasPaga })
+                } catch {
+                  // silently fail
+                }
+              }
+              setShowPinellasPagaConfirm(false)
+            }}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
