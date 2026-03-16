@@ -868,20 +868,20 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               Detalle de Solicitud
               {detailSolicitud && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
                   onClick={() => handleDownloadPDF(detailSolicitud.id)}
-                  title="Descargar PDF"
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Descargar PDF
                 </Button>
               )}
               {canManage && detailSolicitud && detailSolicitud.estado === 'pendiente' && canManageSolicitud(detailSolicitud) && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
                   onClick={() => {
                     const aprobadas = detailAprobaciones.filter(a => a.accion === 'aprobado').length
                     if (aprobadas > 0) {
@@ -891,9 +891,9 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                     }
                     openEditForm(detailSolicitud)
                   }}
-                  title="Editar solicitud"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3.5 w-3.5 mr-1" />
+                  Editar Solicitud
                 </Button>
               )}
             </DialogTitle>
@@ -1262,8 +1262,8 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 </div>
               </div>
 
-              {/* Delete (only pendiente) */}
-              {canManage && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && canManageSolicitud(detailSolicitud) && (
+              {/* Delete */}
+              {(user?.rol === 'admin' || (canManage && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && canManageSolicitud(detailSolicitud))) && (
                 <div className="pt-4 border-t">
                   <Button
                     variant="outline"
@@ -1318,7 +1318,9 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
           <DialogHeader>
             <DialogTitle>Eliminar Solicitud</DialogTitle>
             <DialogDescription>
-              Esta accion no se puede deshacer. Solo se pueden eliminar solicitudes en estado pendiente.
+              {user?.rol === 'admin' && detailSolicitud && detailSolicitud.estado !== 'pendiente'
+                ? `Esta solicitud está marcada como ${detailSolicitud.estado.toUpperCase()}. ¿Está seguro que desea eliminarla? Esta acción no se puede deshacer.`
+                : '¿Está seguro que desea eliminar esta solicitud? Esta acción no se puede deshacer.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">

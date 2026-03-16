@@ -498,7 +498,6 @@ const UsuariosPage = () => {
                                             <SelectContent>
                                                 <SelectItem value="usuario">Usuario</SelectItem>
                                                 <SelectItem value="co-admin">Co-Admin</SelectItem>
-                                                <SelectItem value="admin">Admin</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -585,7 +584,6 @@ const UsuariosPage = () => {
                                             <SelectContent>
                                                 <SelectItem value="usuario">Usuario</SelectItem>
                                                 <SelectItem value="co-admin">Co-Admin</SelectItem>
-                                                <SelectItem value="admin">Admin</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
