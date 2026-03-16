@@ -38,6 +38,16 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import api from "../../services/api"
 import { formatMoney } from "../../utils/formatters"
 import type { SolicitudPagoAdjunto } from "../../types/api"
@@ -232,6 +242,10 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
   const [reembolsoFecha, setReembolsoFecha] = useState('')
   const [reembolsoFile, setReembolsoFile] = useState<File | null>(null)
   const [registrandoReembolso, setRegistrandoReembolso] = useState(false)
+
+  // Edit confirmation (AlertDialog)
+  const [showEditConfirm, setShowEditConfirm] = useState(false)
+  const [pendingEditSolicitud, setPendingEditSolicitud] = useState<SolicitudPago | null>(null)
 
   // Resubmit (rechazada -> pendiente)
   const [resubmitting, setResubmitting] = useState(false)
@@ -863,12 +877,20 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   <Download className="h-4 w-4" />
                 </Button>
               )}
-              {canManage && detailSolicitud && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && canManageSolicitud(detailSolicitud) && (
+              {canManage && detailSolicitud && detailSolicitud.estado === 'pendiente' && canManageSolicitud(detailSolicitud) && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
-                  onClick={() => openEditForm(detailSolicitud)}
+                  onClick={() => {
+                    const aprobadas = detailAprobaciones.filter(a => a.accion === 'aprobado').length
+                    if (aprobadas > 0) {
+                      setPendingEditSolicitud(detailSolicitud)
+                      setShowEditConfirm(true)
+                      return
+                    }
+                    openEditForm(detailSolicitud)
+                  }}
                   title="Editar solicitud"
                 >
                   <Pencil className="h-4 w-4" />
@@ -876,16 +898,13 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               )}
             </DialogTitle>
             <DialogDescription>
-              {detailSolicitud && (
-                <>
-                  <strong>{detailSolicitud.numero}</strong>
-                  {detailSolicitud.urgente && (
-                    <Badge variant="destructive" className="ml-2 text-xs">Urgente</Badge>
-                  )}
-                </>
-              )}
+              {detailSolicitud?.numero}
             </DialogDescription>
           </DialogHeader>
+
+          {detailSolicitud?.urgente && (
+            <Badge variant="destructive" className="text-xs w-fit">Urgente</Badge>
+          )}
 
           {detailSolicitud && (
             <div className="space-y-4 py-4">
@@ -1493,6 +1512,28 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog para confirmar edición con aprobaciones parciales */}
+      <AlertDialog open={showEditConfirm} onOpenChange={setShowEditConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Editar solicitud con aprobaciones?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta solicitud tiene aprobaciones registradas. Al editarla, se anularán todas las aprobaciones y volverá a estado pendiente. ¿Desea continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingEditSolicitud(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingEditSolicitud) {
+                openEditForm(pendingEditSolicitud)
+              }
+              setPendingEditSolicitud(null)
+              setShowEditConfirm(false)
+            }}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
