@@ -6,7 +6,7 @@
 
 import { useState, useEffect, ReactNode } from "react"
 import { useAuth } from "../context/AuthContext"
-import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil, Eye, CheckCircle2, FileCheck, RefreshCw, Upload } from "lucide-react"
+import { Plus, Check, X, Clock, AlertCircle, Send, CreditCard, Banknote, Download, Pencil, Eye, CheckCircle2, FileCheck, RefreshCw, Upload, ChevronsUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,6 +81,7 @@ interface SolicitudPago {
   urgente: boolean
   pinellas_paga: boolean
   revisada?: boolean
+  es_mi_turno?: boolean
   proyecto_nombre?: string
   preparado_nombre?: string
   solicitado_nombre?: string
@@ -143,15 +145,16 @@ const formatDate = (dateString: string | null | undefined): string => {
   return date.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const estadoLabels: Record<string, string> = {
-  'mi_aprobacion': 'Mi aprobación',
-  'pendiente': 'Pendiente',
-  'aprobada': 'Aprobada',
-  'rechazada': 'Rechazada',
-  'pagada': 'Pagada'
-}
+const ESTADO_OPTIONS = [
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'aprobada', label: 'Aprobada' },
+  { value: 'pagada', label: 'Pagada' },
+  { value: 'facturada', label: 'Facturada' },
+]
 
-const getEstadoBadge = (estado: string): ReactNode => {
+const ALL_ESTADOS = ESTADO_OPTIONS.map(e => e.value)
+
+const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
   const variants: Record<string, BadgeConfig> = {
     'borrador': { variant: 'secondary', label: 'Borrador', icon: Clock },
     'pendiente': { variant: 'outline', label: 'Pendiente', icon: Send },
@@ -164,8 +167,17 @@ const getEstadoBadge = (estado: string): ReactNode => {
   const config = variants[estado] || { variant: 'secondary' as const, label: estado, icon: Clock }
   const Icon = config.icon
 
+  const colorOverrides: Record<string, string> = {
+    'pendiente': ' bg-yellow-100 text-yellow-800 border border-yellow-300',
+    'pagada': ' bg-green-600 text-white',
+    'facturada': ' bg-blue-600 text-white',
+  }
+
+  let extraClass = colorOverrides[estado] || ''
+  if (estado === 'pendiente' && esMiTurno) extraClass = ' bg-white text-yellow-800 border border-yellow-300'
+
   return (
-    <Badge variant={config.variant} className={`flex items-center gap-1 w-fit${estado === 'facturada' ? ' bg-emerald-600' : ''}`}>
+    <Badge variant={config.variant} className={`flex items-center gap-1 w-fit${extraClass}`}>
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
@@ -188,9 +200,11 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
   const [error, setError] = useState<string | null>(null)
 
   // Filters
-  const [filterEstado, setFilterEstado] = useState('all')
+  const [filterEstados, setFilterEstados] = useState<string[]>(ALL_ESTADOS)
+  const [filterMyApproval, setFilterMyApproval] = useState(false)
   const [filterProyecto, setFilterProyecto] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false)
 
   // Form
   const [showForm, setShowForm] = useState(false)
@@ -274,7 +288,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
 
   useEffect(() => {
     loadData()
-  }, [filterEstado])
+  }, [filterEstados, filterMyApproval])
 
   const loadData = async () => {
     try {
@@ -282,12 +296,14 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
       setLoading(true)
       setError(null)
 
-      let params = ''
-      if (filterEstado === 'mi_aprobacion') {
-        params = '?pending_my_approval=true'
-      } else if (filterEstado !== 'all') {
-        params = `?estado=${filterEstado}`
+      const queryParams: string[] = []
+      if (filterEstados.length > 0 && filterEstados.length < ALL_ESTADOS.length) {
+        queryParams.push(`estado=${filterEstados.join(',')}`)
       }
+      if (filterMyApproval) {
+        queryParams.push('pending_my_approval=true')
+      }
+      const params = queryParams.length > 0 ? `?${queryParams.join('&')}` : ''
       const [solRes, projRes] = await Promise.all([
         api.get(`/solicitudes-pago${params}`),
         api.get('/projects')
@@ -319,6 +335,10 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
       )
     }
     return true
+  }).sort((a, b) => {
+    if (a.es_mi_turno && !b.es_mi_turno) return -1
+    if (!a.es_mi_turno && b.es_mi_turno) return 1
+    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
   })
 
   // Stats
@@ -700,14 +720,43 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1">
-          <Input
-            placeholder="Buscar por numero, proveedor, proyecto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
-          />
-        </div>
+        <Popover open={estadoPopoverOpen} onOpenChange={setEstadoPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full sm:w-[220px] justify-between">
+              {filterEstados.length === ALL_ESTADOS.length
+                ? 'Todos los estados'
+                : filterEstados.length === 0
+                  ? 'Ningún estado'
+                  : `${filterEstados.length} estado${filterEstados.length > 1 ? 's' : ''}`}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[220px] p-2">
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                <Checkbox
+                  checked={filterEstados.length === ALL_ESTADOS.length}
+                  onCheckedChange={(checked) => setFilterEstados(checked ? [...ALL_ESTADOS] : [])}
+                />
+                <span className="text-sm font-medium">Todos</span>
+              </label>
+              <div className="border-t my-1" />
+              {ESTADO_OPTIONS.map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                  <Checkbox
+                    checked={filterEstados.includes(opt.value)}
+                    onCheckedChange={(checked) => {
+                      setFilterEstados(prev =>
+                        checked ? [...prev, opt.value] : prev.filter(e => e !== opt.value)
+                      )
+                    }}
+                  />
+                  <span className="text-sm">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
         <Select value={filterProyecto} onValueChange={setFilterProyecto}>
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Proyecto" />
@@ -721,25 +770,31 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterEstado} onValueChange={setFilterEstado}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            {Object.entries(estadoLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex-1">
+          <Input
+            placeholder="Buscar por numero, proveedor, proyecto..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+        </div>
       </div>
+
+      {/* My approval toggle */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <Checkbox
+          checked={filterMyApproval}
+          onCheckedChange={(checked) => setFilterMyApproval(!!checked)}
+        />
+        <span className="text-sm">Mostrar solo las que requieren mi aprobación</span>
+      </label>
 
       {/* Table */}
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              {filterEstado === 'mi_aprobacion' && <TableHead className="w-10 px-2"></TableHead>}
+              {filterMyApproval && <TableHead className="w-10 px-2"></TableHead>}
               <TableHead className="w-[100px]">Numero</TableHead>
               <TableHead className="w-6 px-0"></TableHead>
               <TableHead>Proyecto</TableHead>
@@ -751,7 +806,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
           <TableBody>
             {filteredSolicitudes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={filterEstado === 'mi_aprobacion' ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={filterMyApproval ? 7 : 6} className="text-center py-8 text-muted-foreground">
                   No se encontraron solicitudes de pago
                 </TableCell>
               </TableRow>
@@ -759,10 +814,10 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
               filteredSolicitudes.map((sol) => (
                 <TableRow
                   key={sol.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={`cursor-pointer hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
                   onClick={() => openDetail(sol)}
                 >
-                  {filterEstado === 'mi_aprobacion' && (
+                  {filterMyApproval && (
                     <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedIds.has(sol.id)}
@@ -780,7 +835,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                   </TableCell>
                   <TableCell className="px-0 text-center">{sol.urgente && <span className="text-red-600 font-bold">!</span>}</TableCell>
                   <TableCell>
-                    <div className="text-xs bg-muted px-2 py-1 rounded w-fit">
+                    <div className={`text-xs px-2 py-1 rounded w-fit ${sol.es_mi_turno ? 'bg-gray-200 text-gray-700' : 'bg-muted'}`}>
                       {sol.proyecto_nombre || '-'}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 sm:hidden">
@@ -791,7 +846,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                   <TableCell className="text-right font-medium">
                     {formatMoney(sol.monto_total)}
                   </TableCell>
-                  <TableCell>{getEstadoBadge(sol.estado)}</TableCell>
+                  <TableCell>{getEstadoBadge(sol.estado, sol.es_mi_turno)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -1074,7 +1129,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
               {detailSolicitud.pinellas_paga && ['pagada', 'facturada'].includes(detailSolicitud.estado) && (
                 <div className="space-y-3">
                   {detailReembolso ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                    <div className="p-4 bg-yellow-50/50 border border-amber-200 rounded-lg space-y-3">
                       <h4 className="font-medium text-amber-900">Comprobante de Reembolso</h4>
                       <div className="text-sm text-amber-800 space-y-1">
                         <div>Fecha de reembolso: {new Date(detailReembolso.fecha_reembolso + 'T12:00:00').toLocaleDateString('es-PA')}</div>
@@ -1085,7 +1140,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                       </div>
                     </div>
                   ) : (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                    <div className="p-4 bg-amber-50/50 border border-amber-200 border-dashed rounded-lg">
+                    <div className="p-4 bg-yellow-50/50/50 border border-amber-200 border-dashed rounded-lg">
                       <div className="text-sm text-amber-700 mb-2">Pinellas paga esta solicitud. Pendiente de registrar reembolso.</div>
                       <Button
                         variant="outline"
@@ -1094,7 +1149,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                           setReembolsoFile(null)
                           setShowReembolsoModal(true)
                         }}
-                        className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                        className="w-full border-amber-300 text-amber-700 hover:bg-yellow-50/50"
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         Registrar Reembolso
@@ -1111,7 +1166,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                   <div className="flex items-center gap-2 flex-wrap">
                     {getEstadoBadge(detailSolicitud.estado)}
                     {detailSolicitud.pinellas_paga && !detailReembolso && (
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                      <Badge variant="outline" className="bg-yellow-50/50 text-amber-700 border-amber-300">
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Reembolso pendiente
                       </Badge>
