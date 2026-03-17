@@ -82,6 +82,7 @@ interface SolicitudPago {
   pinellas_paga: boolean
   revisada?: boolean
   es_mi_turno?: boolean
+  aprobadores_estado?: { nombre: string; estado: string }[]
   proyecto_nombre?: string
   preparado_nombre?: string
   solicitado_nombre?: string
@@ -181,6 +182,33 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
+  )
+}
+
+const getInitials = (nombre: string): string => {
+  const parts = nombre.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return nombre.substring(0, 2).toUpperCase()
+}
+
+const AprobadoresAvatars = ({ aprobadores }: { aprobadores: { nombre: string; estado: string }[] }) => {
+  const colorMap: Record<string, string> = {
+    'aprobado': 'bg-green-500 text-white',
+    'pendiente': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+    'rechazado': 'bg-red-500 text-white',
+  }
+  return (
+    <div className="flex items-center -space-x-1">
+      {aprobadores.map((a, i) => (
+        <div
+          key={i}
+          title={`${a.nombre}: ${a.estado}`}
+          className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${colorMap[a.estado] || colorMap['pendiente']}`}
+        >
+          {getInitials(a.nombre)}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -846,7 +874,11 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                   <TableCell className="text-right font-medium">
                     {formatMoney(sol.monto_total)}
                   </TableCell>
-                  <TableCell>{getEstadoBadge(sol.estado, sol.es_mi_turno)}</TableCell>
+                  <TableCell>
+                    {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
+                      ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
+                      : getEstadoBadge(sol.estado)}
+                  </TableCell>
                 </TableRow>
               ))
             )}
