@@ -1245,33 +1245,53 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                     </label>
                   )}
 
-                  {detailAprobadores.length > 0 && (
-                    <div className="space-y-2">
-                      {detailAprobadores.map((aprobador) => {
-                        const aprobacion = detailAprobaciones.find(a => a.user_id === aprobador.user_id)
-                        return (
-                          <div key={aprobador.user_id} className="flex items-center gap-2 text-sm">
-                            {aprobacion ? (
-                              aprobacion.accion === 'aprobado' ? (
-                                <Check className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <X className="h-4 w-4 text-red-600" />
-                              )
+                  {detailSolicitud.estado === 'pagada' || detailSolicitud.estado === 'facturada' ? (
+                    detailAprobaciones.length > 0 && (
+                      <div className="space-y-2">
+                        {detailAprobaciones.map((aprobacion, index) => (
+                          <div key={aprobacion.id} className="flex items-center gap-2 text-sm">
+                            {aprobacion.accion === 'aprobado' ? (
+                              <Check className="h-4 w-4 text-green-600" />
                             ) : (
-                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <X className="h-4 w-4 text-red-600" />
                             )}
-                            <span className="font-medium">{aprobador.orden}. {aprobador.nombre}</span>
-                            {aprobacion ? (
-                              <span className="text-muted-foreground">
-                                — {new Date(aprobacion.fecha).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">(pendiente)</span>
-                            )}
+                            <span className="font-medium">{index + 1}. {aprobacion.usuario_nombre}</span>
+                            <span className="text-muted-foreground">
+                              — {new Date(aprobacion.fecha).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </span>
                           </div>
-                        )
-                      })}
-                    </div>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    detailAprobadores.length > 0 && (
+                      <div className="space-y-2">
+                        {detailAprobadores.map((aprobador) => {
+                          const aprobacion = detailAprobaciones.find(a => a.user_id === aprobador.user_id)
+                          return (
+                            <div key={aprobador.user_id} className="flex items-center gap-2 text-sm">
+                              {aprobacion ? (
+                                aprobacion.accion === 'aprobado' ? (
+                                  <Check className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <X className="h-4 w-4 text-red-600" />
+                                )
+                              ) : (
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span className="font-medium">{aprobador.orden}. {aprobador.nombre}</span>
+                              {aprobacion ? (
+                                <span className="text-muted-foreground">
+                                  — {new Date(aprobacion.fecha).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">(pendiente)</span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
                   )}
 
                   {detailSolicitud.estado === 'rechazada' && detailAprobaciones.filter(a => a.accion === 'rechazado').map(rechazo => (
