@@ -224,6 +224,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
   // Filters
   const [filterEstados, setFilterEstados] = useState<string[]>(ALL_ESTADOS)
   const [filterMyApproval, setFilterMyApproval] = useState(false)
+  const [filterPinellasPaga, setFilterPinellasPaga] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false)
 
@@ -348,6 +349,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
 
   // Client-side search filter
   const filteredSolicitudes = solicitudes.filter(sol => {
+    if (filterPinellasPaga && !sol.pinellas_paga) return false
     if (searchTerm) {
       const search = searchTerm.toLowerCase()
       return (
@@ -505,7 +507,8 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       setShowReembolsoModal(false)
-      // Reload detail to show reembolso data
+      // Reload list and detail to show reembolso data
+      await loadSolicitudes()
       if (detailSolicitud) await openDetail(detailSolicitud)
     } catch (err) {
       console.error('Error registering reembolso:', err)
@@ -819,14 +822,23 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
         )}
       </div>
 
-      {/* My approval toggle */}
-      <label className="flex items-center gap-2 cursor-pointer">
-        <Checkbox
-          checked={filterMyApproval}
-          onCheckedChange={(checked) => setFilterMyApproval(!!checked)}
-        />
-        <span className="text-sm">Mostrar solo las que requieren mi aprobación</span>
-      </label>
+      {/* Filter toggles */}
+      <div className="flex flex-wrap gap-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox
+            checked={filterMyApproval}
+            onCheckedChange={(checked) => setFilterMyApproval(!!checked)}
+          />
+          <span className="text-sm">Mostrar solo las que requieren mi aprobación</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <Checkbox
+            checked={filterPinellasPaga}
+            onCheckedChange={(checked) => setFilterPinellasPaga(!!checked)}
+          />
+          <span className="text-sm">Mostrar solo Reembolso Pinellas</span>
+        </label>
+      </div>
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">

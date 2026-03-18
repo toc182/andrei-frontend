@@ -36,6 +36,16 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import api from "../../services/api"
 
 interface RolProyecto {
@@ -116,6 +126,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
   const [editApprovers, setEditApprovers] = useState<Approver[]>([])
   const [selectedApproverUserId, setSelectedApproverUserId] = useState('')
   const [savingApprovers, setSavingApprovers] = useState(false)
+  const [showApproverConfirm, setShowApproverConfirm] = useState(false)
 
   // Load members
   const loadMembers = async () => {
@@ -610,12 +621,30 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             <Button variant="outline" onClick={() => setShowApproversModal(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveApprovers} disabled={savingApprovers}>
+            <Button onClick={() => setShowApproverConfirm(true)} disabled={savingApprovers}>
               {savingApprovers ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm approver changes */}
+      <AlertDialog open={showApproverConfirm} onOpenChange={setShowApproverConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar cambio de aprobadores</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este cambio reseteará todas las aprobaciones de solicitudes no pagadas de este proyecto. Las solicitudes volverán a estado pendiente. ¿Desea continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleSaveApprovers()}>
+              Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Add Member Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
