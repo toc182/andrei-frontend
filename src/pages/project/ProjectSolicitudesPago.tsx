@@ -76,6 +76,7 @@ interface SolicitudPago {
   revisada?: boolean
   es_mi_turno?: boolean
   aprobadores_estado?: { nombre: string; estado: string }[]
+  reembolso_registrado?: boolean
   preparado_nombre?: string
   solicitado_nombre?: string
   requisicion_numero?: string
@@ -859,9 +860,16 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                         </div>
                         <div className="text-sm text-muted-foreground">{sol.proveedor}</div>
                       </div>
-                      {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
-                        ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
-                        : getEstadoBadge(sol.estado)}
+                      <div className="space-y-1 flex flex-col items-end">
+                        {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
+                          ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
+                          : getEstadoBadge(sol.estado)}
+                        {sol.pinellas_paga && (
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}>
+                            Reembolso
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="text-lg font-bold mb-1">{formatMoney(sol.monto_total)}</div>
                     <div className="text-sm text-muted-foreground">{formatDate(sol.fecha)}</div>
@@ -923,9 +931,16 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                       <TableCell>{sol.proveedor}</TableCell>
                       <TableCell className="text-right font-medium">{formatMoney(sol.monto_total)}</TableCell>
                       <TableCell>
-                        {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
-                          ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
-                          : getEstadoBadge(sol.estado)}
+                        <div className="space-y-1">
+                          {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
+                            ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
+                            : getEstadoBadge(sol.estado)}
+                          {sol.pinellas_paga && (
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}>
+                              Reembolso
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1678,6 +1693,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 try {
                   await api.patch(`/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`, { pinellas_paga: pendingPinellasPaga })
                   setDetailSolicitud({ ...detailSolicitud, pinellas_paga: pendingPinellasPaga })
+                  loadSolicitudes()
                 } catch {
                   // silently fail
                 }

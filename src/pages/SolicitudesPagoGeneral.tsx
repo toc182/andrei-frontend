@@ -83,6 +83,7 @@ interface SolicitudPago {
   revisada?: boolean
   es_mi_turno?: boolean
   aprobadores_estado?: { nombre: string; estado: string }[]
+  reembolso_registrado?: boolean
   proyecto_nombre?: string
   preparado_nombre?: string
   solicitado_nombre?: string
@@ -875,9 +876,16 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                     {formatMoney(sol.monto_total)}
                   </TableCell>
                   <TableCell>
-                    {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
-                      ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
-                      : getEstadoBadge(sol.estado)}
+                    <div className="space-y-1">
+                      {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
+                        ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
+                        : getEstadoBadge(sol.estado)}
+                      {sol.pinellas_paga && (
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}>
+                          Reembolso
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -1648,6 +1656,7 @@ export default function SolicitudesPagoGeneral({ onNavigate }: SolicitudesPagoGe
                 try {
                   await api.patch(`/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`, { pinellas_paga: pendingPinellasPaga })
                   setDetailSolicitud({ ...detailSolicitud, pinellas_paga: pendingPinellasPaga })
+                  loadData()
                 } catch {
                   // silently fail
                 }
