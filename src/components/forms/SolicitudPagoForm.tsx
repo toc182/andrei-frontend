@@ -4,108 +4,123 @@
  * Sections: Datos principales, Items dinámicos, ITBMS, Ajustes, Datos bancarios
  */
 
-import { useState, useEffect, useRef, FormEvent, ChangeEvent } from "react"
+import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Trash2, ChevronDown, ChevronRight, MinusCircle, PlusCircle, Paperclip, X } from "lucide-react"
-import api from "../../services/api"
-import { formatMoney } from "../../utils/formatters"
-import { useAuth } from "../../context/AuthContext"
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  MinusCircle,
+  PlusCircle,
+  Paperclip,
+  X,
+} from 'lucide-react';
+import api from '../../services/api';
+import { formatMoney } from '../../utils/formatters';
+import { useAuth } from '../../context/AuthContext';
 
 // --- Types ---
 
-type EstadoSolicitud = 'borrador' | 'pendiente' | 'aprobada' | 'rechazada' | 'pagada' | 'facturada'
+type EstadoSolicitud =
+  | 'borrador'
+  | 'pendiente'
+  | 'aprobada'
+  | 'rechazada'
+  | 'pagada'
+  | 'facturada';
 
 interface SolicitudPago {
-  id: number
-  proyecto_id: number | null
-  numero: string
-  fecha: string
-  proveedor: string
-  preparado_por: number
-  solicitado_por: number | null
-  requisicion_id: number | null
-  subtotal: number
-  descuentos: number
-  impuestos: number
-  monto_total: number
-  estado: EstadoSolicitud
-  observaciones: string | null
-  beneficiario: string | null
-  banco: string | null
-  tipo_cuenta: string | null
-  numero_cuenta: string | null
-  urgente: boolean
+  id: number;
+  proyecto_id: number | null;
+  numero: string;
+  fecha: string;
+  proveedor: string;
+  preparado_por: number;
+  solicitado_por: number | null;
+  requisicion_id: number | null;
+  subtotal: number;
+  descuentos: number;
+  impuestos: number;
+  monto_total: number;
+  estado: EstadoSolicitud;
+  observaciones: string | null;
+  beneficiario: string | null;
+  banco: string | null;
+  tipo_cuenta: string | null;
+  numero_cuenta: string | null;
+  urgente: boolean;
 }
 
 interface SolicitudItem {
-  id?: number
-  cantidad: number
-  unidad: string
-  descripcion: string
-  descripcion_detallada: string | null
-  precio_unitario: number
-  precio_total: number
+  id?: number;
+  cantidad: number;
+  unidad: string;
+  descripcion: string;
+  descripcion_detallada: string | null;
+  precio_unitario: number;
+  precio_total: number;
 }
 
 interface SolicitudAjuste {
-  id?: number
-  tipo: string
-  descripcion: string
-  porcentaje: number | null
-  monto: number
+  id?: number;
+  tipo: string;
+  descripcion: string;
+  porcentaje: number | null;
+  monto: number;
 }
 
 interface MemberOption {
-  id: number
-  nombre: string
-  tipo_usuario: string | null
+  id: number;
+  nombre: string;
+  tipo_usuario: string | null;
 }
 
 interface RequisicionOption {
-  id: number
-  numero: string
+  id: number;
+  numero: string;
 }
 
 interface ItemFormData {
-  descripcion: string
-  descripcion_detallada: string
-  cantidad: string
-  unidad: string
-  precio_unitario: string
-  expanded: boolean
+  descripcion: string;
+  descripcion_detallada: string;
+  cantidad: string;
+  unidad: string;
+  precio_unitario: string;
+  expanded: boolean;
 }
 
 interface AjusteFormData {
-  tipo: 'aumento' | 'disminucion'
-  descripcion: string
-  monto: string
+  tipo: 'aumento' | 'disminucion';
+  descripcion: string;
+  monto: string;
 }
 
 interface SolicitudPagoFormProps {
-  projectId: number
-  isOpen: boolean
-  onClose: () => void
-  onSave: () => void
-  editingSolicitud?: SolicitudPago | null
-  existingItems?: SolicitudItem[]
-  existingAjustes?: SolicitudAjuste[]
+  projectId: number;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: () => void;
+  editingSolicitud?: SolicitudPago | null;
+  existingItems?: SolicitudItem[];
+  existingAjustes?: SolicitudAjuste[];
 }
 
 const emptyItem: ItemFormData = {
@@ -114,14 +129,14 @@ const emptyItem: ItemFormData = {
   cantidad: '1',
   unidad: 'unidad',
   precio_unitario: '',
-  expanded: false
-}
+  expanded: false,
+};
 
 const emptyAjuste: AjusteFormData = {
   tipo: 'disminucion',
   descripcion: '',
-  monto: ''
-}
+  monto: '',
+};
 
 export default function SolicitudPagoForm({
   projectId,
@@ -130,228 +145,269 @@ export default function SolicitudPagoForm({
   onSave,
   editingSolicitud,
   existingItems = [],
-  existingAjustes = []
+  existingAjustes = [],
 }: SolicitudPagoFormProps) {
-  const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pendingFiles, setPendingFiles] = useState<File[]>([])
-  const adjuntoFormRef = useRef<HTMLInputElement>(null)
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const adjuntoFormRef = useRef<HTMLInputElement>(null);
 
   // Form data
-  const [fecha, setFecha] = useState('')
-  const [proveedor, setProveedor] = useState('')
-  const [solicitadoPor, setSolicitadoPor] = useState<string>('none')
-  const [requisicionId, setRequisicionId] = useState<string>('none')
-  const [observaciones, setObservaciones] = useState('')
-  const [urgente, setUrgente] = useState(false)
-  const [pinellasPaga, setPinellasPaga] = useState(false)
-  const [beneficiario, setBeneficiario] = useState('')
-  const [banco, setBanco] = useState('')
-  const [tipoCuenta, setTipoCuenta] = useState('none')
-  const [numeroCuenta, setNumeroCuenta] = useState('')
+  const [fecha, setFecha] = useState('');
+  const [proveedor, setProveedor] = useState('');
+  const [solicitadoPor, setSolicitadoPor] = useState<string>('none');
+  const [requisicionId, setRequisicionId] = useState<string>('none');
+  const [observaciones, setObservaciones] = useState('');
+  const [urgente, setUrgente] = useState(false);
+  const [pinellasPaga, setPinellasPaga] = useState(false);
+  const [beneficiario, setBeneficiario] = useState('');
+  const [banco, setBanco] = useState('');
+  const [tipoCuenta, setTipoCuenta] = useState('none');
+  const [numeroCuenta, setNumeroCuenta] = useState('');
 
   // Dynamic items & ajustes
-  const [items, setItems] = useState<ItemFormData[]>([{ ...emptyItem }])
-  const [itbmsActivo, setItbmsActivo] = useState(true)
-  const [ajustes, setAjustes] = useState<AjusteFormData[]>([])
+  const [items, setItems] = useState<ItemFormData[]>([{ ...emptyItem }]);
+  const [itbmsActivo, setItbmsActivo] = useState(true);
+  const [ajustes, setAjustes] = useState<AjusteFormData[]>([]);
 
   // Options
-  const [miembrosProyecto, setMiembrosProyecto] = useState<MemberOption[]>([])
-  const [requisiciones, setRequisiciones] = useState<RequisicionOption[]>([])
-  const [nextNumero, setNextNumero] = useState<string>('')
+  const [miembrosProyecto, setMiembrosProyecto] = useState<MemberOption[]>([]);
+  const [requisiciones, setRequisiciones] = useState<RequisicionOption[]>([]);
+  const [nextNumero, setNextNumero] = useState<string>('');
 
   // Load options when modal opens
   useEffect(() => {
     if (isOpen) {
-      loadOptions()
+      loadOptions();
     }
-  }, [isOpen, projectId])
+  }, [isOpen, projectId]);
 
   // Populate form when editing or reset for new
   useEffect(() => {
     if (editingSolicitud) {
-      setFecha(editingSolicitud.fecha ? editingSolicitud.fecha.split('T')[0] : '')
-      setProveedor(editingSolicitud.proveedor || '')
-      setSolicitadoPor(editingSolicitud.solicitado_por?.toString() || 'none')
-      setRequisicionId(editingSolicitud.requisicion_id?.toString() || 'none')
-      setObservaciones(editingSolicitud.observaciones || '')
-      setUrgente(editingSolicitud.urgente || false)
-      setPinellasPaga(editingSolicitud.pinellas_paga || false)
-      setBeneficiario(editingSolicitud.beneficiario || '')
-      setBanco(editingSolicitud.banco || '')
-      setTipoCuenta(editingSolicitud.tipo_cuenta || 'none')
-      setNumeroCuenta(editingSolicitud.numero_cuenta || '')
+      setFecha(
+        editingSolicitud.fecha ? editingSolicitud.fecha.split('T')[0] : '',
+      );
+      setProveedor(editingSolicitud.proveedor || '');
+      setSolicitadoPor(editingSolicitud.solicitado_por?.toString() || 'none');
+      setRequisicionId(editingSolicitud.requisicion_id?.toString() || 'none');
+      setObservaciones(editingSolicitud.observaciones || '');
+      setUrgente(editingSolicitud.urgente || false);
+      setPinellasPaga(editingSolicitud.pinellas_paga || false);
+      setBeneficiario(editingSolicitud.beneficiario || '');
+      setBanco(editingSolicitud.banco || '');
+      setTipoCuenta(editingSolicitud.tipo_cuenta || 'none');
+      setNumeroCuenta(editingSolicitud.numero_cuenta || '');
 
       if (existingItems.length > 0) {
-        setItems(existingItems.map(item => ({
-          descripcion: item.descripcion || '',
-          descripcion_detallada: item.descripcion_detallada || '',
-          cantidad: item.cantidad?.toString() || '1',
-          unidad: item.unidad || 'unidad',
-          precio_unitario: item.precio_unitario?.toString() || '',
-          expanded: false
-        })))
+        setItems(
+          existingItems.map((item) => ({
+            descripcion: item.descripcion || '',
+            descripcion_detallada: item.descripcion_detallada || '',
+            cantidad: item.cantidad?.toString() || '1',
+            unidad: item.unidad || 'unidad',
+            precio_unitario: item.precio_unitario?.toString() || '',
+            expanded: false,
+          })),
+        );
       } else {
-        setItems([{ ...emptyItem }])
+        setItems([{ ...emptyItem }]);
       }
 
       // Separar ITBMS de ajustes normales
-      const itbmsAjuste = existingAjustes.find(a => a.tipo === 'impuesto' && a.porcentaje === 7)
-      setItbmsActivo(!!itbmsAjuste)
-      const otrosAjustes = existingAjustes.filter(a => a !== itbmsAjuste)
+      const itbmsAjuste = existingAjustes.find(
+        (a) => a.tipo === 'impuesto' && a.porcentaje === 7,
+      );
+      setItbmsActivo(!!itbmsAjuste);
+      const otrosAjustes = existingAjustes.filter((a) => a !== itbmsAjuste);
       if (otrosAjustes.length > 0) {
-        setAjustes(otrosAjustes.map(a => ({
-          tipo: (a.tipo === 'impuesto' ? 'aumento' : 'disminucion') as 'aumento' | 'disminucion',
-          descripcion: a.descripcion || '',
-          monto: a.monto?.toString() || ''
-        })))
+        setAjustes(
+          otrosAjustes.map((a) => ({
+            tipo: (a.tipo === 'impuesto' ? 'aumento' : 'disminucion') as
+              | 'aumento'
+              | 'disminucion',
+            descripcion: a.descripcion || '',
+            monto: a.monto?.toString() || '',
+          })),
+        );
       } else {
-        setAjustes([])
+        setAjustes([]);
       }
     } else {
       // New solicitud
-      const today = new Date().toISOString().split('T')[0]
-      setFecha(today)
-      setProveedor('')
-      setSolicitadoPor(user?.id?.toString() || 'none')
-      setRequisicionId('none')
-      setObservaciones('')
-      setUrgente(false)
-      setBeneficiario('')
-      setBanco('')
-      setTipoCuenta('none')
-      setNumeroCuenta('')
-      setItems([{ ...emptyItem }])
-      setItbmsActivo(true)
-      setAjustes([])
-      setPendingFiles([])
+      const today = new Date().toISOString().split('T')[0];
+      setFecha(today);
+      setProveedor('');
+      setSolicitadoPor(user?.id?.toString() || 'none');
+      setRequisicionId('none');
+      setObservaciones('');
+      setUrgente(false);
+      setBeneficiario('');
+      setBanco('');
+      setTipoCuenta('none');
+      setNumeroCuenta('');
+      setItems([{ ...emptyItem }]);
+      setItbmsActivo(true);
+      setAjustes([]);
+      setPendingFiles([]);
     }
-    setError(null)
-  }, [editingSolicitud, isOpen, user])
+    setError(null);
+  }, [editingSolicitud, isOpen, user]);
 
   const loadOptions = async () => {
     try {
       const [membersRes, reqRes, numRes] = await Promise.all([
         api.get(`/project-members/project/${projectId}`),
         api.get(`/requisiciones/project/${projectId}`),
-        editingSolicitud ? Promise.resolve(null) : api.get(`/solicitudes-pago/project/${projectId}/next-number`)
-      ])
+        editingSolicitud
+          ? Promise.resolve(null)
+          : api.get(`/solicitudes-pago/project/${projectId}/next-number`),
+      ]);
 
       if (membersRes.data.success) {
         setMiembrosProyecto(
           (membersRes.data.members || [])
             .filter((m: { user_id?: number }) => m.user_id)
-            .map((m: { user_id: number; nombre_display: string; tipo_usuario?: string | null }) => ({
-              id: m.user_id,
-              nombre: m.nombre_display,
-              tipo_usuario: m.tipo_usuario || null
-            }))
-        )
+            .map(
+              (m: {
+                user_id: number;
+                nombre_display: string;
+                tipo_usuario?: string | null;
+              }) => ({
+                id: m.user_id,
+                nombre: m.nombre_display,
+                tipo_usuario: m.tipo_usuario || null,
+              }),
+            ),
+        );
       }
       if (reqRes.data.success) {
-        setRequisiciones((reqRes.data.requisiciones || []).map((r: { id: number; numero: string }) => ({
-          id: r.id,
-          numero: r.numero
-        })))
+        setRequisiciones(
+          (reqRes.data.requisiciones || []).map(
+            (r: { id: number; numero: string }) => ({
+              id: r.id,
+              numero: r.numero,
+            }),
+          ),
+        );
       }
       if (numRes?.data?.success) {
-        setNextNumero(numRes.data.numero)
+        setNextNumero(numRes.data.numero);
       }
     } catch (err) {
-      console.error('Error loading options:', err)
+      console.error('Error loading options:', err);
     }
-  }
+  };
 
   // Calculations
   const calculateItemTotal = (item: ItemFormData) => {
-    const cantidad = parseFloat(item.cantidad) || 0
-    const precioUnitario = parseFloat(item.precio_unitario) || 0
-    return cantidad * precioUnitario
-  }
+    const cantidad = parseFloat(item.cantidad) || 0;
+    const precioUnitario = parseFloat(item.precio_unitario) || 0;
+    return cantidad * precioUnitario;
+  };
 
-  const subtotal = items.reduce((sum, item) => sum + calculateItemTotal(item), 0)
+  const subtotal = items.reduce(
+    (sum, item) => sum + calculateItemTotal(item),
+    0,
+  );
 
-  const itbmsMonto = itbmsActivo ? subtotal * 0.07 : 0
+  const itbmsMonto = itbmsActivo ? subtotal * 0.07 : 0;
 
   const totalAumentos = ajustes
-    .filter(a => a.tipo === 'aumento')
-    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0)
+    .filter((a) => a.tipo === 'aumento')
+    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0);
 
   const totalDisminuciones = ajustes
-    .filter(a => a.tipo === 'disminucion')
-    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0)
+    .filter((a) => a.tipo === 'disminucion')
+    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0);
 
-  const montoTotal = subtotal + itbmsMonto + totalAumentos - totalDisminuciones
+  const montoTotal = subtotal + itbmsMonto + totalAumentos - totalDisminuciones;
 
   // Item handlers
-  const handleItemChange = (index: number, field: keyof ItemFormData, value: string | boolean) => {
-    setItems(prev => {
-      const newItems = [...prev]
-      newItems[index] = { ...newItems[index], [field]: value }
-      return newItems
-    })
-  }
+  const handleItemChange = (
+    index: number,
+    field: keyof ItemFormData,
+    value: string | boolean,
+  ) => {
+    setItems((prev) => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
+  };
 
-  const addItem = () => setItems(prev => [...prev, { ...emptyItem }])
+  const addItem = () => setItems((prev) => [...prev, { ...emptyItem }]);
 
   const removeItem = (index: number) => {
     if (items.length > 1) {
-      setItems(prev => prev.filter((_, i) => i !== index))
+      setItems((prev) => prev.filter((_, i) => i !== index));
     }
-  }
+  };
 
   // Ajuste handlers
-  const handleAjusteChange = (index: number, field: keyof AjusteFormData, value: string) => {
-    setAjustes(prev => {
-      const newAjustes = [...prev]
-      newAjustes[index] = { ...newAjustes[index], [field]: value }
-      return newAjustes
-    })
-  }
+  const handleAjusteChange = (
+    index: number,
+    field: keyof AjusteFormData,
+    value: string,
+  ) => {
+    setAjustes((prev) => {
+      const newAjustes = [...prev];
+      newAjustes[index] = { ...newAjustes[index], [field]: value };
+      return newAjustes;
+    });
+  };
 
   const toggleAjusteTipo = (index: number) => {
-    setAjustes(prev => {
-      const newAjustes = [...prev]
+    setAjustes((prev) => {
+      const newAjustes = [...prev];
       newAjustes[index] = {
         ...newAjustes[index],
-        tipo: newAjustes[index].tipo === 'aumento' ? 'disminucion' : 'aumento'
-      }
-      return newAjustes
-    })
-  }
+        tipo: newAjustes[index].tipo === 'aumento' ? 'disminucion' : 'aumento',
+      };
+      return newAjustes;
+    });
+  };
 
-  const addAjuste = () => setAjustes(prev => [...prev, { ...emptyAjuste }])
+  const addAjuste = () => setAjustes((prev) => [...prev, { ...emptyAjuste }]);
 
   const removeAjuste = (index: number) => {
-    setAjustes(prev => prev.filter((_, i) => i !== index))
-  }
+    setAjustes((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Submit
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!proveedor.trim()) {
-      setError('El proveedor es requerido')
-      return
+      setError('El proveedor es requerido');
+      return;
     }
 
-    const validItems = items.filter(i => i.descripcion.trim() && parseFloat(i.precio_unitario) > 0)
+    const validItems = items.filter(
+      (i) => i.descripcion.trim() && parseFloat(i.precio_unitario) > 0,
+    );
     if (validItems.length === 0) {
-      setError('Debe incluir al menos un item con descripción y precio')
-      return
+      setError('Debe incluir al menos un item con descripción y precio');
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const payload = {
         proyecto_id: projectId,
         fecha,
         proveedor: proveedor.trim(),
-        solicitado_por: solicitadoPor && solicitadoPor !== 'none' ? parseInt(solicitadoPor) : null,
-        requisicion_id: requisicionId && requisicionId !== 'none' ? parseInt(requisicionId) : null,
+        solicitado_por:
+          solicitadoPor && solicitadoPor !== 'none'
+            ? parseInt(solicitadoPor)
+            : null,
+        requisicion_id:
+          requisicionId && requisicionId !== 'none'
+            ? parseInt(requisicionId)
+            : null,
         observaciones: observaciones.trim() || null,
         urgente,
         pinellas_paga: pinellasPaga,
@@ -359,69 +415,82 @@ export default function SolicitudPagoForm({
         banco: banco.trim() || null,
         tipo_cuenta: tipoCuenta && tipoCuenta !== 'none' ? tipoCuenta : null,
         numero_cuenta: numeroCuenta.trim() || null,
-        items: validItems.map(item => ({
+        items: validItems.map((item) => ({
           cantidad: parseFloat(item.cantidad) || 1,
           unidad: item.unidad || 'unidad',
           descripcion: item.descripcion.trim(),
           descripcion_detallada: item.descripcion_detallada.trim() || null,
-          precio_unitario: parseFloat(item.precio_unitario)
+          precio_unitario: parseFloat(item.precio_unitario),
         })),
         ajustes: [
           // ITBMS como ajuste de tipo impuesto
-          ...(itbmsActivo ? [{
-            tipo: 'impuesto',
-            descripcion: 'ITBMS 7%',
-            porcentaje: 7,
-            monto: subtotal * 0.07
-          }] : []),
+          ...(itbmsActivo
+            ? [
+                {
+                  tipo: 'impuesto',
+                  descripcion: 'ITBMS 7%',
+                  porcentaje: 7,
+                  monto: subtotal * 0.07,
+                },
+              ]
+            : []),
           // Ajustes normales (mapear a tipos de DB: aumento→impuesto, disminucion→descuento)
           ...ajustes
-            .filter(a => a.descripcion.trim() && parseFloat(a.monto) > 0)
-            .map(a => ({
+            .filter((a) => a.descripcion.trim() && parseFloat(a.monto) > 0)
+            .map((a) => ({
               tipo: a.tipo === 'aumento' ? 'impuesto' : 'descuento',
               descripcion: a.descripcion.trim(),
               porcentaje: null,
-              monto: parseFloat(a.monto)
-            }))
-        ]
-      }
+              monto: parseFloat(a.monto),
+            })),
+        ],
+      };
 
       if (editingSolicitud) {
-        await api.put(`/solicitudes-pago/${editingSolicitud.id}`, payload)
+        await api.put(`/solicitudes-pago/${editingSolicitud.id}`, payload);
       } else {
-        const createRes = await api.post('/solicitudes-pago', payload)
+        const createRes = await api.post('/solicitudes-pago', payload);
 
         // Upload pending files if any
         if (pendingFiles.length > 0 && createRes.data.solicitud?.id) {
           try {
-            const formData = new FormData()
-            pendingFiles.forEach(f => formData.append('archivos', f))
-            await api.post(`/solicitudes-pago/${createRes.data.solicitud.id}/adjuntos`, formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            })
+            const formData = new FormData();
+            pendingFiles.forEach((f) => formData.append('archivos', f));
+            await api.post(
+              `/solicitudes-pago/${createRes.data.solicitud.id}/adjuntos`,
+              formData,
+              {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              },
+            );
           } catch (uploadErr) {
-            console.error('Error uploading adjuntos:', uploadErr)
+            console.error('Error uploading adjuntos:', uploadErr);
           }
         }
       }
 
-      onSave()
-      onClose()
+      onSave();
+      onClose();
     } catch (err: unknown) {
-      console.error('Error saving solicitud:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al guardar la solicitud de pago')
+      console.error('Error saving solicitud:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(
+        apiError.response?.data?.message ||
+          'Error al guardar la solicitud de pago',
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[750px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>
-            {editingSolicitud ? `Editar ${editingSolicitud.numero}` : `Nueva Solicitud de Pago${nextNumero ? ` (${nextNumero})` : ''}`}
+            {editingSolicitud
+              ? `Editar ${editingSolicitud.numero}`
+              : `Nueva Solicitud de Pago${nextNumero ? ` (${nextNumero})` : ''}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -434,26 +503,36 @@ export default function SolicitudPagoForm({
 
           {/* Section 1: Datos principales */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Datos Principales</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Datos Principales
+            </h3>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="proveedor" className="text-xs">Proveedor *</Label>
+                <Label htmlFor="proveedor" className="text-xs">
+                  Proveedor *
+                </Label>
                 <Input
                   id="proveedor"
                   placeholder="Nombre del proveedor"
                   value={proveedor}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setProveedor(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setProveedor(e.target.value)
+                  }
                   className="h-9"
                 />
               </div>
               <div>
-                <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
+                <Label htmlFor="fecha" className="text-xs">
+                  Fecha *
+                </Label>
                 <Input
                   id="fecha"
                   type="date"
                   value={fecha}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setFecha(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setFecha(e.target.value)
+                  }
                   className="h-9"
                 />
               </div>
@@ -468,20 +547,28 @@ export default function SolicitudPagoForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Seleccionar</SelectItem>
-                    {miembrosProyecto.filter(m => m.tipo_usuario === 'interno' || !m.tipo_usuario).map(m => (
-                      <SelectItem key={m.id} value={m.id.toString()}>
-                        {m.nombre}
-                      </SelectItem>
-                    ))}
-                    {miembrosProyecto.some(m => m.tipo_usuario === 'externo') &&
-                      miembrosProyecto.some(m => m.tipo_usuario === 'interno' || !m.tipo_usuario) && (
-                      <div className="my-1 h-px bg-border" />
-                    )}
-                    {miembrosProyecto.filter(m => m.tipo_usuario === 'externo').map(m => (
-                      <SelectItem key={m.id} value={m.id.toString()}>
-                        {m.nombre}
-                      </SelectItem>
-                    ))}
+                    {miembrosProyecto
+                      .filter(
+                        (m) => m.tipo_usuario === 'interno' || !m.tipo_usuario,
+                      )
+                      .map((m) => (
+                        <SelectItem key={m.id} value={m.id.toString()}>
+                          {m.nombre}
+                        </SelectItem>
+                      ))}
+                    {miembrosProyecto.some(
+                      (m) => m.tipo_usuario === 'externo',
+                    ) &&
+                      miembrosProyecto.some(
+                        (m) => m.tipo_usuario === 'interno' || !m.tipo_usuario,
+                      ) && <div className="my-1 h-px bg-border" />}
+                    {miembrosProyecto
+                      .filter((m) => m.tipo_usuario === 'externo')
+                      .map((m) => (
+                        <SelectItem key={m.id} value={m.id.toString()}>
+                          {m.nombre}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -504,7 +591,9 @@ export default function SolicitudPagoForm({
             </div>
 
             <div>
-              <Label htmlFor="observaciones" className="text-xs">Observaciones</Label>
+              <Label htmlFor="observaciones" className="text-xs">
+                Observaciones
+              </Label>
               <Textarea
                 id="observaciones"
                 placeholder="Notas adicionales..."
@@ -522,7 +611,9 @@ export default function SolicitudPagoForm({
                   onChange={(e) => setUrgente(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <span className="text-sm text-muted-foreground">Marcar como urgente</span>
+                <span className="text-sm text-muted-foreground">
+                  Marcar como urgente
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -531,14 +622,18 @@ export default function SolicitudPagoForm({
                   onChange={(e) => setPinellasPaga(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <span className="text-sm text-muted-foreground">Pinellas paga — pendiente de reembolso</span>
+                <span className="text-sm text-muted-foreground">
+                  Pinellas paga — pendiente de reembolso
+                </span>
               </label>
             </div>
           </div>
 
           {/* Section 2: Items */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Items</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Items
+            </h3>
 
             {/* Table Header */}
             <div className="hidden sm:grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 text-xs font-medium text-muted-foreground px-1">
@@ -553,7 +648,7 @@ export default function SolicitudPagoForm({
             {/* Items Rows */}
             <div className="space-y-2">
               {items.map((item, index) => {
-                const itemTotal = calculateItemTotal(item)
+                const itemTotal = calculateItemTotal(item);
                 return (
                   <div key={index} className="space-y-1">
                     {/* Mobile layout */}
@@ -561,7 +656,9 @@ export default function SolicitudPagoForm({
                       <Input
                         placeholder="Descripcion del item"
                         value={item.descripcion}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'descripcion', e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          handleItemChange(index, 'descripcion', e.target.value)
+                        }
                         className="h-9"
                       />
                       <div className="grid grid-cols-3 gap-2">
@@ -572,13 +669,24 @@ export default function SolicitudPagoForm({
                             step="0.01"
                             min="0"
                             value={item.cantidad}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'cantidad', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              handleItemChange(
+                                index,
+                                'cantidad',
+                                e.target.value,
+                              )
+                            }
                             className="h-8"
                           />
                         </div>
                         <div>
                           <Label className="text-xs">Unidad</Label>
-                          <Select value={item.unidad} onValueChange={(v) => handleItemChange(index, 'unidad', v)}>
+                          <Select
+                            value={item.unidad}
+                            onValueChange={(v) =>
+                              handleItemChange(index, 'unidad', v)
+                            }
+                          >
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
                             </SelectTrigger>
@@ -601,7 +709,13 @@ export default function SolicitudPagoForm({
                             min="0"
                             placeholder="0.00"
                             value={item.precio_unitario}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'precio_unitario', e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              handleItemChange(
+                                index,
+                                'precio_unitario',
+                                e.target.value,
+                              )
+                            }
                             className="h-8"
                           />
                         </div>
@@ -613,9 +727,19 @@ export default function SolicitudPagoForm({
                             variant="ghost"
                             size="sm"
                             className="h-7 text-xs text-muted-foreground"
-                            onClick={() => handleItemChange(index, 'expanded', !item.expanded)}
+                            onClick={() =>
+                              handleItemChange(
+                                index,
+                                'expanded',
+                                !item.expanded,
+                              )
+                            }
                           >
-                            {item.expanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                            {item.expanded ? (
+                              <ChevronDown className="h-3 w-3 mr-1" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3 mr-1" />
+                            )}
                             Detalle
                           </Button>
                           <Button
@@ -629,7 +753,9 @@ export default function SolicitudPagoForm({
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
-                        <span className="font-medium">{formatMoney(itemTotal)}</span>
+                        <span className="font-medium">
+                          {formatMoney(itemTotal)}
+                        </span>
                       </div>
                     </div>
 
@@ -641,15 +767,27 @@ export default function SolicitudPagoForm({
                           variant="ghost"
                           size="sm"
                           className="h-8 w-6 p-0 shrink-0"
-                          onClick={() => handleItemChange(index, 'expanded', !item.expanded)}
+                          onClick={() =>
+                            handleItemChange(index, 'expanded', !item.expanded)
+                          }
                           title="Descripcion detallada"
                         >
-                          {item.expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          {item.expanded ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
                         </Button>
                         <Input
                           placeholder="Descripcion del item"
                           value={item.descripcion}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'descripcion', e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            handleItemChange(
+                              index,
+                              'descripcion',
+                              e.target.value,
+                            )
+                          }
                           className="h-8 text-sm"
                         />
                       </div>
@@ -658,10 +796,17 @@ export default function SolicitudPagoForm({
                         step="0.01"
                         min="0"
                         value={item.cantidad}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'cantidad', e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          handleItemChange(index, 'cantidad', e.target.value)
+                        }
                         className="h-8 text-sm"
                       />
-                      <Select value={item.unidad} onValueChange={(v) => handleItemChange(index, 'unidad', v)}>
+                      <Select
+                        value={item.unidad}
+                        onValueChange={(v) =>
+                          handleItemChange(index, 'unidad', v)
+                        }
+                      >
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
@@ -681,7 +826,13 @@ export default function SolicitudPagoForm({
                         min="0"
                         placeholder="0.00"
                         value={item.precio_unitario}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'precio_unitario', e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          handleItemChange(
+                            index,
+                            'precio_unitario',
+                            e.target.value,
+                          )
+                        }
                         className="h-8 text-sm"
                       />
                       <div className="text-sm text-right font-medium">
@@ -706,13 +857,19 @@ export default function SolicitudPagoForm({
                           placeholder="Descripcion detallada del item..."
                           rows={2}
                           value={item.descripcion_detallada}
-                          onChange={(e) => handleItemChange(index, 'descripcion_detallada', e.target.value)}
+                          onChange={(e) =>
+                            handleItemChange(
+                              index,
+                              'descripcion_detallada',
+                              e.target.value,
+                            )
+                          }
                           className="text-sm"
                         />
                       </div>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
 
@@ -721,15 +878,25 @@ export default function SolicitudPagoForm({
               {/* Agregar Item + Subtotal */}
               <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
                 <div>
-                  <Button type="button" variant="outline" size="sm" onClick={addItem} className="h-7 text-xs">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addItem}
+                    className="h-7 text-xs"
+                  >
                     <Plus className="h-3 w-3 mr-1" />
                     Agregar Item
                   </Button>
                 </div>
                 <div></div>
                 <div></div>
-                <div className="text-sm text-muted-foreground text-right">Subtotal:</div>
-                <div className="text-sm font-medium text-right">{formatMoney(subtotal)}</div>
+                <div className="text-sm text-muted-foreground text-right">
+                  Subtotal:
+                </div>
+                <div className="text-sm font-medium text-right">
+                  {formatMoney(subtotal)}
+                </div>
                 <div></div>
               </div>
               {/* ITBMS */}
@@ -739,13 +906,27 @@ export default function SolicitudPagoForm({
                 <div></div>
                 <div className="text-sm text-muted-foreground text-right flex items-center justify-end gap-1">
                   {itbmsActivo ? (
-                    <MinusCircle className="h-4 w-4 text-red-400 cursor-pointer shrink-0" onClick={() => setItbmsActivo(false)} />
+                    <MinusCircle
+                      className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                      onClick={() => setItbmsActivo(false)}
+                    />
                   ) : (
-                    <PlusCircle className="h-4 w-4 text-green-600 cursor-pointer shrink-0" onClick={() => setItbmsActivo(true)} />
+                    <PlusCircle
+                      className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                      onClick={() => setItbmsActivo(true)}
+                    />
                   )}
-                  <span className={itbmsActivo ? '' : 'text-muted-foreground/50'}>ITBMS (7%):</span>
+                  <span
+                    className={itbmsActivo ? '' : 'text-muted-foreground/50'}
+                  >
+                    ITBMS (7%):
+                  </span>
                 </div>
-                <div className={`text-sm font-medium text-right ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}>{itbmsActivo ? formatMoney(itbmsMonto) : '—'}</div>
+                <div
+                  className={`text-sm font-medium text-right ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}
+                >
+                  {itbmsActivo ? formatMoney(itbmsMonto) : '—'}
+                </div>
                 <div></div>
               </div>
               {/* Total */}
@@ -754,14 +935,22 @@ export default function SolicitudPagoForm({
                 <div></div>
                 <div></div>
                 <div className="text-base font-bold text-right">TOTAL:</div>
-                <div className="text-base font-bold text-right">{formatMoney(montoTotal)}</div>
+                <div className="text-base font-bold text-right">
+                  {formatMoney(montoTotal)}
+                </div>
                 <div></div>
               </div>
             </div>
 
             {/* Summary rows — mobile */}
             <div className="sm:hidden border-t pt-2 mt-2 space-y-2">
-              <Button type="button" variant="outline" size="sm" onClick={addItem} className="h-8 text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addItem}
+                className="h-8 text-xs"
+              >
                 <Plus className="h-3 w-3 mr-1" />
                 Agregar Item
               </Button>
@@ -772,13 +961,27 @@ export default function SolicitudPagoForm({
               <div className="flex justify-between items-center text-sm">
                 <span className="flex items-center gap-1 text-muted-foreground">
                   {itbmsActivo ? (
-                    <MinusCircle className="h-4 w-4 text-red-400 cursor-pointer shrink-0" onClick={() => setItbmsActivo(false)} />
+                    <MinusCircle
+                      className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                      onClick={() => setItbmsActivo(false)}
+                    />
                   ) : (
-                    <PlusCircle className="h-4 w-4 text-green-600 cursor-pointer shrink-0" onClick={() => setItbmsActivo(true)} />
+                    <PlusCircle
+                      className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                      onClick={() => setItbmsActivo(true)}
+                    />
                   )}
-                  <span className={itbmsActivo ? '' : 'text-muted-foreground/50'}>ITBMS (7%):</span>
+                  <span
+                    className={itbmsActivo ? '' : 'text-muted-foreground/50'}
+                  >
+                    ITBMS (7%):
+                  </span>
                 </span>
-                <span className={`font-medium ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}>{itbmsActivo ? formatMoney(itbmsMonto) : '—'}</span>
+                <span
+                  className={`font-medium ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}
+                >
+                  {itbmsActivo ? formatMoney(itbmsMonto) : '—'}
+                </span>
               </div>
               <div className="flex justify-between text-base font-bold border-t pt-1">
                 <span>TOTAL:</span>
@@ -790,8 +993,16 @@ export default function SolicitudPagoForm({
           {/* Section 4: Ajustes */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ajustes</h3>
-              <Button type="button" variant="outline" size="sm" onClick={addAjuste} className="h-7 text-xs">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Ajustes
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addAjuste}
+                className="h-7 text-xs"
+              >
                 <Plus className="h-3 w-3 mr-1" />
                 Agregar Ajuste
               </Button>
@@ -809,14 +1020,20 @@ export default function SolicitudPagoForm({
                       size="sm"
                       className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`}
                       onClick={() => toggleAjusteTipo(index)}
-                      title={ajuste.tipo === 'aumento' ? 'Aumento (click para cambiar)' : 'Disminucion (click para cambiar)'}
+                      title={
+                        ajuste.tipo === 'aumento'
+                          ? 'Aumento (click para cambiar)'
+                          : 'Disminucion (click para cambiar)'
+                      }
                     >
                       {ajuste.tipo === 'aumento' ? '+' : '-'}
                     </Button>
                     <Input
                       placeholder="Descripcion del ajuste"
                       value={ajuste.descripcion}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleAjusteChange(index, 'descripcion', e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleAjusteChange(index, 'descripcion', e.target.value)
+                      }
                       className="h-8 text-sm flex-1"
                     />
                     <Input
@@ -825,7 +1042,9 @@ export default function SolicitudPagoForm({
                       min="0"
                       placeholder="0.00"
                       value={ajuste.monto}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleAjusteChange(index, 'monto', e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleAjusteChange(index, 'monto', e.target.value)
+                      }
                       className="h-8 text-sm w-28"
                     />
                     <Button
@@ -845,25 +1064,35 @@ export default function SolicitudPagoForm({
 
           {/* Section 4: Datos bancarios */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Datos Bancarios</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Datos Bancarios
+            </h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="beneficiario" className="text-xs">Beneficiario</Label>
+                <Label htmlFor="beneficiario" className="text-xs">
+                  Beneficiario
+                </Label>
                 <Input
                   id="beneficiario"
                   placeholder="Nombre del beneficiario"
                   value={beneficiario}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setBeneficiario(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setBeneficiario(e.target.value)
+                  }
                   className="h-9"
                 />
               </div>
               <div>
-                <Label htmlFor="banco" className="text-xs">Banco</Label>
+                <Label htmlFor="banco" className="text-xs">
+                  Banco
+                </Label>
                 <Input
                   id="banco"
                   placeholder="Nombre del banco"
                   value={banco}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setBanco(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setBanco(e.target.value)
+                  }
                   className="h-9"
                 />
               </div>
@@ -881,12 +1110,16 @@ export default function SolicitudPagoForm({
                 </Select>
               </div>
               <div>
-                <Label htmlFor="numero_cuenta" className="text-xs">Numero de Cuenta</Label>
+                <Label htmlFor="numero_cuenta" className="text-xs">
+                  Numero de Cuenta
+                </Label>
                 <Input
                   id="numero_cuenta"
                   placeholder="Numero de cuenta"
                   value={numeroCuenta}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setNumeroCuenta(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setNumeroCuenta(e.target.value)
+                  }
                   className="h-9"
                 />
               </div>
@@ -908,8 +1141,11 @@ export default function SolicitudPagoForm({
                   className="hidden"
                   onChange={(e) => {
                     if (e.target.files) {
-                      setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)])
-                      e.target.value = ''
+                      setPendingFiles((prev) => [
+                        ...prev,
+                        ...Array.from(e.target.files!),
+                      ]);
+                      e.target.value = '';
                     }
                   }}
                 />
@@ -922,12 +1158,17 @@ export default function SolicitudPagoForm({
                   <Plus className="h-3 w-3 mr-1" />
                   Agregar Adjuntos
                 </Button>
-                <span className="text-xs text-muted-foreground ml-2">PDF, JPG o PNG. Max 10MB por archivo.</span>
+                <span className="text-xs text-muted-foreground ml-2">
+                  PDF, JPG o PNG. Max 10MB por archivo.
+                </span>
               </div>
               {pendingFiles.length > 0 && (
                 <div className="space-y-1">
                   {pendingFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 border rounded text-sm">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 border rounded text-sm"
+                    >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <Paperclip className="h-3 w-3 shrink-0" />
                         <span className="truncate">{file.name}</span>
@@ -940,7 +1181,11 @@ export default function SolicitudPagoForm({
                         variant="ghost"
                         size="sm"
                         className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== index))}
+                        onClick={() =>
+                          setPendingFiles((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
+                        }
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -953,15 +1198,24 @@ export default function SolicitudPagoForm({
 
           {/* Form Actions */}
           <div className="flex gap-2 justify-end pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : editingSolicitud ? 'Actualizar' : 'Crear Solicitud'}
+              {loading
+                ? 'Guardando...'
+                : editingSolicitud
+                  ? 'Actualizar'
+                  : 'Crear Solicitud'}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -4,21 +4,21 @@
  * Features: Create, Read, Update, Delete operations with role-based access
  */
 
-import { useAuth } from "../../context/AuthContext"
-import { Plus, Pencil, Trash2, FileText } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { formatDate } from "../../utils/dateUtils"
-import { formatMoney } from "../../utils/formatters"
-import type { Adenda } from "@/types"
+import { useAuth } from '../../context/AuthContext';
+import { Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { formatDate } from '../../utils/dateUtils';
+import { formatMoney } from '../../utils/formatters';
+import type { Adenda } from '@/types';
 
 interface ProjectAdendasProps {
-  projectId: number
-  adendas: Adenda[]
-  onOpenForm: () => void
-  onEditAdenda: (adenda: Adenda) => void
-  onDeleteAdenda: (adendaId: number) => void
+  projectId: number;
+  adendas: Adenda[];
+  onOpenForm: () => void;
+  onEditAdenda: (adenda: Adenda) => void;
+  onDeleteAdenda: (adendaId: number) => void;
 }
 
 export default function ProjectAdendas({
@@ -26,37 +26,37 @@ export default function ProjectAdendas({
   adendas,
   onOpenForm,
   onEditAdenda,
-  onDeleteAdenda
+  onDeleteAdenda,
 }: ProjectAdendasProps) {
-  const { user } = useAuth()
-  const canManage = !!user
+  const { user } = useAuth();
+  const canManage = !!user;
 
   const getAdendaStatusBadgeVariant = (estado: string): string => {
     const variants: Record<string, string> = {
-      'en_proceso': 'secondary',
-      'aprobada': 'default',
-      'rechazada': 'destructive'
-    }
-    return variants[estado] || 'secondary'
-  }
+      en_proceso: 'secondary',
+      aprobada: 'default',
+      rechazada: 'destructive',
+    };
+    return variants[estado] || 'secondary';
+  };
 
   const getAdendaStatusText = (estado: string): string => {
     const statusTexts: Record<string, string> = {
-      'en_proceso': 'En Proceso',
-      'aprobada': 'Aprobada',
-      'rechazada': 'Rechazada'
-    }
-    return statusTexts[estado] || estado
-  }
+      en_proceso: 'En Proceso',
+      aprobada: 'Aprobada',
+      rechazada: 'Rechazada',
+    };
+    return statusTexts[estado] || estado;
+  };
 
   const getAdendaTypeText = (tipo: string): string => {
     const typeTexts: Record<string, string> = {
-      'tiempo': 'Extensión de Tiempo',
-      'costo': 'Modificación de Costo',
-      'mixta': 'Tiempo y Costo'
-    }
-    return typeTexts[tipo] || tipo
-  }
+      tiempo: 'Extensión de Tiempo',
+      costo: 'Modificación de Costo',
+      mixta: 'Tiempo y Costo',
+    };
+    return typeTexts[tipo] || tipo;
+  };
 
   // Empty State
   if (adendas.length === 0) {
@@ -78,7 +78,7 @@ export default function ProjectAdendas({
           )}
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // Adendas List View
@@ -89,7 +89,8 @@ export default function ProjectAdendas({
         <div>
           <h2 className="text-2xl font-bold">Adendas del Proyecto</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {adendas.length} {adendas.length === 1 ? 'adenda registrada' : 'adendas registradas'}
+            {adendas.length}{' '}
+            {adendas.length === 1 ? 'adenda registrada' : 'adendas registradas'}
           </p>
         </div>
         {canManage && (
@@ -115,7 +116,9 @@ export default function ProjectAdendas({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant={getAdendaStatusBadgeVariant(adenda.estado) as any}>
+                  <Badge
+                    variant={getAdendaStatusBadgeVariant(adenda.estado) as any}
+                  >
                     {getAdendaStatusText(adenda.estado)}
                   </Badge>
                   {canManage && (
@@ -163,14 +166,20 @@ export default function ProjectAdendas({
               {adenda.nuevo_monto && (
                 <div className="grid grid-cols-[140px_1fr] gap-2">
                   <span className="text-muted-foreground">Nuevo Monto:</span>
-                  <span className="font-medium">{formatMoney(adenda.nuevo_monto)}</span>
+                  <span className="font-medium">
+                    {formatMoney(adenda.nuevo_monto)}
+                  </span>
                 </div>
               )}
 
               {adenda.monto_adicional && (
                 <div className="grid grid-cols-[140px_1fr] gap-2">
-                  <span className="text-muted-foreground">Monto Adicional:</span>
-                  <span className="font-medium">{formatMoney(adenda.monto_adicional)}</span>
+                  <span className="text-muted-foreground">
+                    Monto Adicional:
+                  </span>
+                  <span className="font-medium">
+                    {formatMoney(adenda.monto_adicional)}
+                  </span>
                 </div>
               )}
 
@@ -200,5 +209,5 @@ export default function ProjectAdendas({
         ))}
       </div>
     </div>
-  )
+  );
 }

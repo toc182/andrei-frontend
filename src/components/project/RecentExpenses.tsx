@@ -4,15 +4,15 @@
  * Features: Pagination, filtering by category, role-based actions
  */
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Pencil, Trash2, FileText } from "lucide-react"
-import { formatDate } from "../../utils/dateUtils"
-import { formatMoney } from "../../utils/formatters"
-import api from "../../services/api"
-import type { Expense } from "@/types"
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Pencil, Trash2, FileText } from 'lucide-react';
+import { formatDate } from '../../utils/dateUtils';
+import { formatMoney } from '../../utils/formatters';
+import api from '../../services/api';
+import type { Expense } from '@/types';
 
 interface RecentExpensesProps {
   projectId: number;
@@ -22,42 +22,48 @@ interface RecentExpensesProps {
   onRefresh?: number; // timestamp to trigger refresh
 }
 
-export default function RecentExpenses({ projectId, canManage, onEdit, onDelete, onRefresh }: RecentExpensesProps) {
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export default function RecentExpenses({
+  projectId,
+  canManage,
+  onEdit,
+  onDelete,
+  onRefresh,
+}: RecentExpensesProps) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadExpenses()
-  }, [projectId])
+    loadExpenses();
+  }, [projectId]);
 
   const loadExpenses = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       const response = await api.get(`/costs/projects/${projectId}/expenses`, {
         params: {
           limit: 20,
-          offset: 0
-        }
-      })
+          offset: 0,
+        },
+      });
       if (response.data.success) {
-        setExpenses(response.data.expenses || [])
+        setExpenses(response.data.expenses || []);
       }
     } catch (err) {
-      console.error('Error loading expenses:', err)
-      setError('Error al cargar los gastos')
+      console.error('Error loading expenses:', err);
+      setError('Error al cargar los gastos');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Reload when parent refreshes
   useEffect(() => {
     if (onRefresh) {
-      loadExpenses()
+      loadExpenses();
     }
-  }, [onRefresh])
+  }, [onRefresh]);
 
   if (loading) {
     return (
@@ -71,7 +77,7 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -84,7 +90,7 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
           <p className="text-sm text-destructive text-center py-8">{error}</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (expenses.length === 0) {
@@ -105,7 +111,7 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -113,7 +119,8 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
       <CardHeader>
         <CardTitle>Gastos Recientes</CardTitle>
         <p className="text-sm text-muted-foreground">
-          {expenses.length} {expenses.length === 1 ? 'gasto registrado' : 'gastos registrados'}
+          {expenses.length}{' '}
+          {expenses.length === 1 ? 'gasto registrado' : 'gastos registrados'}
         </p>
       </CardHeader>
       <CardContent>
@@ -131,7 +138,7 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
                         className="shrink-0"
                         style={{
                           borderColor: expense.categoria_color,
-                          color: expense.categoria_color
+                          color: expense.categoria_color,
                         }}
                       >
                         {expense.categoria_nombre || 'Sin categoría'}
@@ -187,5 +194,5 @@ export default function RecentExpenses({ projectId, canManage, onEdit, onDelete,
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

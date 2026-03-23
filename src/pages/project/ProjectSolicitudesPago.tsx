@@ -4,15 +4,33 @@
  * Features: Prefix config, list with filters, create/edit/detail modals, state changes
  */
 
-import { useState, useEffect, ReactNode } from "react"
-import { useAuth } from "../../context/AuthContext"
-import { Plus, Check, X, Clock, Pencil, Settings, Banknote, Send, CreditCard, AlertCircle, Download, Eye, CheckCircle2, FileCheck, RefreshCw, Upload, ChevronsUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, ReactNode } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import {
+  Plus,
+  Check,
+  X,
+  Clock,
+  Pencil,
+  Settings,
+  Banknote,
+  Send,
+  CreditCard,
+  AlertCircle,
+  Download,
+  Eye,
+  CheckCircle2,
+  FileCheck,
+  RefreshCw,
+  Upload,
+  ChevronsUpDown,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -20,7 +38,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -28,10 +46,14 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,146 +63,168 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import api from "../../services/api"
-import { formatMoney } from "../../utils/formatters"
-import type { SolicitudPagoAdjunto } from "../../types/api"
-import SolicitudPagoForm from "../../components/forms/SolicitudPagoForm"
-import AdjuntosPreview from "../../components/AdjuntosPreview"
+} from '@/components/ui/alert-dialog';
+import api from '../../services/api';
+import { formatMoney } from '../../utils/formatters';
+import type { SolicitudPagoAdjunto } from '../../types/api';
+import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
+import AdjuntosPreview from '../../components/AdjuntosPreview';
 
 // --- Types ---
 
-type EstadoSP = 'borrador' | 'pendiente' | 'aprobada' | 'rechazada' | 'pagada' | 'facturada'
+type EstadoSP =
+  | 'borrador'
+  | 'pendiente'
+  | 'aprobada'
+  | 'rechazada'
+  | 'pagada'
+  | 'facturada';
 
 interface SolicitudPago {
-  id: number
-  proyecto_id: number | null
-  numero: string
-  fecha: string
-  proveedor: string
-  preparado_por: number
-  solicitado_por: number | null
-  requisicion_id: number | null
-  subtotal: number
-  descuentos: number
-  impuestos: number
-  monto_total: number
-  estado: EstadoSP
-  observaciones: string | null
-  beneficiario: string | null
-  banco: string | null
-  tipo_cuenta: string | null
-  numero_cuenta: string | null
-  urgente: boolean
-  pinellas_paga: boolean
-  revisada?: boolean
-  es_mi_turno?: boolean
-  aprobadores_estado?: { nombre: string; estado: string }[]
-  reembolso_registrado?: boolean
-  preparado_nombre?: string
-  solicitado_nombre?: string
-  requisicion_numero?: string
+  id: number;
+  proyecto_id: number | null;
+  numero: string;
+  fecha: string;
+  proveedor: string;
+  preparado_por: number;
+  solicitado_por: number | null;
+  requisicion_id: number | null;
+  subtotal: number;
+  descuentos: number;
+  impuestos: number;
+  monto_total: number;
+  estado: EstadoSP;
+  observaciones: string | null;
+  beneficiario: string | null;
+  banco: string | null;
+  tipo_cuenta: string | null;
+  numero_cuenta: string | null;
+  urgente: boolean;
+  pinellas_paga: boolean;
+  revisada?: boolean;
+  es_mi_turno?: boolean;
+  aprobadores_estado?: { nombre: string; estado: string }[];
+  reembolso_registrado?: boolean;
+  preparado_nombre?: string;
+  solicitado_nombre?: string;
+  requisicion_numero?: string;
 }
 
 interface SolicitudItem {
-  id: number
-  solicitud_pago_id: number
-  cantidad: number
-  unidad: string
-  descripcion: string
-  descripcion_detallada: string | null
-  precio_unitario: number
-  precio_total: number
+  id: number;
+  solicitud_pago_id: number;
+  cantidad: number;
+  unidad: string;
+  descripcion: string;
+  descripcion_detallada: string | null;
+  precio_unitario: number;
+  precio_total: number;
 }
 
 interface SolicitudAjuste {
-  id: number
-  solicitud_pago_id: number
-  tipo: string
-  descripcion: string
-  porcentaje: number | null
-  monto: number
+  id: number;
+  solicitud_pago_id: number;
+  tipo: string;
+  descripcion: string;
+  porcentaje: number | null;
+  monto: number;
 }
 
 interface Aprobacion {
-  id: number
-  solicitud_pago_id: number
-  user_id: number
-  orden: number
-  accion: 'aprobado' | 'rechazado'
-  comentario: string | null
-  fecha: string
-  usuario_nombre: string
+  id: number;
+  solicitud_pago_id: number;
+  user_id: number;
+  orden: number;
+  accion: 'aprobado' | 'rechazado';
+  comentario: string | null;
+  fecha: string;
+  usuario_nombre: string;
 }
 
 interface AprobadorProyecto {
-  user_id: number
-  orden: number
-  nombre: string
-  email: string
+  user_id: number;
+  orden: number;
+  nombre: string;
+  email: string;
 }
 
 interface BadgeConfig {
-  variant: 'secondary' | 'outline' | 'default' | 'destructive'
-  label: string
-  icon: React.ComponentType<{ className?: string }>
+  variant: 'secondary' | 'outline' | 'default' | 'destructive';
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 interface ProjectSolicitudesPagoProps {
-  projectId: number
-  onNavigate?: (view: string) => void
+  projectId: number;
+  onNavigate?: (view: string) => void;
 }
 
 // --- Helpers ---
 
 const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-PA', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
 
 const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
   const variants: Record<string, BadgeConfig> = {
-    'borrador': { variant: 'secondary', label: 'Borrador', icon: Clock },
-    'pendiente': { variant: 'outline', label: 'Pendiente', icon: Send },
-    'aprobada': { variant: 'default', label: 'Aprobada', icon: Check },
-    'rechazada': { variant: 'destructive', label: 'Rechazada', icon: X },
-    'pagada': { variant: 'default', label: 'Pagada', icon: CreditCard },
-    'facturada': { variant: 'default', label: 'Facturada', icon: FileCheck }
-  }
+    borrador: { variant: 'secondary', label: 'Borrador', icon: Clock },
+    pendiente: { variant: 'outline', label: 'Pendiente', icon: Send },
+    aprobada: { variant: 'default', label: 'Aprobada', icon: Check },
+    rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
+    pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
+    facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
+  };
 
-  const config = variants[estado] || { variant: 'secondary' as const, label: estado, icon: Clock }
-  const Icon = config.icon
+  const config = variants[estado] || {
+    variant: 'secondary' as const,
+    label: estado,
+    icon: Clock,
+  };
+  const Icon = config.icon;
 
   const colorOverrides: Record<string, string> = {
-    'pendiente': ' bg-yellow-100 text-yellow-800 border border-yellow-300',
-    'pagada': ' bg-green-600 text-white',
-    'facturada': ' bg-blue-600 text-white',
-  }
+    pendiente: ' bg-yellow-100 text-yellow-800 border border-yellow-300',
+    pagada: ' bg-green-600 text-white',
+    facturada: ' bg-blue-600 text-white',
+  };
 
-  let extraClass = colorOverrides[estado] || ''
-  if (estado === 'pendiente' && esMiTurno) extraClass = ' bg-white text-yellow-800 border border-yellow-300'
+  let extraClass = colorOverrides[estado] || '';
+  if (estado === 'pendiente' && esMiTurno)
+    extraClass = ' bg-white text-yellow-800 border border-yellow-300';
 
   return (
-    <Badge variant={config.variant} className={`flex items-center gap-1 w-fit${extraClass}`}>
+    <Badge
+      variant={config.variant}
+      className={`flex items-center gap-1 w-fit${extraClass}`}
+    >
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
-  )
-}
+  );
+};
 
 const getInitials = (nombre: string): string => {
-  const parts = nombre.trim().split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return nombre.substring(0, 2).toUpperCase()
-}
+  const parts = nombre.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return nombre.substring(0, 2).toUpperCase();
+};
 
-const AprobadoresAvatars = ({ aprobadores }: { aprobadores: { nombre: string; estado: string }[] }) => {
+const AprobadoresAvatars = ({
+  aprobadores,
+}: {
+  aprobadores: { nombre: string; estado: string }[];
+}) => {
   const colorMap: Record<string, string> = {
-    'aprobado': 'bg-green-500 text-white',
-    'pendiente': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-    'rechazado': 'bg-red-500 text-white',
-  }
+    aprobado: 'bg-green-500 text-white',
+    pendiente: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+    rechazado: 'bg-red-500 text-white',
+  };
   return (
     <div className="flex items-center -space-x-1">
       {aprobadores.map((a, i) => (
@@ -193,489 +237,578 @@ const AprobadoresAvatars = ({ aprobadores }: { aprobadores: { nombre: string; es
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
 const ESTADO_OPTIONS = [
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'aprobada', label: 'Aprobada' },
   { value: 'pagada', label: 'Pagada' },
   { value: 'facturada', label: 'Facturada' },
-]
+];
 
-const ALL_ESTADOS = ESTADO_OPTIONS.map(e => e.value)
+const ALL_ESTADOS = ESTADO_OPTIONS.map((e) => e.value);
 
-export default function ProjectSolicitudesPago({ projectId, onNavigate }: ProjectSolicitudesPagoProps) {
-  const { user, hasPermission, isAdminOrCoAdmin } = useAuth()
-  const canManage = !!user
+export default function ProjectSolicitudesPago({
+  projectId,
+  onNavigate,
+}: ProjectSolicitudesPagoProps) {
+  const { user, hasPermission, isAdminOrCoAdmin } = useAuth();
+  const canManage = !!user;
   const canManageSolicitud = (sol: SolicitudPago) =>
-    isAdminOrCoAdmin || hasPermission('solicitudes_editar_todas') || sol.preparado_por === user?.id
+    isAdminOrCoAdmin ||
+    hasPermission('solicitudes_editar_todas') ||
+    sol.preparado_por === user?.id;
 
   // Data
-  const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>([])
-  const [spPrefijo, setSpPrefijo] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>([]);
+  const [spPrefijo, setSpPrefijo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Prefix config
-  const [prefijoInput, setPrefijoInput] = useState('')
-  const [savingPrefijo, setSavingPrefijo] = useState(false)
+  const [prefijoInput, setPrefijoInput] = useState('');
+  const [savingPrefijo, setSavingPrefijo] = useState(false);
 
   // Filters
-  const [filterEstados, setFilterEstados] = useState<string[]>(ALL_ESTADOS)
-  const [filterMyApproval, setFilterMyApproval] = useState(false)
-  const [filterPinellasPaga, setFilterPinellasPaga] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false)
+  const [filterEstados, setFilterEstados] = useState<string[]>(ALL_ESTADOS);
+  const [filterMyApproval, setFilterMyApproval] = useState(false);
+  const [filterPinellasPaga, setFilterPinellasPaga] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false);
 
   // Form modal
-  const [showForm, setShowForm] = useState(false)
-  const [editingSolicitud, setEditingSolicitud] = useState<SolicitudPago | null>(null)
-  const [editingItems, setEditingItems] = useState<SolicitudItem[]>([])
-  const [editingAjustes, setEditingAjustes] = useState<SolicitudAjuste[]>([])
+  const [showForm, setShowForm] = useState(false);
+  const [editingSolicitud, setEditingSolicitud] =
+    useState<SolicitudPago | null>(null);
+  const [editingItems, setEditingItems] = useState<SolicitudItem[]>([]);
+  const [editingAjustes, setEditingAjustes] = useState<SolicitudAjuste[]>([]);
 
   // Detail modal
-  const [showDetail, setShowDetail] = useState(false)
-  const [detailSolicitud, setDetailSolicitud] = useState<SolicitudPago | null>(null)
-  const [detailItems, setDetailItems] = useState<SolicitudItem[]>([])
-  const [detailAjustes, setDetailAjustes] = useState<SolicitudAjuste[]>([])
+  const [showDetail, setShowDetail] = useState(false);
+  const [detailSolicitud, setDetailSolicitud] = useState<SolicitudPago | null>(
+    null,
+  );
+  const [detailItems, setDetailItems] = useState<SolicitudItem[]>([]);
+  const [detailAjustes, setDetailAjustes] = useState<SolicitudAjuste[]>([]);
 
   // Approval data
-  const [detailAprobaciones, setDetailAprobaciones] = useState<Aprobacion[]>([])
-  const [detailAprobadores, setDetailAprobadores] = useState<AprobadorProyecto[]>([])
-  const [hasApprovers, setHasApprovers] = useState<boolean | null>(null)
+  const [detailAprobaciones, setDetailAprobaciones] = useState<Aprobacion[]>(
+    [],
+  );
+  const [detailAprobadores, setDetailAprobadores] = useState<
+    AprobadorProyecto[]
+  >([]);
+  const [hasApprovers, setHasApprovers] = useState<boolean | null>(null);
 
   // Adjuntos
-  const [detailAdjuntos, setDetailAdjuntos] = useState<SolicitudPagoAdjunto[]>([])
-  const [uploadingFiles, setUploadingFiles] = useState(false)
-  const [detailRevisada, setDetailRevisada] = useState(false)
-  const [togglingRevisada, setTogglingRevisada] = useState(false)
+  const [detailAdjuntos, setDetailAdjuntos] = useState<SolicitudPagoAdjunto[]>(
+    [],
+  );
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [detailRevisada, setDetailRevisada] = useState(false);
+  const [togglingRevisada, setTogglingRevisada] = useState(false);
 
   // Selection for bulk approval
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Bulk approval
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [bulkPassword, setBulkPassword] = useState('')
-  const [bulkApproving, setBulkApproving] = useState(false)
-  const [bulkError, setBulkError] = useState<string | null>(null)
-  const [pendingApprovalId, setPendingApprovalId] = useState<number | null>(null)
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [bulkPassword, setBulkPassword] = useState('');
+  const [bulkApproving, setBulkApproving] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [pendingApprovalId, setPendingApprovalId] = useState<number | null>(
+    null,
+  );
 
   // Approve/Reject
 
-  const [showRejectModal, setShowRejectModal] = useState(false)
-  const [rejectComment, setRejectComment] = useState('')
-  const [rejectingId, setRejectingId] = useState<number | null>(null)
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectComment, setRejectComment] = useState('');
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
 
   // Marking as paid
-  const [showRegistrarPagoModal, setShowRegistrarPagoModal] = useState(false)
-  const [registroPagoFecha, setRegistroPagoFecha] = useState('')
-  const [registroPagoFiles, setRegistroPagoFiles] = useState<FileList | null>(null)
-  const [registrandoPago, setRegistrandoPago] = useState(false)
-  const [detailComprobante, setDetailComprobante] = useState<{ fecha_pago: string; registrado_por_nombre: string; adjuntos: SolicitudPagoAdjunto[] } | null>(null)
+  const [showRegistrarPagoModal, setShowRegistrarPagoModal] = useState(false);
+  const [registroPagoFecha, setRegistroPagoFecha] = useState('');
+  const [registroPagoFiles, setRegistroPagoFiles] = useState<FileList | null>(
+    null,
+  );
+  const [registrandoPago, setRegistrandoPago] = useState(false);
+  const [detailComprobante, setDetailComprobante] = useState<{
+    fecha_pago: string;
+    registrado_por_nombre: string;
+    adjuntos: SolicitudPagoAdjunto[];
+  } | null>(null);
 
   // Registrar factura
-  const [showRegistrarFacturaModal, setShowRegistrarFacturaModal] = useState(false)
-  const [registroFacturaFecha, setRegistroFacturaFecha] = useState('')
-  const [registroFacturaNumero, setRegistroFacturaNumero] = useState('')
-  const [registroFacturaFiles, setRegistroFacturaFiles] = useState<FileList | null>(null)
-  const [registrandoFactura, setRegistrandoFactura] = useState(false)
-  const [detailFactura, setDetailFactura] = useState<{ fecha_factura: string; numero_factura?: string; registrado_por_nombre: string; adjuntos: SolicitudPagoAdjunto[] } | null>(null)
+  const [showRegistrarFacturaModal, setShowRegistrarFacturaModal] =
+    useState(false);
+  const [registroFacturaFecha, setRegistroFacturaFecha] = useState('');
+  const [registroFacturaNumero, setRegistroFacturaNumero] = useState('');
+  const [registroFacturaFiles, setRegistroFacturaFiles] =
+    useState<FileList | null>(null);
+  const [registrandoFactura, setRegistrandoFactura] = useState(false);
+  const [detailFactura, setDetailFactura] = useState<{
+    fecha_factura: string;
+    numero_factura?: string;
+    registrado_por_nombre: string;
+    adjuntos: SolicitudPagoAdjunto[];
+  } | null>(null);
 
   // Reembolso Pinellas
-  const [detailReembolso, setDetailReembolso] = useState<{ id: number; comprobante_url: string | null; comprobante_nombre: string | null; fecha_reembolso: string; registrado_por_nombre: string } | null>(null)
-  const [showReembolsoModal, setShowReembolsoModal] = useState(false)
-  const [reembolsoFecha, setReembolsoFecha] = useState('')
-  const [reembolsoFile, setReembolsoFile] = useState<File | null>(null)
-  const [registrandoReembolso, setRegistrandoReembolso] = useState(false)
+  const [detailReembolso, setDetailReembolso] = useState<{
+    id: number;
+    comprobante_url: string | null;
+    comprobante_nombre: string | null;
+    fecha_reembolso: string;
+    registrado_por_nombre: string;
+  } | null>(null);
+  const [showReembolsoModal, setShowReembolsoModal] = useState(false);
+  const [reembolsoFecha, setReembolsoFecha] = useState('');
+  const [reembolsoFile, setReembolsoFile] = useState<File | null>(null);
+  const [registrandoReembolso, setRegistrandoReembolso] = useState(false);
 
   // Edit confirmation (AlertDialog)
-  const [showEditConfirm, setShowEditConfirm] = useState(false)
-  const [pendingEditSolicitud, setPendingEditSolicitud] = useState<SolicitudPago | null>(null)
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [pendingEditSolicitud, setPendingEditSolicitud] =
+    useState<SolicitudPago | null>(null);
 
   // Pinellas paga confirmation (AlertDialog)
-  const [showPinellasPagaConfirm, setShowPinellasPagaConfirm] = useState(false)
-  const [pendingPinellasPaga, setPendingPinellasPaga] = useState<boolean>(false)
+  const [showPinellasPagaConfirm, setShowPinellasPagaConfirm] = useState(false);
+  const [pendingPinellasPaga, setPendingPinellasPaga] =
+    useState<boolean>(false);
 
   // Resubmit (rechazada -> pendiente)
-  const [resubmitting, setResubmitting] = useState(false)
+  const [resubmitting, setResubmitting] = useState(false);
 
   // Delete confirmation
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    loadSolicitudes()
-    checkApprovers()
-  }, [projectId, filterEstados, filterMyApproval])
+    loadSolicitudes();
+    checkApprovers();
+  }, [projectId, filterEstados, filterMyApproval]);
 
   const checkApprovers = async () => {
     try {
-      const response = await api.get(`/approval-settings/project/${projectId}`)
+      const response = await api.get(`/approval-settings/project/${projectId}`);
       if (response.data.success) {
-        setHasApprovers(response.data.approvers.length > 0)
+        setHasApprovers(response.data.approvers.length > 0);
       }
     } catch {
-      setHasApprovers(false)
+      setHasApprovers(false);
     }
-  }
+  };
 
   const loadSolicitudes = async () => {
     try {
-      setSelectedIds(new Set())
-      setLoading(true)
-      setError(null)
-      const queryParams: string[] = []
-      if (filterEstados.length > 0 && filterEstados.length < ALL_ESTADOS.length) {
-        queryParams.push(`estado=${filterEstados.join(',')}`)
+      setSelectedIds(new Set());
+      setLoading(true);
+      setError(null);
+      const queryParams: string[] = [];
+      if (
+        filterEstados.length > 0 &&
+        filterEstados.length < ALL_ESTADOS.length
+      ) {
+        queryParams.push(`estado=${filterEstados.join(',')}`);
       }
       if (filterMyApproval) {
-        queryParams.push('pending_my_approval=true')
+        queryParams.push('pending_my_approval=true');
       }
-      const params = queryParams.length > 0 ? `?${queryParams.join('&')}` : ''
-      const response = await api.get(`/solicitudes-pago/project/${projectId}${params}`)
+      const params = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+      const response = await api.get(
+        `/solicitudes-pago/project/${projectId}${params}`,
+      );
       if (response.data.success) {
-        setSolicitudes(response.data.solicitudes || [])
-        setSpPrefijo(response.data.sp_prefijo)
+        setSolicitudes(response.data.solicitudes || []);
+        setSpPrefijo(response.data.sp_prefijo);
       }
     } catch (err) {
-      console.error('Error loading solicitudes:', err)
-      setError('Error al cargar las solicitudes de pago')
+      console.error('Error loading solicitudes:', err);
+      setError('Error al cargar las solicitudes de pago');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Client-side search filter
-  const filteredSolicitudes = solicitudes.filter(sol => {
-    if (filterPinellasPaga && !sol.pinellas_paga) return false
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase()
-      return (
-        sol.numero?.toLowerCase().includes(search) ||
-        sol.proveedor?.toLowerCase().includes(search)
-      )
-    }
-    return true
-  }).sort((a, b) => {
-    if (a.es_mi_turno && !b.es_mi_turno) return -1
-    if (!a.es_mi_turno && b.es_mi_turno) return 1
-    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-  })
+  const filteredSolicitudes = solicitudes
+    .filter((sol) => {
+      if (filterPinellasPaga && !sol.pinellas_paga) return false;
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        return (
+          sol.numero?.toLowerCase().includes(search) ||
+          sol.proveedor?.toLowerCase().includes(search)
+        );
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.es_mi_turno && !b.es_mi_turno) return -1;
+      if (!a.es_mi_turno && b.es_mi_turno) return 1;
+      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+    });
 
   const handleSavePrefijo = async () => {
-    if (!prefijoInput.trim()) return
+    if (!prefijoInput.trim()) return;
     try {
-      setSavingPrefijo(true)
-      await api.put(`/solicitudes-pago/project/${projectId}/prefijo`, { prefijo: prefijoInput.trim().toUpperCase() })
-      setSpPrefijo(prefijoInput.trim().toUpperCase())
-      setPrefijoInput('')
+      setSavingPrefijo(true);
+      await api.put(`/solicitudes-pago/project/${projectId}/prefijo`, {
+        prefijo: prefijoInput.trim().toUpperCase(),
+      });
+      setSpPrefijo(prefijoInput.trim().toUpperCase());
+      setPrefijoInput('');
     } catch (err) {
-      console.error('Error saving prefijo:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al guardar el prefijo')
+      console.error('Error saving prefijo:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al guardar el prefijo');
     } finally {
-      setSavingPrefijo(false)
+      setSavingPrefijo(false);
     }
-  }
+  };
 
   const openDetail = async (solicitud: SolicitudPago) => {
     try {
-      const response = await api.get(`/solicitudes-pago/${solicitud.id}`)
+      const response = await api.get(`/solicitudes-pago/${solicitud.id}`);
       if (response.data.success) {
-        setDetailSolicitud(response.data.solicitud)
-        setDetailItems(response.data.items || [])
-        setDetailAjustes(response.data.ajustes || [])
-        setDetailAdjuntos(response.data.adjuntos || [])
-        setDetailAprobaciones(response.data.aprobaciones || [])
-        setDetailAprobadores(response.data.aprobadores_proyecto || [])
-        setDetailComprobante(response.data.comprobante || null)
-        setDetailFactura(response.data.factura || null)
-        setDetailReembolso(response.data.reembolso || null)
-        setDetailRevisada(!!solicitud.revisada)
-        setShowDetail(true)
+        setDetailSolicitud(response.data.solicitud);
+        setDetailItems(response.data.items || []);
+        setDetailAjustes(response.data.ajustes || []);
+        setDetailAdjuntos(response.data.adjuntos || []);
+        setDetailAprobaciones(response.data.aprobaciones || []);
+        setDetailAprobadores(response.data.aprobadores_proyecto || []);
+        setDetailComprobante(response.data.comprobante || null);
+        setDetailFactura(response.data.factura || null);
+        setDetailReembolso(response.data.reembolso || null);
+        setDetailRevisada(!!solicitud.revisada);
+        setShowDetail(true);
       }
     } catch (err) {
-      console.error('Error loading detail:', err)
-      alert('Error al cargar el detalle')
+      console.error('Error loading detail:', err);
+      alert('Error al cargar el detalle');
     }
-  }
+  };
 
   const openEditForm = async (solicitud: SolicitudPago) => {
     try {
-      const response = await api.get(`/solicitudes-pago/${solicitud.id}`)
+      const response = await api.get(`/solicitudes-pago/${solicitud.id}`);
       if (response.data.success) {
-        setEditingSolicitud(response.data.solicitud)
-        setEditingItems(response.data.items || [])
-        setEditingAjustes(response.data.ajustes || [])
-        setShowDetail(false)
-        setShowForm(true)
+        setEditingSolicitud(response.data.solicitud);
+        setEditingItems(response.data.items || []);
+        setEditingAjustes(response.data.ajustes || []);
+        setShowDetail(false);
+        setShowForm(true);
       }
     } catch (err) {
-      console.error('Error loading for edit:', err)
+      console.error('Error loading for edit:', err);
     }
-  }
+  };
 
   const handleAprobar = (solicitudId: number) => {
-    setPendingApprovalId(solicitudId)
-    setBulkError(null)
-    setBulkPassword('')
-    setShowPasswordModal(true)
-  }
+    setPendingApprovalId(solicitudId);
+    setBulkError(null);
+    setBulkPassword('');
+    setShowPasswordModal(true);
+  };
 
   const handleRechazar = async () => {
-    if (!rejectingId || !rejectComment.trim()) return
+    if (!rejectingId || !rejectComment.trim()) return;
     try {
-      await api.post(`/solicitudes-pago/${rejectingId}/rechazar`, { comentario: rejectComment })
-      setShowRejectModal(false)
-      setRejectComment('')
-      setRejectingId(null)
-      setShowDetail(false)
-      await loadSolicitudes()
-      window.dispatchEvent(new Event('solicitud-status-changed'))
+      await api.post(`/solicitudes-pago/${rejectingId}/rechazar`, {
+        comentario: rejectComment,
+      });
+      setShowRejectModal(false);
+      setRejectComment('');
+      setRejectingId(null);
+      setShowDetail(false);
+      await loadSolicitudes();
+      window.dispatchEvent(new Event('solicitud-status-changed'));
     } catch (err) {
-      console.error('Error rejecting:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al rechazar')
+      console.error('Error rejecting:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al rechazar');
     }
-  }
+  };
 
   const handleRegistrarPago = async (solicitudId: number) => {
-    if (!registroPagoFecha || !registroPagoFiles || registroPagoFiles.length === 0) return
+    if (
+      !registroPagoFecha ||
+      !registroPagoFiles ||
+      registroPagoFiles.length === 0
+    )
+      return;
     try {
-      setRegistrandoPago(true)
-      const formData = new FormData()
-      formData.append('fecha_pago', registroPagoFecha)
+      setRegistrandoPago(true);
+      const formData = new FormData();
+      formData.append('fecha_pago', registroPagoFecha);
       for (let i = 0; i < registroPagoFiles.length; i++) {
-        formData.append('archivos', registroPagoFiles[i])
+        formData.append('archivos', registroPagoFiles[i]);
       }
-      await api.post(`/solicitudes-pago/${solicitudId}/registrar-pago`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setShowRegistrarPagoModal(false)
-      setShowDetail(false)
-      await loadSolicitudes()
-      window.dispatchEvent(new Event('solicitud-status-changed'))
+      await api.post(
+        `/solicitudes-pago/${solicitudId}/registrar-pago`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
+      setShowRegistrarPagoModal(false);
+      setShowDetail(false);
+      await loadSolicitudes();
+      window.dispatchEvent(new Event('solicitud-status-changed'));
     } catch (err) {
-      console.error('Error registering payment:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al registrar pago')
+      console.error('Error registering payment:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al registrar pago');
     } finally {
-      setRegistrandoPago(false)
+      setRegistrandoPago(false);
     }
-  }
+  };
 
   const handleRegistrarFactura = async (solicitudId: number) => {
-    if (!registroFacturaFecha || !registroFacturaFiles || registroFacturaFiles.length === 0) return
+    if (
+      !registroFacturaFecha ||
+      !registroFacturaFiles ||
+      registroFacturaFiles.length === 0
+    )
+      return;
     try {
-      setRegistrandoFactura(true)
-      const formData = new FormData()
-      formData.append('fecha_factura', registroFacturaFecha)
+      setRegistrandoFactura(true);
+      const formData = new FormData();
+      formData.append('fecha_factura', registroFacturaFecha);
       if (registroFacturaNumero.trim()) {
-        formData.append('numero_factura', registroFacturaNumero.trim())
+        formData.append('numero_factura', registroFacturaNumero.trim());
       }
       for (let i = 0; i < registroFacturaFiles.length; i++) {
-        formData.append('archivos', registroFacturaFiles[i])
+        formData.append('archivos', registroFacturaFiles[i]);
       }
-      await api.post(`/solicitudes-pago/${solicitudId}/registrar-factura`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setShowRegistrarFacturaModal(false)
-      setShowDetail(false)
-      await loadSolicitudes()
-      window.dispatchEvent(new Event('solicitud-status-changed'))
+      await api.post(
+        `/solicitudes-pago/${solicitudId}/registrar-factura`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
+      setShowRegistrarFacturaModal(false);
+      setShowDetail(false);
+      await loadSolicitudes();
+      window.dispatchEvent(new Event('solicitud-status-changed'));
     } catch (err) {
-      console.error('Error registering invoice:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al registrar factura')
+      console.error('Error registering invoice:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al registrar factura');
     } finally {
-      setRegistrandoFactura(false)
+      setRegistrandoFactura(false);
     }
-  }
+  };
 
   const handleRegistrarReembolso = async (solicitudId: number) => {
-    if (!reembolsoFecha) return
+    if (!reembolsoFecha) return;
     try {
-      setRegistrandoReembolso(true)
-      const formData = new FormData()
-      formData.append('fecha_reembolso', reembolsoFecha)
+      setRegistrandoReembolso(true);
+      const formData = new FormData();
+      formData.append('fecha_reembolso', reembolsoFecha);
       if (reembolsoFile) {
-        formData.append('comprobante', reembolsoFile)
+        formData.append('comprobante', reembolsoFile);
       }
       await api.post(`/solicitudes-pago/${solicitudId}/reembolso`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      setShowReembolsoModal(false)
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setShowReembolsoModal(false);
       // Reload list and detail to show reembolso data
-      await loadSolicitudes()
-      if (detailSolicitud) await openDetail(detailSolicitud)
+      await loadSolicitudes();
+      if (detailSolicitud) await openDetail(detailSolicitud);
     } catch (err) {
-      console.error('Error registering reembolso:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al registrar reembolso')
+      console.error('Error registering reembolso:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al registrar reembolso');
     } finally {
-      setRegistrandoReembolso(false)
+      setRegistrandoReembolso(false);
     }
-  }
+  };
 
   const handleReenviar = async (solicitudId: number) => {
     try {
-      setResubmitting(true)
-      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, { estado: 'pendiente' })
-      setShowDetail(false)
-      await loadSolicitudes()
-      window.dispatchEvent(new Event('solicitud-status-changed'))
+      setResubmitting(true);
+      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, {
+        estado: 'pendiente',
+      });
+      setShowDetail(false);
+      await loadSolicitudes();
+      window.dispatchEvent(new Event('solicitud-status-changed'));
     } catch (err) {
-      console.error('Error resubmitting:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al reenviar')
+      console.error('Error resubmitting:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al reenviar');
     } finally {
-      setResubmitting(false)
+      setResubmitting(false);
     }
-  }
+  };
 
   const handleUploadAdjuntos = async (files: FileList) => {
-    if (!detailSolicitud || files.length === 0) return
+    if (!detailSolicitud || files.length === 0) return;
     try {
-      setUploadingFiles(true)
-      const formData = new FormData()
+      setUploadingFiles(true);
+      const formData = new FormData();
       for (let i = 0; i < files.length; i++) {
-        formData.append('archivos', files[i])
+        formData.append('archivos', files[i]);
       }
-      const response = await api.post(`/solicitudes-pago/${detailSolicitud.id}/adjuntos`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const response = await api.post(
+        `/solicitudes-pago/${detailSolicitud.id}/adjuntos`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
       if (response.data.success) {
-        setDetailAdjuntos(prev => [...response.data.adjuntos, ...prev])
+        setDetailAdjuntos((prev) => [...response.data.adjuntos, ...prev]);
       }
     } catch (err) {
-      console.error('Error uploading:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al subir archivos')
+      console.error('Error uploading:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al subir archivos');
     } finally {
-      setUploadingFiles(false)
+      setUploadingFiles(false);
     }
-  }
+  };
 
   const handleDeleteAdjunto = async (adjuntoId: number) => {
     try {
-      await api.delete(`/solicitudes-pago/adjuntos/${adjuntoId}`)
-      setDetailAdjuntos(prev => prev.filter(a => a.id !== adjuntoId))
+      await api.delete(`/solicitudes-pago/adjuntos/${adjuntoId}`);
+      setDetailAdjuntos((prev) => prev.filter((a) => a.id !== adjuntoId));
     } catch (err) {
-      console.error('Error deleting adjunto:', err)
-      alert('Error al eliminar el adjunto')
+      console.error('Error deleting adjunto:', err);
+      alert('Error al eliminar el adjunto');
     }
-  }
+  };
 
   const handleToggleRevisada = async (solicitudId: number) => {
     try {
-      setTogglingRevisada(true)
+      setTogglingRevisada(true);
       if (detailRevisada) {
-        await api.delete(`/solicitudes-pago/${solicitudId}/revisar`)
-        setDetailRevisada(false)
+        await api.delete(`/solicitudes-pago/${solicitudId}/revisar`);
+        setDetailRevisada(false);
       } else {
-        await api.post(`/solicitudes-pago/${solicitudId}/revisar`)
-        setDetailRevisada(true)
+        await api.post(`/solicitudes-pago/${solicitudId}/revisar`);
+        setDetailRevisada(true);
       }
-      setSolicitudes(prev => prev.map(s =>
-        s.id === solicitudId ? { ...s, revisada: !detailRevisada } : s
-      ))
+      setSolicitudes((prev) =>
+        prev.map((s) =>
+          s.id === solicitudId ? { ...s, revisada: !detailRevisada } : s,
+        ),
+      );
     } catch (err) {
-      console.error('Error toggling review:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al cambiar estado de revisión')
+      console.error('Error toggling review:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(
+        apiError.response?.data?.message ||
+          'Error al cambiar estado de revisión',
+      );
     } finally {
-      setTogglingRevisada(false)
+      setTogglingRevisada(false);
     }
-  }
+  };
 
   const toggleSelection = (id: number) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleConfirmApproval = async () => {
-    if (!bulkPassword.trim()) return
+    if (!bulkPassword.trim()) return;
     try {
-      setBulkApproving(true)
-      setBulkError(null)
+      setBulkApproving(true);
+      setBulkError(null);
       if (pendingApprovalId) {
         // Individual approval
-        await api.post(`/solicitudes-pago/${pendingApprovalId}/aprobar`, { password: bulkPassword })
-        setShowPasswordModal(false)
-        setBulkPassword('')
-        setPendingApprovalId(null)
-        setShowDetail(false)
-        await loadSolicitudes()
-        window.dispatchEvent(new Event('solicitud-status-changed'))
+        await api.post(`/solicitudes-pago/${pendingApprovalId}/aprobar`, {
+          password: bulkPassword,
+        });
+        setShowPasswordModal(false);
+        setBulkPassword('');
+        setPendingApprovalId(null);
+        setShowDetail(false);
+        await loadSolicitudes();
+        window.dispatchEvent(new Event('solicitud-status-changed'));
       } else if (selectedIds.size > 0) {
         // Bulk approval
         const response = await api.post('/solicitudes-pago/aprobar-masivo', {
           ids: Array.from(selectedIds),
-          password: bulkPassword
-        })
+          password: bulkPassword,
+        });
         if (response.data.success) {
-          setShowPasswordModal(false)
-          setBulkPassword('')
-          setSelectedIds(new Set())
-          alert(`${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`)
-          loadSolicitudes()
-          window.dispatchEvent(new Event('solicitud-status-changed'))
+          setShowPasswordModal(false);
+          setBulkPassword('');
+          setSelectedIds(new Set());
+          alert(
+            `${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`,
+          );
+          loadSolicitudes();
+          window.dispatchEvent(new Event('solicitud-status-changed'));
         }
       }
     } catch (err) {
-      console.error('Error approving:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setBulkError(apiError.response?.data?.message || 'Error al aprobar')
+      console.error('Error approving:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setBulkError(apiError.response?.data?.message || 'Error al aprobar');
     } finally {
-      setBulkApproving(false)
+      setBulkApproving(false);
     }
-  }
+  };
 
   const handleDownloadPDF = (solicitudId: number) => {
-    const token = localStorage.getItem('token')
-    window.open(`${api.defaults.baseURL}/solicitudes-pago/${solicitudId}/pdf?token=${token}`, '_blank')
-  }
+    const token = localStorage.getItem('token');
+    window.open(
+      `${api.defaults.baseURL}/solicitudes-pago/${solicitudId}/pdf?token=${token}`,
+      '_blank',
+    );
+  };
 
   const handleDelete = async () => {
-    if (!deletingId) return
+    if (!deletingId) return;
     try {
-      setDeleteLoading(true)
-      await api.delete(`/solicitudes-pago/${deletingId}`)
-      setShowDeleteModal(false)
-      setShowDetail(false)
-      await loadSolicitudes()
+      setDeleteLoading(true);
+      await api.delete(`/solicitudes-pago/${deletingId}`);
+      setShowDeleteModal(false);
+      setShowDetail(false);
+      await loadSolicitudes();
     } catch (err) {
-      console.error('Error deleting:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al eliminar')
+      console.error('Error deleting:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al eliminar');
     } finally {
-      setDeleteLoading(false)
+      setDeleteLoading(false);
     }
-  }
+  };
 
   // Stats
   const stats = {
     total: solicitudes.length,
-    pendientes: solicitudes.filter(s => s.estado === 'pendiente').length,
-    aprobadas: solicitudes.filter(s => s.estado === 'aprobada').length,
-    montoTotal: solicitudes.reduce((sum, s) => sum + (parseFloat(String(s.monto_total)) || 0), 0)
-  }
+    pendientes: solicitudes.filter((s) => s.estado === 'pendiente').length,
+    aprobadas: solicitudes.filter((s) => s.estado === 'aprobada').length,
+    montoTotal: solicitudes.reduce(
+      (sum, s) => sum + (parseFloat(String(s.monto_total)) || 0),
+      0,
+    ),
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="text-lg font-semibold">Cargando solicitudes...</div>
-          <div className="text-sm text-muted-foreground mt-2">Por favor espere</div>
+          <div className="text-sm text-muted-foreground mt-2">
+            Por favor espere
+          </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -683,7 +816,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       <Alert variant="destructive">
         <AlertDescription>{error}</AlertDescription>
       </Alert>
-    )
+    );
   }
 
   // If no prefix configured, show setup prompt
@@ -696,7 +829,8 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               <Settings className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <h3 className="text-lg font-semibold">Configurar Prefijo</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Antes de crear solicitudes de pago, configure la abreviatura del proyecto para la numeracion automatica.
+                Antes de crear solicitudes de pago, configure la abreviatura del
+                proyecto para la numeracion automatica.
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 Ejemplo: COCP, MOP, ALM (se generara COCP-001, COCP-002, etc.)
@@ -710,14 +844,17 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 maxLength={20}
                 className="uppercase"
               />
-              <Button onClick={handleSavePrefijo} disabled={!prefijoInput.trim() || savingPrefijo}>
+              <Button
+                onClick={handleSavePrefijo}
+                disabled={!prefijoInput.trim() || savingPrefijo}
+              >
                 {savingPrefijo ? 'Guardando...' : 'Guardar'}
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -727,24 +864,32 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
         <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
             <div className="text-xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">Total Solicitudes</div>
+            <div className="text-sm text-muted-foreground">
+              Total Solicitudes
+            </div>
           </CardContent>
         </Card>
         <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-xl font-bold text-yellow-600">{stats.pendientes}</div>
+            <div className="text-xl font-bold text-yellow-600">
+              {stats.pendientes}
+            </div>
             <div className="text-sm text-muted-foreground">Pendientes</div>
           </CardContent>
         </Card>
         <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-xl font-bold text-green-600">{stats.aprobadas}</div>
+            <div className="text-xl font-bold text-green-600">
+              {stats.aprobadas}
+            </div>
             <div className="text-sm text-muted-foreground">Aprobadas</div>
           </CardContent>
         </Card>
         <Card className="flex-1 min-w-[140px]">
           <CardContent className="pt-4">
-            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(stats.montoTotal)}</div>
+            <div className="text-xl font-bold whitespace-nowrap">
+              {formatMoney(stats.montoTotal)}
+            </div>
             <div className="text-sm text-muted-foreground">Monto Total</div>
           </CardContent>
         </Card>
@@ -769,19 +914,26 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
                   <Checkbox
                     checked={filterEstados.length === ALL_ESTADOS.length}
-                    onCheckedChange={(checked) => setFilterEstados(checked ? [...ALL_ESTADOS] : [])}
+                    onCheckedChange={(checked) =>
+                      setFilterEstados(checked ? [...ALL_ESTADOS] : [])
+                    }
                   />
                   <span className="text-sm font-medium">Todos</span>
                 </label>
                 <div className="border-t my-1" />
-                {ESTADO_OPTIONS.map(opt => (
-                  <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                {ESTADO_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                  >
                     <Checkbox
                       checked={filterEstados.includes(opt.value)}
                       onCheckedChange={(checked) => {
-                        setFilterEstados(prev =>
-                          checked ? [...prev, opt.value] : prev.filter(e => e !== opt.value)
-                        )
+                        setFilterEstados((prev) =>
+                          checked
+                            ? [...prev, opt.value]
+                            : prev.filter((e) => e !== opt.value),
+                        );
                       }}
                     />
                     <span className="text-sm">{opt.label}</span>
@@ -796,14 +948,17 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-[220px]"
           />
-          <span className="text-xs text-muted-foreground">Prefijo: {spPrefijo}</span>
+          <span className="text-xs text-muted-foreground">
+            Prefijo: {spPrefijo}
+          </span>
         </div>
 
         {canManage && hasApprovers === false && (
           <Alert className="flex-1 sm:flex-none">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs flex items-center gap-2">
-              Para crear solicitudes de pago, primero configure los aprobadores del proyecto.
+              Para crear solicitudes de pago, primero configure los aprobadores
+              del proyecto.
               <Button
                 variant="link"
                 className="h-auto p-0 text-xs"
@@ -815,7 +970,14 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
           </Alert>
         )}
         {canManage && hasApprovers && (
-          <Button onClick={() => { setEditingSolicitud(null); setEditingItems([]); setEditingAjustes([]); setShowForm(true) }}>
+          <Button
+            onClick={() => {
+              setEditingSolicitud(null);
+              setEditingItems([]);
+              setEditingAjustes([]);
+              setShowForm(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Nueva Solicitud
           </Button>
@@ -829,7 +991,9 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             checked={filterMyApproval}
             onCheckedChange={(checked) => setFilterMyApproval(!!checked)}
           />
-          <span className="text-sm">Mostrar solo las que requieren mi aprobación</span>
+          <span className="text-sm">
+            Mostrar solo las que requieren mi aprobación
+          </span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <Checkbox
@@ -850,7 +1014,10 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
           </Card>
         ) : (
           filteredSolicitudes.map((sol) => (
-            <Card key={sol.id} className={`hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}>
+            <Card
+              key={sol.id}
+              className={`hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
+            >
               <CardContent className="pt-4">
                 <div className="flex gap-3">
                   {filterMyApproval && (
@@ -862,29 +1029,52 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                       />
                     </div>
                   )}
-                  <div className="flex-1 cursor-pointer" onClick={() => openDetail(sol)}>
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={() => openDetail(sol)}
+                  >
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="font-semibold flex items-center gap-1">
                           {sol.numero}
-                          {sol.revisada && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
-                          {sol.urgente && <span className="text-red-600 font-bold ml-1">!</span>}
+                          {sol.revisada && (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                          )}
+                          {sol.urgente && (
+                            <span className="text-red-600 font-bold ml-1">
+                              !
+                            </span>
+                          )}
                         </div>
-                        <div className="text-sm text-muted-foreground">{sol.proveedor}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {sol.proveedor}
+                        </div>
                       </div>
                       <div className="space-y-1 flex flex-col items-end">
-                        {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
-                          ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
-                          : getEstadoBadge(sol.estado)}
+                        {sol.estado === 'pendiente' &&
+                        sol.aprobadores_estado?.length ? (
+                          <AprobadoresAvatars
+                            aprobadores={sol.aprobadores_estado}
+                          />
+                        ) : (
+                          getEstadoBadge(sol.estado)
+                        )}
                         {sol.pinellas_paga && (
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
+                          >
                             Reembolso
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="text-lg font-bold mb-1">{formatMoney(sol.monto_total)}</div>
-                    <div className="text-sm text-muted-foreground">{formatDate(sol.fecha)}</div>
+                    <div className="text-lg font-bold mb-1">
+                      {formatMoney(sol.monto_total)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {formatDate(sol.fecha)}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -900,7 +1090,9 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             <Table>
               <TableHeader>
                 <TableRow>
-                  {filterMyApproval && <TableHead className="w-10 px-2"></TableHead>}
+                  {filterMyApproval && (
+                    <TableHead className="w-10 px-2"></TableHead>
+                  )}
                   <TableHead>Numero</TableHead>
                   <TableHead className="w-6 px-0"></TableHead>
                   <TableHead>Fecha</TableHead>
@@ -912,7 +1104,10 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               <TableBody>
                 {filteredSolicitudes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={filterMyApproval ? 7 : 6} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={filterMyApproval ? 7 : 6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No hay solicitudes de pago
                     </TableCell>
                   </TableRow>
@@ -924,7 +1119,10 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                       onClick={() => openDetail(sol)}
                     >
                       {filterMyApproval && (
-                        <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
+                        <TableCell
+                          className="px-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Checkbox
                             checked={selectedIds.has(sol.id)}
                             onCheckedChange={() => toggleSelection(sol.id)}
@@ -935,20 +1133,36 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                       <TableCell className="font-medium">
                         <span className="flex items-center gap-1">
                           {sol.numero}
-                          {sol.revisada && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
+                          {sol.revisada && (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                          )}
                         </span>
                       </TableCell>
-                      <TableCell className="px-0 text-center">{sol.urgente && <span className="text-red-600 font-bold">!</span>}</TableCell>
+                      <TableCell className="px-0 text-center">
+                        {sol.urgente && (
+                          <span className="text-red-600 font-bold">!</span>
+                        )}
+                      </TableCell>
                       <TableCell>{formatDate(sol.fecha)}</TableCell>
                       <TableCell>{sol.proveedor}</TableCell>
-                      <TableCell className="text-right font-medium">{formatMoney(sol.monto_total)}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatMoney(sol.monto_total)}
+                      </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {sol.estado === 'pendiente' && sol.aprobadores_estado?.length
-                            ? <AprobadoresAvatars aprobadores={sol.aprobadores_estado} />
-                            : getEstadoBadge(sol.estado)}
+                          {sol.estado === 'pendiente' &&
+                          sol.aprobadores_estado?.length ? (
+                            <AprobadoresAvatars
+                              aprobadores={sol.aprobadores_estado}
+                            />
+                          ) : (
+                            getEstadoBadge(sol.estado)
+                          )}
                           {sol.pinellas_paga && (
-                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
+                            >
                               Reembolso
                             </Badge>
                           )}
@@ -967,9 +1181,16 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t shadow-lg">
           <div className="flex items-center justify-center gap-3 px-4 py-2.5">
-            <span className="text-sm font-medium whitespace-nowrap">{selectedIds.size} seleccionada{selectedIds.size > 1 ? 's' : ''}</span>
+            <span className="text-sm font-medium whitespace-nowrap">
+              {selectedIds.size} seleccionada{selectedIds.size > 1 ? 's' : ''}
+            </span>
             <Button
-              onClick={() => { setPendingApprovalId(null); setBulkError(null); setBulkPassword(''); setShowPasswordModal(true) }}
+              onClick={() => {
+                setPendingApprovalId(null);
+                setBulkError(null);
+                setBulkPassword('');
+                setShowPasswordModal(true);
+              }}
               size="sm"
             >
               <Check className="h-4 w-4 mr-1" />
@@ -990,7 +1211,12 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       <SolicitudPagoForm
         projectId={projectId}
         isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditingSolicitud(null); setEditingItems([]); setEditingAjustes([]) }}
+        onClose={() => {
+          setShowForm(false);
+          setEditingSolicitud(null);
+          setEditingItems([]);
+          setEditingAjustes([]);
+        }}
         onSave={() => loadSolicitudes()}
         editingSolicitud={editingSolicitud}
         existingItems={editingItems}
@@ -1014,33 +1240,38 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   Descargar PDF
                 </Button>
               )}
-              {canManage && detailSolicitud && detailSolicitud.estado === 'pendiente' && canManageSolicitud(detailSolicitud) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    const aprobadas = detailAprobaciones.filter(a => a.accion === 'aprobado').length
-                    if (aprobadas > 0) {
-                      setPendingEditSolicitud(detailSolicitud)
-                      setShowEditConfirm(true)
-                      return
-                    }
-                    openEditForm(detailSolicitud)
-                  }}
-                >
-                  <Pencil className="h-3.5 w-3.5 mr-1" />
-                  Editar Solicitud
-                </Button>
-              )}
+              {canManage &&
+                detailSolicitud &&
+                detailSolicitud.estado === 'pendiente' &&
+                canManageSolicitud(detailSolicitud) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      const aprobadas = detailAprobaciones.filter(
+                        (a) => a.accion === 'aprobado',
+                      ).length;
+                      if (aprobadas > 0) {
+                        setPendingEditSolicitud(detailSolicitud);
+                        setShowEditConfirm(true);
+                        return;
+                      }
+                      openEditForm(detailSolicitud);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Editar Solicitud
+                  </Button>
+                )}
             </DialogTitle>
-            <DialogDescription>
-              {detailSolicitud?.numero}
-            </DialogDescription>
+            <DialogDescription>{detailSolicitud?.numero}</DialogDescription>
           </DialogHeader>
 
           {detailSolicitud?.urgente && (
-            <Badge variant="destructive" className="text-xs w-fit">Urgente</Badge>
+            <Badge variant="destructive" className="text-xs w-fit">
+              Urgente
+            </Badge>
           )}
 
           {detailSolicitud && (
@@ -1049,17 +1280,25 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-3">
                 <div>
                   <div className="text-muted-foreground">Fecha</div>
-                  <div className="font-medium">{formatDate(detailSolicitud.fecha)}</div>
+                  <div className="font-medium">
+                    {formatDate(detailSolicitud.fecha)}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="text-muted-foreground">Preparado por</div>
-                    <div className="font-medium">{detailSolicitud.preparado_nombre || '-'}</div>
+                    <div className="font-medium">
+                      {detailSolicitud.preparado_nombre || '-'}
+                    </div>
                   </div>
                   {detailSolicitud.solicitado_nombre && (
                     <div>
-                      <div className="text-muted-foreground">Solicitado por</div>
-                      <div className="font-medium">{detailSolicitud.solicitado_nombre}</div>
+                      <div className="text-muted-foreground">
+                        Solicitado por
+                      </div>
+                      <div className="font-medium">
+                        {detailSolicitud.solicitado_nombre}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1070,14 +1309,18 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                 {detailSolicitud.requisicion_numero && (
                   <div>
                     <div className="text-muted-foreground">Requisicion</div>
-                    <div className="font-medium">{detailSolicitud.requisicion_numero}</div>
+                    <div className="font-medium">
+                      {detailSolicitud.requisicion_numero}
+                    </div>
                   </div>
                 )}
               </div>
 
               {detailSolicitud.observaciones && (
                 <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Observaciones</div>
+                  <div className="text-sm text-muted-foreground mb-1">
+                    Observaciones
+                  </div>
                   <div>{detailSolicitud.observaciones}</div>
                 </div>
               )}
@@ -1090,15 +1333,22 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                       <div key={item.id} className="p-3 text-sm">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <div className="font-medium">{item.descripcion}</div>
+                            <div className="font-medium">
+                              {item.descripcion}
+                            </div>
                             {item.descripcion_detallada && (
-                              <div className="text-muted-foreground text-xs mt-1">{item.descripcion_detallada}</div>
+                              <div className="text-muted-foreground text-xs mt-1">
+                                {item.descripcion_detallada}
+                              </div>
                             )}
                             <div className="text-muted-foreground">
-                              {item.cantidad} {item.unidad} x {formatMoney(item.precio_unitario)}
+                              {item.cantidad} {item.unidad} x{' '}
+                              {formatMoney(item.precio_unitario)}
                             </div>
                           </div>
-                          <div className="font-medium">{formatMoney(item.precio_total)}</div>
+                          <div className="font-medium">
+                            {formatMoney(item.precio_total)}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1111,9 +1361,16 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   </div>
                   {detailAjustes.map((ajuste) => (
                     <div key={ajuste.id} className="flex justify-between">
-                      <span className="text-muted-foreground">{ajuste.descripcion}:</span>
-                      <span className={ajuste.tipo === 'descuento' ? 'text-red-600' : ''}>
-                        {ajuste.tipo === 'descuento' ? '-' : ''}{formatMoney(ajuste.monto)}
+                      <span className="text-muted-foreground">
+                        {ajuste.descripcion}:
+                      </span>
+                      <span
+                        className={
+                          ajuste.tipo === 'descuento' ? 'text-red-600' : ''
+                        }
+                      >
+                        {ajuste.tipo === 'descuento' ? '-' : ''}
+                        {formatMoney(ajuste.monto)}
                       </span>
                     </div>
                   ))}
@@ -1133,7 +1390,9 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     {detailSolicitud.beneficiario && (
                       <div>
-                        <div className="text-muted-foreground">Beneficiario</div>
+                        <div className="text-muted-foreground">
+                          Beneficiario
+                        </div>
                         <div>{detailSolicitud.beneficiario}</div>
                       </div>
                     )}
@@ -1146,12 +1405,16 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                     {detailSolicitud.tipo_cuenta && (
                       <div>
                         <div className="text-muted-foreground">Tipo Cuenta</div>
-                        <div className="capitalize">{detailSolicitud.tipo_cuenta}</div>
+                        <div className="capitalize">
+                          {detailSolicitud.tipo_cuenta}
+                        </div>
                       </div>
                     )}
                     {detailSolicitud.numero_cuenta && (
                       <div>
-                        <div className="text-muted-foreground">Numero Cuenta</div>
+                        <div className="text-muted-foreground">
+                          Numero Cuenta
+                        </div>
                         <div>{detailSolicitud.numero_cuenta}</div>
                       </div>
                     )}
@@ -1169,25 +1432,37 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               />
 
               {/* Comprobante de Pago */}
-              {(detailSolicitud.estado === 'pagada' || detailSolicitud.estado === 'facturada') && detailComprobante && (
-                <div className="space-y-3">
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                    <h4 className="font-medium text-blue-900">Comprobante de Pago</h4>
-                    <div className="text-sm text-blue-800 space-y-1">
-                      <div>Fecha de pago: {new Date(detailComprobante.fecha_pago + 'T12:00:00').toLocaleDateString('es-PA')}</div>
-                      <div>Registrado por: {detailComprobante.registrado_por_nombre}</div>
+              {(detailSolicitud.estado === 'pagada' ||
+                detailSolicitud.estado === 'facturada') &&
+                detailComprobante && (
+                  <div className="space-y-3">
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                      <h4 className="font-medium text-blue-900">
+                        Comprobante de Pago
+                      </h4>
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <div>
+                          Fecha de pago:{' '}
+                          {new Date(
+                            detailComprobante.fecha_pago + 'T12:00:00',
+                          ).toLocaleDateString('es-PA')}
+                        </div>
+                        <div>
+                          Registrado por:{' '}
+                          {detailComprobante.registrado_por_nombre}
+                        </div>
+                      </div>
+                      {detailComprobante.adjuntos.length > 0 && (
+                        <AdjuntosPreview
+                          adjuntos={detailComprobante.adjuntos}
+                          solicitudPagoId={detailSolicitud.id}
+                          readOnly
+                          title="Comprobantes"
+                        />
+                      )}
                     </div>
-                    {detailComprobante.adjuntos.length > 0 && (
-                      <AdjuntosPreview
-                        adjuntos={detailComprobante.adjuntos}
-                        solicitudPagoId={detailSolicitud.id}
-                        readOnly
-                        title="Comprobantes"
-                      />
-                    )}
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Factura */}
               {detailSolicitud.estado === 'facturada' && detailFactura && (
@@ -1195,9 +1470,20 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-3">
                     <h4 className="font-medium text-emerald-900">Factura</h4>
                     <div className="text-sm text-emerald-800 space-y-1">
-                      <div>Fecha de factura: {new Date(detailFactura.fecha_factura + 'T12:00:00').toLocaleDateString('es-PA')}</div>
-                      {detailFactura.numero_factura && <div>Numero de factura: {detailFactura.numero_factura}</div>}
-                      <div>Registrado por: {detailFactura.registrado_por_nombre}</div>
+                      <div>
+                        Fecha de factura:{' '}
+                        {new Date(
+                          detailFactura.fecha_factura + 'T12:00:00',
+                        ).toLocaleDateString('es-PA')}
+                      </div>
+                      {detailFactura.numero_factura && (
+                        <div>
+                          Numero de factura: {detailFactura.numero_factura}
+                        </div>
+                      )}
+                      <div>
+                        Registrado por: {detailFactura.registrado_por_nombre}
+                      </div>
                     </div>
                     {detailFactura.adjuntos.length > 0 && (
                       <AdjuntosPreview
@@ -1212,38 +1498,56 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
               )}
 
               {/* Comprobante de Reembolso */}
-              {detailSolicitud.pinellas_paga && ['pagada', 'facturada'].includes(detailSolicitud.estado) && (
-                <div className="space-y-3">
-                  {detailReembolso ? (
-                    <div className="p-4 bg-yellow-50/50 border border-amber-200 rounded-lg space-y-3">
-                      <h4 className="font-medium text-amber-900">Comprobante de Reembolso</h4>
-                      <div className="text-sm text-amber-800 space-y-1">
-                        <div>Fecha de reembolso: {new Date(detailReembolso.fecha_reembolso + 'T12:00:00').toLocaleDateString('es-PA')}</div>
-                        <div>Registrado por: {detailReembolso.registrado_por_nombre}</div>
-                        {detailReembolso.comprobante_nombre && (
-                          <div>Archivo: {detailReembolso.comprobante_nombre}</div>
-                        )}
+              {detailSolicitud.pinellas_paga &&
+                ['pagada', 'facturada'].includes(detailSolicitud.estado) && (
+                  <div className="space-y-3">
+                    {detailReembolso ? (
+                      <div className="p-4 bg-yellow-50/50 border border-amber-200 rounded-lg space-y-3">
+                        <h4 className="font-medium text-amber-900">
+                          Comprobante de Reembolso
+                        </h4>
+                        <div className="text-sm text-amber-800 space-y-1">
+                          <div>
+                            Fecha de reembolso:{' '}
+                            {new Date(
+                              detailReembolso.fecha_reembolso + 'T12:00:00',
+                            ).toLocaleDateString('es-PA')}
+                          </div>
+                          <div>
+                            Registrado por:{' '}
+                            {detailReembolso.registrado_por_nombre}
+                          </div>
+                          {detailReembolso.comprobante_nombre && (
+                            <div>
+                              Archivo: {detailReembolso.comprobante_nombre}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ) : (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                    <div className="p-4 bg-yellow-50/50/50 border border-amber-200 border-dashed rounded-lg">
-                      <div className="text-sm text-amber-700 mb-2">Pinellas paga esta solicitud. Pendiente de registrar reembolso.</div>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setReembolsoFecha('')
-                          setReembolsoFile(null)
-                          setShowReembolsoModal(true)
-                        }}
-                        className="w-full border-amber-300 text-amber-700 hover:bg-yellow-50/50"
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Registrar Reembolso
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    ) : (
+                      (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
+                        <div className="p-4 bg-yellow-50/50/50 border border-amber-200 border-dashed rounded-lg">
+                          <div className="text-sm text-amber-700 mb-2">
+                            Pinellas paga esta solicitud. Pendiente de registrar
+                            reembolso.
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setReembolsoFecha('');
+                              setReembolsoFile(null);
+                              setShowReembolsoModal(true);
+                            }}
+                            className="w-full border-amber-300 text-amber-700 hover:bg-yellow-50/50"
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Registrar Reembolso
+                          </Button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
 
               {/* Approval section */}
               <div className="space-y-3">
@@ -1252,13 +1556,19 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   <div className="flex items-center gap-2 flex-wrap">
                     {getEstadoBadge(detailSolicitud.estado)}
                     {detailSolicitud.pinellas_paga && !detailReembolso && (
-                      <Badge variant="outline" className="bg-yellow-50/50 text-amber-700 border-amber-300">
+                      <Badge
+                        variant="outline"
+                        className="bg-yellow-50/50 text-amber-700 border-amber-300"
+                      >
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Reembolso pendiente
                       </Badge>
                     )}
                     {detailSolicitud.pinellas_paga && detailReembolso && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-50 text-green-700 border-green-300"
+                      >
                         <Check className="h-3 w-3 mr-1" />
                         Reembolsada
                       </Badge>
@@ -1270,8 +1580,8 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                       <Checkbox
                         checked={detailSolicitud.pinellas_paga}
                         onCheckedChange={(checked) => {
-                          setPendingPinellasPaga(!!checked)
-                          setShowPinellasPagaConfirm(true)
+                          setPendingPinellasPaga(!!checked);
+                          setShowPinellasPagaConfirm(true);
                         }}
                       />
                       Pinellas paga (reembolso)
@@ -1279,86 +1589,137 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                   )}
 
                   {/* Show approval progress */}
-                  {detailSolicitud.estado === 'pagada' || detailSolicitud.estado === 'facturada' ? (
-                    detailAprobaciones.length > 0 && (
-                      <div className="space-y-2">
-                        {detailAprobaciones.map((aprobacion, index) => (
-                          <div key={aprobacion.id} className="flex items-center gap-2 text-sm">
-                            {aprobacion.accion === 'aprobado' ? (
-                              <Check className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <X className="h-4 w-4 text-red-600" />
-                            )}
-                            <span className="font-medium">{index + 1}. {aprobacion.usuario_nombre}</span>
-                            <span className="text-muted-foreground">
-                              — {new Date(aprobacion.fecha).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  ) : (
-                    detailAprobadores.length > 0 && (
-                      <div className="space-y-2">
-                        {detailAprobadores.map((aprobador) => {
-                          const aprobacion = detailAprobaciones.find(a => a.user_id === aprobador.user_id)
-                          return (
-                            <div key={aprobador.user_id} className="flex items-center gap-2 text-sm">
-                              {aprobacion ? (
-                                aprobacion.accion === 'aprobado' ? (
-                                  <Check className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <X className="h-4 w-4 text-red-600" />
-                                )
+                  {detailSolicitud.estado === 'pagada' ||
+                  detailSolicitud.estado === 'facturada'
+                    ? detailAprobaciones.length > 0 && (
+                        <div className="space-y-2">
+                          {detailAprobaciones.map((aprobacion, index) => (
+                            <div
+                              key={aprobacion.id}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              {aprobacion.accion === 'aprobado' ? (
+                                <Check className="h-4 w-4 text-green-600" />
                               ) : (
-                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <X className="h-4 w-4 text-red-600" />
                               )}
-                              <span className="font-medium">{aprobador.orden}. {aprobador.nombre}</span>
-                              {aprobacion ? (
-                                <span className="text-muted-foreground">
-                                  — {new Date(aprobacion.fecha).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">(pendiente)</span>
-                              )}
+                              <span className="font-medium">
+                                {index + 1}. {aprobacion.usuario_nombre}
+                              </span>
+                              <span className="text-muted-foreground">
+                                —{' '}
+                                {new Date(aprobacion.fecha).toLocaleDateString(
+                                  'es-PA',
+                                  {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                  },
+                                )}
+                              </span>
                             </div>
-                          )
-                        })}
-                      </div>
-                    )
-                  )}
+                          ))}
+                        </div>
+                      )
+                    : detailAprobadores.length > 0 && (
+                        <div className="space-y-2">
+                          {detailAprobadores.map((aprobador) => {
+                            const aprobacion = detailAprobaciones.find(
+                              (a) => a.user_id === aprobador.user_id,
+                            );
+                            return (
+                              <div
+                                key={aprobador.user_id}
+                                className="flex items-center gap-2 text-sm"
+                              >
+                                {aprobacion ? (
+                                  aprobacion.accion === 'aprobado' ? (
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <X className="h-4 w-4 text-red-600" />
+                                  )
+                                ) : (
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                )}
+                                <span className="font-medium">
+                                  {aprobador.orden}. {aprobador.nombre}
+                                </span>
+                                {aprobacion ? (
+                                  <span className="text-muted-foreground">
+                                    —{' '}
+                                    {new Date(
+                                      aprobacion.fecha,
+                                    ).toLocaleDateString('es-PA', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    (pendiente)
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
                   {/* Rejection comment */}
-                  {detailSolicitud.estado === 'rechazada' && detailAprobaciones.filter(a => a.accion === 'rechazado').map(rechazo => (
-                    <div key={rechazo.id} className="p-3 bg-red-50 border border-red-200 rounded text-sm">
-                      <div className="font-medium text-red-800">Rechazada por {rechazo.usuario_nombre}</div>
-                      <div className="text-red-700 mt-1">{rechazo.comentario}</div>
-                    </div>
-                  ))}
+                  {detailSolicitud.estado === 'rechazada' &&
+                    detailAprobaciones
+                      .filter((a) => a.accion === 'rechazado')
+                      .map((rechazo) => (
+                        <div
+                          key={rechazo.id}
+                          className="p-3 bg-red-50 border border-red-200 rounded text-sm"
+                        >
+                          <div className="font-medium text-red-800">
+                            Rechazada por {rechazo.usuario_nombre}
+                          </div>
+                          <div className="text-red-700 mt-1">
+                            {rechazo.comentario}
+                          </div>
+                        </div>
+                      ))}
 
                   {/* Action buttons */}
                   {(() => {
-                    if (!user || !detailSolicitud) return null
-                    const aprobacionesHechas = detailAprobaciones.filter(a => a.accion === 'aprobado').length
-                    const siguienteAprobador = detailAprobadores[aprobacionesHechas]
-                    const esMiTurno = detailSolicitud.estado === 'pendiente' && siguienteAprobador?.user_id === user.id
+                    if (!user || !detailSolicitud) return null;
+                    const aprobacionesHechas = detailAprobaciones.filter(
+                      (a) => a.accion === 'aprobado',
+                    ).length;
+                    const siguienteAprobador =
+                      detailAprobadores[aprobacionesHechas];
+                    const esMiTurno =
+                      detailSolicitud.estado === 'pendiente' &&
+                      siguienteAprobador?.user_id === user.id;
 
                     return (
                       <>
                         {esMiTurno && (
                           <div className="space-y-2 pt-2">
                             <Button
-                              variant={detailRevisada ? "secondary" : "outline"}
-                              onClick={() => handleToggleRevisada(detailSolicitud.id)}
+                              variant={detailRevisada ? 'secondary' : 'outline'}
+                              onClick={() =>
+                                handleToggleRevisada(detailSolicitud.id)
+                              }
                               disabled={togglingRevisada}
                               className="w-full"
                             >
                               <Eye className="h-4 w-4 mr-2" />
-                              {togglingRevisada ? 'Procesando...' : detailRevisada ? '✓ Revisada' : 'Marcar como Revisada'}
+                              {togglingRevisada
+                                ? 'Procesando...'
+                                : detailRevisada
+                                  ? '✓ Revisada'
+                                  : 'Marcar como Revisada'}
                             </Button>
                             <div className="flex gap-2">
                               <Button
-                                onClick={() => handleAprobar(detailSolicitud.id)}
+                                onClick={() =>
+                                  handleAprobar(detailSolicitud.id)
+                                }
                                 className="flex-1"
                               >
                                 <Check className="h-4 w-4 mr-2" />
@@ -1367,9 +1728,9 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                               <Button
                                 variant="destructive"
                                 onClick={() => {
-                                  setRejectingId(detailSolicitud.id)
-                                  setRejectComment('')
-                                  setShowRejectModal(true)
+                                  setRejectingId(detailSolicitud.id);
+                                  setRejectComment('');
+                                  setShowRejectModal(true);
                                 }}
                                 className="flex-1"
                               >
@@ -1380,67 +1741,80 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
                           </div>
                         )}
 
-                        {detailSolicitud.estado === 'aprobada' && (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                          <div className="pt-2">
-                            <Button
-                              onClick={() => {
-                                setRegistroPagoFecha('')
-                                setRegistroPagoFiles(null)
-                                setShowRegistrarPagoModal(true)
-                              }}
-                              className="w-full"
-                            >
-                              <CreditCard className="h-4 w-4 mr-2" />
-                              Registrar Pago
-                            </Button>
-                          </div>
-                        )}
+                        {detailSolicitud.estado === 'aprobada' &&
+                          (isAdminOrCoAdmin ||
+                            hasPermission('registrar_pago')) && (
+                            <div className="pt-2">
+                              <Button
+                                onClick={() => {
+                                  setRegistroPagoFecha('');
+                                  setRegistroPagoFiles(null);
+                                  setShowRegistrarPagoModal(true);
+                                }}
+                                className="w-full"
+                              >
+                                <CreditCard className="h-4 w-4 mr-2" />
+                                Registrar Pago
+                              </Button>
+                            </div>
+                          )}
 
-                        {detailSolicitud.estado === 'pagada' && (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                          <div className="pt-2">
-                            <Button
-                              onClick={() => {
-                                setRegistroFacturaFecha('')
-                                setRegistroFacturaNumero('')
-                                setRegistroFacturaFiles(null)
-                                setShowRegistrarFacturaModal(true)
-                              }}
-                              className="w-full"
-                            >
-                              <FileCheck className="h-4 w-4 mr-2" />
-                              Registrar Factura
-                            </Button>
-                          </div>
-                        )}
+                        {detailSolicitud.estado === 'pagada' &&
+                          (isAdminOrCoAdmin ||
+                            hasPermission('registrar_pago')) && (
+                            <div className="pt-2">
+                              <Button
+                                onClick={() => {
+                                  setRegistroFacturaFecha('');
+                                  setRegistroFacturaNumero('');
+                                  setRegistroFacturaFiles(null);
+                                  setShowRegistrarFacturaModal(true);
+                                }}
+                                className="w-full"
+                              >
+                                <FileCheck className="h-4 w-4 mr-2" />
+                                Registrar Factura
+                              </Button>
+                            </div>
+                          )}
 
-                        {detailSolicitud.estado === 'rechazada' && canManage && (
-                          <div className="pt-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleReenviar(detailSolicitud.id)}
-                              disabled={resubmitting}
-                              className="w-full"
-                            >
-                              <Send className="h-4 w-4 mr-2" />
-                              {resubmitting ? 'Reenviando...' : 'Reenviar para Aprobacion'}
-                            </Button>
-                          </div>
-                        )}
+                        {detailSolicitud.estado === 'rechazada' &&
+                          canManage && (
+                            <div className="pt-2">
+                              <Button
+                                variant="outline"
+                                onClick={() =>
+                                  handleReenviar(detailSolicitud.id)
+                                }
+                                disabled={resubmitting}
+                                className="w-full"
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                {resubmitting
+                                  ? 'Reenviando...'
+                                  : 'Reenviar para Aprobacion'}
+                              </Button>
+                            </div>
+                          )}
                       </>
-                    )
+                    );
                   })()}
                 </div>
               </div>
 
               {/* Delete */}
-              {(user?.rol === 'admin' || (canManage && detailSolicitud.estado === 'pendiente' && detailAprobaciones.length === 0 && canManageSolicitud(detailSolicitud))) && (
+              {(user?.rol === 'admin' ||
+                (canManage &&
+                  detailSolicitud.estado === 'pendiente' &&
+                  detailAprobaciones.length === 0 &&
+                  canManageSolicitud(detailSolicitud))) && (
                 <div className="pt-4 border-t">
                   <Button
                     variant="outline"
                     className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
                     onClick={() => {
-                      setDeletingId(detailSolicitud.id)
-                      setShowDeleteModal(true)
+                      setDeletingId(detailSolicitud.id);
+                      setShowDeleteModal(true);
                     }}
                   >
                     Eliminar Solicitud
@@ -1457,9 +1831,7 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Rechazar Solicitud</DialogTitle>
-            <DialogDescription>
-              Indique el motivo del rechazo
-            </DialogDescription>
+            <DialogDescription>Indique el motivo del rechazo</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label>Comentario *</Label>
@@ -1472,10 +1844,19 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             />
           </div>
           <DialogFooter className="flex gap-2 flex-col sm:flex-row">
-            <Button variant="outline" onClick={() => setShowRejectModal(false)} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectModal(false)}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleRechazar} disabled={!rejectComment.trim()} className="w-full sm:w-auto">
+            <Button
+              variant="destructive"
+              onClick={handleRechazar}
+              disabled={!rejectComment.trim()}
+              className="w-full sm:w-auto"
+            >
               Rechazar
             </Button>
           </DialogFooter>
@@ -1488,16 +1869,26 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
           <DialogHeader>
             <DialogTitle>Eliminar Solicitud</DialogTitle>
             <DialogDescription>
-              {user?.rol === 'admin' && detailSolicitud && detailSolicitud.estado !== 'pendiente'
+              {user?.rol === 'admin' &&
+              detailSolicitud &&
+              detailSolicitud.estado !== 'pendiente'
                 ? `Esta solicitud está marcada como ${detailSolicitud.estado.toUpperCase()}. ¿Está seguro que desea eliminarla? Esta acción no se puede deshacer.`
                 : '¿Está seguro que desea eliminar esta solicitud? Esta acción no se puede deshacer.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={deleteLoading}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleteLoading}
+            >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+            >
               {deleteLoading ? 'Eliminando...' : 'Si, Eliminar'}
             </Button>
           </DialogFooter>
@@ -1505,7 +1896,13 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       </Dialog>
 
       {/* Password Confirmation Modal */}
-      <Dialog open={showPasswordModal} onOpenChange={(open) => { setShowPasswordModal(open); if (!open) setPendingApprovalId(null) }}>
+      <Dialog
+        open={showPasswordModal}
+        onOpenChange={(open) => {
+          setShowPasswordModal(open);
+          if (!open) setPendingApprovalId(null);
+        }}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Confirmar Aprobacion</DialogTitle>
@@ -1534,10 +1931,17 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowPasswordModal(false)} disabled={bulkApproving}>
+            <Button
+              variant="outline"
+              onClick={() => setShowPasswordModal(false)}
+              disabled={bulkApproving}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleConfirmApproval} disabled={!bulkPassword.trim() || bulkApproving}>
+            <Button
+              onClick={handleConfirmApproval}
+              disabled={!bulkPassword.trim() || bulkApproving}
+            >
               {bulkApproving ? 'Aprobando...' : 'Confirmar'}
             </Button>
           </DialogFooter>
@@ -1545,7 +1949,10 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       </Dialog>
 
       {/* Registrar Pago Modal */}
-      <Dialog open={showRegistrarPagoModal} onOpenChange={setShowRegistrarPagoModal}>
+      <Dialog
+        open={showRegistrarPagoModal}
+        onOpenChange={setShowRegistrarPagoModal}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Registrar Pago</DialogTitle>
@@ -1575,12 +1982,23 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowRegistrarPagoModal(false)} disabled={registrandoPago}>
+            <Button
+              variant="outline"
+              onClick={() => setShowRegistrarPagoModal(false)}
+              disabled={registrandoPago}
+            >
               Cancelar
             </Button>
             <Button
-              onClick={() => detailSolicitud && handleRegistrarPago(detailSolicitud.id)}
-              disabled={!registroPagoFecha || !registroPagoFiles || registroPagoFiles.length === 0 || registrandoPago}
+              onClick={() =>
+                detailSolicitud && handleRegistrarPago(detailSolicitud.id)
+              }
+              disabled={
+                !registroPagoFecha ||
+                !registroPagoFiles ||
+                registroPagoFiles.length === 0 ||
+                registrandoPago
+              }
             >
               {registrandoPago ? 'Registrando...' : 'Confirmar Pago'}
             </Button>
@@ -1589,7 +2007,10 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       </Dialog>
 
       {/* Registrar Factura Modal */}
-      <Dialog open={showRegistrarFacturaModal} onOpenChange={setShowRegistrarFacturaModal}>
+      <Dialog
+        open={showRegistrarFacturaModal}
+        onOpenChange={setShowRegistrarFacturaModal}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Registrar Factura</DialogTitle>
@@ -1629,12 +2050,23 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowRegistrarFacturaModal(false)} disabled={registrandoFactura}>
+            <Button
+              variant="outline"
+              onClick={() => setShowRegistrarFacturaModal(false)}
+              disabled={registrandoFactura}
+            >
               Cancelar
             </Button>
             <Button
-              onClick={() => detailSolicitud && handleRegistrarFactura(detailSolicitud.id)}
-              disabled={!registroFacturaFecha || !registroFacturaFiles || registroFacturaFiles.length === 0 || registrandoFactura}
+              onClick={() =>
+                detailSolicitud && handleRegistrarFactura(detailSolicitud.id)
+              }
+              disabled={
+                !registroFacturaFecha ||
+                !registroFacturaFiles ||
+                registroFacturaFiles.length === 0 ||
+                registrandoFactura
+              }
             >
               {registrandoFactura ? 'Registrando...' : 'Confirmar Factura'}
             </Button>
@@ -1672,11 +2104,17 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowReembolsoModal(false)} disabled={registrandoReembolso}>
+            <Button
+              variant="outline"
+              onClick={() => setShowReembolsoModal(false)}
+              disabled={registrandoReembolso}
+            >
               Cancelar
             </Button>
             <Button
-              onClick={() => detailSolicitud && handleRegistrarReembolso(detailSolicitud.id)}
+              onClick={() =>
+                detailSolicitud && handleRegistrarReembolso(detailSolicitud.id)
+              }
               disabled={!reembolsoFecha || registrandoReembolso}
             >
               {registrandoReembolso ? 'Registrando...' : 'Confirmar Reembolso'}
@@ -1689,26 +2127,39 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
       <AlertDialog open={showEditConfirm} onOpenChange={setShowEditConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Editar solicitud con aprobaciones?</AlertDialogTitle>
+            <AlertDialogTitle>
+              ¿Editar solicitud con aprobaciones?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta solicitud tiene aprobaciones registradas. Al editarla, se anularán todas las aprobaciones y volverá a estado pendiente. ¿Desea continuar?
+              Esta solicitud tiene aprobaciones registradas. Al editarla, se
+              anularán todas las aprobaciones y volverá a estado pendiente.
+              ¿Desea continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingEditSolicitud(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (pendingEditSolicitud) {
-                openEditForm(pendingEditSolicitud)
-              }
-              setPendingEditSolicitud(null)
-              setShowEditConfirm(false)
-            }}>Continuar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setPendingEditSolicitud(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingEditSolicitud) {
+                  openEditForm(pendingEditSolicitud);
+                }
+                setPendingEditSolicitud(null);
+                setShowEditConfirm(false);
+              }}
+            >
+              Continuar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* AlertDialog para confirmar cambio de pinellas_paga */}
-      <AlertDialog open={showPinellasPagaConfirm} onOpenChange={setShowPinellasPagaConfirm}>
+      <AlertDialog
+        open={showPinellasPagaConfirm}
+        onOpenChange={setShowPinellasPagaConfirm}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar cambio</AlertDialogTitle>
@@ -1720,21 +2171,31 @@ export default function ProjectSolicitudesPago({ projectId, onNavigate }: Projec
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              if (detailSolicitud) {
-                try {
-                  await api.patch(`/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`, { pinellas_paga: pendingPinellasPaga })
-                  setDetailSolicitud({ ...detailSolicitud, pinellas_paga: pendingPinellasPaga })
-                  loadSolicitudes()
-                } catch {
-                  // silently fail
+            <AlertDialogAction
+              onClick={async () => {
+                if (detailSolicitud) {
+                  try {
+                    await api.patch(
+                      `/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`,
+                      { pinellas_paga: pendingPinellasPaga },
+                    );
+                    setDetailSolicitud({
+                      ...detailSolicitud,
+                      pinellas_paga: pendingPinellasPaga,
+                    });
+                    loadSolicitudes();
+                  } catch {
+                    // silently fail
+                  }
                 }
-              }
-              setShowPinellasPagaConfirm(false)
-            }}>Confirmar</AlertDialogAction>
+                setShowPinellasPagaConfirm(false);
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

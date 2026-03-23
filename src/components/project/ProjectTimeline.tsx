@@ -3,35 +3,35 @@
  * Displays project timeline with key dates
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CalendarDays, Flag, Clock } from "lucide-react"
-import type { Project } from "@/types"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarDays, Flag, Clock } from 'lucide-react';
+import type { Project } from '@/types';
 
 const formatDate = (dateString: string | null | undefined) => {
-  if (!dateString) return 'No definida'
-  const date = new Date(dateString)
+  if (!dateString) return 'No definida';
+  const date = new Date(dateString);
   return new Intl.DateTimeFormat('es-PA', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
-  }).format(date)
-}
+    day: 'numeric',
+  }).format(date);
+};
 
 const calculateDaysRemaining = (fechaFin: string | null | undefined) => {
-  if (!fechaFin) return null
-  const hoy = new Date()
-  const fin = new Date(fechaFin)
-  const diff = fin.getTime() - hoy.getTime()
-  const dias = Math.ceil(diff / (1000 * 60 * 60 * 24))
-  return dias
-}
+  if (!fechaFin) return null;
+  const hoy = new Date();
+  const fin = new Date(fechaFin);
+  const diff = fin.getTime() - hoy.getTime();
+  const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  return dias;
+};
 
 interface ProjectTimelineProps {
   project: Project | null;
 }
 
 export default function ProjectTimeline({ project }: ProjectTimelineProps) {
-  const diasRestantes = calculateDaysRemaining(project?.fecha_fin_estimada)
+  const diasRestantes = calculateDaysRemaining(project?.fecha_fin_estimada);
 
   return (
     <Card>
@@ -74,9 +74,8 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
                   {diasRestantes > 0
                     ? `${diasRestantes} días restantes`
                     : diasRestantes === 0
-                    ? 'Finaliza hoy'
-                    : `${Math.abs(diasRestantes)} días de retraso`
-                  }
+                      ? 'Finaliza hoy'
+                      : `${Math.abs(diasRestantes)} días de retraso`}
                 </p>
               )}
             </div>
@@ -88,11 +87,13 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
           {/* Fecha de Fin Estimada */}
           <div className="flex items-start gap-3">
             <div className="mt-1">
-              <Flag className={`h-4 w-4 ${
-                diasRestantes !== null && diasRestantes < 0
-                  ? 'text-red-500'
-                  : 'text-orange-500'
-              }`} />
+              <Flag
+                className={`h-4 w-4 ${
+                  diasRestantes !== null && diasRestantes < 0
+                    ? 'text-red-500'
+                    : 'text-orange-500'
+                }`}
+              />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Fecha de Fin Estimada</p>
@@ -107,16 +108,21 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
         {project?.fecha_inicio && project?.fecha_fin_estimada && (
           <div className="mt-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Progreso temporal</span>
+              <span className="text-xs text-muted-foreground">
+                Progreso temporal
+              </span>
               <span className="text-xs font-medium">
                 {(() => {
-                  const inicio = new Date(project.fecha_inicio)
-                  const fin = new Date(project.fecha_fin_estimada)
-                  const hoy = new Date()
-                  const total = fin.getTime() - inicio.getTime()
-                  const transcurrido = hoy.getTime() - inicio.getTime()
-                  const porcentaje = Math.max(0, Math.min(100, (transcurrido / total) * 100))
-                  return `${porcentaje.toFixed(0)}%`
+                  const inicio = new Date(project.fecha_inicio);
+                  const fin = new Date(project.fecha_fin_estimada);
+                  const hoy = new Date();
+                  const total = fin.getTime() - inicio.getTime();
+                  const transcurrido = hoy.getTime() - inicio.getTime();
+                  const porcentaje = Math.max(
+                    0,
+                    Math.min(100, (transcurrido / total) * 100),
+                  );
+                  return `${porcentaje.toFixed(0)}%`;
                 })()}
               </span>
             </div>
@@ -125,13 +131,16 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
                 className="bg-blue-500 h-2 rounded-full"
                 style={{
                   width: `${(() => {
-                    const inicio = new Date(project.fecha_inicio)
-                    const fin = new Date(project.fecha_fin_estimada)
-                    const hoy = new Date()
-                    const total = fin.getTime() - inicio.getTime()
-                    const transcurrido = hoy.getTime() - inicio.getTime()
-                    return Math.max(0, Math.min(100, (transcurrido / total) * 100))
-                  })()}%`
+                    const inicio = new Date(project.fecha_inicio);
+                    const fin = new Date(project.fecha_fin_estimada);
+                    const hoy = new Date();
+                    const total = fin.getTime() - inicio.getTime();
+                    const transcurrido = hoy.getTime() - inicio.getTime();
+                    return Math.max(
+                      0,
+                      Math.min(100, (transcurrido / total) * 100),
+                    );
+                  })()}%`,
                 }}
               />
             </div>
@@ -139,5 +148,5 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

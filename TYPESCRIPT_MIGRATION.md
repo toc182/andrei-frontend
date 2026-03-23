@@ -11,6 +11,7 @@
 ## Fase 0: Configuración (Prerequisito)
 
 ### Archivos a crear/modificar:
+
 - [ ] `tsconfig.json` - Configuración TypeScript
 - [ ] `tsconfig.node.json` - Configuración para Vite
 - [ ] `vite.config.ts` - Renombrar de .js a .ts
@@ -18,6 +19,7 @@
 - [ ] `src/types/api.ts` - Tipos de respuestas API
 
 ### Dependencias a instalar:
+
 ```bash
 npm install -D typescript @types/react @types/react-dom @types/node
 ```
@@ -27,14 +29,17 @@ npm install -D typescript @types/react @types/react-dom @types/node
 ## Fase 1: Fundación (Crítico - Hacer primero)
 
 ### 1.1 Utilidades y Servicios (3 archivos)
+
 - [ ] `src/lib/utils.js` → `src/lib/utils.ts`
 - [ ] `src/utils/dateUtils.js` → `src/utils/dateUtils.ts`
 - [ ] `src/services/api.js` → `src/services/api.ts`
 
 ### 1.2 Contexto (1 archivo)
+
 - [ ] `src/context/AuthContext.jsx` → `src/context/AuthContext.tsx`
 
 ### 1.3 Entry Point (1 archivo)
+
 - [ ] `src/main.jsx` → `src/main.tsx`
 - [ ] `src/App.jsx` → `src/App.tsx`
 
@@ -162,24 +167,25 @@ Estos son críticos porque manejan datos de API.
 
 ## Resumen por Fase
 
-| Fase | Descripción | Archivos | Prioridad |
-|------|-------------|----------|-----------|
-| 0 | Configuración | 5 nuevos | 🔴 Crítica |
-| 1 | Fundación | 6 | 🔴 Crítica |
-| 2 | UI Base (shadcn) | 19 | 🟡 Media |
-| 3 | Componentes Comunes | 4 | 🟡 Media |
-| 4 | Componentes Proyecto | 10 | 🟡 Media |
-| 5 | Formularios | 14 | 🔴 Alta |
-| 6 | Layout | 1 | 🟢 Baja |
-| 7 | Páginas Principales | 8 | 🟡 Media |
-| 8 | Páginas Proyecto | 8 | 🟡 Media |
-| **Total** | | **71 + 5** | |
+| Fase      | Descripción          | Archivos   | Prioridad  |
+| --------- | -------------------- | ---------- | ---------- |
+| 0         | Configuración        | 5 nuevos   | 🔴 Crítica |
+| 1         | Fundación            | 6          | 🔴 Crítica |
+| 2         | UI Base (shadcn)     | 19         | 🟡 Media   |
+| 3         | Componentes Comunes  | 4          | 🟡 Media   |
+| 4         | Componentes Proyecto | 10         | 🟡 Media   |
+| 5         | Formularios          | 14         | 🔴 Alta    |
+| 6         | Layout               | 1          | 🟢 Baja    |
+| 7         | Páginas Principales  | 8          | 🟡 Media   |
+| 8         | Páginas Proyecto     | 8          | 🟡 Media   |
+| **Total** |                      | **71 + 5** |            |
 
 ---
 
 ## Tipos a Definir (src/types/)
 
 ### api.ts - Respuestas de API
+
 ```typescript
 // Proyectos
 interface Project { ... }
@@ -233,5 +239,5 @@ find src -name "*.jsx" | wc -l
 
 ---
 
-*Documento creado: 2025-12-17*
-*Última actualización: 2025-12-17*
+_Documento creado: 2025-12-17_
+_Última actualización: 2025-12-17_

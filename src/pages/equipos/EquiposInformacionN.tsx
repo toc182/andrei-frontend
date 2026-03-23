@@ -10,18 +10,18 @@
  * - Sin FontAwesome, sin CSS custom
  */
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import api from '../../services/api'
-import { useAuth } from '../../context/AuthContext'
-import { formatMoney } from '../../utils/formatters'
-import logo from '../../assets/logo.png'
-import cocpLogo from '../../assets/LogoCOCPfondoblanco.png'
-import type { EquipoExtended, ApiResponse } from '@/types'
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { formatMoney } from '../../utils/formatters';
+import logo from '../../assets/logo.png';
+import cocpLogo from '../../assets/LogoCOCPfondoblanco.png';
+import type { EquipoExtended, ApiResponse } from '@/types';
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -29,7 +29,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -45,33 +45,33 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, Pencil, Loader2 } from 'lucide-react'
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Pencil, Loader2 } from 'lucide-react';
 
 // Type definition for form data
 interface EquipoFormData {
-  codigo?: string
-  descripcion: string
-  marca: string
-  modelo: string
-  ano: number
-  motor?: string
-  chasis?: string
-  costo?: number | string
-  valor_actual?: number | string
-  rata_mes?: number | string
-  observaciones?: string
-  owner: 'Pinellas' | 'COCP'
+  codigo?: string;
+  descripcion: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  motor?: string;
+  chasis?: string;
+  costo?: number | string;
+  valor_actual?: number | string;
+  rata_mes?: number | string;
+  observaciones?: string;
+  owner: 'Pinellas' | 'COCP';
 }
 
 // Schema de validación con Zod
@@ -80,7 +80,8 @@ const equipoSchema = z.object({
   descripcion: z.string().min(1, 'Descripción es obligatoria'),
   marca: z.string().min(1, 'Marca es obligatoria'),
   modelo: z.string().min(1, 'Modelo es obligatorio'),
-  ano: z.number()
+  ano: z
+    .number()
     .min(1900, 'Año debe ser mayor a 1900')
     .max(2030, 'Año debe ser menor a 2030'),
   motor: z.string().optional(),
@@ -90,23 +91,29 @@ const equipoSchema = z.object({
   rata_mes: z.any().optional(),
   observaciones: z.string().optional(),
   owner: z.enum(['Pinellas', 'COCP']),
-})
+});
 
 export default function EquiposInformacionN() {
-  const { hasPermission } = useAuth()
-  const [equiposPinellas, setEquiposPinellas] = useState<EquipoExtended[]>([])
-  const [equiposCOCP, setEquiposCOCP] = useState<EquipoExtended[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const { hasPermission } = useAuth();
+  const [equiposPinellas, setEquiposPinellas] = useState<EquipoExtended[]>([]);
+  const [equiposCOCP, setEquiposCOCP] = useState<EquipoExtended[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Estados para modales
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  const [selectedEquipo, setSelectedEquipo] = useState<EquipoExtended | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingEquipo, setEditingEquipo] = useState<EquipoExtended | null>(null)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [equipoToDelete, setEquipoToDelete] = useState<EquipoExtended | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedEquipo, setSelectedEquipo] = useState<EquipoExtended | null>(
+    null,
+  );
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingEquipo, setEditingEquipo] = useState<EquipoExtended | null>(
+    null,
+  );
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [equipoToDelete, setEquipoToDelete] = useState<EquipoExtended | null>(
+    null,
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form setup
   const form = useForm<EquipoFormData>({
@@ -125,43 +132,45 @@ export default function EquiposInformacionN() {
       observaciones: '',
       owner: 'Pinellas',
     },
-  })
+  });
 
   // Cargar equipos desde API
   const loadEquipos = async () => {
     try {
-      setLoading(true)
-      setError('')
+      setLoading(true);
+      setError('');
 
-      const response = await api.get<ApiResponse<EquipoExtended[]>>('/equipos')
+      const response = await api.get<ApiResponse<EquipoExtended[]>>('/equipos');
 
       if (response.data.success && response.data.data) {
-        const equipos = response.data.data
+        const equipos = response.data.data;
 
         // Separar equipos por propietario
-        const pinellas = equipos.filter((equipo) => equipo.owner === 'Pinellas')
-        const cocp = equipos.filter((equipo) => equipo.owner === 'COCP')
+        const pinellas = equipos.filter(
+          (equipo) => equipo.owner === 'Pinellas',
+        );
+        const cocp = equipos.filter((equipo) => equipo.owner === 'COCP');
 
-        setEquiposPinellas(pinellas)
-        setEquiposCOCP(cocp)
+        setEquiposPinellas(pinellas);
+        setEquiposCOCP(cocp);
       } else {
-        setError('Error al cargar equipos')
+        setError('Error al cargar equipos');
       }
     } catch (err) {
-      console.error('Error loading equipos:', err)
-      setError('Error al conectar con el servidor')
+      console.error('Error loading equipos:', err);
+      setError('Error al conectar con el servidor');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadEquipos()
-  }, [])
+    loadEquipos();
+  }, []);
 
   // Handlers
   const handleAddEquipo = () => {
-    setEditingEquipo(null)
+    setEditingEquipo(null);
     form.reset({
       codigo: '',
       descripcion: '',
@@ -175,13 +184,13 @@ export default function EquiposInformacionN() {
       rata_mes: '',
       observaciones: '',
       owner: 'Pinellas',
-    })
-    setFormOpen(true)
-  }
+    });
+    setFormOpen(true);
+  };
 
   const handleEditEquipo = (equipo: EquipoExtended, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setEditingEquipo(equipo)
+    e.stopPropagation();
+    setEditingEquipo(equipo);
     form.reset({
       codigo: equipo.codigo || '',
       descripcion: equipo.descripcion || '',
@@ -195,17 +204,17 @@ export default function EquiposInformacionN() {
       rata_mes: equipo.rata_mes || '',
       observaciones: equipo.observaciones || '',
       owner: equipo.owner || 'Pinellas',
-    })
-    setFormOpen(true)
-  }
+    });
+    setFormOpen(true);
+  };
 
   const handleRowClick = (equipo: EquipoExtended) => {
-    setSelectedEquipo(equipo)
-    setDetailsOpen(true)
-  }
+    setSelectedEquipo(equipo);
+    setDetailsOpen(true);
+  };
 
   const handleSubmit = async (data: EquipoFormData) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       const equipoData = {
         codigo: data.codigo || null,
@@ -215,56 +224,67 @@ export default function EquiposInformacionN() {
         ano: Number(data.ano),
         motor: data.motor || null,
         chasis: data.chasis || null,
-        costo: data.costo != null && String(data.costo) !== '' ? parseFloat(String(data.costo)) : null,
-        valor_actual: data.valor_actual != null && String(data.valor_actual) !== '' ? parseFloat(String(data.valor_actual)) : null,
-        rata_mes: data.rata_mes != null && String(data.rata_mes) !== '' ? parseFloat(String(data.rata_mes)) : null,
+        costo:
+          data.costo != null && String(data.costo) !== ''
+            ? parseFloat(String(data.costo))
+            : null,
+        valor_actual:
+          data.valor_actual != null && String(data.valor_actual) !== ''
+            ? parseFloat(String(data.valor_actual))
+            : null,
+        rata_mes:
+          data.rata_mes != null && String(data.rata_mes) !== ''
+            ? parseFloat(String(data.rata_mes))
+            : null,
         observaciones: data.observaciones || null,
         owner: data.owner,
-      }
+      };
 
       if (editingEquipo) {
-        await api.put(`/equipos/${editingEquipo.id}`, equipoData)
+        await api.put(`/equipos/${editingEquipo.id}`, equipoData);
       } else {
-        await api.post('/equipos', equipoData)
+        await api.post('/equipos', equipoData);
       }
 
-      await loadEquipos()
-      setFormOpen(false)
-      setEditingEquipo(null)
-      form.reset()
+      await loadEquipos();
+      setFormOpen(false);
+      setEditingEquipo(null);
+      form.reset();
     } catch (err) {
-      console.error('Error al guardar equipo:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al guardar el equipo')
+      console.error('Error al guardar equipo:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(
+        apiError.response?.data?.message || 'Error al guardar el equipo',
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleDeleteClick = () => {
-    setEquipoToDelete(editingEquipo)
-    setDeleteOpen(true)
-  }
+    setEquipoToDelete(editingEquipo);
+    setDeleteOpen(true);
+  };
 
   const handleDeleteConfirm = async () => {
-    if (!equipoToDelete) return
+    if (!equipoToDelete) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      await api.delete(`/equipos/${equipoToDelete.id}`)
-      await loadEquipos()
-      setDeleteOpen(false)
-      setFormOpen(false)
-      setEquipoToDelete(null)
-      setEditingEquipo(null)
-      form.reset()
+      await api.delete(`/equipos/${equipoToDelete.id}`);
+      await loadEquipos();
+      setDeleteOpen(false);
+      setFormOpen(false);
+      setEquipoToDelete(null);
+      setEditingEquipo(null);
+      form.reset();
     } catch (err) {
-      console.error('Error deleting equipo:', err)
-      setError('Error al eliminar el equipo')
+      console.error('Error deleting equipo:', err);
+      setError('Error al eliminar el equipo');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Renderizar tabla de equipos
   const renderTable = (equipos: EquipoExtended[], emptyMessage: string) => (
@@ -283,7 +303,10 @@ export default function EquiposInformacionN() {
         <TableBody>
           {equipos.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground">
+              <TableCell
+                colSpan={6}
+                className="text-center text-muted-foreground"
+              >
                 {emptyMessage}
               </TableCell>
             </TableRow>
@@ -294,7 +317,9 @@ export default function EquiposInformacionN() {
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleRowClick(equipo)}
               >
-                <TableCell className="font-medium">{equipo.codigo || 'N/A'}</TableCell>
+                <TableCell className="font-medium">
+                  {equipo.codigo || 'N/A'}
+                </TableCell>
                 <TableCell>{equipo.descripcion}</TableCell>
                 <TableCell>{equipo.marca}</TableCell>
                 <TableCell>{equipo.modelo}</TableCell>
@@ -317,7 +342,7 @@ export default function EquiposInformacionN() {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 
   // Loading state
   if (loading) {
@@ -330,7 +355,7 @@ export default function EquiposInformacionN() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -342,7 +367,7 @@ export default function EquiposInformacionN() {
         </Alert>
         <Button onClick={loadEquipos}>Reintentar</Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -382,7 +407,9 @@ export default function EquiposInformacionN() {
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium">Código:</span>
-              <span className="col-span-2">{selectedEquipo?.codigo || 'N/A'}</span>
+              <span className="col-span-2">
+                {selectedEquipo?.codigo || 'N/A'}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium">Descripción:</span>
@@ -402,11 +429,15 @@ export default function EquiposInformacionN() {
             </div>
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium"># Motor:</span>
-              <span className="col-span-2">{selectedEquipo?.motor || 'N/A'}</span>
+              <span className="col-span-2">
+                {selectedEquipo?.motor || 'N/A'}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium"># Chasis:</span>
-              <span className="col-span-2">{selectedEquipo?.chasis || 'N/A'}</span>
+              <span className="col-span-2">
+                {selectedEquipo?.chasis || 'N/A'}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium">Costo:</span>
@@ -417,7 +448,9 @@ export default function EquiposInformacionN() {
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium">Valor Actual:</span>
               <span className="col-span-2">
-                {selectedEquipo ? formatMoney(selectedEquipo.valor_actual) : 'N/A'}
+                {selectedEquipo
+                  ? formatMoney(selectedEquipo.valor_actual)
+                  : 'N/A'}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -433,7 +466,9 @@ export default function EquiposInformacionN() {
             {selectedEquipo?.observaciones && (
               <div className="grid grid-cols-3 gap-2">
                 <span className="font-medium">Observaciones:</span>
-                <span className="col-span-2">{selectedEquipo.observaciones}</span>
+                <span className="col-span-2">
+                  {selectedEquipo.observaciones}
+                </span>
               </div>
             )}
           </div>
@@ -448,12 +483,17 @@ export default function EquiposInformacionN() {
               {editingEquipo ? 'Editar Equipo' : 'Agregar Nuevo Equipo'}
             </DialogTitle>
             <DialogDescription>
-              {editingEquipo ? 'Modifica la información del equipo' : 'Completa los datos del nuevo equipo'}
+              {editingEquipo
+                ? 'Modifica la información del equipo'
+                : 'Completa los datos del nuevo equipo'}
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+            >
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
@@ -466,7 +506,10 @@ export default function EquiposInformacionN() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Propietario *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar propietario" />
@@ -595,7 +638,12 @@ export default function EquiposInformacionN() {
                     <FormItem>
                       <FormLabel>Costo</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -609,7 +657,12 @@ export default function EquiposInformacionN() {
                     <FormItem>
                       <FormLabel>Valor Actual</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -623,7 +676,12 @@ export default function EquiposInformacionN() {
                     <FormItem>
                       <FormLabel>Rata/Mes</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -690,8 +748,8 @@ export default function EquiposInformacionN() {
           <DialogHeader>
             <DialogTitle>Confirmar Eliminación</DialogTitle>
             <DialogDescription>
-              ¿Está seguro de eliminar el equipo "{equipoToDelete?.descripcion}"?
-              Esta acción no se puede deshacer.
+              ¿Está seguro de eliminar el equipo "{equipoToDelete?.descripcion}
+              "? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -720,5 +778,5 @@ export default function EquiposInformacionN() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

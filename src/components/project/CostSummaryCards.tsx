@@ -4,9 +4,9 @@
  * Features: Total budget, spent, available, and progress bar
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, TrendingDown, Wallet } from "lucide-react"
-import { formatMoney } from "@/utils/formatters"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DollarSign, TrendingDown, Wallet } from 'lucide-react';
+import { formatMoney } from '@/utils/formatters';
 
 interface Budget {
   presupuesto_aprobado?: number;
@@ -21,25 +21,35 @@ interface CostSummaryCardsProps {
   percentage?: number;
 }
 
-export default function CostSummaryCards({ budget, spent, available, percentage }: CostSummaryCardsProps) {
+export default function CostSummaryCards({
+  budget,
+  spent,
+  available,
+  percentage,
+}: CostSummaryCardsProps) {
   // Get status color based on percentage used
   const getStatusColor = (percent: number) => {
-    if (percent >= 90) return 'text-destructive'
-    if (percent >= 75) return 'text-yellow-600'
-    return 'text-blue-600'
-  }
+    if (percent >= 90) return 'text-destructive';
+    if (percent >= 75) return 'text-yellow-600';
+    return 'text-blue-600';
+  };
 
   const getProgressColor = (percent: number) => {
-    if (percent >= 90) return 'bg-destructive'
-    if (percent >= 75) return 'bg-yellow-500'
-    return 'bg-blue-500'
-  }
+    if (percent >= 90) return 'bg-destructive';
+    if (percent >= 75) return 'bg-yellow-500';
+    return 'bg-blue-500';
+  };
 
   // El presupuesto total viene de presupuesto_aprobado (suma de categorías o monto contrato)
-  const budgetTotal = budget?.presupuesto_aprobado || budget?.total_presupuestado || budget?.presupuesto_total || 0
-  const spentAmount = spent || 0
-  const availableAmount = available ?? (budgetTotal - spentAmount)
-  const percentageUsed = percentage ?? (budgetTotal > 0 ? (spentAmount / budgetTotal) * 100 : 0)
+  const budgetTotal =
+    budget?.presupuesto_aprobado ||
+    budget?.total_presupuestado ||
+    budget?.presupuesto_total ||
+    0;
+  const spentAmount = spent || 0;
+  const availableAmount = available ?? budgetTotal - spentAmount;
+  const percentageUsed =
+    percentage ?? (budgetTotal > 0 ? (spentAmount / budgetTotal) * 100 : 0);
 
   return (
     <div className="space-y-4">
@@ -48,11 +58,15 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
         {/* Total Budget Card */}
         <Card className="flex-1 min-w-[200px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Presupuesto Total</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Presupuesto Total
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(budgetTotal)}</div>
+            <div className="text-xl font-bold whitespace-nowrap">
+              {formatMoney(budgetTotal)}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Presupuesto aprobado
             </p>
@@ -66,7 +80,9 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
             <TrendingDown className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className={`text-xl font-bold whitespace-nowrap ${getStatusColor(percentageUsed)}`}>
+            <div
+              className={`text-xl font-bold whitespace-nowrap ${getStatusColor(percentageUsed)}`}
+            >
               {formatMoney(spentAmount)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -82,7 +98,9 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
             <Wallet className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(availableAmount)}</div>
+            <div className="text-xl font-bold whitespace-nowrap">
+              {formatMoney(availableAmount)}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               {(100 - percentageUsed).toFixed(1)}% restante
             </p>
@@ -109,7 +127,11 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>0%</span>
               <span>
-                {percentageUsed >= 90 ? 'Crítico' : percentageUsed >= 75 ? 'Atención' : 'Normal'}
+                {percentageUsed >= 90
+                  ? 'Crítico'
+                  : percentageUsed >= 75
+                    ? 'Atención'
+                    : 'Normal'}
               </span>
               <span>100%</span>
             </div>
@@ -117,5 +139,5 @@ export default function CostSummaryCards({ budget, spent, available, percentage 
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

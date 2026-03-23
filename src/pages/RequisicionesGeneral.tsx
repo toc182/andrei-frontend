@@ -4,13 +4,24 @@
  * Accesible desde el sidebar principal
  */
 
-import { useState, useEffect, ReactNode } from "react"
-import { Plus, FileText, Check, X, Clock, Search, AlertCircle, Settings, Archive, LucideIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, ReactNode } from 'react';
+import {
+  Plus,
+  FileText,
+  Check,
+  X,
+  Clock,
+  Search,
+  AlertCircle,
+  Settings,
+  Archive,
+  LucideIcon,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -18,7 +29,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -26,303 +37,335 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { useAuth } from "../context/AuthContext"
-import api from "../services/api"
-import { formatMoney } from "../utils/formatters"
-import RequisicionForm from "../components/forms/RequisicionForm"
-import type { Requisicion, RequisicionItem, Project } from "@/types"
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import { formatMoney } from '../utils/formatters';
+import RequisicionForm from '../components/forms/RequisicionForm';
+import type { Requisicion, RequisicionItem, Project } from '@/types';
 
-type EstadoRequisicion = 'pendiente' | 'en_cotizacion' | 'por_aprobar' | 'aprobada' | 'pagada' | 'rechazada'
+type EstadoRequisicion =
+  | 'pendiente'
+  | 'en_cotizacion'
+  | 'por_aprobar'
+  | 'aprobada'
+  | 'pagada'
+  | 'rechazada';
 
 interface HistorialItem {
-  estado_anterior?: EstadoRequisicion
-  estado_nuevo: EstadoRequisicion
-  created_at: string
-  comentario?: string
-  usuario_nombre: string
+  estado_anterior?: EstadoRequisicion;
+  estado_nuevo: EstadoRequisicion;
+  created_at: string;
+  comentario?: string;
+  usuario_nombre: string;
 }
 
 interface HistorialData {
-  requisicion: Requisicion | null
-  items: RequisicionItem[]
-  historial: HistorialItem[]
+  requisicion: Requisicion | null;
+  items: RequisicionItem[];
+  historial: HistorialItem[];
 }
 
 interface BadgeConfig {
-  variant: "default" | "secondary" | "outline" | "destructive"
-  label: string
-  icon: LucideIcon
+  variant: 'default' | 'secondary' | 'outline' | 'destructive';
+  label: string;
+  icon: LucideIcon;
 }
 
 const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
+  if (!dateString) return '-';
+  const date = new Date(dateString);
   return date.toLocaleDateString('es-PA', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
-  })
-}
+    year: 'numeric',
+  });
+};
 
 // Badge variants for each status
 const getEstadoBadge = (estado: string): ReactNode => {
   const variants: Record<string, BadgeConfig> = {
-    'pendiente': { variant: 'secondary', label: 'Pendiente', icon: Clock },
-    'en_cotizacion': { variant: 'outline', label: 'En Cotizacion', icon: Search },
-    'por_aprobar': { variant: 'outline', label: 'Por Aprobar', icon: AlertCircle },
-    'aprobada': { variant: 'default', label: 'Aprobada', icon: Check },
-    'pagada': { variant: 'default', label: 'Pagada', icon: Check },
-    'rechazada': { variant: 'destructive', label: 'Rechazada', icon: X }
-  }
+    pendiente: { variant: 'secondary', label: 'Pendiente', icon: Clock },
+    en_cotizacion: { variant: 'outline', label: 'En Cotizacion', icon: Search },
+    por_aprobar: {
+      variant: 'outline',
+      label: 'Por Aprobar',
+      icon: AlertCircle,
+    },
+    aprobada: { variant: 'default', label: 'Aprobada', icon: Check },
+    pagada: { variant: 'default', label: 'Pagada', icon: Check },
+    rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
+  };
 
-  const config = variants[estado] || { variant: 'secondary' as const, label: estado, icon: Clock }
-  const Icon = config.icon
+  const config = variants[estado] || {
+    variant: 'secondary' as const,
+    label: estado,
+    icon: Clock,
+  };
+  const Icon = config.icon;
 
   return (
     <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
-  )
-}
+  );
+};
 
 // Valid state transitions
 const getValidTransitions = (currentState: string): string[] => {
   const transitions: Record<string, string[]> = {
-    'pendiente': ['en_cotizacion', 'por_aprobar', 'rechazada'],
-    'en_cotizacion': ['por_aprobar', 'pendiente', 'rechazada'],
-    'por_aprobar': ['aprobada', 'rechazada', 'pendiente'],
-    'aprobada': ['pagada', 'rechazada'],
-    'pagada': [],
-    'rechazada': ['pendiente']
-  }
-  return transitions[currentState] || []
-}
+    pendiente: ['en_cotizacion', 'por_aprobar', 'rechazada'],
+    en_cotizacion: ['por_aprobar', 'pendiente', 'rechazada'],
+    por_aprobar: ['aprobada', 'rechazada', 'pendiente'],
+    aprobada: ['pagada', 'rechazada'],
+    pagada: [],
+    rechazada: ['pendiente'],
+  };
+  return transitions[currentState] || [];
+};
 
 const estadoLabels: Record<string, string> = {
-  'pendiente': 'Pendiente',
-  'en_cotizacion': 'En Cotizacion',
-  'por_aprobar': 'Por Aprobar',
-  'aprobada': 'Aprobada',
-  'pagada': 'Pagada',
-  'rechazada': 'Rechazada'
-}
+  pendiente: 'Pendiente',
+  en_cotizacion: 'En Cotizacion',
+  por_aprobar: 'Por Aprobar',
+  aprobada: 'Aprobada',
+  pagada: 'Pagada',
+  rechazada: 'Rechazada',
+};
 
 export default function RequisicionesGeneral() {
-  const { user, hasPermission, isAdminOrCoAdmin } = useAuth()
+  const { user, hasPermission, isAdminOrCoAdmin } = useAuth();
   const canManageRequisicion = (req: Requisicion) =>
-    isAdminOrCoAdmin || hasPermission('requisiciones_editar_todas') || req.solicitante_id === user?.id
-  const [requisiciones, setRequisiciones] = useState<Requisicion[]>([])
-  const [proyectos, setProyectos] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+    isAdminOrCoAdmin ||
+    hasPermission('requisiciones_editar_todas') ||
+    req.solicitante_id === user?.id;
+  const [requisiciones, setRequisiciones] = useState<Requisicion[]>([]);
+  const [proyectos, setProyectos] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filters
-  const [filterEstado, setFilterEstado] = useState('all')
-  const [filterProyecto, setFilterProyecto] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
+  const [filterEstado, setFilterEstado] = useState('all');
+  const [filterProyecto, setFilterProyecto] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Modals
-  const [showForm, setShowForm] = useState(false)
-  const [showProjectSelector, setShowProjectSelector] = useState(false)
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
-  const [editingRequisicion, setEditingRequisicion] = useState<Requisicion | null>(null)
-  const [existingItems, setExistingItems] = useState<RequisicionItem[]>([])
+  const [showForm, setShowForm] = useState(false);
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
+    null,
+  );
+  const [editingRequisicion, setEditingRequisicion] =
+    useState<Requisicion | null>(null);
+  const [existingItems, setExistingItems] = useState<RequisicionItem[]>([]);
 
   // Estado change modal
-  const [showEstadoModal, setShowEstadoModal] = useState(false)
-  const [estadoRequisicion, setEstadoRequisicion] = useState<Requisicion | null>(null)
-  const [nuevoEstado, setNuevoEstado] = useState('')
-  const [comentarioEstado, setComentarioEstado] = useState('')
-  const [changingEstado, setChangingEstado] = useState(false)
+  const [showEstadoModal, setShowEstadoModal] = useState(false);
+  const [estadoRequisicion, setEstadoRequisicion] =
+    useState<Requisicion | null>(null);
+  const [nuevoEstado, setNuevoEstado] = useState('');
+  const [comentarioEstado, setComentarioEstado] = useState('');
+  const [changingEstado, setChangingEstado] = useState(false);
 
   // History modal
-  const [showHistorial, setShowHistorial] = useState(false)
-  const [historialRequisicion, setHistorialRequisicion] = useState<Requisicion | null>(null)
-  const [historialData, setHistorialData] = useState<HistorialData>({ requisicion: null, items: [], historial: [] })
+  const [showHistorial, setShowHistorial] = useState(false);
+  const [historialRequisicion, setHistorialRequisicion] =
+    useState<Requisicion | null>(null);
+  const [historialData, setHistorialData] = useState<HistorialData>({
+    requisicion: null,
+    items: [],
+    historial: [],
+  });
 
   // Archivar modal
-  const [showArchivarModal, setShowArchivarModal] = useState(false)
-  const [archivarLoading, setArchivarLoading] = useState(false)
+  const [showArchivarModal, setShowArchivarModal] = useState(false);
+  const [archivarLoading, setArchivarLoading] = useState(false);
 
   useEffect(() => {
-    loadData()
-  }, [filterEstado])
+    loadData();
+  }, [filterEstado]);
 
   const loadData = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       // Si el filtro es "archivadas", pedir las archivadas al backend
-      const params = filterEstado === 'archivadas' ? '?archivadas=true' : ''
+      const params = filterEstado === 'archivadas' ? '?archivadas=true' : '';
       const [reqRes, projRes] = await Promise.all([
         api.get(`/requisiciones${params}`),
-        api.get('/projects')
-      ])
+        api.get('/projects'),
+      ]);
 
       if (reqRes.data.success) {
-        setRequisiciones(reqRes.data.requisiciones)
+        setRequisiciones(reqRes.data.requisiciones);
       }
       if (projRes.data.success) {
-        setProyectos(projRes.data.proyectos || projRes.data.data || [])
+        setProyectos(projRes.data.proyectos || projRes.data.data || []);
       }
     } catch (err) {
-      console.error('Error loading data:', err)
-      setError('Error al cargar las requisiciones')
+      console.error('Error loading data:', err);
+      setError('Error al cargar las requisiciones');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Filter requisiciones
-  const filteredRequisiciones = requisiciones.filter(req => {
+  const filteredRequisiciones = requisiciones.filter((req) => {
     // Si es archivadas, no filtrar por estado (ya viene del backend)
     if (filterEstado === 'archivadas') {
       // Solo filtrar por proyecto y búsqueda
-    } else if (filterEstado !== 'all' && req.estado !== filterEstado) return false
-    if (filterProyecto !== 'all' && req.project_id !== parseInt(filterProyecto)) return false
+    } else if (filterEstado !== 'all' && req.estado !== filterEstado)
+      return false;
+    if (filterProyecto !== 'all' && req.project_id !== parseInt(filterProyecto))
+      return false;
     if (searchTerm) {
-      const search = searchTerm.toLowerCase()
+      const search = searchTerm.toLowerCase();
       return (
         req.numero_requisicion?.toLowerCase().includes(search) ||
         req.proveedor?.toLowerCase().includes(search) ||
         req.proyecto_nombre?.toLowerCase().includes(search) ||
         req.descripcion?.toLowerCase().includes(search)
-      )
+      );
     }
-    return true
-  })
+    return true;
+  });
 
   // Stats
   const stats = {
     total: requisiciones.length,
-    porAprobar: requisiciones.filter(r => r.estado === 'por_aprobar').length,
-    pagadas: requisiciones.filter(r => r.estado === 'pagada').length,
-    montoTotal: requisiciones.reduce((sum, r) => sum + (parseFloat(String(r.monto_total)) || 0), 0)
-  }
+    porAprobar: requisiciones.filter((r) => r.estado === 'por_aprobar').length,
+    pagadas: requisiciones.filter((r) => r.estado === 'pagada').length,
+    montoTotal: requisiciones.reduce(
+      (sum, r) => sum + (parseFloat(String(r.monto_total)) || 0),
+      0,
+    ),
+  };
 
   // Handle new requisition - first select project
   const handleNewRequisicion = () => {
-    setShowProjectSelector(true)
-  }
+    setShowProjectSelector(true);
+  };
 
   const handleProjectSelected = (projectId: string) => {
-    setSelectedProjectId(parseInt(projectId))
-    setShowProjectSelector(false)
-    setEditingRequisicion(null)
-    setExistingItems([])
-    setShowForm(true)
-  }
+    setSelectedProjectId(parseInt(projectId));
+    setShowProjectSelector(false);
+    setEditingRequisicion(null);
+    setExistingItems([]);
+    setShowForm(true);
+  };
 
   const handleSaveRequisicion = async (data: Record<string, unknown>) => {
     if (editingRequisicion) {
-      await api.put(`/requisiciones/${editingRequisicion.id}`, data)
+      await api.put(`/requisiciones/${editingRequisicion.id}`, data);
     } else {
-      await api.post('/requisiciones', data)
+      await api.post('/requisiciones', data);
     }
-    setShowForm(false)
-    setEditingRequisicion(null)
-    setSelectedProjectId(null)
-    loadData()
-  }
+    setShowForm(false);
+    setEditingRequisicion(null);
+    setSelectedProjectId(null);
+    loadData();
+  };
 
   const handleEditRequisicion = async (requisicion: Requisicion) => {
     try {
-      const response = await api.get(`/requisiciones/${requisicion.id}`)
+      const response = await api.get(`/requisiciones/${requisicion.id}`);
       if (response.data.success) {
-        setSelectedProjectId(requisicion.project_id)
-        setEditingRequisicion(response.data.requisicion)
-        setExistingItems(response.data.items || [])
-        setShowForm(true)
+        setSelectedProjectId(requisicion.project_id);
+        setEditingRequisicion(response.data.requisicion);
+        setExistingItems(response.data.items || []);
+        setShowForm(true);
       }
     } catch (err) {
-      console.error('Error loading requisicion:', err)
+      console.error('Error loading requisicion:', err);
     }
-  }
+  };
 
   const handleArchivar = async () => {
-    if (!historialRequisicion) return
+    if (!historialRequisicion) return;
 
     try {
-      setArchivarLoading(true)
-      await api.patch(`/requisiciones/${historialRequisicion.id}/archivar`)
-      await loadData()
-      setShowArchivarModal(false)
-      setShowHistorial(false)
-      setHistorialRequisicion(null)
-      setHistorialData({ requisicion: null, items: [], historial: [] })
+      setArchivarLoading(true);
+      await api.patch(`/requisiciones/${historialRequisicion.id}/archivar`);
+      await loadData();
+      setShowArchivarModal(false);
+      setShowHistorial(false);
+      setHistorialRequisicion(null);
+      setHistorialData({ requisicion: null, items: [], historial: [] });
     } catch (err: unknown) {
-      console.error('Error archivando requisicion:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      alert(apiError.response?.data?.message || 'Error al archivar la requisicion')
+      console.error('Error archivando requisicion:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(
+        apiError.response?.data?.message || 'Error al archivar la requisicion',
+      );
     } finally {
-      setArchivarLoading(false)
+      setArchivarLoading(false);
     }
-  }
+  };
 
   // Estado change handlers
   const handleOpenEstadoModal = (requisicion: Requisicion) => {
-    setEstadoRequisicion(requisicion)
-    setNuevoEstado('')
-    setComentarioEstado('')
-    setShowEstadoModal(true)
-  }
+    setEstadoRequisicion(requisicion);
+    setNuevoEstado('');
+    setComentarioEstado('');
+    setShowEstadoModal(true);
+  };
 
   const handleChangeEstado = async () => {
-    if (!nuevoEstado || !estadoRequisicion) return
+    if (!nuevoEstado || !estadoRequisicion) return;
 
     try {
-      setChangingEstado(true)
+      setChangingEstado(true);
       await api.patch(`/requisiciones/${estadoRequisicion.id}/estado`, {
         estado: nuevoEstado,
-        comentario: comentarioEstado
-      })
-      setShowEstadoModal(false)
-      loadData()
+        comentario: comentarioEstado,
+      });
+      setShowEstadoModal(false);
+      loadData();
     } catch (err: unknown) {
-      console.error('Error changing estado:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al cambiar estado')
+      console.error('Error changing estado:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(apiError.response?.data?.message || 'Error al cambiar estado');
     } finally {
-      setChangingEstado(false)
+      setChangingEstado(false);
     }
-  }
+  };
 
   // History handlers
   const handleShowHistorial = async (requisicion: Requisicion) => {
     try {
-      const response = await api.get(`/requisiciones/${requisicion.id}`)
+      const response = await api.get(`/requisiciones/${requisicion.id}`);
       if (response.data.success) {
         setHistorialData({
           requisicion: response.data.requisicion,
           items: response.data.items || [],
-          historial: response.data.historial || []
-        })
-        setHistorialRequisicion(requisicion)
-        setShowHistorial(true)
+          historial: response.data.historial || [],
+        });
+        setHistorialRequisicion(requisicion);
+        setShowHistorial(true);
       }
     } catch (err) {
-      console.error('Error loading historial:', err)
+      console.error('Error loading historial:', err);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-muted-foreground">Cargando requisiciones...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -331,7 +374,9 @@ export default function RequisicionesGeneral() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Requisiciones</h1>
-          <p className="text-muted-foreground">Vista consolidada de todos los proyectos</p>
+          <p className="text-muted-foreground">
+            Vista consolidada de todos los proyectos
+          </p>
         </div>
         <Button onClick={handleNewRequisicion}>
           <Plus className="h-4 w-4 mr-2" />
@@ -350,7 +395,9 @@ export default function RequisicionesGeneral() {
       <div className="flex flex-wrap gap-4">
         <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold">{stats.total}</div>
@@ -358,26 +405,38 @@ export default function RequisicionesGeneral() {
         </Card>
         <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Por Aprobar</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Por Aprobar
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold text-yellow-600">{stats.porAprobar}</div>
+            <div className="text-xl font-bold text-yellow-600">
+              {stats.porAprobar}
+            </div>
           </CardContent>
         </Card>
         <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pagadas</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pagadas
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold text-green-600">{stats.pagadas}</div>
+            <div className="text-xl font-bold text-green-600">
+              {stats.pagadas}
+            </div>
           </CardContent>
         </Card>
         <Card className="flex-1 min-w-[140px]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Monto Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Monto Total
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold whitespace-nowrap">{formatMoney(stats.montoTotal)}</div>
+            <div className="text-xl font-bold whitespace-nowrap">
+              {formatMoney(stats.montoTotal)}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -398,7 +457,7 @@ export default function RequisicionesGeneral() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los proyectos</SelectItem>
-            {proyectos.map(p => (
+            {proyectos.map((p) => (
               <SelectItem key={p.id} value={p.id.toString()}>
                 {p.nombre_corto || p.nombre}
               </SelectItem>
@@ -412,7 +471,9 @@ export default function RequisicionesGeneral() {
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
             {Object.entries(estadoLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
             ))}
             <SelectItem value="archivadas">Archivadas</SelectItem>
           </SelectContent>
@@ -434,7 +495,10 @@ export default function RequisicionesGeneral() {
           <TableBody>
             {filteredRequisiciones.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No se encontraron requisiciones
                 </TableCell>
               </TableRow>
@@ -447,7 +511,9 @@ export default function RequisicionesGeneral() {
                 >
                   <TableCell className="font-medium">
                     <div>{req.numero_requisicion}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(req.fecha_solicitud)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(req.fecha_solicitud)}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-xs bg-muted px-2 py-1 rounded w-fit">
@@ -457,7 +523,9 @@ export default function RequisicionesGeneral() {
                       {req.proveedor}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{req.proveedor}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {req.proveedor}
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatMoney(req.monto_total)}
                   </TableCell>
@@ -484,7 +552,7 @@ export default function RequisicionesGeneral() {
                 <SelectValue placeholder="Selecciona un proyecto" />
               </SelectTrigger>
               <SelectContent>
-                {proyectos.map(p => (
+                {proyectos.map((p) => (
                   <SelectItem key={p.id} value={p.id.toString()}>
                     {p.nombre_corto || p.nombre}
                   </SelectItem>
@@ -501,9 +569,9 @@ export default function RequisicionesGeneral() {
           projectId={selectedProjectId}
           isOpen={showForm}
           onClose={() => {
-            setShowForm(false)
-            setEditingRequisicion(null)
-            setSelectedProjectId(null)
+            setShowForm(false);
+            setEditingRequisicion(null);
+            setSelectedProjectId(null);
           }}
           onSave={handleSaveRequisicion}
           editingRequisicion={editingRequisicion}
@@ -534,11 +602,14 @@ export default function RequisicionesGeneral() {
                   <SelectValue placeholder="Seleccionar estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  {estadoRequisicion && getValidTransitions(estadoRequisicion.estado).map(estado => (
-                    <SelectItem key={estado} value={estado}>
-                      {estadoLabels[estado]}
-                    </SelectItem>
-                  ))}
+                  {estadoRequisicion &&
+                    getValidTransitions(estadoRequisicion.estado).map(
+                      (estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {estadoLabels[estado]}
+                        </SelectItem>
+                      ),
+                    )}
                 </SelectContent>
               </Select>
             </div>
@@ -556,7 +627,10 @@ export default function RequisicionesGeneral() {
             <Button variant="outline" onClick={() => setShowEstadoModal(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleChangeEstado} disabled={!nuevoEstado || changingEstado}>
+            <Button
+              onClick={handleChangeEstado}
+              disabled={!nuevoEstado || changingEstado}
+            >
               {changingEstado ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
@@ -569,38 +643,49 @@ export default function RequisicionesGeneral() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Detalle de Requisicion
-              {historialRequisicion && ['pendiente', 'en_cotizacion'].includes(historialRequisicion.estado) && canManageRequisicion(historialRequisicion) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
-                  onClick={() => {
-                    setShowHistorial(false)
-                    handleEditRequisicion(historialRequisicion)
-                  }}
-                  title="Editar requisición"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              )}
+              {historialRequisicion &&
+                ['pendiente', 'en_cotizacion'].includes(
+                  historialRequisicion.estado,
+                ) &&
+                canManageRequisicion(historialRequisicion) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
+                    onClick={() => {
+                      setShowHistorial(false);
+                      handleEditRequisicion(historialRequisicion);
+                    }}
+                    title="Editar requisición"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
             </DialogTitle>
             <DialogDescription>
-              {historialRequisicion?.numero_requisicion} - {historialRequisicion?.proveedor}
+              {historialRequisicion?.numero_requisicion} -{' '}
+              {historialRequisicion?.proveedor}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {/* Descripción */}
             {historialRequisicion?.descripcion && (
               <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">Descripción</div>
-                <div className="font-medium">{historialRequisicion.descripcion}</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  Descripción
+                </div>
+                <div className="font-medium">
+                  {historialRequisicion.descripcion}
+                </div>
               </div>
             )}
 
             {/* Items */}
             {historialData.items.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2">Detalle ({historialData.items.length} items)</h4>
+                <h4 className="font-medium mb-2">
+                  Detalle ({historialData.items.length} items)
+                </h4>
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -615,9 +700,18 @@ export default function RequisicionesGeneral() {
                       {historialData.items.map((item, idx) => (
                         <TableRow key={idx}>
                           <TableCell>{item.descripcion}</TableCell>
-                          <TableCell className="text-right">{item.cantidad} {item.unidad}</TableCell>
-                          <TableCell className="text-right">{formatMoney(item.precio_unitario_estimado)}</TableCell>
-                          <TableCell className="text-right">{formatMoney((item.cantidad || 0) * (item.precio_unitario_estimado || 0))}</TableCell>
+                          <TableCell className="text-right">
+                            {item.cantidad} {item.unidad}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatMoney(item.precio_unitario_estimado)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatMoney(
+                              (item.cantidad || 0) *
+                                (item.precio_unitario_estimado || 0),
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -634,13 +728,14 @@ export default function RequisicionesGeneral() {
                   <div className="flex items-center gap-3">
                     {getEstadoBadge(historialRequisicion.estado)}
                   </div>
-                  {getValidTransitions(historialRequisicion.estado).length > 0 && (
+                  {getValidTransitions(historialRequisicion.estado).length >
+                    0 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setShowHistorial(false)
-                        handleOpenEstadoModal(historialRequisicion)
+                        setShowHistorial(false);
+                        handleOpenEstadoModal(historialRequisicion);
                       }}
                     >
                       Cambiar Estado
@@ -664,14 +759,18 @@ export default function RequisicionesGeneral() {
                               {estadoLabels[h.estado_anterior]} →{' '}
                             </span>
                           )}
-                          <span className="font-medium">{estadoLabels[h.estado_nuevo]}</span>
+                          <span className="font-medium">
+                            {estadoLabels[h.estado_nuevo]}
+                          </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {formatDate(h.created_at)}
                         </span>
                       </div>
                       {h.comentario && (
-                        <p className="text-muted-foreground mt-1">{h.comentario}</p>
+                        <p className="text-muted-foreground mt-1">
+                          {h.comentario}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Por: {h.usuario_nombre}
@@ -708,16 +807,23 @@ export default function RequisicionesGeneral() {
               Archivar Requisicion
             </DialogTitle>
             <DialogDescription>
-              Esta accion archivara la requisicion. Podra ser restaurada mas adelante si es necesario.
+              Esta accion archivara la requisicion. Podra ser restaurada mas
+              adelante si es necesario.
             </DialogDescription>
           </DialogHeader>
 
           {historialRequisicion && (
             <div className="py-4">
               <div className="p-4 bg-muted rounded-lg space-y-2">
-                <div className="font-medium">{historialRequisicion.numero_requisicion}</div>
-                <div className="text-sm text-muted-foreground">{historialRequisicion.proveedor}</div>
-                <div className="text-sm">{formatMoney(historialRequisicion.monto_total)}</div>
+                <div className="font-medium">
+                  {historialRequisicion.numero_requisicion}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {historialRequisicion.proveedor}
+                </div>
+                <div className="text-sm">
+                  {formatMoney(historialRequisicion.monto_total)}
+                </div>
               </div>
             </div>
           )}
@@ -741,5 +847,5 @@ export default function RequisicionesGeneral() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

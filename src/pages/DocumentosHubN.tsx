@@ -8,68 +8,68 @@ import { ChevronRight } from 'lucide-react';
  */
 
 interface Document {
-    id: string;
-    title: string;
+  id: string;
+  title: string;
 }
 
 interface DocumentosHubNProps {
-    onDocumentClick?: (documentId: string) => void;
+  onDocumentClick?: (documentId: string) => void;
 }
 
 const DocumentosHubN = ({ onDocumentClick }: DocumentosHubNProps) => {
-    // Lista de documentos disponibles
-    const availableDocuments: Document[] = [
-        {
-            id: 'doc-acuerdo-consorcio',
-            title: 'Acuerdo de Consorcio'
-        },
-        {
-            id: 'doc-carta-adhesion',
-            title: 'Carta de Adhesión a Principios de Sostenibilidad'
-        },
-        {
-            id: 'doc-medidas-retorsion',
-            title: 'Declaración Jurada de Medidas de Retorsión'
-        },
-        {
-            id: 'doc-no-incapacidad',
-            title: 'Declaración Jurada de No Incapacidad para Contratar'
-        },
-        {
-            id: 'doc-pacto-integridad',
-            title: 'Pacto de Integridad'
-        },
-        {
-            id: 'doc-carta-compromiso-verde',
-            title: 'Carta de Compromiso Verde'
-        }
-    ];
+  // Lista de documentos disponibles
+  const availableDocuments: Document[] = [
+    {
+      id: 'doc-acuerdo-consorcio',
+      title: 'Acuerdo de Consorcio',
+    },
+    {
+      id: 'doc-carta-adhesion',
+      title: 'Carta de Adhesión a Principios de Sostenibilidad',
+    },
+    {
+      id: 'doc-medidas-retorsion',
+      title: 'Declaración Jurada de Medidas de Retorsión',
+    },
+    {
+      id: 'doc-no-incapacidad',
+      title: 'Declaración Jurada de No Incapacidad para Contratar',
+    },
+    {
+      id: 'doc-pacto-integridad',
+      title: 'Pacto de Integridad',
+    },
+    {
+      id: 'doc-carta-compromiso-verde',
+      title: 'Carta de Compromiso Verde',
+    },
+  ];
 
-    const handleDocumentClick = (documentId: string) => {
-        if (onDocumentClick) {
-            onDocumentClick(documentId);
-        } else {
-            // Fallback: simular clic en el sidebar
-            window.location.hash = documentId;
-        }
-    };
+  const handleDocumentClick = (documentId: string) => {
+    if (onDocumentClick) {
+      onDocumentClick(documentId);
+    } else {
+      // Fallback: simular clic en el sidebar
+      window.location.hash = documentId;
+    }
+  };
 
-    return (
-        <div className="rounded-md border">
-            <div className="divide-y">
-                {availableDocuments.map((doc) => (
-                    <div
-                        key={doc.id}
-                        className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => handleDocumentClick(doc.id)}
-                    >
-                        <h3 className="font-medium">{doc.title}</h3>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+  return (
+    <div className="rounded-md border">
+      <div className="divide-y">
+        {availableDocuments.map((doc) => (
+          <div
+            key={doc.id}
+            className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+            onClick={() => handleDocumentClick(doc.id)}
+          >
+            <h3 className="font-medium">{doc.title}</h3>
+            <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default DocumentosHubN;

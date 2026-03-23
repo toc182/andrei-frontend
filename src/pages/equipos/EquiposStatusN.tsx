@@ -11,13 +11,13 @@
  * - Sin FontAwesome, sin CSS custom
  */
 
-import { useState, useEffect } from 'react'
-import api from '../../services/api'
-import logo from '../../assets/logo.png'
-import cocpLogo from '../../assets/LogoCOCPfondoblanco.png'
-import type { EquipoExtended, ApiResponse } from '@/types'
+import { useState, useEffect } from 'react';
+import api from '../../services/api';
+import logo from '../../assets/logo.png';
+import cocpLogo from '../../assets/LogoCOCPfondoblanco.png';
+import type { EquipoExtended, ApiResponse } from '@/types';
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -25,60 +25,64 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { RefreshCw, Loader2 } from 'lucide-react'
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RefreshCw, Loader2 } from 'lucide-react';
 
 interface EquipoWithStatus extends EquipoExtended {
-  ubicacion?: string
-  ultima_revision?: string
-  proyecto?: string
-  responsable?: string
-  observaciones_status?: string
+  ubicacion?: string;
+  ultima_revision?: string;
+  proyecto?: string;
+  responsable?: string;
+  observaciones_status?: string;
 }
 
 interface StatusFormData {
-  estado: string
-  proyecto: string
-  responsable: string
-  rata_mes: string
-  observaciones_status: string
+  estado: string;
+  proyecto: string;
+  responsable: string;
+  rata_mes: string;
+  observaciones_status: string;
 }
 
 interface EstadoBadgeInfo {
-  label: string
-  variant: 'default' | 'secondary' | 'outline' | 'destructive'
+  label: string;
+  variant: 'default' | 'secondary' | 'outline' | 'destructive';
 }
 
 export default function EquiposStatusN() {
-  const [equiposPinellas, setEquiposPinellas] = useState<EquipoWithStatus[]>([])
-  const [equiposCOCP, setEquiposCOCP] = useState<EquipoWithStatus[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [equiposPinellas, setEquiposPinellas] = useState<EquipoWithStatus[]>(
+    [],
+  );
+  const [equiposCOCP, setEquiposCOCP] = useState<EquipoWithStatus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Estados para modales
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  const [selectedEquipo, setSelectedEquipo] = useState<EquipoWithStatus | null>(null)
-  const [statusFormOpen, setStatusFormOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedEquipo, setSelectedEquipo] = useState<EquipoWithStatus | null>(
+    null,
+  );
+  const [statusFormOpen, setStatusFormOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Estado del formulario
   const [formData, setFormData] = useState<StatusFormData>({
@@ -87,76 +91,85 @@ export default function EquiposStatusN() {
     responsable: '',
     rata_mes: '',
     observaciones_status: '',
-  })
+  });
 
   // Mapeo de estados a badges
   const getEstadoBadgeVariant = (estado?: string): EstadoBadgeInfo => {
-    const estadoLower = (estado || '').toLowerCase()
+    const estadoLower = (estado || '').toLowerCase();
 
-    if (estadoLower.includes('operacion') || estadoLower.includes('operativo')) {
-      return { label: 'En Operación', variant: 'default' } // Verde
+    if (
+      estadoLower.includes('operacion') ||
+      estadoLower.includes('operativo')
+    ) {
+      return { label: 'En Operación', variant: 'default' }; // Verde
     }
     if (estadoLower.includes('standby')) {
-      return { label: 'Standby', variant: 'secondary' } // Azul/Gris
+      return { label: 'Standby', variant: 'secondary' }; // Azul/Gris
     }
     if (estadoLower.includes('mantenimiento')) {
-      return { label: 'En Mantenimiento', variant: 'outline' } // Amarillo
+      return { label: 'En Mantenimiento', variant: 'outline' }; // Amarillo
     }
     if (estadoLower.includes('fuera')) {
-      return { label: 'Fuera de Servicio', variant: 'destructive' } // Rojo
+      return { label: 'Fuera de Servicio', variant: 'destructive' }; // Rojo
     }
 
-    return { label: 'En Operación', variant: 'default' }
-  }
+    return { label: 'En Operación', variant: 'default' };
+  };
 
   // Cargar equipos y sus estados desde API
   const loadEquiposStatus = async () => {
     try {
-      setLoading(true)
-      setError('')
+      setLoading(true);
+      setError('');
 
-      const response = await api.get<ApiResponse<EquipoExtended[]>>('/equipos')
+      const response = await api.get<ApiResponse<EquipoExtended[]>>('/equipos');
 
       if (response.data.success && response.data.data) {
         // Mapear los datos
-        const equiposConStatus: EquipoWithStatus[] = response.data.data.map((equipo) => ({
-          ...equipo,
-          ubicacion: equipo.proyecto || 'No especificada',
-          ultima_revision: equipo.updated_at,
-          estado: equipo.estado || 'en_operacion',
-        }))
+        const equiposConStatus: EquipoWithStatus[] = response.data.data.map(
+          (equipo) => ({
+            ...equipo,
+            ubicacion: equipo.proyecto || 'No especificada',
+            ultima_revision: equipo.updated_at,
+            estado: equipo.estado || 'en_operacion',
+          }),
+        );
 
         // Separar equipos por propietario
-        const pinellas = equiposConStatus.filter((equipo) => equipo.owner === 'Pinellas')
-        const cocp = equiposConStatus.filter((equipo) => equipo.owner === 'COCP')
+        const pinellas = equiposConStatus.filter(
+          (equipo) => equipo.owner === 'Pinellas',
+        );
+        const cocp = equiposConStatus.filter(
+          (equipo) => equipo.owner === 'COCP',
+        );
 
-        setEquiposPinellas(pinellas)
-        setEquiposCOCP(cocp)
-        setLastUpdate(new Date())
+        setEquiposPinellas(pinellas);
+        setEquiposCOCP(cocp);
+        setLastUpdate(new Date());
       } else {
-        setError('Error al cargar estatus de equipos')
+        setError('Error al cargar estatus de equipos');
       }
     } catch (err) {
-      console.error('Error loading equipos status:', err)
-      setError('Error al conectar con el servidor')
+      console.error('Error loading equipos status:', err);
+      setError('Error al conectar con el servidor');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadEquiposStatus()
+    loadEquiposStatus();
 
     // Auto-refresh cada 5 minutos
-    const interval = setInterval(loadEquiposStatus, 5 * 60 * 1000)
+    const interval = setInterval(loadEquiposStatus, 5 * 60 * 1000);
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
   // Formato de fecha
   const formatLastUpdate = (date?: Date | string | null): string => {
-    if (!date) return ''
-    const dateObj = typeof date === 'string' ? new Date(date) : date
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('es-ES', {
       day: '2-digit',
       month: 'short',
@@ -164,18 +177,18 @@ export default function EquiposStatusN() {
     })
       .format(dateObj)
       .replace(/\s/g, '-')
-      .replace('sept', 'sep')
-  }
+      .replace('sept', 'sep');
+  };
 
   // Handlers
   const handleRefresh = () => {
-    loadEquiposStatus()
-  }
+    loadEquiposStatus();
+  };
 
   const handleRowClick = (equipo: EquipoWithStatus) => {
-    setSelectedEquipo(equipo)
-    setDetailsOpen(true)
-  }
+    setSelectedEquipo(equipo);
+    setDetailsOpen(true);
+  };
 
   const handleOpenStatusForm = () => {
     setFormData({
@@ -184,36 +197,36 @@ export default function EquiposStatusN() {
       responsable: selectedEquipo?.responsable || '',
       rata_mes: selectedEquipo?.rata_mes?.toString() || '',
       observaciones_status: selectedEquipo?.observaciones_status || '',
-    })
-    setStatusFormOpen(true)
-    setDetailsOpen(false)
-  }
+    });
+    setStatusFormOpen(true);
+    setDetailsOpen(false);
+  };
 
   const handleFormChange = (name: keyof StatusFormData, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedEquipo) return
+    e.preventDefault();
+    if (!selectedEquipo) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      await api.put(`/equipos/${selectedEquipo.id}/status`, formData)
-      await loadEquiposStatus()
-      setStatusFormOpen(false)
-      setSelectedEquipo(null)
+      await api.put(`/equipos/${selectedEquipo.id}/status`, formData);
+      await loadEquiposStatus();
+      setStatusFormOpen(false);
+      setSelectedEquipo(null);
     } catch (err) {
-      console.error('Error al actualizar status:', err)
-      setError('Error al actualizar el status del equipo')
+      console.error('Error al actualizar status:', err);
+      setError('Error al actualizar el status del equipo');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Renderizar tabla de equipos
   const renderTable = (equipos: EquipoWithStatus[], emptyMessage: string) => (
@@ -231,13 +244,16 @@ export default function EquiposStatusN() {
         <TableBody>
           {equipos.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
+              <TableCell
+                colSpan={5}
+                className="text-center text-muted-foreground"
+              >
                 {emptyMessage}
               </TableCell>
             </TableRow>
           ) : (
             equipos.map((equipo) => {
-              const estadoInfo = getEstadoBadgeVariant(equipo.estado)
+              const estadoInfo = getEstadoBadgeVariant(equipo.estado);
               return (
                 <TableRow
                   key={equipo.id}
@@ -254,12 +270,16 @@ export default function EquiposStatusN() {
                         {equipo.marca} {equipo.modelo}
                       </div>
                       {equipo.ano && (
-                        <div className="text-xs text-muted-foreground">{equipo.ano}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {equipo.ano}
+                        </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={estadoInfo.variant}>{estadoInfo.label}</Badge>
+                    <Badge variant={estadoInfo.variant}>
+                      {estadoInfo.label}
+                    </Badge>
                   </TableCell>
                   <TableCell>{equipo.ubicacion || 'No especificada'}</TableCell>
                   <TableCell className="text-sm">
@@ -268,13 +288,13 @@ export default function EquiposStatusN() {
                       : formatLastUpdate(lastUpdate)}
                   </TableCell>
                 </TableRow>
-              )
+              );
             })
           )}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 
   // Loading state
   if (loading) {
@@ -283,11 +303,13 @@ export default function EquiposStatusN() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Cargando estados de equipos...</p>
+            <p className="text-muted-foreground">
+              Cargando estados de equipos...
+            </p>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -299,7 +321,7 @@ export default function EquiposStatusN() {
         </Alert>
         <Button onClick={loadEquiposStatus}>Reintentar</Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -349,13 +371,19 @@ export default function EquiposStatusN() {
             </div>
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium">Año:</span>
-              <span className="col-span-2">{selectedEquipo?.ano || 'No especificado'}</span>
+              <span className="col-span-2">
+                {selectedEquipo?.ano || 'No especificado'}
+              </span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <span className="font-medium">Estado:</span>
               <span className="col-span-2">
                 {selectedEquipo && (
-                  <Badge variant={getEstadoBadgeVariant(selectedEquipo.estado).variant}>
+                  <Badge
+                    variant={
+                      getEstadoBadgeVariant(selectedEquipo.estado).variant
+                    }
+                  >
                     {getEstadoBadgeVariant(selectedEquipo.estado).label}
                   </Badge>
                 )}
@@ -423,7 +451,8 @@ export default function EquiposStatusN() {
             {/* Info del equipo */}
             <div className="rounded-md bg-muted p-3">
               <span className="font-semibold">
-                {selectedEquipo?.codigo || 'Sin código'} - {selectedEquipo?.descripcion}
+                {selectedEquipo?.codigo || 'Sin código'} -{' '}
+                {selectedEquipo?.descripcion}
               </span>
             </div>
 
@@ -440,8 +469,12 @@ export default function EquiposStatusN() {
                 <SelectContent>
                   <SelectItem value="en_operacion">En Operación</SelectItem>
                   <SelectItem value="standby">Standby</SelectItem>
-                  <SelectItem value="en_mantenimiento">En Mantenimiento</SelectItem>
-                  <SelectItem value="fuera_de_servicio">Fuera de Servicio</SelectItem>
+                  <SelectItem value="en_mantenimiento">
+                    En Mantenimiento
+                  </SelectItem>
+                  <SelectItem value="fuera_de_servicio">
+                    Fuera de Servicio
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -463,7 +496,9 @@ export default function EquiposStatusN() {
               <Input
                 type="text"
                 value={formData.responsable}
-                onChange={(e) => handleFormChange('responsable', e.target.value)}
+                onChange={(e) =>
+                  handleFormChange('responsable', e.target.value)
+                }
                 placeholder="Persona responsable del equipo"
               />
             </div>
@@ -517,5 +552,5 @@ export default function EquiposStatusN() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

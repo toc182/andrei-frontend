@@ -1,30 +1,36 @@
-import { useState, useEffect, useRef } from "react"
-import { Paperclip, Plus, Trash2, FileText, Image as ImageIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useRef } from 'react';
+import {
+  Paperclip,
+  Plus,
+  Trash2,
+  FileText,
+  Image as ImageIcon,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
-import api from "../services/api"
-import type { SolicitudPagoAdjunto } from "../types/api"
+} from '@/components/ui/dialog';
+import api from '../services/api';
+import type { SolicitudPagoAdjunto } from '../types/api';
 
 interface AdjuntosPreviewProps {
-  adjuntos: SolicitudPagoAdjunto[]
-  solicitudPagoId: number
-  onUpload?: (files: FileList) => void
-  onDelete?: (id: number) => void
-  uploading?: boolean
-  readOnly?: boolean
-  title?: string
+  adjuntos: SolicitudPagoAdjunto[];
+  solicitudPagoId: number;
+  onUpload?: (files: FileList) => void;
+  onDelete?: (id: number) => void;
+  uploading?: boolean;
+  readOnly?: boolean;
+  title?: string;
 }
 
 interface AdjuntoUrl {
-  id: number
-  url: string
-  tipo_mime: string
+  id: number;
+  url: string;
+  tipo_mime: string;
 }
 
 export default function AdjuntosPreview({
@@ -34,41 +40,43 @@ export default function AdjuntosPreview({
   onDelete,
   uploading,
   readOnly = false,
-  title = "Adjuntos",
+  title = 'Adjuntos',
 }: AdjuntosPreviewProps) {
-  const [adjuntoUrls, setAdjuntoUrls] = useState<AdjuntoUrl[]>([])
-  const [loadingUrls, setLoadingUrls] = useState(false)
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
-  const [lightboxName, setLightboxName] = useState<string>("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [adjuntoUrls, setAdjuntoUrls] = useState<AdjuntoUrl[]>([]);
+  const [loadingUrls, setLoadingUrls] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxName, setLightboxName] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (adjuntos.length === 0) {
-      setAdjuntoUrls([])
-      return
+      setAdjuntoUrls([]);
+      return;
     }
     const fetchUrls = async () => {
       try {
-        setLoadingUrls(true)
-        const response = await api.get(`/solicitudes-pago/${solicitudPagoId}/adjuntos/urls`)
+        setLoadingUrls(true);
+        const response = await api.get(
+          `/solicitudes-pago/${solicitudPagoId}/adjuntos/urls`,
+        );
         if (response.data.success) {
-          setAdjuntoUrls(response.data.adjuntos)
+          setAdjuntoUrls(response.data.adjuntos);
         }
       } catch (err) {
-        console.error("Error fetching adjunto URLs:", err)
+        console.error('Error fetching adjunto URLs:', err);
       } finally {
-        setLoadingUrls(false)
+        setLoadingUrls(false);
       }
-    }
-    fetchUrls()
-  }, [adjuntos, solicitudPagoId])
+    };
+    fetchUrls();
+  }, [adjuntos, solicitudPagoId]);
 
   const getUrl = (adjuntoId: number): string | undefined => {
-    return adjuntoUrls.find((u) => u.id === adjuntoId)?.url
-  }
+    return adjuntoUrls.find((u) => u.id === adjuntoId)?.url;
+  };
 
   const isImage = (tipoMime: string) =>
-    tipoMime === "image/jpeg" || tipoMime === "image/png"
+    tipoMime === 'image/jpeg' || tipoMime === 'image/png';
 
   return (
     <div className="space-y-3">
@@ -94,7 +102,7 @@ export default function AdjuntosPreview({
               disabled={uploading}
             >
               <Plus className="h-3 w-3 mr-1" />
-              {uploading ? "Subiendo..." : "Adjuntar"}
+              {uploading ? 'Subiendo...' : 'Adjuntar'}
             </Button>
           </div>
         )}
@@ -107,20 +115,20 @@ export default function AdjuntosPreview({
       ) : (
         <div className="flex flex-wrap gap-2">
           {adjuntos.map((adj) => {
-            const url = getUrl(adj.id)
-            const image = isImage(adj.tipo_mime)
+            const url = getUrl(adj.id);
+            const image = isImage(adj.tipo_mime);
 
             return (
               <div
                 key={adj.id}
                 className="relative group border rounded-lg overflow-hidden cursor-pointer w-20 h-20"
                 onClick={() => {
-                  if (!url) return
+                  if (!url) return;
                   if (image) {
-                    setLightboxUrl(url)
-                    setLightboxName(adj.nombre_original)
+                    setLightboxUrl(url);
+                    setLightboxName(adj.nombre_original);
                   } else {
-                    window.open(url, "_blank")
+                    window.open(url, '_blank');
                   }
                 }}
               >
@@ -154,8 +162,8 @@ export default function AdjuntosPreview({
                       size="sm"
                       className="h-4 w-4 p-0 shrink-0 text-white/70 hover:text-red-400 hover:bg-transparent"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        onDelete?.(adj.id)
+                        e.stopPropagation();
+                        onDelete?.(adj.id);
                       }}
                     >
                       <Trash2 className="h-2.5 w-2.5" />
@@ -163,7 +171,7 @@ export default function AdjuntosPreview({
                   )}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
@@ -185,5 +193,5 @@ export default function AdjuntosPreview({
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

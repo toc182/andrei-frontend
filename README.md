@@ -9,6 +9,7 @@
 ## Descripción
 
 Interfaz web moderna para la gestión integral de:
+
 - **Proyectos de construcción** (activos, planificación, completados)
 - **Licitaciones y oportunidades**
 - **Gestión de clientes y contactos**
@@ -19,24 +20,29 @@ Interfaz web moderna para la gestión integral de:
 ## Tecnologías
 
 ### Core
+
 - **React 19** - Framework UI con hooks modernos
 - **Vite 7.x** - Build tool de alto rendimiento
 - **React Router 7** - Navegación client-side
 
 ### Diseño y Componentes
+
 - **shadcn/ui** - Sistema de componentes accesibles (copiados al proyecto, 100% personalizables)
 - **Tailwind CSS 4.x** - Utility-first CSS con sintaxis moderna
 - **Lucide React** - Iconos SVG optimizados
 - **Radix UI** - Primitivos UI sin estilos (base de shadcn/ui)
 
 ### Formularios y Validación
+
 - **React Hook Form** - Gestión de formularios performante
 - **Zod** - Validación de esquemas TypeScript-first
 
 ### PDF y Exportación
+
 - **jsPDF** - Generación de PDFs en cliente (cuando aplique)
 
 ### HTTP y Estado
+
 - **Axios** - Cliente HTTP con interceptores
 - **Context API** - Estado global (Auth, UI)
 
@@ -176,8 +182,9 @@ Todos los componentes están en: `src/components/ui/`
 ⚠️ **IMPORTANTE**: Tailwind 4.x usa sintaxis diferente a v3.x
 
 **Correcto (Tailwind 4.x):**
+
 ```css
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-primary: oklch(31% 0.025 235);
@@ -185,6 +192,7 @@ Todos los componentes están en: `src/components/ui/`
 ```
 
 **Incorrecto (Tailwind 3.x - NO usar):**
+
 ```css
 @tailwind base;
 @tailwind components;
@@ -198,8 +206,8 @@ Ver: `src/index.css` para referencia completa
 ### Crear Nuevo Componente
 
 ```jsx
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function MiComponente() {
   return (
@@ -211,46 +219,46 @@ export default function MiComponente() {
         <Button>Acción</Button>
       </CardContent>
     </Card>
-  )
+  );
 }
 ```
 
 ### Formulario con React Hook Form
 
 ```jsx
-import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function MiFormulario() {
-  const { register, handleSubmit } = useForm()
+  const { register, handleSubmit } = useForm();
 
   const onSubmit = (data) => {
-    console.log(data)
-  }
+    console.log(data);
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Input {...register("nombre")} placeholder="Nombre" />
+      <Input {...register('nombre')} placeholder="Nombre" />
       <Button type="submit">Enviar</Button>
     </form>
-  )
+  );
 }
 ```
 
 ### Llamada a API
 
 ```jsx
-import api from "../services/api"
+import api from '../services/api';
 
 const fetchData = async () => {
   try {
-    const response = await api.get('/clientes')
-    console.log(response.data)
+    const response = await api.get('/clientes');
+    console.log(response.data);
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error);
   }
-}
+};
 ```
 
 ## Troubleshooting
@@ -260,6 +268,7 @@ const fetchData = async () => {
 **Causa**: Backend no está corriendo o configuración de puerto incorrecta
 
 **Solución**:
+
 ```bash
 # Verificar que backend esté en puerto 5000
 netstat -ano | findstr :5000
@@ -273,6 +282,7 @@ netstat -ano | findstr :5000
 **Causa**: Puerto 5173 ya está en uso por otro proceso
 
 **Solución**:
+
 ```bash
 # Verificar proceso usando el puerto
 netstat -ano | findstr :5173
@@ -289,6 +299,7 @@ npm run dev
 **Causa**: Alias `@` no configurado correctamente
 
 **Solución**: Verificar `vite.config.js`:
+
 ```javascript
 resolve: {
   alias: {
@@ -302,6 +313,7 @@ resolve: {
 **Síntomas**: Estilos no se aplican, clases no funcionan
 
 **Solución**:
+
 1. Verificar sintaxis Tailwind 4.x en `src/index.css`
 2. Verificar `@import "tailwindcss"` (NO `@tailwind`)
 3. Reiniciar servidor dev
@@ -313,6 +325,7 @@ resolve: {
 El proyecto está configurado para auto-deploy desde GitHub:
 
 1. **Hacer commit y push**:
+
 ```bash
 git add .
 git commit -m "Descripción de cambios
@@ -344,6 +357,7 @@ VITE_API_URL=https://tu-backend.railway.app/api
 ## Puertos y Configuración
 
 ⚠️ **REGLA ABSOLUTA - NO MODIFICAR**:
+
 - **Frontend**: Siempre puerto **5173**
 - **Backend**: Siempre puerto **5000**
 
@@ -352,11 +366,13 @@ Nunca usar puertos alternativos (5174, 5175, 3000, etc.)
 ## Autenticación
 
 El sistema usa **JWT** (JSON Web Tokens):
+
 - Token almacenado en `localStorage`
 - Expiración: 24 horas
 - Renovación: Manual (re-login)
 
 Roles disponibles:
+
 - `admin` - Acceso completo
 - `user` - Acceso limitado
 

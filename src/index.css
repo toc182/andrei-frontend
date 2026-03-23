@@ -2,7 +2,7 @@
    ANDREI PROJECT - TAILWIND 4.x + SHADCN/UI
    ================================================================ */
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* === SHADCN COLOR THEME === */
 @theme {

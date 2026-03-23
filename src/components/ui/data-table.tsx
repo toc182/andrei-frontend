@@ -9,8 +9,8 @@
  * - Acciones por fila
  */
 
-import { ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -18,38 +18,38 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 
 export interface DataTableColumn<T> {
   /** Identificador único de la columna */
-  id: string
+  id: string;
   /** Texto del header */
-  header: string
+  header: string;
   /** Función para renderizar la celda */
-  cell: (row: T) => ReactNode
+  cell: (row: T) => ReactNode;
   /** Clase CSS opcional para el header */
-  headerClassName?: string
+  headerClassName?: string;
   /** Clase CSS opcional para las celdas */
-  cellClassName?: string
+  cellClassName?: string;
 }
 
 export interface DataTableProps<T> {
   /** Definición de columnas */
-  columns: DataTableColumn<T>[]
+  columns: DataTableColumn<T>[];
   /** Datos a mostrar */
-  data: T[]
+  data: T[];
   /** Función para obtener key única de cada fila */
-  rowKey: (row: T) => string | number
+  rowKey: (row: T) => string | number;
   /** Estado de carga */
-  loading?: boolean
+  loading?: boolean;
   /** Mensaje cuando no hay datos */
-  emptyMessage?: string
+  emptyMessage?: string;
   /** Mensaje mientras carga */
-  loadingMessage?: string
+  loadingMessage?: string;
   /** Handler al hacer click en una fila */
-  onRowClick?: (row: T) => void
+  onRowClick?: (row: T) => void;
   /** Clase CSS para el contenedor */
-  className?: string
+  className?: string;
 }
 
 export function DataTable<T>({
@@ -69,7 +69,7 @@ export function DataTable<T>({
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="mt-4 text-sm text-muted-foreground">{loadingMessage}</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -112,7 +112,7 @@ export function DataTable<T>({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
 
-export default DataTable
+export default DataTable;

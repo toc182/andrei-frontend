@@ -4,14 +4,14 @@
  * Responsive: Dropdown en móvil, breadcrumbs normales en desktop
  */
 
-import { ChevronRight, Home, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronRight, Home, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
 
 interface BreadcrumbItem {
   label: string;
@@ -24,9 +24,9 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
-  if (!items || items.length === 0) return null
+  if (!items || items.length === 0) return null;
 
-  const currentPage = items[items.length - 1]
+  const currentPage = items[items.length - 1];
 
   return (
     <nav className="py-3 px-6 border-b">
@@ -65,9 +65,7 @@ export default function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
 
             {index === items.length - 1 ? (
               // Current page - not clickable
-              <span className="font-medium text-foreground">
-                {item.label}
-              </span>
+              <span className="font-medium text-foreground">{item.label}</span>
             ) : (
               // Clickable breadcrumb
               <Button
@@ -84,5 +82,5 @@ export default function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
         ))}
       </div>
     </nav>
-  )
+  );
 }

@@ -4,27 +4,27 @@
  * Features: Category selection, date picker, amount validation
  */
 
-import { useState, useEffect, ChangeEvent, FormEvent } from "react"
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import api from "../../services/api"
-import type { Expense, ProjectCategory } from "@/types"
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import api from '../../services/api';
+import type { Expense, ProjectCategory } from '@/types';
 
 interface ExpenseFormData {
   category_id: string;
@@ -49,10 +49,16 @@ interface ExpenseFormProps {
   editingExpense?: Expense | null;
 }
 
-export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editingExpense }: ExpenseFormProps) {
-  const [categories, setCategories] = useState<ProjectCategory[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export default function ExpenseForm({
+  projectId,
+  isOpen,
+  onClose,
+  onSave,
+  editingExpense,
+}: ExpenseFormProps) {
+  const [categories, setCategories] = useState<ProjectCategory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ExpenseFormData>({
     category_id: '',
     fecha: '',
@@ -61,16 +67,18 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
     descripcion: '',
     tipo_gasto: 'real',
     moneda: 'USD',
-    aprobado: false
-  })
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
+    aprobado: false,
+  });
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {},
+  );
 
   // Load project categories when modal opens
   useEffect(() => {
     if (isOpen && projectId) {
-      loadCategories()
+      loadCategories();
     }
-  }, [isOpen, projectId])
+  }, [isOpen, projectId]);
 
   // Populate form when editing
   useEffect(() => {
@@ -83,11 +91,11 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
         descripcion: editingExpense.descripcion || '',
         tipo_gasto: editingExpense.tipo_gasto || 'real',
         moneda: editingExpense.moneda || 'USD',
-        aprobado: editingExpense.aprobado || false
-      })
+        aprobado: editingExpense.aprobado || false,
+      });
     } else {
       // Reset form for new expense
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toISOString().split('T')[0];
       setFormData({
         category_id: '',
         fecha: today,
@@ -96,87 +104,90 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
         descripcion: '',
         tipo_gasto: 'real',
         moneda: 'USD',
-        aprobado: false
-      })
+        aprobado: false,
+      });
     }
-    setValidationErrors({})
-    setError(null)
-  }, [editingExpense, isOpen])
+    setValidationErrors({});
+    setError(null);
+  }, [editingExpense, isOpen]);
 
   const loadCategories = async () => {
     try {
       // Load project-specific categories (includes both global and custom categories)
-      const response = await api.get(`/costs/projects/${projectId}/categories`)
+      const response = await api.get(`/costs/projects/${projectId}/categories`);
       if (response.data.success) {
-        setCategories(response.data.categories || [])
+        setCategories(response.data.categories || []);
       }
     } catch (err) {
-      console.error('Error loading categories:', err)
-      setError('Error al cargar las categorías del proyecto')
+      console.error('Error loading categories:', err);
+      setError('Error al cargar las categorías del proyecto');
     }
-  }
+  };
 
   const validateForm = (): boolean => {
-    const errors: ValidationErrors = {}
+    const errors: ValidationErrors = {};
 
     if (!formData.category_id) {
-      errors.category_id = 'La categoría es requerida'
+      errors.category_id = 'La categoría es requerida';
     }
 
     if (!formData.concepto || formData.concepto.trim().length < 3) {
-      errors.concepto = 'El concepto debe tener al menos 3 caracteres'
+      errors.concepto = 'El concepto debe tener al menos 3 caracteres';
     }
 
     if (!formData.monto || parseFloat(formData.monto) <= 0) {
-      errors.monto = 'El monto debe ser mayor a 0'
+      errors.monto = 'El monto debe ser mayor a 0';
     }
 
     if (!formData.fecha) {
-      errors.fecha = 'La fecha es requerida'
+      errors.fecha = 'La fecha es requerida';
     }
 
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const dataToSave = {
         ...formData,
         category_id: parseInt(formData.category_id),
-        monto: parseFloat(formData.monto)
-      }
+        monto: parseFloat(formData.monto),
+      };
 
-      await onSave(dataToSave)
+      await onSave(dataToSave);
     } catch (err: unknown) {
-      console.error('Error saving expense:', err)
-      const apiError = err as { response?: { data?: { error?: string } } }
-      setError(apiError.response?.data?.error || 'Error al guardar el gasto')
+      console.error('Error saving expense:', err);
+      const apiError = err as { response?: { data?: { error?: string } } };
+      setError(apiError.response?.data?.error || 'Error al guardar el gasto');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleChange = (field: keyof ExpenseFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  const handleChange = (
+    field: keyof ExpenseFormData,
+    value: string | boolean,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear validation error for this field
     if (validationErrors[field]) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[field]
-        return newErrors
-      })
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -203,7 +214,12 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
               value={formData.category_id}
               onValueChange={(value) => handleChange('category_id', value)}
             >
-              <SelectTrigger id="category_id" className={validationErrors.category_id ? 'border-destructive' : ''}>
+              <SelectTrigger
+                id="category_id"
+                className={
+                  validationErrors.category_id ? 'border-destructive' : ''
+                }
+              >
                 <SelectValue placeholder="Seleccione una categoría" />
               </SelectTrigger>
               <SelectContent>
@@ -221,7 +237,9 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
               </SelectContent>
             </Select>
             {validationErrors.category_id && (
-              <p className="text-sm text-destructive">{validationErrors.category_id}</p>
+              <p className="text-sm text-destructive">
+                {validationErrors.category_id}
+              </p>
             )}
           </div>
 
@@ -236,11 +254,15 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
                 id="fecha"
                 type="date"
                 value={formData.fecha}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('fecha', e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  handleChange('fecha', e.target.value)
+                }
                 className={validationErrors.fecha ? 'border-destructive' : ''}
               />
               {validationErrors.fecha && (
-                <p className="text-sm text-destructive">{validationErrors.fecha}</p>
+                <p className="text-sm text-destructive">
+                  {validationErrors.fecha}
+                </p>
               )}
             </div>
 
@@ -256,11 +278,15 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
                 min="0"
                 placeholder="0.00"
                 value={formData.monto}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('monto', e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  handleChange('monto', e.target.value)
+                }
                 className={validationErrors.monto ? 'border-destructive' : ''}
               />
               {validationErrors.monto && (
-                <p className="text-sm text-destructive">{validationErrors.monto}</p>
+                <p className="text-sm text-destructive">
+                  {validationErrors.monto}
+                </p>
               )}
             </div>
           </div>
@@ -275,11 +301,15 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
               type="text"
               placeholder="¿En qué se gastó?"
               value={formData.concepto}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('concepto', e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleChange('concepto', e.target.value)
+              }
               className={validationErrors.concepto ? 'border-destructive' : ''}
             />
             {validationErrors.concepto && (
-              <p className="text-sm text-destructive">{validationErrors.concepto}</p>
+              <p className="text-sm text-destructive">
+                {validationErrors.concepto}
+              </p>
             )}
           </div>
 
@@ -291,7 +321,9 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
               placeholder="Detalles adicionales sobre este gasto..."
               rows={3}
               value={formData.descripcion}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange('descripcion', e.target.value)}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                handleChange('descripcion', e.target.value)
+              }
             />
           </div>
 
@@ -311,11 +343,15 @@ export default function ExpenseForm({ projectId, isOpen, onClose, onSave, editin
               disabled={loading}
               className="w-full sm:w-auto"
             >
-              {loading ? 'Guardando...' : editingExpense ? 'Actualizar' : 'Guardar'}
+              {loading
+                ? 'Guardando...'
+                : editingExpense
+                  ? 'Actualizar'
+                  : 'Guardar'}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

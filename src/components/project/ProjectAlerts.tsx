@@ -3,10 +3,10 @@
  * Displays active alerts for the project
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, AlertCircle, Info, Bell } from "lucide-react"
-import type { Project } from "@/types"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle, AlertCircle, Info, Bell } from 'lucide-react';
+import type { Project } from '@/types';
 
 interface ProjectAlert {
   severity: 'critical' | 'warning' | 'info';
@@ -19,29 +19,30 @@ interface ProjectAlertsProps {
 
 // Placeholder alerts - will come from backend in Phase 2
 export default function ProjectAlerts({ project }: ProjectAlertsProps) {
-  const alerts: ProjectAlert[] = (project?.datos_adicionales as { alerts?: ProjectAlert[] })?.alerts || []
+  const alerts: ProjectAlert[] =
+    (project?.datos_adicionales as { alerts?: ProjectAlert[] })?.alerts || [];
 
   const getAlertIcon = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return <AlertCircle className="h-4 w-4" />
+        return <AlertCircle className="h-4 w-4" />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4" />
+        return <AlertTriangle className="h-4 w-4" />;
       default:
-        return <Info className="h-4 w-4" />
+        return <Info className="h-4 w-4" />;
     }
-  }
+  };
 
-  const getAlertVariant = (severity: string): "default" | "destructive" => {
+  const getAlertVariant = (severity: string): 'default' | 'destructive' => {
     switch (severity) {
       case 'critical':
-        return 'destructive'
+        return 'destructive';
       case 'warning':
-        return 'default'
+        return 'default';
       default:
-        return 'default'
+        return 'default';
     }
-  }
+  };
 
   return (
     <Card>
@@ -74,5 +75,5 @@ export default function ProjectAlerts({ project }: ProjectAlertsProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

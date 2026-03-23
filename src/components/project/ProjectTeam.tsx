@@ -3,10 +3,10 @@
  * Displays team members assigned to the project
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Mail, Phone } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import type { Project } from "@/types"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Mail, Phone } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import type { Project } from '@/types';
 
 interface TeamMember {
   nombre: string;
@@ -23,17 +23,31 @@ interface ProjectTeamProps {
 // For now, showing placeholder structure
 export default function ProjectTeam({ project }: ProjectTeamProps) {
   // Placeholder team data - will come from backend later
-  const team: TeamMember[] = (project?.datos_adicionales as { team?: TeamMember[] })?.team || []
+  const team: TeamMember[] =
+    (project?.datos_adicionales as { team?: TeamMember[] })?.team || [];
 
   const getRoleBadge = (role: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-      'admin': { variant: 'destructive', label: 'Administrador' },
-      'usuario': { variant: 'default', label: 'Usuario' }
-    }
+    const variants: Record<
+      string,
+      {
+        variant: 'default' | 'secondary' | 'destructive' | 'outline';
+        label: string;
+      }
+    > = {
+      admin: { variant: 'destructive', label: 'Administrador' },
+      usuario: { variant: 'default', label: 'Usuario' },
+    };
 
-    const config = variants[role] || { variant: 'outline' as const, label: role }
-    return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>
-  }
+    const config = variants[role] || {
+      variant: 'outline' as const,
+      label: role,
+    };
+    return (
+      <Badge variant={config.variant} className="text-xs">
+        {config.label}
+      </Badge>
+    );
+  };
 
   return (
     <Card>
@@ -55,7 +69,10 @@ export default function ProjectTeam({ project }: ProjectTeamProps) {
         ) : (
           <div className="space-y-3">
             {team.map((member, index) => (
-              <div key={index} className="flex items-start justify-between p-3 rounded-lg border">
+              <div
+                key={index}
+                className="flex items-start justify-between p-3 rounded-lg border"
+              >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm">{member.nombre}</p>
@@ -80,5 +97,5 @@ export default function ProjectTeam({ project }: ProjectTeamProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

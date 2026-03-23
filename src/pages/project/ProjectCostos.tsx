@@ -4,117 +4,124 @@
  * Features: Budget overview, expense tracking, category breakdown
  */
 
-import { useState, useEffect } from "react"
-import { useAuth } from "../../context/AuthContext"
-import { Plus, Settings } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent } from "@/components/ui/card"
-import api from "../../services/api"
-import CostSummaryCards from "../../components/project/CostSummaryCards"
-import ExpensesByCategory from "../../components/project/ExpensesByCategory"
-import RecentExpenses from "../../components/project/RecentExpenses"
-import ExpenseForm from "../../components/forms/ExpenseForm"
-import BudgetConfigForm from "../../components/forms/BudgetConfigForm"
-import type { CostDashboard, Expense } from "@/types"
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { Plus, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent } from '@/components/ui/card';
+import api from '../../services/api';
+import CostSummaryCards from '../../components/project/CostSummaryCards';
+import ExpensesByCategory from '../../components/project/ExpensesByCategory';
+import RecentExpenses from '../../components/project/RecentExpenses';
+import ExpenseForm from '../../components/forms/ExpenseForm';
+import BudgetConfigForm from '../../components/forms/BudgetConfigForm';
+import type { CostDashboard, Expense } from '@/types';
 
 interface ProjectCostosProps {
-  projectId: number
-  onNavigate?: (view: string) => void
+  projectId: number;
+  onNavigate?: (view: string) => void;
 }
 
 interface ApiError {
   response?: {
-    status?: number
+    status?: number;
     data?: {
-      message?: string
-    }
-  }
+      message?: string;
+    };
+  };
 }
 
 export default function ProjectCostos({ projectId }: ProjectCostosProps) {
-  const { user } = useAuth()
-  const canManage = !!user
+  const { user } = useAuth();
+  const canManage = !!user;
 
-  const [dashboard, setDashboard] = useState<CostDashboard | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showExpenseForm, setShowExpenseForm] = useState<boolean>(false)
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [showBudgetConfig, setShowBudgetConfig] = useState<boolean>(false)
+  const [dashboard, setDashboard] = useState<CostDashboard | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showExpenseForm, setShowExpenseForm] = useState<boolean>(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showBudgetConfig, setShowBudgetConfig] = useState<boolean>(false);
 
   useEffect(() => {
-    loadDashboard()
-  }, [projectId])
+    loadDashboard();
+  }, [projectId]);
 
   const loadDashboard = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      const response = await api.get(`/costs/projects/${projectId}/dashboard`)
+      setLoading(true);
+      setError(null);
+      const response = await api.get(`/costs/projects/${projectId}/dashboard`);
       if (response.data.success) {
-        setDashboard(response.data.dashboard)
+        setDashboard(response.data.dashboard);
       }
     } catch (err) {
-      console.error('Error loading cost dashboard:', err)
-      const apiError = err as ApiError
+      console.error('Error loading cost dashboard:', err);
+      const apiError = err as ApiError;
       if (apiError.response?.status === 404) {
-        setError('No se encontraron datos de costos para este proyecto')
+        setError('No se encontraron datos de costos para este proyecto');
       } else if (apiError.response?.status === 403) {
-        setError('No tiene permisos para ver los costos de este proyecto')
+        setError('No tiene permisos para ver los costos de este proyecto');
       } else {
-        setError('Error al cargar los datos de costos')
+        setError('Error al cargar los datos de costos');
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleExpenseSave = async (expenseData: Partial<Expense>) => {
     try {
       if (editingExpense) {
         // Update existing expense
-        await api.put(`/costs/projects/${projectId}/expenses/${editingExpense.id}`, expenseData)
+        await api.put(
+          `/costs/projects/${projectId}/expenses/${editingExpense.id}`,
+          expenseData,
+        );
       } else {
         // Create new expense
-        await api.post(`/costs/projects/${projectId}/expenses`, expenseData)
+        await api.post(`/costs/projects/${projectId}/expenses`, expenseData);
       }
 
       // Reload dashboard to reflect changes
-      await loadDashboard()
+      await loadDashboard();
 
       // Close form
-      setShowExpenseForm(false)
-      setEditingExpense(null)
+      setShowExpenseForm(false);
+      setEditingExpense(null);
     } catch (err) {
-      console.error('Error saving expense:', err)
-      throw err // Let the form handle the error display
+      console.error('Error saving expense:', err);
+      throw err; // Let the form handle the error display
     }
-  }
+  };
 
   const handleExpenseDelete = async (expenseId: number) => {
     if (!confirm('¿Está seguro de eliminar este gasto?')) {
-      return
+      return;
     }
 
     try {
-      await api.delete(`/costs/projects/${projectId}/expenses/${expenseId}`)
-      await loadDashboard()
+      await api.delete(`/costs/projects/${projectId}/expenses/${expenseId}`);
+      await loadDashboard();
     } catch (err) {
-      console.error('Error deleting expense:', err)
-      alert('Error al eliminar el gasto')
+      console.error('Error deleting expense:', err);
+      alert('Error al eliminar el gasto');
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="text-lg font-semibold">Cargando datos de costos...</div>
-          <div className="text-sm text-muted-foreground mt-2">Por favor espere</div>
+          <div className="text-lg font-semibold">
+            Cargando datos de costos...
+          </div>
+          <div className="text-sm text-muted-foreground mt-2">
+            Por favor espere
+          </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -122,7 +129,7 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
       <Alert variant="destructive">
         <AlertDescription>{error}</AlertDescription>
       </Alert>
-    )
+    );
   }
 
   if (!dashboard) {
@@ -133,11 +140,12 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
           Error al cargar la información de costos
         </div>
       </div>
-    )
+    );
   }
 
   // Check if budget is configured (optional now)
-  const tienPresupuestoDetallado = dashboard?.budget?.tiene_presupuesto_configurado === true
+  const tienPresupuestoDetallado =
+    dashboard?.budget?.tiene_presupuesto_configurado === true;
 
   return (
     <div className="space-y-6">
@@ -171,17 +179,15 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
       />
 
       {/* Category Breakdown */}
-      <ExpensesByCategory
-        categories={dashboard.categoryBreakdown}
-      />
+      <ExpensesByCategory categories={dashboard.categoryBreakdown} />
 
       {/* Recent Expenses */}
       <RecentExpenses
         projectId={projectId}
         canManage={canManage}
         onEdit={(expense) => {
-          setEditingExpense(expense)
-          setShowExpenseForm(true)
+          setEditingExpense(expense);
+          setShowExpenseForm(true);
         }}
         onDelete={handleExpenseDelete}
       />
@@ -192,8 +198,8 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
           projectId={projectId}
           isOpen={showExpenseForm}
           onClose={() => {
-            setShowExpenseForm(false)
-            setEditingExpense(null)
+            setShowExpenseForm(false);
+            setEditingExpense(null);
           }}
           onSave={handleExpenseSave}
           editingExpense={editingExpense}
@@ -208,5 +214,5 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
         onSave={loadDashboard}
       />
     </div>
-  )
+  );
 }

@@ -11,53 +11,53 @@
  * - Sin CSS custom
  */
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useAuth } from '../context/AuthContext'
-import logo from '../assets/logo.png'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Loader2, LogIn } from 'lucide-react'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Loader2, LogIn } from 'lucide-react';
 
 // Schema de validación
 const loginSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'Email es requerido'),
-  password: z.string().min(1, 'Contraseña es requerida')
-})
+  password: z.string().min(1, 'Contraseña es requerida'),
+});
 
-type LoginFormData = z.infer<typeof loginSchema>
+type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginN = () => {
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
-      password: ''
-    }
-  })
+      password: '',
+    },
+  });
 
   const handleSubmit = async (data: LoginFormData) => {
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
 
-    const result = await login(data.email, data.password)
+    const result = await login(data.email, data.password);
 
     if (!result.success) {
-      setError(result.message)
+      setError(result.message);
     }
 
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -69,7 +69,10 @@ const LoginN = () => {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Email Field */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -112,11 +115,7 @@ const LoginN = () => {
             )}
 
             {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -142,7 +141,7 @@ const LoginN = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default LoginN
+export default LoginN;

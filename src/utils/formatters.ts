@@ -8,7 +8,9 @@
  * @param amount - El monto a formatear (número, string, null o undefined)
  * @returns String formateado como "B/. 1,234.56" o "-" si no hay valor
  */
-export const formatMoney = (amount: number | string | null | undefined): string => {
+export const formatMoney = (
+  amount: number | string | null | undefined,
+): string => {
   if (amount === null || amount === undefined || amount === '') {
     return '-';
   }

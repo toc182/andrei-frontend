@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import os from 'os'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import os from 'os';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,4 +12,4 @@ export default defineConfig({
     },
   },
   cacheDir: path.join(os.tmpdir(), 'vite-andrei-frontend'),
-})
+});

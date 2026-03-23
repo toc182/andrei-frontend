@@ -1,56 +1,68 @@
 /**
  * PermisosPage — Gestión de permisos individuales por usuario
  */
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, Settings, Shield } from "lucide-react"
-import api from "../services/api"
-import type { UserPermissions } from "@/types/api"
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Loader2, Settings, Shield } from 'lucide-react';
+import api from '../services/api';
+import type { UserPermissions } from '@/types/api';
 
 interface PermUser {
-  id: number
-  nombre: string
-  email: string
-  rol: string
-  activo: boolean
-  acceso_global: boolean | null
-  proyectos_crear: boolean | null
-  proyectos_editar: boolean | null
-  proyectos_eliminar: boolean | null
-  clientes_agregar: boolean | null
-  clientes_editar: boolean | null
-  clientes_eliminar: boolean | null
-  solicitudes_editar_todas: boolean | null
-  requisiciones_editar_todas: boolean | null
-  equipos_ver: boolean | null
-  equipos_agregar: boolean | null
-  equipos_editar: boolean | null
-  equipos_eliminar: boolean | null
-  equipos_asignacion: boolean | null
-  equipos_uso: boolean | null
-  equipos_editar_asignacion: boolean | null
-  documentos_acceso: boolean | null
-  oportunidades_ver: boolean | null
-  registrar_pago: boolean | null
+  id: number;
+  nombre: string;
+  email: string;
+  rol: string;
+  activo: boolean;
+  acceso_global: boolean | null;
+  proyectos_crear: boolean | null;
+  proyectos_editar: boolean | null;
+  proyectos_eliminar: boolean | null;
+  clientes_agregar: boolean | null;
+  clientes_editar: boolean | null;
+  clientes_eliminar: boolean | null;
+  solicitudes_editar_todas: boolean | null;
+  requisiciones_editar_todas: boolean | null;
+  equipos_ver: boolean | null;
+  equipos_agregar: boolean | null;
+  equipos_editar: boolean | null;
+  equipos_eliminar: boolean | null;
+  equipos_asignacion: boolean | null;
+  equipos_uso: boolean | null;
+  equipos_editar_asignacion: boolean | null;
+  documentos_acceso: boolean | null;
+  oportunidades_ver: boolean | null;
+  registrar_pago: boolean | null;
 }
 
 interface ProjectOption {
-  id: number
-  nombre: string
+  id: number;
+  nombre: string;
 }
 
 interface AssignedProject {
-  proyecto_id: number
-  nombre: string
+  proyecto_id: number;
+  nombre: string;
 }
 
 const DEFAULT_PERMS: UserPermissions = {
@@ -73,113 +85,126 @@ const DEFAULT_PERMS: UserPermissions = {
   documentos_acceso: false,
   oportunidades_ver: false,
   registrar_pago: false,
-}
+};
 
 export default function PermisosPage() {
-  const [users, setUsers] = useState<PermUser[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedUser, setSelectedUser] = useState<PermUser | null>(null)
-  const [showDialog, setShowDialog] = useState(false)
-  const [perms, setPerms] = useState<UserPermissions>(DEFAULT_PERMS)
-  const [assignedProjects, setAssignedProjects] = useState<number[]>([])
-  const [allProjects, setAllProjects] = useState<ProjectOption[]>([])
-  const [saving, setSaving] = useState(false)
+  const [users, setUsers] = useState<PermUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<PermUser | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
+  const [perms, setPerms] = useState<UserPermissions>(DEFAULT_PERMS);
+  const [assignedProjects, setAssignedProjects] = useState<number[]>([]);
+  const [allProjects, setAllProjects] = useState<ProjectOption[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const loadUsers = useCallback(async () => {
     try {
-      setLoading(true)
-      const res = await api.get('/permissions/users')
-      if (res.data.success) setUsers(res.data.users)
+      setLoading(true);
+      const res = await api.get('/permissions/users');
+      if (res.data.success) setUsers(res.data.users);
     } catch (err) {
-      console.error('Error cargando usuarios:', err)
+      console.error('Error cargando usuarios:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  useEffect(() => { loadUsers() }, [loadUsers])
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const openUserDialog = async (user: PermUser) => {
-    setSelectedUser(user)
+    setSelectedUser(user);
 
     // Set perms from user data (or defaults)
-    const p: UserPermissions = { ...DEFAULT_PERMS }
+    const p: UserPermissions = { ...DEFAULT_PERMS };
     for (const key of Object.keys(DEFAULT_PERMS) as (keyof UserPermissions)[]) {
       if (user[key] !== null && user[key] !== undefined) {
-        p[key] = user[key] as boolean
+        p[key] = user[key] as boolean;
       }
     }
-    setPerms(p)
+    setPerms(p);
 
     // Load assigned projects
     try {
       const [projRes, assignedRes] = await Promise.all([
         api.get('/projects?limit=500'),
-        api.get(`/permissions/${user.id}/projects`)
-      ])
+        api.get(`/permissions/${user.id}/projects`),
+      ]);
       if (projRes.data.proyectos) {
-        setAllProjects(projRes.data.proyectos.map((p: { id: number; nombre: string }) => ({ id: p.id, nombre: p.nombre })))
+        setAllProjects(
+          projRes.data.proyectos.map((p: { id: number; nombre: string }) => ({
+            id: p.id,
+            nombre: p.nombre,
+          })),
+        );
       }
       if (assignedRes.data.success) {
-        setAssignedProjects(assignedRes.data.projects.map((p: AssignedProject) => p.proyecto_id))
+        setAssignedProjects(
+          assignedRes.data.projects.map((p: AssignedProject) => p.proyecto_id),
+        );
       }
     } catch (err) {
-      console.error('Error cargando datos:', err)
+      console.error('Error cargando datos:', err);
     }
 
-    setShowDialog(true)
-  }
+    setShowDialog(true);
+  };
 
   const togglePerm = (key: keyof UserPermissions) => {
-    setPerms(prev => ({ ...prev, [key]: !prev[key] }))
-  }
+    setPerms((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const toggleProject = (projectId: number) => {
-    setAssignedProjects(prev =>
+    setAssignedProjects((prev) =>
       prev.includes(projectId)
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    )
-  }
+        ? prev.filter((id) => id !== projectId)
+        : [...prev, projectId],
+    );
+  };
 
   const handleSave = async () => {
-    if (!selectedUser) return
+    if (!selectedUser) return;
     try {
-      setSaving(true)
+      setSaving(true);
       await Promise.all([
         api.put(`/permissions/${selectedUser.id}`, perms),
-        api.put(`/permissions/${selectedUser.id}/projects`, { projectIds: assignedProjects })
-      ])
-      setShowDialog(false)
-      loadUsers()
+        api.put(`/permissions/${selectedUser.id}/projects`, {
+          projectIds: assignedProjects,
+        }),
+      ]);
+      setShowDialog(false);
+      loadUsers();
     } catch (err) {
-      console.error('Error guardando permisos:', err)
+      console.error('Error guardando permisos:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const countPerms = (user: PermUser): number => {
-    let count = 0
+    let count = 0;
     for (const key of Object.keys(DEFAULT_PERMS) as (keyof UserPermissions)[]) {
-      if (key === 'acceso_global' || key === 'equipos_ver') continue
-      if (user[key]) count++
+      if (key === 'acceso_global' || key === 'equipos_ver') continue;
+      if (user[key]) count++;
     }
-    return count
-  }
+    return count;
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Gestión de Permisos</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Gestión de Permisos
+        </h1>
         <p className="text-muted-foreground text-sm">
           Configura permisos individuales para cada usuario
         </p>
@@ -199,44 +224,64 @@ export default function PermisosPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.filter(u => u.activo).map(user => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{user.nombre}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.rol === 'co-admin' ? 'default' : 'secondary'}>
-                      {user.rol}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {user.rol === 'co-admin' ? (
-                      <Badge variant="outline" className="text-green-600">Completo</Badge>
-                    ) : user.acceso_global ? (
-                      <Badge variant="outline" className="text-blue-600">Global</Badge>
-                    ) : (
-                      <Badge variant="outline">Limitado</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {user.rol === 'co-admin' ? (
-                      <span className="text-xs text-muted-foreground">Todos</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{countPerms(user)} activos</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {user.rol !== 'co-admin' && (
-                      <Button variant="ghost" size="sm" onClick={() => openUserDialog(user)}>
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {users
+                .filter((u) => u.activo)
+                .map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{user.nombre}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.rol === 'co-admin' ? 'default' : 'secondary'
+                        }
+                      >
+                        {user.rol}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.rol === 'co-admin' ? (
+                        <Badge variant="outline" className="text-green-600">
+                          Completo
+                        </Badge>
+                      ) : user.acceso_global ? (
+                        <Badge variant="outline" className="text-blue-600">
+                          Global
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Limitado</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.rol === 'co-admin' ? (
+                        <span className="text-xs text-muted-foreground">
+                          Todos
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          {countPerms(user)} activos
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.rol !== 'co-admin' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openUserDialog(user)}
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </Card>
@@ -244,31 +289,46 @@ export default function PermisosPage() {
 
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
-        {users.filter(u => u.activo).map(user => (
-          <Card key={user.id} className="cursor-pointer" onClick={() => user.rol !== 'co-admin' && openUserDialog(user)}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">{user.nombre}</CardTitle>
-                <Badge variant={user.rol === 'co-admin' ? 'default' : 'secondary'} className="text-xs">
-                  {user.rol}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center justify-between">
-                <span className="text-xs">
-                  {user.rol === 'co-admin' ? 'Acceso completo' : user.acceso_global ? 'Acceso global' : 'Acceso limitado'}
-                </span>
-                {user.rol !== 'co-admin' && (
-                  <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {users
+          .filter((u) => u.activo)
+          .map((user) => (
+            <Card
+              key={user.id}
+              className="cursor-pointer"
+              onClick={() => user.rol !== 'co-admin' && openUserDialog(user)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium">
+                    {user.nombre}
+                  </CardTitle>
+                  <Badge
+                    variant={user.rol === 'co-admin' ? 'default' : 'secondary'}
+                    className="text-xs"
+                  >
+                    {user.rol}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">
+                    {user.rol === 'co-admin'
+                      ? 'Acceso completo'
+                      : user.acceso_global
+                        ? 'Acceso global'
+                        : 'Acceso limitado'}
+                  </span>
+                  {user.rol !== 'co-admin' && (
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
       </div>
 
       {/* Dialog de permisos */}
@@ -287,9 +347,14 @@ export default function PermisosPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-sm font-medium">Acceso Global</Label>
-                  <p className="text-xs text-muted-foreground">Ve todos los proyectos sin restricción</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ve todos los proyectos sin restricción
+                  </p>
                 </div>
-                <Switch checked={perms.acceso_global} onCheckedChange={() => togglePerm('acceso_global')} />
+                <Switch
+                  checked={perms.acceso_global}
+                  onCheckedChange={() => togglePerm('acceso_global')}
+                />
               </div>
 
               <Separator />
@@ -298,23 +363,35 @@ export default function PermisosPage() {
               {!perms.acceso_global && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium">Proyectos Asignados</Label>
-                    <p className="text-xs text-muted-foreground mb-3">Selecciona los proyectos a los que tiene acceso</p>
+                    <Label className="text-sm font-medium">
+                      Proyectos Asignados
+                    </Label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Selecciona los proyectos a los que tiene acceso
+                    </p>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {allProjects.map(project => (
-                        <div key={project.id} className="flex items-center space-x-2">
+                      {allProjects.map((project) => (
+                        <div
+                          key={project.id}
+                          className="flex items-center space-x-2"
+                        >
                           <Checkbox
                             id={`proj-${project.id}`}
                             checked={assignedProjects.includes(project.id)}
                             onCheckedChange={() => toggleProject(project.id)}
                           />
-                          <Label htmlFor={`proj-${project.id}`} className="text-sm font-normal cursor-pointer">
+                          <Label
+                            htmlFor={`proj-${project.id}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
                             {project.nombre}
                           </Label>
                         </div>
                       ))}
                       {allProjects.length === 0 && (
-                        <p className="text-xs text-muted-foreground">No hay proyectos disponibles</p>
+                        <p className="text-xs text-muted-foreground">
+                          No hay proyectos disponibles
+                        </p>
                       )}
                     </div>
                   </div>
@@ -324,11 +401,25 @@ export default function PermisosPage() {
 
               {/* Proyectos CRUD */}
               <div>
-                <Label className="text-sm font-medium mb-2 block">Proyectos</Label>
+                <Label className="text-sm font-medium mb-2 block">
+                  Proyectos
+                </Label>
                 <div className="space-y-2">
-                  <PermCheckbox label="Crear proyectos" checked={perms.proyectos_crear} onChange={() => togglePerm('proyectos_crear')} />
-                  <PermCheckbox label="Editar proyectos" checked={perms.proyectos_editar} onChange={() => togglePerm('proyectos_editar')} />
-                  <PermCheckbox label="Eliminar proyectos" checked={perms.proyectos_eliminar} onChange={() => togglePerm('proyectos_eliminar')} />
+                  <PermCheckbox
+                    label="Crear proyectos"
+                    checked={perms.proyectos_crear}
+                    onChange={() => togglePerm('proyectos_crear')}
+                  />
+                  <PermCheckbox
+                    label="Editar proyectos"
+                    checked={perms.proyectos_editar}
+                    onChange={() => togglePerm('proyectos_editar')}
+                  />
+                  <PermCheckbox
+                    label="Eliminar proyectos"
+                    checked={perms.proyectos_eliminar}
+                    onChange={() => togglePerm('proyectos_eliminar')}
+                  />
                 </div>
               </div>
 
@@ -336,11 +427,25 @@ export default function PermisosPage() {
 
               {/* Clientes */}
               <div>
-                <Label className="text-sm font-medium mb-2 block">Clientes</Label>
+                <Label className="text-sm font-medium mb-2 block">
+                  Clientes
+                </Label>
                 <div className="space-y-2">
-                  <PermCheckbox label="Agregar clientes" checked={perms.clientes_agregar} onChange={() => togglePerm('clientes_agregar')} />
-                  <PermCheckbox label="Editar clientes" checked={perms.clientes_editar} onChange={() => togglePerm('clientes_editar')} />
-                  <PermCheckbox label="Eliminar clientes" checked={perms.clientes_eliminar} onChange={() => togglePerm('clientes_eliminar')} />
+                  <PermCheckbox
+                    label="Agregar clientes"
+                    checked={perms.clientes_agregar}
+                    onChange={() => togglePerm('clientes_agregar')}
+                  />
+                  <PermCheckbox
+                    label="Editar clientes"
+                    checked={perms.clientes_editar}
+                    onChange={() => togglePerm('clientes_editar')}
+                  />
+                  <PermCheckbox
+                    label="Eliminar clientes"
+                    checked={perms.clientes_eliminar}
+                    onChange={() => togglePerm('clientes_eliminar')}
+                  />
                 </div>
               </div>
 
@@ -348,11 +453,25 @@ export default function PermisosPage() {
 
               {/* Solicitudes y Requisiciones */}
               <div>
-                <Label className="text-sm font-medium mb-2 block">Solicitudes y Requisiciones</Label>
+                <Label className="text-sm font-medium mb-2 block">
+                  Solicitudes y Requisiciones
+                </Label>
                 <div className="space-y-2">
-                  <PermCheckbox label="Editar todas las solicitudes de pago" checked={perms.solicitudes_editar_todas} onChange={() => togglePerm('solicitudes_editar_todas')} />
-                  <PermCheckbox label="Editar todas las requisiciones" checked={perms.requisiciones_editar_todas} onChange={() => togglePerm('requisiciones_editar_todas')} />
-                  <PermCheckbox label="Registrar pagos y facturas" checked={perms.registrar_pago} onChange={() => togglePerm('registrar_pago')} />
+                  <PermCheckbox
+                    label="Editar todas las solicitudes de pago"
+                    checked={perms.solicitudes_editar_todas}
+                    onChange={() => togglePerm('solicitudes_editar_todas')}
+                  />
+                  <PermCheckbox
+                    label="Editar todas las requisiciones"
+                    checked={perms.requisiciones_editar_todas}
+                    onChange={() => togglePerm('requisiciones_editar_todas')}
+                  />
+                  <PermCheckbox
+                    label="Registrar pagos y facturas"
+                    checked={perms.registrar_pago}
+                    onChange={() => togglePerm('registrar_pago')}
+                  />
                 </div>
               </div>
 
@@ -360,15 +479,45 @@ export default function PermisosPage() {
 
               {/* Equipos */}
               <div>
-                <Label className="text-sm font-medium mb-2 block">Equipos</Label>
+                <Label className="text-sm font-medium mb-2 block">
+                  Equipos
+                </Label>
                 <div className="space-y-2">
-                  <PermCheckbox label="Ver equipos" checked={perms.equipos_ver} onChange={() => togglePerm('equipos_ver')} />
-                  <PermCheckbox label="Agregar equipos" checked={perms.equipos_agregar} onChange={() => togglePerm('equipos_agregar')} />
-                  <PermCheckbox label="Editar equipos" checked={perms.equipos_editar} onChange={() => togglePerm('equipos_editar')} />
-                  <PermCheckbox label="Eliminar equipos" checked={perms.equipos_eliminar} onChange={() => togglePerm('equipos_eliminar')} />
-                  <PermCheckbox label="Gestionar asignaciones" checked={perms.equipos_asignacion} onChange={() => togglePerm('equipos_asignacion')} />
-                  <PermCheckbox label="Registrar uso" checked={perms.equipos_uso} onChange={() => togglePerm('equipos_uso')} />
-                  <PermCheckbox label="Editar asignaciones" checked={perms.equipos_editar_asignacion} onChange={() => togglePerm('equipos_editar_asignacion')} />
+                  <PermCheckbox
+                    label="Ver equipos"
+                    checked={perms.equipos_ver}
+                    onChange={() => togglePerm('equipos_ver')}
+                  />
+                  <PermCheckbox
+                    label="Agregar equipos"
+                    checked={perms.equipos_agregar}
+                    onChange={() => togglePerm('equipos_agregar')}
+                  />
+                  <PermCheckbox
+                    label="Editar equipos"
+                    checked={perms.equipos_editar}
+                    onChange={() => togglePerm('equipos_editar')}
+                  />
+                  <PermCheckbox
+                    label="Eliminar equipos"
+                    checked={perms.equipos_eliminar}
+                    onChange={() => togglePerm('equipos_eliminar')}
+                  />
+                  <PermCheckbox
+                    label="Gestionar asignaciones"
+                    checked={perms.equipos_asignacion}
+                    onChange={() => togglePerm('equipos_asignacion')}
+                  />
+                  <PermCheckbox
+                    label="Registrar uso"
+                    checked={perms.equipos_uso}
+                    onChange={() => togglePerm('equipos_uso')}
+                  />
+                  <PermCheckbox
+                    label="Editar asignaciones"
+                    checked={perms.equipos_editar_asignacion}
+                    onChange={() => togglePerm('equipos_editar_asignacion')}
+                  />
                 </div>
               </div>
 
@@ -378,27 +527,47 @@ export default function PermisosPage() {
               <div>
                 <Label className="text-sm font-medium mb-2 block">Otros</Label>
                 <div className="space-y-2">
-                  <PermCheckbox label="Acceso a documentos" checked={perms.documentos_acceso} onChange={() => togglePerm('documentos_acceso')} />
-                  <PermCheckbox label="Ver oportunidades" checked={perms.oportunidades_ver} onChange={() => togglePerm('oportunidades_ver')} />
+                  <PermCheckbox
+                    label="Acceso a documentos"
+                    checked={perms.documentos_acceso}
+                    onChange={() => togglePerm('documentos_acceso')}
+                  />
+                  <PermCheckbox
+                    label="Ver oportunidades"
+                    checked={perms.oportunidades_ver}
+                    onChange={() => togglePerm('oportunidades_ver')}
+                  />
                 </div>
               </div>
             </div>
           </ScrollArea>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
               Guardar
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
 
-function PermCheckbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+function PermCheckbox({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
   return (
     <div className="flex items-center space-x-2">
       <Checkbox checked={checked} onCheckedChange={onChange} />
@@ -406,5 +575,5 @@ function PermCheckbox({ label, checked, onChange }: { label: string; checked: bo
         {label}
       </Label>
     </div>
-  )
+  );
 }

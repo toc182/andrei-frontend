@@ -4,30 +4,30 @@
  * Features: Compact table-style items, global ITBMS option
  */
 
-import { useState, useEffect, FormEvent, ChangeEvent } from "react"
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Trash2 } from "lucide-react"
-import api from "../../services/api"
-import { formatMoney } from "../../utils/formatters"
-import { useAuth } from "../../context/AuthContext"
-import type { Requisicion, RequisicionItem } from "@/types"
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Trash2 } from 'lucide-react';
+import api from '../../services/api';
+import { formatMoney } from '../../utils/formatters';
+import { useAuth } from '../../context/AuthContext';
+import type { Requisicion, RequisicionItem } from '@/types';
 
 interface Solicitante {
   id: number | string;
@@ -69,169 +69,198 @@ const emptyItem: ItemFormData = {
   descripcion: '',
   cantidad: '1',
   unidad: 'unidad',
-  precio_unitario: ''
-}
+  precio_unitario: '',
+};
 
-export default function RequisicionForm({ projectId, isOpen, onClose, onSave, editingRequisicion, existingItems = [] }: RequisicionFormProps) {
-  const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export default function RequisicionForm({
+  projectId,
+  isOpen,
+  onClose,
+  onSave,
+  editingRequisicion,
+  existingItems = [],
+}: RequisicionFormProps) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     numero: '',
     fecha: '',
     proveedor: '',
     concepto: '',
-    solicitante_id: null
-  })
-  const [items, setItems] = useState<ItemFormData[]>([{ ...emptyItem }])
-  const [aplicaItbms, setAplicaItbms] = useState(false)
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
-  const [solicitantes, setSolicitantes] = useState<Solicitante[]>([])
+    solicitante_id: null,
+  });
+  const [items, setItems] = useState<ItemFormData[]>([{ ...emptyItem }]);
+  const [aplicaItbms, setAplicaItbms] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {},
+  );
+  const [solicitantes, setSolicitantes] = useState<Solicitante[]>([]);
 
   // Cargar lista de solicitantes al abrir el modal
   // Si hay projectId: cargar miembros del proyecto (usuarios + externos)
   // Si no hay projectId: cargar todos los usuarios del sistema
   useEffect(() => {
     if (isOpen) {
-      loadSolicitantes()
+      loadSolicitantes();
     }
-  }, [isOpen, projectId])
+  }, [isOpen, projectId]);
 
   const loadSolicitantes = async () => {
     try {
       if (projectId) {
         // Cargar miembros del proyecto (usuarios + externos)
-        const response = await api.get(`/project-members/project/${projectId}`)
+        const response = await api.get(`/project-members/project/${projectId}`);
         if (response.data.success) {
           // Mapear a formato unificado con tipo
-          const members = response.data.members.map((m: { tipo_miembro: string; user_id: number; external_contact_id: number; nombre_display: string }) => ({
-            id: m.tipo_miembro === 'usuario' ? m.user_id : `ext_${m.external_contact_id}`,
-            nombre: m.nombre_display,
-            tipo: m.tipo_miembro as 'usuario' | 'externo',
-            user_id: m.user_id,
-            external_contact_id: m.external_contact_id
-          }))
-          setSolicitantes(members)
+          const members = response.data.members.map(
+            (m: {
+              tipo_miembro: string;
+              user_id: number;
+              external_contact_id: number;
+              nombre_display: string;
+            }) => ({
+              id:
+                m.tipo_miembro === 'usuario'
+                  ? m.user_id
+                  : `ext_${m.external_contact_id}`,
+              nombre: m.nombre_display,
+              tipo: m.tipo_miembro as 'usuario' | 'externo',
+              user_id: m.user_id,
+              external_contact_id: m.external_contact_id,
+            }),
+          );
+          setSolicitantes(members);
         }
       } else {
         // Cargar todos los usuarios del sistema (vista general)
-        const response = await api.get('/project-members/users')
+        const response = await api.get('/project-members/users');
         if (response.data.success) {
-          setSolicitantes(response.data.users.map((u: { id: number; nombre: string }) => ({
-            id: u.id,
-            nombre: u.nombre,
-            tipo: 'usuario' as const,
-            user_id: u.id
-          })))
+          setSolicitantes(
+            response.data.users.map((u: { id: number; nombre: string }) => ({
+              id: u.id,
+              nombre: u.nombre,
+              tipo: 'usuario' as const,
+              user_id: u.id,
+            })),
+          );
         }
       }
     } catch (err) {
-      console.error('Error loading solicitantes:', err)
+      console.error('Error loading solicitantes:', err);
     }
-  }
+  };
 
   // Populate form when editing or reset for new
   useEffect(() => {
     if (editingRequisicion) {
       setFormData({
         numero: editingRequisicion.numero_requisicion || '',
-        fecha: editingRequisicion.fecha_solicitud ? editingRequisicion.fecha_solicitud.split('T')[0] : '',
+        fecha: editingRequisicion.fecha_solicitud
+          ? editingRequisicion.fecha_solicitud.split('T')[0]
+          : '',
         proveedor: '',
         concepto: editingRequisicion.descripcion || '',
-        solicitante_id: editingRequisicion.solicitante_id || user?.id || null
-      })
+        solicitante_id: editingRequisicion.solicitante_id || user?.id || null,
+      });
       // Check if any item has ITBMS
-      const hasItbms = existingItems?.some((item) => item.aplica_itbms) || false
-      setAplicaItbms(hasItbms)
+      const hasItbms =
+        existingItems?.some((item) => item.aplica_itbms) || false;
+      setAplicaItbms(hasItbms);
 
       if (existingItems && existingItems.length > 0) {
-        setItems(existingItems.map(item => ({
-          descripcion: item.descripcion || '',
-          cantidad: item.cantidad?.toString() || '1',
-          unidad: item.unidad || 'unidad',
-          precio_unitario: item.precio_unitario_estimado?.toString() || ''
-        })))
+        setItems(
+          existingItems.map((item) => ({
+            descripcion: item.descripcion || '',
+            cantidad: item.cantidad?.toString() || '1',
+            unidad: item.unidad || 'unidad',
+            precio_unitario: item.precio_unitario_estimado?.toString() || '',
+          })),
+        );
       } else {
-        setItems([{ ...emptyItem }])
+        setItems([{ ...emptyItem }]);
       }
     } else {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toISOString().split('T')[0];
       setFormData({
         numero: '',
         fecha: today,
         proveedor: '',
         concepto: '',
-        solicitante_id: user?.id || null
-      })
-      setItems([{ ...emptyItem }])
-      setAplicaItbms(false)
+        solicitante_id: user?.id || null,
+      });
+      setItems([{ ...emptyItem }]);
+      setAplicaItbms(false);
     }
-    setValidationErrors({})
-    setError(null)
-  }, [editingRequisicion, existingItems, isOpen, user])
+    setValidationErrors({});
+    setError(null);
+  }, [editingRequisicion, existingItems, isOpen, user]);
 
   // Calculate item subtotal
   const calculateItemSubtotal = (item: ItemFormData) => {
-    const cantidad = parseFloat(item.cantidad) || 0
-    const precioUnitario = parseFloat(item.precio_unitario) || 0
-    return cantidad * precioUnitario
-  }
+    const cantidad = parseFloat(item.cantidad) || 0;
+    const precioUnitario = parseFloat(item.precio_unitario) || 0;
+    return cantidad * precioUnitario;
+  };
 
   // Calculate grand totals
   const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + calculateItemSubtotal(item), 0)
-    const itbms = aplicaItbms ? subtotal * 0.07 : 0
+    const subtotal = items.reduce(
+      (sum, item) => sum + calculateItemSubtotal(item),
+      0,
+    );
+    const itbms = aplicaItbms ? subtotal * 0.07 : 0;
     return {
       subtotal,
       itbms,
-      total: subtotal + itbms
-    }
-  }
+      total: subtotal + itbms,
+    };
+  };
 
   const validateForm = () => {
-    const errors: ValidationErrors = {}
+    const errors: ValidationErrors = {};
 
     if (!formData.numero || formData.numero.trim().length < 2) {
-      errors.numero = 'Requerido'
+      errors.numero = 'Requerido';
     }
     if (!formData.proveedor || formData.proveedor.trim().length < 2) {
-      errors.proveedor = 'Requerido'
+      errors.proveedor = 'Requerido';
     }
     if (!formData.fecha) {
-      errors.fecha = 'Requerido'
+      errors.fecha = 'Requerido';
     }
     if (!formData.concepto || formData.concepto.trim().length < 2) {
-      errors.concepto = 'Requerido'
+      errors.concepto = 'Requerido';
     }
 
     // Validate items
-    let hasItemError = false
+    let hasItemError = false;
     items.forEach((item) => {
       if (!item.descripcion || item.descripcion.trim().length < 2) {
-        hasItemError = true
+        hasItemError = true;
       }
       if (!item.precio_unitario || parseFloat(item.precio_unitario) <= 0) {
-        hasItemError = true
+        hasItemError = true;
       }
-    })
+    });
 
     if (hasItemError) {
-      errors.items = 'Todos los items requieren detalle y precio'
+      errors.items = 'Todos los items requieren detalle y precio';
     }
 
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const dataToSave = {
@@ -241,64 +270,73 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
         concepto: formData.concepto,
         solicitante_id: formData.solicitante_id,
         project_id: projectId,
-        items: items.map(item => ({
+        items: items.map((item) => ({
           descripcion: item.descripcion,
           cantidad: parseFloat(item.cantidad) || 1,
           unidad: item.unidad || 'unidad',
           precio_unitario: parseFloat(item.precio_unitario),
           aplica_itbms: aplicaItbms,
           categoria_id: null,
-          notas: null
-        }))
-      }
+          notas: null,
+        })),
+      };
 
-      await onSave(dataToSave)
+      await onSave(dataToSave);
     } catch (err: unknown) {
-      console.error('Error saving requisicion:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al guardar la requisicion')
+      console.error('Error saving requisicion:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(
+        apiError.response?.data?.message || 'Error al guardar la requisicion',
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleChange = (field: keyof FormData, value: string | number | null) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  const handleChange = (
+    field: keyof FormData,
+    value: string | number | null,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (validationErrors[field]) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[field]
-        return newErrors
-      })
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
-  }
+  };
 
-  const handleItemChange = (index: number, field: keyof ItemFormData, value: string) => {
-    setItems(prev => {
-      const newItems = [...prev]
-      newItems[index] = { ...newItems[index], [field]: value }
-      return newItems
-    })
+  const handleItemChange = (
+    index: number,
+    field: keyof ItemFormData,
+    value: string,
+  ) => {
+    setItems((prev) => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
     if (validationErrors.items) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors.items
-        return newErrors
-      })
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.items;
+        return newErrors;
+      });
     }
-  }
+  };
 
   const addItem = () => {
-    setItems(prev => [...prev, { ...emptyItem }])
-  }
+    setItems((prev) => [...prev, { ...emptyItem }]);
+  };
 
   const removeItem = (index: number) => {
     if (items.length > 1) {
-      setItems(prev => prev.filter((_, i) => i !== index))
+      setItems((prev) => prev.filter((_, i) => i !== index));
     }
-  }
+  };
 
-  const totals = calculateTotals()
+  const totals = calculateTotals();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -319,35 +357,47 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
           {/* Header Fields - Compact */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label htmlFor="numero" className="text-xs">Numero *</Label>
+              <Label htmlFor="numero" className="text-xs">
+                Numero *
+              </Label>
               <Input
                 id="numero"
                 type="text"
                 placeholder="ALM-033"
                 value={formData.numero}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('numero', e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  handleChange('numero', e.target.value)
+                }
                 className={`h-9 ${validationErrors.numero ? 'border-destructive' : ''}`}
                 disabled={!!editingRequisicion}
               />
             </div>
             <div>
-              <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
+              <Label htmlFor="fecha" className="text-xs">
+                Fecha *
+              </Label>
               <Input
                 id="fecha"
                 type="date"
                 value={formData.fecha}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('fecha', e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  handleChange('fecha', e.target.value)
+                }
                 className={`h-9 ${validationErrors.fecha ? 'border-destructive' : ''}`}
               />
             </div>
             <div>
-              <Label htmlFor="proveedor" className="text-xs">Proveedor *</Label>
+              <Label htmlFor="proveedor" className="text-xs">
+                Proveedor *
+              </Label>
               <Input
                 id="proveedor"
                 type="text"
                 placeholder="Nombre"
                 value={formData.proveedor}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('proveedor', e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  handleChange('proveedor', e.target.value)
+                }
                 className={`h-9 ${validationErrors.proveedor ? 'border-destructive' : ''}`}
               />
             </div>
@@ -355,13 +405,17 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
 
           {/* Descripción (antes Concepto) */}
           <div>
-            <Label htmlFor="concepto" className="text-xs">Descripción *</Label>
+            <Label htmlFor="concepto" className="text-xs">
+              Descripción *
+            </Label>
             <Input
               id="concepto"
               type="text"
               placeholder="Descripción general de la requisición"
               value={formData.concepto}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange('concepto', e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleChange('concepto', e.target.value)
+              }
               className={`h-9 ${validationErrors.concepto ? 'border-destructive' : ''}`}
             />
           </div>
@@ -371,7 +425,9 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
             <Label className="text-xs">Solicitante</Label>
             <Select
               value={formData.solicitante_id?.toString() || ''}
-              onValueChange={(value) => handleChange('solicitante_id', parseInt(value))}
+              onValueChange={(value) =>
+                handleChange('solicitante_id', parseInt(value))
+              }
             >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Seleccionar solicitante" />
@@ -379,13 +435,22 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
               <SelectContent>
                 {solicitantes.length === 0 ? (
                   <SelectItem value="-" disabled>
-                    {projectId ? 'No hay miembros en el proyecto' : 'No hay usuarios'}
+                    {projectId
+                      ? 'No hay miembros en el proyecto'
+                      : 'No hay usuarios'}
                   </SelectItem>
                 ) : (
                   solicitantes.map((s) => (
-                    <SelectItem key={s.id} value={s.user_id?.toString() || s.id.toString()}>
+                    <SelectItem
+                      key={s.id}
+                      value={s.user_id?.toString() || s.id.toString()}
+                    >
                       {s.nombre}
-                      {s.tipo === 'externo' && <span className="text-muted-foreground ml-1">(Externo)</span>}
+                      {s.tipo === 'externo' && (
+                        <span className="text-muted-foreground ml-1">
+                          (Externo)
+                        </span>
+                      )}
                     </SelectItem>
                   ))
                 )}
@@ -402,14 +467,22 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label className="text-sm font-semibold">Items</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addItem} className="h-7 text-xs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addItem}
+                className="h-7 text-xs"
+              >
                 <Plus className="h-3 w-3 mr-1" />
                 Agregar
               </Button>
             </div>
 
             {validationErrors.items && (
-              <p className="text-xs text-destructive">{validationErrors.items}</p>
+              <p className="text-xs text-destructive">
+                {validationErrors.items}
+              </p>
             )}
 
             {/* Table Header */}
@@ -425,14 +498,19 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
             {/* Items Rows */}
             <div className="space-y-1">
               {items.map((item, index) => {
-                const subtotal = calculateItemSubtotal(item)
+                const subtotal = calculateItemSubtotal(item);
                 return (
-                  <div key={index} className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
+                  <div
+                    key={index}
+                    className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center"
+                  >
                     <Input
                       type="text"
                       placeholder="Detalle del item"
                       value={item.descripcion}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'descripcion', e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(index, 'descripcion', e.target.value)
+                      }
                       className="h-8 text-sm"
                     />
                     <Input
@@ -440,12 +518,16 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
                       step="0.01"
                       min="0"
                       value={item.cantidad}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'cantidad', e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(index, 'cantidad', e.target.value)
+                      }
                       className="h-8 text-sm"
                     />
                     <Select
                       value={item.unidad}
-                      onValueChange={(value) => handleItemChange(index, 'unidad', value)}
+                      onValueChange={(value) =>
+                        handleItemChange(index, 'unidad', value)
+                      }
                     >
                       <SelectTrigger className="h-8 text-xs">
                         <SelectValue />
@@ -470,7 +552,13 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
                       min="0"
                       placeholder="0.00"
                       value={item.precio_unitario}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleItemChange(index, 'precio_unitario', e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(
+                          index,
+                          'precio_unitario',
+                          e.target.value,
+                        )
+                      }
                       className="h-8 text-sm"
                     />
                     <div className="text-sm text-right font-medium">
@@ -487,7 +575,7 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
@@ -496,7 +584,9 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
           <div className="border-t pt-3 space-y-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Subtotal:</span>
-              <span className="font-medium">{formatMoney(totals.subtotal)}</span>
+              <span className="font-medium">
+                {formatMoney(totals.subtotal)}
+              </span>
             </div>
 
             {/* ITBMS Checkbox */}
@@ -505,14 +595,21 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
                 <Checkbox
                   id="aplica-itbms"
                   checked={aplicaItbms}
-                  onCheckedChange={(checked) => setAplicaItbms(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setAplicaItbms(checked as boolean)
+                  }
                 />
-                <Label htmlFor="aplica-itbms" className="text-sm cursor-pointer">
+                <Label
+                  htmlFor="aplica-itbms"
+                  className="text-sm cursor-pointer"
+                >
                   Aplica ITBMS (7%)
                 </Label>
               </div>
               {aplicaItbms && (
-                <span className="text-sm text-muted-foreground">{formatMoney(totals.itbms)}</span>
+                <span className="text-sm text-muted-foreground">
+                  {formatMoney(totals.itbms)}
+                </span>
               )}
             </div>
 
@@ -533,11 +630,15 @@ export default function RequisicionForm({ projectId, isOpen, onClose, onSave, ed
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : editingRequisicion ? 'Actualizar' : 'Crear'}
+              {loading
+                ? 'Guardando...'
+                : editingRequisicion
+                  ? 'Actualizar'
+                  : 'Crear'}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

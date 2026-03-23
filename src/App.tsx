@@ -8,51 +8,47 @@ import { Loader2 } from 'lucide-react';
 
 // Componente principal que decide qué mostrar
 const AppContent: React.FC = () => {
-    const { isAuthenticated, loading, debeCambiarPassword } = useAuth();
+  const { isAuthenticated, loading, debeCambiarPassword } = useAuth();
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                <div className="text-center space-y-4">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-                    <p className="text-muted-foreground">Cargando Sistema Andrei...</p>
-                </div>
-            </div>
-        );
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Cargando Sistema Andrei...</p>
+        </div>
+      </div>
+    );
+  }
 
-    if (isAuthenticated) {
-        return (
-            <>
-                <DashboardNew />
-                {debeCambiarPassword && (
-                    <ChangePasswordModal
-                        open={true}
-                        onOpenChange={() => {}}
-                        forced
-                    />
-                )}
-            </>
-        );
-    }
+  if (isAuthenticated) {
+    return (
+      <>
+        <DashboardNew />
+        {debeCambiarPassword && (
+          <ChangePasswordModal open={true} onOpenChange={() => {}} forced />
+        )}
+      </>
+    );
+  }
 
-    return <LoginN />;
+  return <LoginN />;
 };
 
 // App principal con el provider de autenticación
 const App: React.FC = () => {
-    // Rutas públicas (sin AuthProvider)
-    if (window.location.pathname.startsWith('/verificar/')) {
-        return <VerificacionPublica />;
-    }
+  // Rutas públicas (sin AuthProvider)
+  if (window.location.pathname.startsWith('/verificar/')) {
+    return <VerificacionPublica />;
+  }
 
-    return (
-        <AuthProvider>
-            <div className="App">
-                <AppContent />
-            </div>
-        </AuthProvider>
-    );
+  return (
+    <AuthProvider>
+      <div className="App">
+        <AppContent />
+      </div>
+    </AuthProvider>
+  );
 };
 
 export default App;

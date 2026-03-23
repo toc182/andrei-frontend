@@ -239,7 +239,13 @@ export interface CostDashboard {
 // REQUISICIONES
 // ============================================
 
-export type EstadoRequisicion = 'pendiente' | 'en_cotizacion' | 'por_aprobar' | 'aprobada' | 'pagada' | 'rechazada';
+export type EstadoRequisicion =
+  | 'pendiente'
+  | 'en_cotizacion'
+  | 'por_aprobar'
+  | 'aprobada'
+  | 'pagada'
+  | 'rechazada';
 
 export interface Requisicion {
   id: number;
@@ -407,7 +413,13 @@ export interface Oportunidad {
   cliente_potencial: string;
   contacto_referido?: string;
   valor_estimado?: number;
-  estado_oportunidad: 'prospecto' | 'calificada' | 'propuesta' | 'negociacion' | 'cerrada' | 'perdida';
+  estado_oportunidad:
+    | 'prospecto'
+    | 'calificada'
+    | 'propuesta'
+    | 'negociacion'
+    | 'cerrada'
+    | 'perdida';
   fecha_identificacion?: string;
   fecha_siguiente_seguimiento?: string;
   probabilidad_cierre?: number;
@@ -428,7 +440,13 @@ export interface Licitacion {
   entidad_licitante: string;
   fecha_cierre: string;
   presupuesto_referencial?: number;
-  estado_licitacion: 'activa' | 'presentada' | 'ganada' | 'perdida' | 'sin_interes' | 'cancelada';
+  estado_licitacion:
+    | 'activa'
+    | 'presentada'
+    | 'ganada'
+    | 'perdida'
+    | 'sin_interes'
+    | 'cancelada';
   fecha_publicacion?: string;
   tipo_obra?: string;
   plazo_ejecucion?: number;
@@ -455,7 +473,11 @@ export interface EquipoExtended {
   rata_mes?: number;
   observaciones?: string;
   owner: 'Pinellas' | 'COCP';
-  estado?: 'en_operacion' | 'standby' | 'en_mantenimiento' | 'fuera_de_servicio';
+  estado?:
+    | 'en_operacion'
+    | 'standby'
+    | 'en_mantenimiento'
+    | 'fuera_de_servicio';
   proyecto?: string;
   ubicacion?: string;
   responsable?: string;

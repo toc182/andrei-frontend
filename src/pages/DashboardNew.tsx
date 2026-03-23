@@ -3,29 +3,35 @@
  * Router central de la aplicación con sidebar contextual
  */
 
-import { useState, useEffect, ReactNode } from "react"
-import { AppLayout } from "../components/layout/AppLayout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Building2, Users, Truck, TrendingUp, AlertCircle } from "lucide-react"
-import ProjectsList from "../components/ProjectsList"
-import ClientesN from "./ClientesN"
-import DocumentosHubN from "./DocumentosHubN"
-import DocumentFormN from "../components/forms/DocumentFormN"
-import EquiposInformacionN from "./equipos/EquiposInformacionN"
-import EquiposStatusN from "./equipos/EquiposStatusN"
-import AsignacionesEquiposN from "./equipos/AsignacionesEquiposN"
-import ProjectDetailLayout from "./project/ProjectDetailLayout"
-import RequisicionesGeneral from "./RequisicionesGeneral"
-import UsuariosPage from "./UsuariosPage"
-import PermisosPage from "./PermisosPage"
-import SolicitudesPagoGeneral from "./SolicitudesPagoGeneral"
-import OportunidadesPage from "./OportunidadesPage"
-import MiCuentaPage from "./MiCuentaPage"
-import { useAuth } from "../context/AuthContext"
-import api from "../services/api"
+import { useState, useEffect, ReactNode } from 'react';
+import { AppLayout } from '../components/layout/AppLayout';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Building2, Users, Truck, TrendingUp, AlertCircle } from 'lucide-react';
+import ProjectsList from '../components/ProjectsList';
+import ClientesN from './ClientesN';
+import DocumentosHubN from './DocumentosHubN';
+import DocumentFormN from '../components/forms/DocumentFormN';
+import EquiposInformacionN from './equipos/EquiposInformacionN';
+import EquiposStatusN from './equipos/EquiposStatusN';
+import AsignacionesEquiposN from './equipos/AsignacionesEquiposN';
+import ProjectDetailLayout from './project/ProjectDetailLayout';
+import RequisicionesGeneral from './RequisicionesGeneral';
+import UsuariosPage from './UsuariosPage';
+import PermisosPage from './PermisosPage';
+import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
+import OportunidadesPage from './OportunidadesPage';
+import MiCuentaPage from './MiCuentaPage';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 interface DashboardStats {
   proyectos: {
@@ -41,71 +47,88 @@ interface DashboardStats {
 }
 
 interface ProjectContext {
-  id: number
-  name: string
+  id: number;
+  name: string;
 }
 
 export default function DashboardNew() {
-  const { isAdminOrCoAdmin } = useAuth()
-  const [currentView, setCurrentView] = useState("dashboard")
+  const { isAdminOrCoAdmin } = useAuth();
+  const [currentView, setCurrentView] = useState('dashboard');
   const [stats, setStats] = useState<DashboardStats>({
     proyectos: null,
     clientes: null,
-    equipos: null
-  })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [pageTitle, setPageTitle] = useState<string | null>(null)
-  const [projectContext, setProjectContext] = useState<ProjectContext | null>(null)
-  const [showProjectInfo, setShowProjectInfo] = useState(false)
+    equipos: null,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pageTitle, setPageTitle] = useState<string | null>(null);
+  const [projectContext, setProjectContext] = useState<ProjectContext | null>(
+    null,
+  );
+  const [showProjectInfo, setShowProjectInfo] = useState(false);
 
   // Clear project context and pageTitle when leaving project views
   useEffect(() => {
     if (!currentView.startsWith('project-')) {
-      setPageTitle(null)
-      setProjectContext(null)
-      setShowProjectInfo(false)
+      setPageTitle(null);
+      setProjectContext(null);
+      setShowProjectInfo(false);
     }
-  }, [currentView])
+  }, [currentView]);
 
   // Cargar estadísticas del dashboard
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
 
-        const [proyectosRes, clientesRes, equiposRes] = await Promise.allSettled([
-          api.get('/projects/stats/dashboard'),
-          api.get('/clientes/stats/dashboard'),
-          api.get('/equipos/')
-        ])
+        const [proyectosRes, clientesRes, equiposRes] =
+          await Promise.allSettled([
+            api.get('/projects/stats/dashboard'),
+            api.get('/clientes/stats/dashboard'),
+            api.get('/equipos/'),
+          ]);
 
         setStats({
-          proyectos: proyectosRes.status === 'fulfilled' ? proyectosRes.value.data.stats : { proyectos_activos: 0, proyectos_planificacion: 0 },
-          clientes: clientesRes.status === 'fulfilled' ? clientesRes.value.data.data : { total_clientes: 0 },
-          equipos: equiposRes.status === 'fulfilled' ? { total: equiposRes.value.data.total || equiposRes.value.data.data?.length || 0 } : { total: 0 }
-        })
+          proyectos:
+            proyectosRes.status === 'fulfilled'
+              ? proyectosRes.value.data.stats
+              : { proyectos_activos: 0, proyectos_planificacion: 0 },
+          clientes:
+            clientesRes.status === 'fulfilled'
+              ? clientesRes.value.data.data
+              : { total_clientes: 0 },
+          equipos:
+            equiposRes.status === 'fulfilled'
+              ? {
+                  total:
+                    equiposRes.value.data.total ||
+                    equiposRes.value.data.data?.length ||
+                    0,
+                }
+              : { total: 0 },
+        });
       } catch (err) {
-        console.error('Error cargando estadísticas:', err)
-        setError('Error al cargar las estadísticas del dashboard')
+        console.error('Error cargando estadísticas:', err);
+        setError('Error al cargar las estadísticas del dashboard');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    if (currentView === "dashboard") {
-      fetchStats()
+    if (currentView === 'dashboard') {
+      fetchStats();
     }
-  }, [currentView])
+  }, [currentView]);
 
   const renderContent = (): ReactNode => {
     // Check if it's a project view (pattern: project-{id}-{subview})
     if (currentView.startsWith('project-')) {
-      const parts = currentView.split('-')
+      const parts = currentView.split('-');
       if (parts.length >= 3) {
-        const projectId = parseInt(parts[1], 10)
-        const subview = parts.slice(2).join('-')
+        const projectId = parseInt(parts[1], 10);
+        const subview = parts.slice(2).join('-');
         return (
           <ProjectDetailLayout
             projectId={projectId}
@@ -116,16 +139,18 @@ export default function DashboardNew() {
             showInfo={showProjectInfo}
             onCloseInfo={() => setShowProjectInfo(false)}
           />
-        )
+        );
       }
     }
 
     switch (currentView) {
-      case "dashboard":
+      case 'dashboard':
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Panel de Control</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Panel de Control
+              </h1>
               <p className="text-muted-foreground">
                 Bienvenido al sistema Andrei - Gestión de Proyectos
               </p>
@@ -141,7 +166,9 @@ export default function DashboardNew() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Proyectos Activos
+                  </CardTitle>
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -155,7 +182,9 @@ export default function DashboardNew() {
                       <div className="text-2xl font-bold">
                         {stats.proyectos?.proyectos_activos || 0}
                       </div>
-                      <p className="text-xs text-muted-foreground">En ejecución</p>
+                      <p className="text-xs text-muted-foreground">
+                        En ejecución
+                      </p>
                     </>
                   )}
                 </CardContent>
@@ -163,7 +192,9 @@ export default function DashboardNew() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">En Planificación</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    En Planificación
+                  </CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -177,7 +208,9 @@ export default function DashboardNew() {
                       <div className="text-2xl font-bold">
                         {stats.proyectos?.proyectos_planificacion || 0}
                       </div>
-                      <p className="text-xs text-muted-foreground">Por iniciar</p>
+                      <p className="text-xs text-muted-foreground">
+                        Por iniciar
+                      </p>
                     </>
                   )}
                 </CardContent>
@@ -185,7 +218,9 @@ export default function DashboardNew() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Clientes
+                  </CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -199,7 +234,9 @@ export default function DashboardNew() {
                       <div className="text-2xl font-bold">
                         {stats.clientes?.total_clientes || 0}
                       </div>
-                      <p className="text-xs text-muted-foreground">Registrados</p>
+                      <p className="text-xs text-muted-foreground">
+                        Registrados
+                      </p>
                     </>
                   )}
                 </CardContent>
@@ -221,7 +258,9 @@ export default function DashboardNew() {
                       <div className="text-2xl font-bold">
                         {stats.equipos?.total || 0}
                       </div>
-                      <p className="text-xs text-muted-foreground">Disponibles</p>
+                      <p className="text-xs text-muted-foreground">
+                        Disponibles
+                      </p>
                     </>
                   )}
                 </CardContent>
@@ -237,7 +276,7 @@ export default function DashboardNew() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={() => setCurrentView("projects")}>
+                  <Button onClick={() => setCurrentView('projects')}>
                     Ver Proyectos
                   </Button>
                 </CardContent>
@@ -251,7 +290,7 @@ export default function DashboardNew() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={() => setCurrentView("clientes")}>
+                  <Button onClick={() => setCurrentView('clientes')}>
                     Ver Clientes
                   </Button>
                 </CardContent>
@@ -265,74 +304,80 @@ export default function DashboardNew() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={() => setCurrentView("equipos")}>
+                  <Button onClick={() => setCurrentView('equipos')}>
                     Ver Equipos
                   </Button>
                 </CardContent>
               </Card>
             </div>
           </div>
-        )
+        );
 
-      case "projects":
-        return <ProjectsList activeTab="proyectos" onNavigate={setCurrentView} />
+      case 'projects':
+        return (
+          <ProjectsList activeTab="proyectos" onNavigate={setCurrentView} />
+        );
 
-      case "oportunidades":
-        return <OportunidadesPage />
+      case 'oportunidades':
+        return <OportunidadesPage />;
 
-      case "clientes":
-        return <ClientesN />
+      case 'clientes':
+        return <ClientesN />;
 
-      case "requisiciones":
-        return <RequisicionesGeneral />
+      case 'requisiciones':
+        return <RequisicionesGeneral />;
 
-      case "solicitudes-pago":
-        return <SolicitudesPagoGeneral onNavigate={setCurrentView} />
+      case 'solicitudes-pago':
+        return <SolicitudesPagoGeneral onNavigate={setCurrentView} />;
 
-      case "equipos":
-      case "equipos-informacion":
-        return <EquiposInformacionN />
+      case 'equipos':
+      case 'equipos-informacion':
+        return <EquiposInformacionN />;
 
-      case "equipos-status":
-        return <EquiposStatusN />
+      case 'equipos-status':
+        return <EquiposStatusN />;
 
-      case "equipos-asignaciones":
-        return <AsignacionesEquiposN />
+      case 'equipos-asignaciones':
+        return <AsignacionesEquiposN />;
 
-      case "documentos":
-        return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
+      case 'documentos':
+        return (
+          <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
+        );
 
-      case "doc-acuerdo-consorcio":
-        return <DocumentFormN documentType="acuerdo-consorcio" />
+      case 'doc-acuerdo-consorcio':
+        return <DocumentFormN documentType="acuerdo-consorcio" />;
 
-      case "doc-carta-adhesion":
-        return <DocumentFormN documentType="carta-adhesion" />
+      case 'doc-carta-adhesion':
+        return <DocumentFormN documentType="carta-adhesion" />;
 
-      case "doc-medidas-retorsion":
-        return <DocumentFormN documentType="medidas-retorsion" />
+      case 'doc-medidas-retorsion':
+        return <DocumentFormN documentType="medidas-retorsion" />;
 
-      case "doc-no-incapacidad":
-        return <DocumentFormN documentType="no-incapacidad" />
+      case 'doc-no-incapacidad':
+        return <DocumentFormN documentType="no-incapacidad" />;
 
-      case "doc-pacto-integridad":
-        return <DocumentFormN documentType="pacto-integridad" />
+      case 'doc-pacto-integridad':
+        return <DocumentFormN documentType="pacto-integridad" />;
 
-      case "doc-carta-compromiso-verde":
-        return <DocumentFormN documentType="carta-compromiso-verde" />
+      case 'doc-carta-compromiso-verde':
+        return <DocumentFormN documentType="carta-compromiso-verde" />;
 
-      case "usuarios":
-        return isAdminOrCoAdmin ? <UsuariosPage /> : null
+      case 'usuarios':
+        return isAdminOrCoAdmin ? <UsuariosPage /> : null;
 
-      case "permisos":
-        return isAdminOrCoAdmin ? <PermisosPage /> : null
+      case 'permisos':
+        return isAdminOrCoAdmin ? <PermisosPage /> : null;
 
-      case "mi-cuenta":
-        return <MiCuentaPage />
+      case 'mi-cuenta':
+        return <MiCuentaPage />;
 
       default:
-        return <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
+        return (
+          <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
+        );
     }
-  }
+  };
 
   return (
     <AppLayout
@@ -344,5 +389,5 @@ export default function DashboardNew() {
     >
       {renderContent()}
     </AppLayout>
-  )
+  );
 }

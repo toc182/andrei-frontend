@@ -3,11 +3,20 @@
  * Gestiona el personal de un proyecto (usuarios del sistema + contactos externos)
  */
 
-import { useState, useEffect } from "react"
-import { Plus, Trash2, UserCircle, AlertCircle, Settings, ArrowUp, ArrowDown, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState, useEffect } from 'react';
+import {
+  Plus,
+  Trash2,
+  UserCircle,
+  AlertCircle,
+  Settings,
+  ArrowUp,
+  ArrowDown,
+  X,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -15,7 +24,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -23,19 +32,19 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,49 +54,49 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import api from "../../services/api"
+} from '@/components/ui/alert-dialog';
+import api from '../../services/api';
 
 interface RolProyecto {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 interface User {
-  id: number
-  nombre: string
-  email?: string
-  tipo_usuario?: string | null
+  id: number;
+  nombre: string;
+  email?: string;
+  tipo_usuario?: string | null;
 }
 
 interface ProjectMember {
-  id: number
-  tipo_miembro: 'usuario' | 'externo'
-  user_id?: number
-  external_contact_id?: number
-  rol_proyecto: string
-  nombre_display: string
-  usuario_email?: string
-  externo_telefono?: string
-  externo_email?: string
+  id: number;
+  tipo_miembro: 'usuario' | 'externo';
+  user_id?: number;
+  external_contact_id?: number;
+  rol_proyecto: string;
+  nombre_display: string;
+  usuario_email?: string;
+  externo_telefono?: string;
+  externo_email?: string;
 }
 
 interface NewExternalForm {
-  nombre: string
-  cargo: string
-  telefono: string
+  nombre: string;
+  cargo: string;
+  telefono: string;
 }
 
 interface Approver {
-  id?: number
-  user_id: number
-  orden: number
-  nombre: string
-  email?: string
+  id?: number;
+  user_id: number;
+  orden: number;
+  nombre: string;
+  email?: string;
 }
 
 interface ProjectMembersProps {
-  projectId: number
+  projectId: number;
 }
 
 const ROLES_PROYECTO: RolProyecto[] = [
@@ -95,280 +104,302 @@ const ROLES_PROYECTO: RolProyecto[] = [
   { value: 'ingeniero', label: 'Ingeniero' },
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'colaborador', label: 'Colaborador' },
-]
+];
 
 export default function ProjectMembers({ projectId }: ProjectMembersProps) {
-  const [members, setMembers] = useState<ProjectMember[]>([])
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal states
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showCreateExternalModal, setShowCreateExternalModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showCreateExternalModal, setShowCreateExternalModal] = useState(false);
 
   // Form states
-  const [memberType, setMemberType] = useState<'usuario' | 'externo'>('usuario')
-  const [selectedUserId, setSelectedUserId] = useState('')
-  const [selectedExternalId, setSelectedExternalId] = useState('')
-  const [selectedRol, setSelectedRol] = useState('colaborador')
-  const [newExternal, setNewExternal] = useState<NewExternalForm>({ nombre: '', cargo: '', telefono: '' })
-  const [saving, setSaving] = useState(false)
+  const [memberType, setMemberType] = useState<'usuario' | 'externo'>(
+    'usuario',
+  );
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedExternalId, setSelectedExternalId] = useState('');
+  const [selectedRol, setSelectedRol] = useState('colaborador');
+  const [newExternal, setNewExternal] = useState<NewExternalForm>({
+    nombre: '',
+    cargo: '',
+    telefono: '',
+  });
+  const [saving, setSaving] = useState(false);
 
   // Edit role state
-  const [showEditRoleModal, setShowEditRoleModal] = useState(false)
-  const [editingMember, setEditingMember] = useState<ProjectMember | null>(null)
-  const [editRol, setEditRol] = useState('')
+  const [showEditRoleModal, setShowEditRoleModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<ProjectMember | null>(
+    null,
+  );
+  const [editRol, setEditRol] = useState('');
 
   // Approvers state
-  const [approvers, setApprovers] = useState<Approver[]>([])
-  const [showApproversModal, setShowApproversModal] = useState(false)
-  const [editApprovers, setEditApprovers] = useState<Approver[]>([])
-  const [selectedApproverUserId, setSelectedApproverUserId] = useState('')
-  const [savingApprovers, setSavingApprovers] = useState(false)
-  const [showApproverConfirm, setShowApproverConfirm] = useState(false)
+  const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [showApproversModal, setShowApproversModal] = useState(false);
+  const [editApprovers, setEditApprovers] = useState<Approver[]>([]);
+  const [selectedApproverUserId, setSelectedApproverUserId] = useState('');
+  const [savingApprovers, setSavingApprovers] = useState(false);
+  const [showApproverConfirm, setShowApproverConfirm] = useState(false);
 
   // Load members
   const loadMembers = async () => {
     try {
-      const response = await api.get(`/project-members/project/${projectId}`)
+      const response = await api.get(`/project-members/project/${projectId}`);
       if (response.data.success) {
-        setMembers(response.data.members)
+        setMembers(response.data.members);
       }
     } catch (err) {
-      console.error('Error loading members:', err)
-      setError('Error al cargar personal')
+      console.error('Error loading members:', err);
+      setError('Error al cargar personal');
     }
-  }
+  };
 
   // Load users for selectors
   const loadOptions = async () => {
     try {
-      const usersRes = await api.get('/project-members/users')
+      const usersRes = await api.get('/project-members/users');
       if (usersRes.data.success) {
-        setUsers(usersRes.data.users)
+        setUsers(usersRes.data.users);
       }
     } catch (err) {
-      console.error('Error loading options:', err)
+      console.error('Error loading options:', err);
     }
-  }
+  };
 
   // Load approvers
   const loadApprovers = async () => {
     try {
-      const response = await api.get(`/approval-settings/project/${projectId}`)
+      const response = await api.get(`/approval-settings/project/${projectId}`);
       if (response.data.success) {
-        setApprovers(response.data.approvers)
+        setApprovers(response.data.approvers);
       }
     } catch (err) {
-      console.error('Error loading approvers:', err)
+      console.error('Error loading approvers:', err);
     }
-  }
+  };
 
   // Save approvers
   const handleSaveApprovers = async () => {
-    setSavingApprovers(true)
+    setSavingApprovers(true);
     try {
       const payload = editApprovers.map((a, index) => ({
         user_id: a.user_id,
-        orden: index + 1
-      }))
-      const response = await api.put(`/approval-settings/project/${projectId}`, { approvers: payload })
+        orden: index + 1,
+      }));
+      const response = await api.put(
+        `/approval-settings/project/${projectId}`,
+        { approvers: payload },
+      );
       if (response.data.success) {
-        setApprovers(response.data.approvers)
-        setShowApproversModal(false)
+        setApprovers(response.data.approvers);
+        setShowApproversModal(false);
       }
     } catch (err) {
-      console.error('Error saving approvers:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al guardar aprobadores')
+      console.error('Error saving approvers:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(
+        apiError.response?.data?.message || 'Error al guardar aprobadores',
+      );
     } finally {
-      setSavingApprovers(false)
+      setSavingApprovers(false);
     }
-  }
+  };
 
   // Open approvers modal
   const openApproversModal = () => {
-    setEditApprovers([...approvers])
-    setSelectedApproverUserId('')
-    setShowApproversModal(true)
-  }
+    setEditApprovers([...approvers]);
+    setSelectedApproverUserId('');
+    setShowApproversModal(true);
+  };
 
   // Add approver to edit list
   const addApproverToList = () => {
-    if (!selectedApproverUserId) return
-    const userId = parseInt(selectedApproverUserId)
-    const user = users.find(u => u.id === userId)
-    if (!user) return
-    if (editApprovers.some(a => a.user_id === userId)) return
+    if (!selectedApproverUserId) return;
+    const userId = parseInt(selectedApproverUserId);
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+    if (editApprovers.some((a) => a.user_id === userId)) return;
 
-    setEditApprovers([...editApprovers, {
-      user_id: userId,
-      orden: editApprovers.length + 1,
-      nombre: user.nombre,
-      email: user.email
-    }])
-    setSelectedApproverUserId('')
-  }
+    setEditApprovers([
+      ...editApprovers,
+      {
+        user_id: userId,
+        orden: editApprovers.length + 1,
+        nombre: user.nombre,
+        email: user.email,
+      },
+    ]);
+    setSelectedApproverUserId('');
+  };
 
   // Remove approver from edit list
   const removeApproverFromList = (userId: number) => {
-    setEditApprovers(editApprovers.filter(a => a.user_id !== userId))
-  }
+    setEditApprovers(editApprovers.filter((a) => a.user_id !== userId));
+  };
 
   // Move approver up/down
   const moveApprover = (index: number, direction: 'up' | 'down') => {
-    const newList = [...editApprovers]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (targetIndex < 0 || targetIndex >= newList.length) return
-    const temp = newList[index]
-    newList[index] = newList[targetIndex]
-    newList[targetIndex] = temp
-    setEditApprovers(newList)
-  }
+    const newList = [...editApprovers];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newList.length) return;
+    const temp = newList[index];
+    newList[index] = newList[targetIndex];
+    newList[targetIndex] = temp;
+    setEditApprovers(newList);
+  };
 
   // Users available as approvers (not already in edit list)
   const availableApproverUsers = users.filter(
-    u => u.tipo_usuario === 'interno'
-      && members.some(m => m.tipo_miembro === 'usuario' && m.user_id === u.id)
-      && !editApprovers.some(a => a.user_id === u.id)
-  )
+    (u) =>
+      u.tipo_usuario === 'interno' &&
+      members.some((m) => m.tipo_miembro === 'usuario' && m.user_id === u.id) &&
+      !editApprovers.some((a) => a.user_id === u.id),
+  );
 
   useEffect(() => {
     const loadAll = async () => {
-      setLoading(true)
-      await Promise.all([loadMembers(), loadOptions(), loadApprovers()])
-      setLoading(false)
-    }
-    loadAll()
-  }, [projectId])
+      setLoading(true);
+      await Promise.all([loadMembers(), loadOptions(), loadApprovers()]);
+      setLoading(false);
+    };
+    loadAll();
+  }, [projectId]);
 
   // Reset add modal
   const resetAddModal = () => {
-    setMemberType('usuario')
-    setSelectedUserId('')
-    setSelectedExternalId('')
-    setSelectedRol('colaborador')
-  }
+    setMemberType('usuario');
+    setSelectedUserId('');
+    setSelectedExternalId('');
+    setSelectedRol('colaborador');
+  };
 
   // Add member (user — both internal and external are in users table)
   const handleAddMember = async () => {
-    const userId = memberType === 'usuario' ? selectedUserId : selectedExternalId
-    if (!userId) return
+    const userId =
+      memberType === 'usuario' ? selectedUserId : selectedExternalId;
+    if (!userId) return;
 
-    setSaving(true)
+    setSaving(true);
     try {
       const response = await api.post('/project-members', {
         project_id: projectId,
         user_id: parseInt(userId),
-        rol_proyecto: selectedRol
-      })
+        rol_proyecto: selectedRol,
+      });
       if (response.data.success) {
-        await loadMembers()
-        setShowAddModal(false)
-        resetAddModal()
+        await loadMembers();
+        setShowAddModal(false);
+        resetAddModal();
       }
     } catch (err) {
-      console.error('Error adding member:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al agregar')
+      console.error('Error adding member:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(apiError.response?.data?.message || 'Error al agregar');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   // Create new external contact and add as member
   const handleCreateExternal = async () => {
-    if (!newExternal.nombre.trim()) return
+    if (!newExternal.nombre.trim()) return;
 
-    setSaving(true)
+    setSaving(true);
     try {
-      const createRes = await api.post('/external-contacts', newExternal)
+      const createRes = await api.post('/external-contacts', newExternal);
 
       if (createRes.data.success) {
         const addRes = await api.post('/project-members/external', {
           project_id: projectId,
           external_contact_id: createRes.data.contact.id,
-          rol_proyecto: selectedRol
-        })
+          rol_proyecto: selectedRol,
+        });
 
         if (addRes.data.success) {
-          await Promise.all([loadMembers(), loadOptions()])
-          setShowCreateExternalModal(false)
-          setNewExternal({ nombre: '', cargo: '', telefono: '' })
-          setSelectedRol('colaborador')
+          await Promise.all([loadMembers(), loadOptions()]);
+          setShowCreateExternalModal(false);
+          setNewExternal({ nombre: '', cargo: '', telefono: '' });
+          setSelectedRol('colaborador');
         }
       }
     } catch (err) {
-      console.error('Error creating external:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al crear contacto externo')
+      console.error('Error creating external:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(
+        apiError.response?.data?.message || 'Error al crear contacto externo',
+      );
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   // Remove member
   const handleRemoveMember = async (memberId: number) => {
-    if (!confirm('¿Estás seguro de remover esta persona del proyecto?')) return
+    if (!confirm('¿Estás seguro de remover esta persona del proyecto?')) return;
 
     try {
-      await api.delete(`/project-members/${memberId}`)
-      await loadMembers()
+      await api.delete(`/project-members/${memberId}`);
+      await loadMembers();
     } catch (err) {
-      console.error('Error removing member:', err)
-      setError('Error al remover')
+      console.error('Error removing member:', err);
+      setError('Error al remover');
     }
-  }
+  };
 
   // Open edit role modal
   const handleRowClick = (member: ProjectMember) => {
-    setEditingMember(member)
-    setEditRol(member.rol_proyecto)
-    setShowEditRoleModal(true)
-  }
+    setEditingMember(member);
+    setEditRol(member.rol_proyecto);
+    setShowEditRoleModal(true);
+  };
 
   // Update role
   const handleUpdateRole = async () => {
-    if (!editingMember || !editRol) return
+    if (!editingMember || !editRol) return;
 
-    setSaving(true)
+    setSaving(true);
     try {
       const response = await api.put(`/project-members/${editingMember.id}`, {
-        rol_proyecto: editRol
-      })
+        rol_proyecto: editRol,
+      });
 
       if (response.data.success) {
-        await loadMembers()
-        setShowEditRoleModal(false)
-        setEditingMember(null)
+        await loadMembers();
+        setShowEditRoleModal(false);
+        setEditingMember(null);
       }
     } catch (err) {
-      console.error('Error updating role:', err)
-      const apiError = err as { response?: { data?: { message?: string } } }
-      setError(apiError.response?.data?.message || 'Error al actualizar rol')
+      console.error('Error updating role:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(apiError.response?.data?.message || 'Error al actualizar rol');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   // Get internal users not already members
   const availableUsers = users.filter(
-    user => (user.tipo_usuario === 'interno' || !user.tipo_usuario)
-      && !members.some(m => m.user_id === user.id)
-  )
+    (user) =>
+      (user.tipo_usuario === 'interno' || !user.tipo_usuario) &&
+      !members.some((m) => m.user_id === user.id),
+  );
 
   // Get external users not already members
   const availableExternals = users.filter(
-    user => user.tipo_usuario === 'externo'
-      && !members.some(m => m.user_id === user.id)
-  )
+    (user) =>
+      user.tipo_usuario === 'externo' &&
+      !members.some((m) => m.user_id === user.id),
+  );
 
   // Format role display (handle old 'miembro' values)
   const formatRol = (rol: string) => {
-    if (rol === 'miembro') return 'Colaborador'
-    return rol.charAt(0).toUpperCase() + rol.slice(1)
-  }
+    if (rol === 'miembro') return 'Colaborador';
+    return rol.charAt(0).toUpperCase() + rol.slice(1);
+  };
 
   if (loading) {
     return (
@@ -376,7 +407,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-32 w-full" />
       </div>
-    )
+    );
   }
 
   return (
@@ -390,11 +421,21 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
       {/* Actions */}
       <div className="flex gap-2 justify-end">
-        <Button onClick={() => { resetAddModal(); setShowAddModal(true) }} size="sm">
+        <Button
+          onClick={() => {
+            resetAddModal();
+            setShowAddModal(true);
+          }}
+          size="sm"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Agregar
         </Button>
-        <Button onClick={() => setShowCreateExternalModal(true)} variant="outline" size="sm">
+        <Button
+          onClick={() => setShowCreateExternalModal(true)}
+          variant="outline"
+          size="sm"
+        >
           <UserCircle className="h-4 w-4 mr-2" />
           Crear
         </Button>
@@ -416,7 +457,10 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             <TableBody>
               {members.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     No hay personal asignado a este proyecto
                   </TableCell>
                 </TableRow>
@@ -431,25 +475,33 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                       {member.nombre_display}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={member.tipo_miembro === 'usuario' ? 'default' : 'secondary'}>
-                        {member.tipo_miembro === 'usuario' ? 'Usuario' : 'Externo'}
+                      <Badge
+                        variant={
+                          member.tipo_miembro === 'usuario'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {member.tipo_miembro === 'usuario'
+                          ? 'Usuario'
+                          : 'Externo'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {formatRol(member.rol_proyecto)}
-                    </TableCell>
+                    <TableCell>{formatRol(member.rol_proyecto)}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {member.tipo_miembro === 'usuario'
                         ? member.usuario_email
-                        : member.externo_telefono || member.externo_email || '-'}
+                        : member.externo_telefono ||
+                          member.externo_email ||
+                          '-'}
                     </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemoveMember(member.id)
+                          e.stopPropagation();
+                          handleRemoveMember(member.id);
                         }}
                         className="text-destructive hover:text-destructive"
                       >
@@ -484,8 +536,17 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                   <div className="space-y-1">
                     <div className="font-medium">{member.nombre_display}</div>
                     <div className="flex gap-2">
-                      <Badge variant={member.tipo_miembro === 'usuario' ? 'default' : 'secondary'} className="text-xs">
-                        {member.tipo_miembro === 'usuario' ? 'Usuario' : 'Externo'}
+                      <Badge
+                        variant={
+                          member.tipo_miembro === 'usuario'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                        className="text-xs"
+                      >
+                        {member.tipo_miembro === 'usuario'
+                          ? 'Usuario'
+                          : 'Externo'}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
                         {formatRol(member.rol_proyecto)}
@@ -494,15 +555,17 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                     <div className="text-sm text-muted-foreground">
                       {member.tipo_miembro === 'usuario'
                         ? member.usuario_email
-                        : member.externo_telefono || member.externo_email || '-'}
+                        : member.externo_telefono ||
+                          member.externo_email ||
+                          '-'}
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveMember(member.id)
+                      e.stopPropagation();
+                      handleRemoveMember(member.id);
                     }}
                     className="text-destructive hover:text-destructive"
                   >
@@ -518,19 +581,28 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
       {/* Approvers Section */}
       <div className="space-y-3 pt-4 border-t">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm">Aprobadores de Solicitudes de Pago</h3>
+          <h3 className="font-semibold text-sm">
+            Aprobadores de Solicitudes de Pago
+          </h3>
           <Button variant="outline" size="sm" onClick={openApproversModal}>
             <Settings className="h-4 w-4 mr-2" />
             Configurar
           </Button>
         </div>
         {approvers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No hay aprobadores configurados</p>
+          <p className="text-sm text-muted-foreground">
+            No hay aprobadores configurados
+          </p>
         ) : (
           <div className="space-y-1">
             {approvers.map((approver, index) => (
-              <div key={approver.user_id} className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded">
-                <span className="font-medium text-muted-foreground w-6">{index + 1}.</span>
+              <div
+                key={approver.user_id}
+                className="flex items-center gap-2 text-sm p-2 bg-muted/50 rounded"
+              >
+                <span className="font-medium text-muted-foreground w-6">
+                  {index + 1}.
+                </span>
                 <span>{approver.nombre}</span>
               </div>
             ))}
@@ -544,22 +616,28 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           <DialogHeader>
             <DialogTitle>Configurar Aprobadores</DialogTitle>
             <DialogDescription>
-              Los aprobadores revisan las solicitudes de pago en el orden configurado
+              Los aprobadores revisan las solicitudes de pago en el orden
+              configurado
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Add approver */}
             <div className="flex gap-2">
-              <Select value={selectedApproverUserId} onValueChange={setSelectedApproverUserId}>
+              <Select
+                value={selectedApproverUserId}
+                onValueChange={setSelectedApproverUserId}
+              >
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Seleccionar usuario..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availableApproverUsers.length === 0 ? (
-                    <SelectItem value="-" disabled>No hay usuarios disponibles</SelectItem>
+                    <SelectItem value="-" disabled>
+                      No hay usuarios disponibles
+                    </SelectItem>
                   ) : (
-                    availableApproverUsers.map(user => (
+                    availableApproverUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id.toString()}>
                         {user.nombre}
                       </SelectItem>
@@ -567,7 +645,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                   )}
                 </SelectContent>
               </Select>
-              <Button onClick={addApproverToList} disabled={!selectedApproverUserId} size="sm">
+              <Button
+                onClick={addApproverToList}
+                disabled={!selectedApproverUserId}
+                size="sm"
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -580,8 +662,13 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             ) : (
               <div className="space-y-2">
                 {editApprovers.map((approver, index) => (
-                  <div key={approver.user_id} className="flex items-center gap-2 p-2 border rounded">
-                    <span className="font-medium text-muted-foreground w-6 text-sm">{index + 1}.</span>
+                  <div
+                    key={approver.user_id}
+                    className="flex items-center gap-2 p-2 border rounded"
+                  >
+                    <span className="font-medium text-muted-foreground w-6 text-sm">
+                      {index + 1}.
+                    </span>
                     <span className="flex-1 text-sm">{approver.nombre}</span>
                     <div className="flex gap-1">
                       <Button
@@ -618,10 +705,16 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowApproversModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowApproversModal(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={() => setShowApproverConfirm(true)} disabled={savingApprovers}>
+            <Button
+              onClick={() => setShowApproverConfirm(true)}
+              disabled={savingApprovers}
+            >
               {savingApprovers ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
@@ -629,12 +722,17 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
       </Dialog>
 
       {/* Confirm approver changes */}
-      <AlertDialog open={showApproverConfirm} onOpenChange={setShowApproverConfirm}>
+      <AlertDialog
+        open={showApproverConfirm}
+        onOpenChange={setShowApproverConfirm}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar cambio de aprobadores</AlertDialogTitle>
             <AlertDialogDescription>
-              Este cambio reseteará todas las aprobaciones de solicitudes no pagadas de este proyecto. Las solicitudes volverán a estado pendiente. ¿Desea continuar?
+              Este cambio reseteará todas las aprobaciones de solicitudes no
+              pagadas de este proyecto. Las solicitudes volverán a estado
+              pendiente. ¿Desea continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -660,18 +758,31 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             {/* Radio buttons for type */}
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <RadioGroup value={memberType} onValueChange={(v) => {
-                setMemberType(v as 'usuario' | 'externo')
-                setSelectedUserId('')
-                setSelectedExternalId('')
-              }}>
+              <RadioGroup
+                value={memberType}
+                onValueChange={(v) => {
+                  setMemberType(v as 'usuario' | 'externo');
+                  setSelectedUserId('');
+                  setSelectedExternalId('');
+                }}
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="usuario" id="tipo-usuario" />
-                  <Label htmlFor="tipo-usuario" className="font-normal cursor-pointer">Usuario del sistema</Label>
+                  <Label
+                    htmlFor="tipo-usuario"
+                    className="font-normal cursor-pointer"
+                  >
+                    Usuario del sistema
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="externo" id="tipo-externo" />
-                  <Label htmlFor="tipo-externo" className="font-normal cursor-pointer">Contacto externo</Label>
+                  <Label
+                    htmlFor="tipo-externo"
+                    className="font-normal cursor-pointer"
+                  >
+                    Contacto externo
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
@@ -680,15 +791,20 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             {memberType === 'usuario' ? (
               <div className="space-y-2">
                 <Label>Usuario</Label>
-                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <Select
+                  value={selectedUserId}
+                  onValueChange={setSelectedUserId}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar usuario..." />
                   </SelectTrigger>
                   <SelectContent>
                     {availableUsers.length === 0 ? (
-                      <SelectItem value="-" disabled>No hay usuarios disponibles</SelectItem>
+                      <SelectItem value="-" disabled>
+                        No hay usuarios disponibles
+                      </SelectItem>
                     ) : (
-                      availableUsers.map(user => (
+                      availableUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
                           {user.nombre}
                         </SelectItem>
@@ -700,15 +816,20 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             ) : (
               <div className="space-y-2">
                 <Label>Contacto Externo</Label>
-                <Select value={selectedExternalId} onValueChange={setSelectedExternalId}>
+                <Select
+                  value={selectedExternalId}
+                  onValueChange={setSelectedExternalId}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar contacto..." />
                   </SelectTrigger>
                   <SelectContent>
                     {availableExternals.length === 0 ? (
-                      <SelectItem value="-" disabled>No hay contactos disponibles</SelectItem>
+                      <SelectItem value="-" disabled>
+                        No hay contactos disponibles
+                      </SelectItem>
                     ) : (
-                      availableExternals.map(user => (
+                      availableExternals.map((user) => (
                         <SelectItem key={user.id} value={user.id.toString()}>
                           {user.nombre}
                         </SelectItem>
@@ -726,7 +847,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES_PROYECTO.map(rol => (
+                  {ROLES_PROYECTO.map((rol) => (
                     <SelectItem key={rol.value} value={rol.value}>
                       {rol.label}
                     </SelectItem>
@@ -742,7 +863,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             </Button>
             <Button
               onClick={handleAddMember}
-              disabled={(memberType === 'usuario' ? !selectedUserId : !selectedExternalId) || saving}
+              disabled={
+                (memberType === 'usuario'
+                  ? !selectedUserId
+                  : !selectedExternalId) || saving
+              }
             >
               {saving ? 'Agregando...' : 'Agregar'}
             </Button>
@@ -751,7 +876,10 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
       </Dialog>
 
       {/* Create External Modal */}
-      <Dialog open={showCreateExternalModal} onOpenChange={setShowCreateExternalModal}>
+      <Dialog
+        open={showCreateExternalModal}
+        onOpenChange={setShowCreateExternalModal}
+      >
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Crear Nuevo Contacto Externo</DialogTitle>
@@ -765,7 +893,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
               <Label>Nombre *</Label>
               <Input
                 value={newExternal.nombre}
-                onChange={(e) => setNewExternal({ ...newExternal, nombre: e.target.value })}
+                onChange={(e) =>
+                  setNewExternal({ ...newExternal, nombre: e.target.value })
+                }
                 placeholder="Nombre completo"
               />
             </div>
@@ -774,7 +904,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
               <Label>Cargo</Label>
               <Input
                 value={newExternal.cargo}
-                onChange={(e) => setNewExternal({ ...newExternal, cargo: e.target.value })}
+                onChange={(e) =>
+                  setNewExternal({ ...newExternal, cargo: e.target.value })
+                }
                 placeholder="Ej: Supervisor de Campo"
               />
             </div>
@@ -783,7 +915,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
               <Label>Telefono</Label>
               <Input
                 value={newExternal.telefono}
-                onChange={(e) => setNewExternal({ ...newExternal, telefono: e.target.value })}
+                onChange={(e) =>
+                  setNewExternal({ ...newExternal, telefono: e.target.value })
+                }
                 placeholder="Ej: 6000-0000"
               />
             </div>
@@ -795,7 +929,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES_PROYECTO.map(rol => (
+                  {ROLES_PROYECTO.map((rol) => (
                     <SelectItem key={rol.value} value={rol.value}>
                       {rol.label}
                     </SelectItem>
@@ -806,10 +940,16 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateExternalModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateExternalModal(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleCreateExternal} disabled={!newExternal.nombre.trim() || saving}>
+            <Button
+              onClick={handleCreateExternal}
+              disabled={!newExternal.nombre.trim() || saving}
+            >
               {saving ? 'Creando...' : 'Crear y Agregar'}
             </Button>
           </DialogFooter>
@@ -830,20 +970,34 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             <div className="space-y-4 py-4">
               <div className="space-y-1">
                 <Label className="text-muted-foreground">Persona</Label>
-                <div className="font-medium">{editingMember.nombre_display}</div>
-                <Badge variant={editingMember.tipo_miembro === 'usuario' ? 'default' : 'secondary'} className="text-xs">
-                  {editingMember.tipo_miembro === 'usuario' ? 'Usuario' : 'Externo'}
+                <div className="font-medium">
+                  {editingMember.nombre_display}
+                </div>
+                <Badge
+                  variant={
+                    editingMember.tipo_miembro === 'usuario'
+                      ? 'default'
+                      : 'secondary'
+                  }
+                  className="text-xs"
+                >
+                  {editingMember.tipo_miembro === 'usuario'
+                    ? 'Usuario'
+                    : 'Externo'}
                 </Badge>
               </div>
 
               <div className="space-y-2">
                 <Label>Rol en el Proyecto</Label>
-                <Select value={editRol === 'miembro' ? 'colaborador' : editRol} onValueChange={setEditRol}>
+                <Select
+                  value={editRol === 'miembro' ? 'colaborador' : editRol}
+                  onValueChange={setEditRol}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLES_PROYECTO.map(rol => (
+                    {ROLES_PROYECTO.map((rol) => (
                       <SelectItem key={rol.value} value={rol.value}>
                         {rol.label}
                       </SelectItem>
@@ -855,15 +1009,21 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditRoleModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditRoleModal(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleUpdateRole} disabled={saving || editRol === editingMember?.rol_proyecto}>
+            <Button
+              onClick={handleUpdateRole}
+              disabled={saving || editRol === editingMember?.rol_proyecto}
+            >
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

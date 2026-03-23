@@ -4,21 +4,30 @@
  * Features: Color-coded categories, progress bars, responsive layout
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatMoney } from "@/utils/formatters"
-import type { CategoryBudget } from "@/types"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { formatMoney } from '@/utils/formatters';
+import type { CategoryBudget } from '@/types';
 
 interface ExpensesByCategoryProps {
   categories: CategoryBudget[];
 }
 
-export default function ExpensesByCategory({ categories }: ExpensesByCategoryProps) {
+export default function ExpensesByCategory({
+  categories,
+}: ExpensesByCategoryProps) {
   const getProgressColor = (percent: number) => {
-    if (percent >= 90) return 'bg-destructive'
-    if (percent >= 75) return 'bg-yellow-500'
-    return 'bg-blue-500'
-  }
+    if (percent >= 90) return 'bg-destructive';
+    if (percent >= 75) return 'bg-yellow-500';
+    return 'bg-blue-500';
+  };
 
   if (!categories || categories.length === 0) {
     return (
@@ -32,7 +41,7 @@ export default function ExpensesByCategory({ categories }: ExpensesByCategoryPro
           </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -84,7 +93,9 @@ export default function ExpensesByCategory({ categories }: ExpensesByCategoryPro
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className={`h-2 rounded-full transition-all ${getProgressColor(category.porcentaje_usado || 0)}`}
-                          style={{ width: `${Math.min(category.porcentaje_usado || 0, 100)}%` }}
+                          style={{
+                            width: `${Math.min(category.porcentaje_usado || 0, 100)}%`,
+                          }}
                         />
                       </div>
                     </div>
@@ -113,19 +124,27 @@ export default function ExpensesByCategory({ categories }: ExpensesByCategoryPro
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <div className="text-muted-foreground">Presupuesto</div>
-                    <div className="font-medium">{formatMoney(category.presupuesto_actual)}</div>
+                    <div className="font-medium">
+                      {formatMoney(category.presupuesto_actual)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Gastado</div>
-                    <div className="font-medium">{formatMoney(category.gastado)}</div>
+                    <div className="font-medium">
+                      {formatMoney(category.gastado)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Disponible</div>
-                    <div className="font-medium">{formatMoney(category.disponible)}</div>
+                    <div className="font-medium">
+                      {formatMoney(category.disponible)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Progreso</div>
-                    <div className="font-medium">{category.porcentaje_usado?.toFixed(0) || 0}%</div>
+                    <div className="font-medium">
+                      {category.porcentaje_usado?.toFixed(0) || 0}%
+                    </div>
                   </div>
                 </div>
 
@@ -133,7 +152,9 @@ export default function ExpensesByCategory({ categories }: ExpensesByCategoryPro
                 <div className="w-full bg-muted rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all ${getProgressColor(category.porcentaje_usado || 0)}`}
-                    style={{ width: `${Math.min(category.porcentaje_usado || 0, 100)}%` }}
+                    style={{
+                      width: `${Math.min(category.porcentaje_usado || 0, 100)}%`,
+                    }}
                   />
                 </div>
               </CardContent>
@@ -142,5 +163,5 @@ export default function ExpensesByCategory({ categories }: ExpensesByCategoryPro
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

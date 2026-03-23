@@ -3,89 +3,98 @@ import type { AuthResponse, User } from '@/types';
 
 // Configuración base para API
 const api: AxiosInstance = axios.create({
-    baseURL: import.meta.env.PROD
-        ? 'https://andrei-backend-production.up.railway.app/api'
-        : 'http://localhost:5000/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: import.meta.env.PROD
+    ? 'https://andrei-backend-production.up.railway.app/api'
+    : 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Interceptor para agregar token automáticamente
 api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
 );
 
 // Tipos para respuestas de autenticación
 interface LoginResponse {
-    success: boolean;
-    message: string;
-    token: string;
-    user: User;
+  success: boolean;
+  message: string;
+  token: string;
+  user: User;
 }
 
 interface RegisterResponse {
-    success: boolean;
-    message: string;
-    user: User;
+  success: boolean;
+  message: string;
+  user: User;
 }
 
 interface ProfileResponse {
-    success: boolean;
-    user: User;
+  success: boolean;
+  user: User;
 }
 
 interface VerifyResponse {
-    success: boolean;
-    valid: boolean;
-    user: User;
+  success: boolean;
+  valid: boolean;
+  user: User;
 }
 
 // Funciones de autenticación
 export const authAPI = {
-    login: async (email: string, password: string): Promise<LoginResponse> => {
-        const response = await api.post<LoginResponse>('/auth/login', { email, password });
-        return response.data;
-    },
+  login: async (email: string, password: string): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>('/auth/login', {
+      email,
+      password,
+    });
+    return response.data;
+  },
 
-    register: async (
-        nombre: string,
-        email: string,
-        password: string,
-        rol: User['rol'] = 'usuario'
-    ): Promise<RegisterResponse> => {
-        const response = await api.post<RegisterResponse>('/auth/register', {
-            nombre,
-            email,
-            password,
-            rol
-        });
-        return response.data;
-    },
+  register: async (
+    nombre: string,
+    email: string,
+    password: string,
+    rol: User['rol'] = 'usuario',
+  ): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/auth/register', {
+      nombre,
+      email,
+      password,
+      rol,
+    });
+    return response.data;
+  },
 
-    getProfile: async (): Promise<ProfileResponse> => {
-        const response = await api.get<ProfileResponse>('/auth/profile');
-        return response.data;
-    },
+  getProfile: async (): Promise<ProfileResponse> => {
+    const response = await api.get<ProfileResponse>('/auth/profile');
+    return response.data;
+  },
 
-    verifyToken: async (): Promise<VerifyResponse> => {
-        const response = await api.get<VerifyResponse>('/auth/verify');
-        return response.data;
-    },
+  verifyToken: async (): Promise<VerifyResponse> => {
+    const response = await api.get<VerifyResponse>('/auth/verify');
+    return response.data;
+  },
 
-    changePassword: async (password_actual: string | null, password_nueva: string): Promise<{ success: boolean; message: string }> => {
-        const response = await api.post<{ success: boolean; message: string }>('/auth/change-password', { password_actual, password_nueva });
-        return response.data;
-    }
+  changePassword: async (
+    password_actual: string | null,
+    password_nueva: string,
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post<{ success: boolean; message: string }>(
+      '/auth/change-password',
+      { password_actual, password_nueva },
+    );
+    return response.data;
+  },
 };
 
 export default api;

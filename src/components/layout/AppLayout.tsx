@@ -7,29 +7,35 @@
  * - Proyecto: se transforma mostrando subvistas del proyecto
  */
 
-import { useState, useEffect, createContext, useContext, ReactNode } from "react"
-import { useAuth } from "../../context/AuthContext"
-import { LucideIcon } from "lucide-react"
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+} from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { LucideIcon } from 'lucide-react';
 
 interface SidebarContextType {
-  sidebarOpen: boolean
+  sidebarOpen: boolean;
 }
 
 // Create SidebarContext
-const SidebarContext = createContext<SidebarContextType>({ sidebarOpen: true })
+const SidebarContext = createContext<SidebarContextType>({ sidebarOpen: true });
 
 // Custom hook to use sidebar context
 export const useSidebar = (): SidebarContextType => {
-  const context = useContext(SidebarContext)
+  const context = useContext(SidebarContext);
   if (!context) {
-    throw new Error('useSidebar must be used within SidebarContext.Provider')
+    throw new Error('useSidebar must be used within SidebarContext.Provider');
   }
-  return context
-}
+  return context;
+};
 
-import logo from "../../assets/logo.png"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import logo from '../../assets/logo.png';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,10 +43,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import api from "../../services/api"
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import api from '../../services/api';
 import {
   Home,
   Building2,
@@ -62,99 +73,115 @@ import {
   CheckSquare,
   BookOpen,
   Layers,
-} from "lucide-react"
+} from 'lucide-react';
 
 interface SubMenuItem {
-  id: string
-  label: string
-  view: string
+  id: string;
+  label: string;
+  view: string;
 }
 
 interface MenuItem {
-  id: string
-  label: string
-  icon: LucideIcon
-  view: string
-  submenu?: SubMenuItem[]
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  view: string;
+  submenu?: SubMenuItem[];
 }
 
 interface ProjectContext {
-  id: number
-  name: string
+  id: number;
+  name: string;
 }
 
 interface AppLayoutProps {
-  children: ReactNode
-  currentView: string
-  onNavigate: (view: string) => void
-  pageTitle?: string
-  projectContext?: ProjectContext | null
-  onShowProjectInfo?: () => void
+  children: ReactNode;
+  currentView: string;
+  onNavigate: (view: string) => void;
+  pageTitle?: string;
+  projectContext?: ProjectContext | null;
+  onShowProjectInfo?: () => void;
 }
 
 interface NavigationProps {
-  onItemClick?: () => void
+  onItemClick?: () => void;
 }
 
-export function AppLayout({ children, currentView, onNavigate, pageTitle, projectContext, onShowProjectInfo }: AppLayoutProps) {
-  const { user, logout, hasPermission, isAdminOrCoAdmin } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({})
-  const [pendingApprovalCount, setPendingApprovalCount] = useState(0)
-  const [pendingByProject, setPendingByProject] = useState<Record<number, number>>({})
+export function AppLayout({
+  children,
+  currentView,
+  onNavigate,
+  pageTitle,
+  projectContext,
+  onShowProjectInfo,
+}: AppLayoutProps) {
+  const { user, logout, hasPermission, isAdminOrCoAdmin } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
+  const [pendingByProject, setPendingByProject] = useState<
+    Record<number, number>
+  >({});
 
   // Close mobile sheet when screen becomes desktop size
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768 && mobileSheetOpen) {
-        setMobileSheetOpen(false)
+        setMobileSheetOpen(false);
       }
-    }
+    };
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [mobileSheetOpen])
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [mobileSheetOpen]);
 
   useEffect(() => {
     const loadPendingCount = async () => {
       try {
-        const res = await api.get('/solicitudes-pago/pending-approval-count')
+        const res = await api.get('/solicitudes-pago/pending-approval-count');
         if (res.data.success) {
-          setPendingApprovalCount(res.data.total)
-          const byProject: Record<number, number> = {}
+          setPendingApprovalCount(res.data.total);
+          const byProject: Record<number, number> = {};
           for (const row of res.data.por_proyecto) {
-            byProject[row.proyecto_id] = row.total
+            byProject[row.proyecto_id] = row.total;
           }
-          setPendingByProject(byProject)
+          setPendingByProject(byProject);
         }
-      } catch { /* silencio */ }
-    }
-    if (user) {
-      loadPendingCount()
-      const interval = setInterval(loadPendingCount, 30000)
-      const handleStatusChange = () => loadPendingCount()
-      window.addEventListener('solicitud-status-changed', handleStatusChange)
-      return () => {
-        clearInterval(interval)
-        window.removeEventListener('solicitud-status-changed', handleStatusChange)
+      } catch {
+        /* silencio */
       }
+    };
+    if (user) {
+      loadPendingCount();
+      const interval = setInterval(loadPendingCount, 30000);
+      const handleStatusChange = () => loadPendingCount();
+      window.addEventListener('solicitud-status-changed', handleStatusChange);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener(
+          'solicitud-status-changed',
+          handleStatusChange,
+        );
+      };
     }
-  }, [user, currentView])
+  }, [user, currentView]);
 
   // ── General menu items ──
   const generalMenuItems: MenuItem[] = [
     {
-      id: "dashboard",
-      label: "Dashboard",
+      id: 'dashboard',
+      label: 'Dashboard',
       icon: Home,
-      view: "dashboard"
+      view: 'dashboard',
     },
     {
-      id: "proyectos",
-      label: "Proyectos",
+      id: 'proyectos',
+      label: 'Proyectos',
       icon: Building2,
-      view: "projects"
+      view: 'projects',
     },
     // Oportunidades oculto temporalmente
     // ...(hasPermission('oportunidades_ver') ? [{
@@ -164,59 +191,103 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
     //   view: "oportunidades"
     // }] : []),
     {
-      id: "clientes",
-      label: "Clientes",
+      id: 'clientes',
+      label: 'Clientes',
       icon: Users,
-      view: "clientes"
+      view: 'clientes',
     },
     {
-      id: "requisiciones",
-      label: "Requisiciones",
+      id: 'requisiciones',
+      label: 'Requisiciones',
       icon: ClipboardList,
-      view: "requisiciones"
+      view: 'requisiciones',
     },
     {
-      id: "solicitudes-pago",
-      label: "Solicitudes de Pago",
+      id: 'solicitudes-pago',
+      label: 'Solicitudes de Pago',
       icon: Banknote,
-      view: "solicitudes-pago"
+      view: 'solicitudes-pago',
     },
-    ...(hasPermission('equipos_ver') ? [{
-      id: "equipos",
-      label: "Equipos",
-      icon: Truck as LucideIcon,
-      view: "equipos",
-      submenu: [
-        { id: "equipos-info", label: "Información de Equipos", view: "equipos-informacion" },
-        { id: "equipos-status", label: "Status de Equipos", view: "equipos-status" },
-        { id: "equipos-asig", label: "Asignaciones", view: "equipos-asignaciones" }
-      ]
-    }] : []),
-    ...(hasPermission('documentos_acceso') ? [{
-      id: "documentos",
-      label: "Documentos",
-      icon: FileText as LucideIcon,
-      view: "documentos",
-      submenu: [
-        { id: "doc-hub", label: "Ver Todos", view: "documentos" },
-        { id: "doc-consorcio", label: "Acuerdo Consorcio", view: "doc-acuerdo-consorcio" },
-        { id: "doc-adhesion", label: "Carta Adhesión", view: "doc-carta-adhesion" },
-        { id: "doc-retorsion", label: "Medidas Retorsión", view: "doc-medidas-retorsion" },
-        { id: "doc-incapacidad", label: "No Incapacidad", view: "doc-no-incapacidad" },
-        { id: "doc-integridad", label: "Pacto Integridad", view: "doc-pacto-integridad" }
-      ]
-    }] : []),
-    ...(isAdminOrCoAdmin ? [{
-      id: "administracion",
-      label: "Administración",
-      icon: UserCog as LucideIcon,
-      view: "usuarios",
-      submenu: [
-        { id: "admin-usuarios", label: "Usuarios", view: "usuarios" },
-        { id: "admin-permisos", label: "Permisos", view: "permisos" }
-      ]
-    }] : [])
-  ]
+    ...(hasPermission('equipos_ver')
+      ? [
+          {
+            id: 'equipos',
+            label: 'Equipos',
+            icon: Truck as LucideIcon,
+            view: 'equipos',
+            submenu: [
+              {
+                id: 'equipos-info',
+                label: 'Información de Equipos',
+                view: 'equipos-informacion',
+              },
+              {
+                id: 'equipos-status',
+                label: 'Status de Equipos',
+                view: 'equipos-status',
+              },
+              {
+                id: 'equipos-asig',
+                label: 'Asignaciones',
+                view: 'equipos-asignaciones',
+              },
+            ],
+          },
+        ]
+      : []),
+    ...(hasPermission('documentos_acceso')
+      ? [
+          {
+            id: 'documentos',
+            label: 'Documentos',
+            icon: FileText as LucideIcon,
+            view: 'documentos',
+            submenu: [
+              { id: 'doc-hub', label: 'Ver Todos', view: 'documentos' },
+              {
+                id: 'doc-consorcio',
+                label: 'Acuerdo Consorcio',
+                view: 'doc-acuerdo-consorcio',
+              },
+              {
+                id: 'doc-adhesion',
+                label: 'Carta Adhesión',
+                view: 'doc-carta-adhesion',
+              },
+              {
+                id: 'doc-retorsion',
+                label: 'Medidas Retorsión',
+                view: 'doc-medidas-retorsion',
+              },
+              {
+                id: 'doc-incapacidad',
+                label: 'No Incapacidad',
+                view: 'doc-no-incapacidad',
+              },
+              {
+                id: 'doc-integridad',
+                label: 'Pacto Integridad',
+                view: 'doc-pacto-integridad',
+              },
+            ],
+          },
+        ]
+      : []),
+    ...(isAdminOrCoAdmin
+      ? [
+          {
+            id: 'administracion',
+            label: 'Administración',
+            icon: UserCog as LucideIcon,
+            view: 'usuarios',
+            submenu: [
+              { id: 'admin-usuarios', label: 'Usuarios', view: 'usuarios' },
+              { id: 'admin-permisos', label: 'Permisos', view: 'permisos' },
+            ],
+          },
+        ]
+      : []),
+  ];
 
   // ── Project submenu items ──
   const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
@@ -229,68 +300,71 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
     { key: 'miembros', label: 'Miembros', icon: Users },
     { key: 'equipos', label: 'Equipos', icon: Truck },
     { key: 'adendas', label: 'Adendas', icon: Layers },
-  ]
+  ];
 
   const toggleSubmenu = (menuId: string) => {
-    setExpandedMenus(prev => ({
+    setExpandedMenus((prev) => ({
       ...prev,
-      [menuId]: !prev[menuId]
-    }))
-  }
+      [menuId]: !prev[menuId],
+    }));
+  };
 
   const handleNavigation = (view: string, closeSheet?: boolean) => {
-    onNavigate(view)
+    onNavigate(view);
     if (closeSheet) {
-      setMobileSheetOpen(false)
+      setMobileSheetOpen(false);
     }
-  }
+  };
 
   const isGeneralActive = (item: MenuItem): boolean => {
     if (item.submenu) {
-      return item.submenu.some(sub => sub.view === currentView) || item.view === currentView
+      return (
+        item.submenu.some((sub) => sub.view === currentView) ||
+        item.view === currentView
+      );
     }
-    return item.view === currentView
-  }
+    return item.view === currentView;
+  };
 
   // Get active project subview from currentView
   const getActiveProjectSubview = (): string => {
-    if (!projectContext || !currentView.startsWith('project-')) return ''
-    const parts = currentView.split('-')
-    return parts.slice(2).join('-')
-  }
+    if (!projectContext || !currentView.startsWith('project-')) return '';
+    const parts = currentView.split('-');
+    return parts.slice(2).join('-');
+  };
 
   const getInitials = (name?: string): string => {
-    if (!name) return "U"
+    if (!name) return 'U';
     return name
-      .split(" ")
-      .map(n => n[0])
-      .join("")
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   // ── General Navigation (no project context) ──
   const GeneralNavigation = ({ onItemClick }: NavigationProps) => (
     <ScrollArea className="flex-1 px-3">
       <div className="space-y-1 py-4">
         {generalMenuItems.map((item) => {
-          const Icon = item.icon
-          const active = isGeneralActive(item)
-          const hasSubmenu = item.submenu && item.submenu.length > 0
-          const expanded = expandedMenus[item.id]
+          const Icon = item.icon;
+          const active = isGeneralActive(item);
+          const hasSubmenu = item.submenu && item.submenu.length > 0;
+          const expanded = expandedMenus[item.id];
 
           return (
             <div key={item.id}>
               <Button
-                variant={active ? "secondary" : "ghost"}
+                variant={active ? 'secondary' : 'ghost'}
                 className="w-full justify-start"
                 onClick={() => {
                   if (hasSubmenu) {
-                    toggleSubmenu(item.id)
-                    handleNavigation(item.view)
+                    toggleSubmenu(item.id);
+                    handleNavigation(item.view);
                   } else {
-                    handleNavigation(item.view)
-                    onItemClick?.()
+                    handleNavigation(item.view);
+                    onItemClick?.();
                   }
                 }}
               >
@@ -301,9 +375,12 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
                     {pendingApprovalCount}
                   </span>
                 )}
-                {hasSubmenu && (
-                  expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
-                )}
+                {hasSubmenu &&
+                  (expanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  ))}
               </Button>
 
               {hasSubmenu && expanded && (
@@ -311,12 +388,14 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
                   {item.submenu?.map((subItem) => (
                     <Button
                       key={subItem.id}
-                      variant={currentView === subItem.view ? "secondary" : "ghost"}
+                      variant={
+                        currentView === subItem.view ? 'secondary' : 'ghost'
+                      }
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        handleNavigation(subItem.view)
-                        onItemClick?.()
+                        handleNavigation(subItem.view);
+                        onItemClick?.();
                       }}
                     >
                       {subItem.label}
@@ -325,16 +404,16 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
                 </div>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </ScrollArea>
-  )
+  );
 
   // ── Project Navigation (inside a project) ──
   // Three visual zones: general nav (white), project title (strong), subviews (tinted)
   const ProjectNavigation = ({ onItemClick }: NavigationProps) => {
-    const activeSubview = getActiveProjectSubview()
+    const activeSubview = getActiveProjectSubview();
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -344,8 +423,8 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
             variant="ghost"
             className="w-full justify-start text-muted-foreground"
             onClick={() => {
-              handleNavigation("dashboard")
-              onItemClick?.()
+              handleNavigation('dashboard');
+              onItemClick?.();
             }}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -355,8 +434,8 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
             variant="ghost"
             className="w-full justify-start text-muted-foreground"
             onClick={() => {
-              handleNavigation("projects")
-              onItemClick?.()
+              handleNavigation('projects');
+              onItemClick?.();
             }}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -375,8 +454,8 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
               size="icon"
               className="h-7 w-7 shrink-0 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => {
-                onShowProjectInfo()
-                onItemClick?.()
+                onShowProjectInfo();
+                onItemClick?.();
               }}
               title="Ver información del proyecto"
             >
@@ -389,60 +468,65 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
         <ScrollArea className="flex-1 bg-primary/10">
           <div className="px-3 py-3 space-y-1">
             {projectMenuItems.map((item) => {
-              const Icon = item.icon
-              const isActive = activeSubview === item.key
+              const Icon = item.icon;
+              const isActive = activeSubview === item.key;
 
               return (
                 <Button
                   key={item.key}
-                  variant={isActive ? "secondary" : "ghost"}
+                  variant={isActive ? 'secondary' : 'ghost'}
                   className="w-full justify-start"
                   onClick={() => {
-                    handleNavigation(`project-${projectContext!.id}-${item.key}`)
-                    onItemClick?.()
+                    handleNavigation(
+                      `project-${projectContext!.id}-${item.key}`,
+                    );
+                    onItemClick?.();
                   }}
                 >
                   <Icon className="mr-2 h-4 w-4" />
                   <span className="flex-1 text-left">{item.label}</span>
-                  {item.key === 'solicitudes-pago' && projectContext && pendingByProject[projectContext.id] > 0 && (
-                    <span className="ml-auto h-5 min-w-5 px-1.5 text-[10px] font-semibold bg-red-500 text-white rounded-full flex items-center justify-center leading-none pb-px">
-                      {pendingByProject[projectContext.id]}
-                    </span>
-                  )}
+                  {item.key === 'solicitudes-pago' &&
+                    projectContext &&
+                    pendingByProject[projectContext.id] > 0 && (
+                      <span className="ml-auto h-5 min-w-5 px-1.5 text-[10px] font-semibold bg-red-500 text-white rounded-full flex items-center justify-center leading-none pb-px">
+                        {pendingByProject[projectContext.id]}
+                      </span>
+                    )}
                 </Button>
-              )
+              );
             })}
           </div>
         </ScrollArea>
       </div>
-    )
-  }
+    );
+  };
 
   // Choose which navigation to render based on context
   const Navigation = ({ onItemClick }: NavigationProps) => {
     if (projectContext) {
-      return <ProjectNavigation onItemClick={onItemClick} />
+      return <ProjectNavigation onItemClick={onItemClick} />;
     }
-    return <GeneralNavigation onItemClick={onItemClick} />
-  }
+    return <GeneralNavigation onItemClick={onItemClick} />;
+  };
 
   // Compute topbar title
   const getTopbarTitle = (): string => {
-    if (pageTitle) return pageTitle
-    if (projectContext) return projectContext.name
-    const found = generalMenuItems.find(item =>
-      item.view === currentView ||
-      item.submenu?.some(sub => sub.view === currentView)
-    )
-    return found?.label || "Dashboard"
-  }
+    if (pageTitle) return pageTitle;
+    if (projectContext) return projectContext.name;
+    const found = generalMenuItems.find(
+      (item) =>
+        item.view === currentView ||
+        item.submenu?.some((sub) => sub.view === currentView),
+    );
+    return found?.label || 'Dashboard';
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar Desktop */}
       <aside
         className={`hidden md:flex flex-col border-r bg-background transition-all duration-300 ${
-          sidebarOpen ? "w-64" : "w-0"
+          sidebarOpen ? 'w-64' : 'w-0'
         }`}
       >
         {sidebarOpen && (
@@ -482,7 +566,11 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
             <SheetContent side="left" className="w-64 p-0">
               <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
               <div className="flex h-16 items-center justify-center border-b px-6">
-                <img src={logo} alt="Pinellas" className="h-10 object-contain" />
+                <img
+                  src={logo}
+                  alt="Pinellas"
+                  className="h-10 object-contain"
+                />
               </div>
               <Navigation onItemClick={() => setMobileSheetOpen(false)} />
             </SheetContent>
@@ -498,7 +586,10 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar>
                   <AvatarFallback className="bg-primary text-primary-foreground">
                     {getInitials(user?.nombre)}
@@ -509,7 +600,9 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.nombre}</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user?.nombre}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                   </p>
@@ -537,5 +630,5 @@ export function AppLayout({ children, currentView, onNavigate, pageTitle, projec
         </main>
       </div>
     </div>
-  )
+  );
 }

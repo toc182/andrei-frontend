@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { useAuth } from '@/context/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Key } from 'lucide-react'
-import { ChangePasswordModal } from '@/components/ChangePasswordModal'
+import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Key } from 'lucide-react';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 
 const rolLabels: Record<string, string> = {
   admin: 'Administrador',
   'co-admin': 'Co-Administrador',
   usuario: 'Usuario',
-}
+};
 
 export default function MiCuentaPage() {
-  const { user } = useAuth()
-  const [showChangePassword, setShowChangePassword] = useState(false)
+  const { user } = useAuth();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -37,7 +37,9 @@ export default function MiCuentaPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Rol</p>
-            <p className="text-base font-medium">{rolLabels[user?.rol ?? ''] ?? user?.rol}</p>
+            <p className="text-base font-medium">
+              {rolLabels[user?.rol ?? ''] ?? user?.rol}
+            </p>
           </div>
           <div className="pt-2">
             <Button onClick={() => setShowChangePassword(true)}>
@@ -53,5 +55,5 @@ export default function MiCuentaPage() {
         onOpenChange={setShowChangePassword}
       />
     </div>
-  )
+  );
 }
