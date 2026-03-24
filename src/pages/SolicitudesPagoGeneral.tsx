@@ -764,6 +764,7 @@ export default function SolicitudesPagoGeneral({
         setBulkPassword('');
         setPendingApprovalId(null);
         setShowDetail(false);
+        setSearchTerm('');
         await loadData();
         window.dispatchEvent(new Event('solicitud-status-changed'));
       } else if (selectedIds.size > 0) {
@@ -967,6 +968,7 @@ export default function SolicitudesPagoGeneral({
             placeholder="Buscar por numero, proveedor, proyecto..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
             className="w-full"
           />
         </div>
@@ -1890,6 +1892,7 @@ export default function SolicitudesPagoGeneral({
                 value={bulkPassword}
                 onChange={(e) => setBulkPassword(e.target.value)}
                 placeholder="Tu contraseña"
+                autoComplete="off"
                 className="mt-1"
                 onKeyDown={(e) => e.key === 'Enter' && handleConfirmApproval()}
               />
