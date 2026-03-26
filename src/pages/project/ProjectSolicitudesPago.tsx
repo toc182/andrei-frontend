@@ -605,14 +605,12 @@ export default function ProjectSolicitudesPago({
   };
 
   const handleRegistrarReembolso = async (solicitudId: number) => {
-    if (!reembolsoFecha) return;
+    if (!reembolsoFecha || !reembolsoFile) return;
     try {
       setRegistrandoReembolso(true);
       const formData = new FormData();
       formData.append('fecha_reembolso', reembolsoFecha);
-      if (reembolsoFile) {
-        formData.append('comprobante', reembolsoFile);
-      }
+      formData.append('comprobante', reembolsoFile);
       await api.post(`/solicitudes-pago/${solicitudId}/reembolso`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -1577,17 +1575,37 @@ export default function ProjectSolicitudesPago({
                     )}
                   </div>
 
-                  {(isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={detailSolicitud.pinellas_paga}
-                        onCheckedChange={(checked) => {
-                          setPendingPinellasPaga(!!checked);
-                          setShowPinellasPagaConfirm(true);
-                        }}
-                      />
-                      Pinellas paga (reembolso)
-                    </label>
+                  {(isAdminOrCoAdmin || detailSolicitud.preparado_por === user?.id) && (
+                    <div>
+                      <label className={`flex items-center gap-2 text-sm ${
+                        !detailSolicitud.pinellas_paga &&
+                        (detailSolicitud.estado === 'pagada' ||
+                          detailSolicitud.estado === 'facturada')
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'cursor-pointer'
+                      }`}>
+                        <Checkbox
+                          checked={detailSolicitud.pinellas_paga}
+                          disabled={
+                            !detailSolicitud.pinellas_paga &&
+                            (detailSolicitud.estado === 'pagada' ||
+                              detailSolicitud.estado === 'facturada')
+                          }
+                          onCheckedChange={(checked) => {
+                            setPendingPinellasPaga(!!checked);
+                            setShowPinellasPagaConfirm(true);
+                          }}
+                        />
+                        Pinellas paga (reembolso)
+                      </label>
+                      {!detailSolicitud.pinellas_paga &&
+                        (detailSolicitud.estado === 'pagada' ||
+                          detailSolicitud.estado === 'facturada') && (
+                          <p className="text-xs text-muted-foreground ml-6 mt-1">
+                            No disponible después de pagada
+                          </p>
+                        )}
+                    </div>
                   )}
 
                   {/* Show approval progress */}
@@ -2097,7 +2115,7 @@ export default function ProjectSolicitudesPago({
               />
             </div>
             <div>
-              <Label>Comprobante</Label>
+              <Label>Comprobante *</Label>
               <Input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
@@ -2118,7 +2136,7 @@ export default function ProjectSolicitudesPago({
               onClick={() =>
                 detailSolicitud && handleRegistrarReembolso(detailSolicitud.id)
               }
-              disabled={!reembolsoFecha || registrandoReembolso}
+              disabled={!reembolsoFecha || !reembolsoFile || registrandoReembolso}
             >
               {registrandoReembolso ? 'Registrando...' : 'Confirmar Reembolso'}
             </Button>
@@ -2187,8 +2205,14 @@ export default function ProjectSolicitudesPago({
                       pinellas_paga: pendingPinellasPaga,
                     });
                     loadSolicitudes();
-                  } catch {
-                    // silently fail
+                  } catch (err) {
+                    const apiError = err as {
+                      response?: { data?: { message?: string } };
+                    };
+                    alert(
+                      apiError.response?.data?.message ||
+                        'Error al cambiar pinellas_paga',
+                    );
                   }
                 }
                 setShowPinellasPagaConfirm(false);
