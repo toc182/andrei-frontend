@@ -1444,7 +1444,7 @@ export default function ProjectSolicitudesPago({
                         <div>
                           Fecha de pago:{' '}
                           {new Date(
-                            detailComprobante.fecha_pago + 'T12:00:00',
+                            detailComprobante.fecha_pago.split('T')[0] + 'T12:00:00',
                           ).toLocaleDateString('es-PA')}
                         </div>
                         <div>
@@ -1473,7 +1473,7 @@ export default function ProjectSolicitudesPago({
                       <div>
                         Fecha de factura:{' '}
                         {new Date(
-                          detailFactura.fecha_factura + 'T12:00:00',
+                          detailFactura.fecha_factura.split('T')[0] + 'T12:00:00',
                         ).toLocaleDateString('es-PA')}
                       </div>
                       {detailFactura.numero_factura && (
