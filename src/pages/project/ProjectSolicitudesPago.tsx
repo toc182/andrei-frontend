@@ -48,6 +48,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -340,17 +341,19 @@ export default function ProjectSolicitudesPago({
     adjuntos: SolicitudPagoAdjunto[];
   } | null>(null);
 
-  // Registrar factura
+  // Registrar factura/recibo
   const [showRegistrarFacturaModal, setShowRegistrarFacturaModal] =
     useState(false);
   const [registroFacturaFecha, setRegistroFacturaFecha] = useState('');
   const [registroFacturaNumero, setRegistroFacturaNumero] = useState('');
+  const [registroFacturaTipo, setRegistroFacturaTipo] = useState<'factura' | 'recibo'>('factura');
   const [registroFacturaFiles, setRegistroFacturaFiles] =
     useState<FileList | null>(null);
   const [registrandoFactura, setRegistrandoFactura] = useState(false);
   const [detailFactura, setDetailFactura] = useState<{
     fecha_factura: string;
     numero_factura?: string;
+    tipo?: string;
     registrado_por_nombre: string;
     adjuntos: SolicitudPagoAdjunto[];
   } | null>(null);
@@ -578,6 +581,7 @@ export default function ProjectSolicitudesPago({
       setRegistrandoFactura(true);
       const formData = new FormData();
       formData.append('fecha_factura', registroFacturaFecha);
+      formData.append('tipo', registroFacturaTipo);
       if (registroFacturaNumero.trim()) {
         formData.append('numero_factura', registroFacturaNumero.trim());
       }
@@ -1464,21 +1468,23 @@ export default function ProjectSolicitudesPago({
                   </div>
                 )}
 
-              {/* Factura */}
+              {/* Factura/Recibo */}
               {detailSolicitud.estado === 'facturada' && detailFactura && (
                 <div className="space-y-3">
                   <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-3">
-                    <h4 className="font-medium text-emerald-900">Factura</h4>
+                    <h4 className="font-medium text-emerald-900">
+                      {detailFactura.tipo === 'recibo' ? 'Recibo' : 'Factura'}
+                    </h4>
                     <div className="text-sm text-emerald-800 space-y-1">
                       <div>
-                        Fecha de factura:{' '}
+                        Fecha:{' '}
                         {new Date(
                           detailFactura.fecha_factura.split('T')[0] + 'T12:00:00',
                         ).toLocaleDateString('es-PA')}
                       </div>
                       {detailFactura.numero_factura && (
                         <div>
-                          Numero de factura: {detailFactura.numero_factura}
+                          Número de factura: {detailFactura.numero_factura}
                         </div>
                       )}
                       <div>
@@ -1490,7 +1496,7 @@ export default function ProjectSolicitudesPago({
                         adjuntos={detailFactura.adjuntos}
                         solicitudPagoId={detailSolicitud.id}
                         readOnly
-                        title="Facturas"
+                        title={detailFactura.tipo === 'recibo' ? 'Recibos' : 'Facturas'}
                       />
                     )}
                   </div>
@@ -1787,13 +1793,14 @@ export default function ProjectSolicitudesPago({
                                 onClick={() => {
                                   setRegistroFacturaFecha('');
                                   setRegistroFacturaNumero('');
+                                  setRegistroFacturaTipo('factura');
                                   setRegistroFacturaFiles(null);
                                   setShowRegistrarFacturaModal(true);
                                 }}
                                 className="w-full"
                               >
                                 <FileCheck className="h-4 w-4 mr-2" />
-                                Registrar Factura
+                                Registrar Factura o Recibo
                               </Button>
                             </div>
                           )}
@@ -2027,21 +2034,38 @@ export default function ProjectSolicitudesPago({
         </DialogContent>
       </Dialog>
 
-      {/* Registrar Factura Modal */}
+      {/* Registrar Factura/Recibo Modal */}
       <Dialog
         open={showRegistrarFacturaModal}
         onOpenChange={setShowRegistrarFacturaModal}
       >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Registrar Factura</DialogTitle>
+            <DialogTitle>Registrar Factura o Recibo</DialogTitle>
             <DialogDescription>
-              Ingresa los datos de la factura del proveedor.
+              Ingresa los datos del documento del proveedor.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
-              <Label>Fecha de factura *</Label>
+              <Label>Tipo de documento *</Label>
+              <RadioGroup
+                value={registroFacturaTipo}
+                onValueChange={(v) => setRegistroFacturaTipo(v as 'factura' | 'recibo')}
+                className="flex gap-4 mt-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="factura" id="p-tipo-factura" />
+                  <Label htmlFor="p-tipo-factura" className="font-normal cursor-pointer">Factura</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="recibo" id="p-tipo-recibo" />
+                  <Label htmlFor="p-tipo-recibo" className="font-normal cursor-pointer">Recibo</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div>
+              <Label>Fecha *</Label>
               <Input
                 type="date"
                 value={registroFacturaFecha}
@@ -2049,18 +2073,20 @@ export default function ProjectSolicitudesPago({
                 className="mt-1"
               />
             </div>
+            {registroFacturaTipo === 'factura' && (
+              <div>
+                <Label>Número de factura</Label>
+                <Input
+                  type="text"
+                  value={registroFacturaNumero}
+                  onChange={(e) => setRegistroFacturaNumero(e.target.value)}
+                  placeholder="Opcional"
+                  className="mt-1"
+                />
+              </div>
+            )}
             <div>
-              <Label>Numero de factura</Label>
-              <Input
-                type="text"
-                value={registroFacturaNumero}
-                onChange={(e) => setRegistroFacturaNumero(e.target.value)}
-                placeholder="Opcional"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Archivo(s) de factura *</Label>
+              <Label>Archivo(s) *</Label>
               <Input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
