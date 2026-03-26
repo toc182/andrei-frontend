@@ -321,8 +321,8 @@ export default function SolicitudesPagoGeneral({
   const [detailRevisada, setDetailRevisada] = useState(false);
   const [togglingRevisada, setTogglingRevisada] = useState(false);
 
-  // Selection for bulk approval
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  // Bulk approval success banner
+  const [bulkSuccessMessage, setBulkSuccessMessage] = useState<string | null>(null);
 
   // Bulk approval
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -406,7 +406,6 @@ export default function SolicitudesPagoGeneral({
 
   const loadData = async () => {
     try {
-      setSelectedIds(new Set());
       setLoading(true);
       setError(null);
 
@@ -743,14 +742,10 @@ export default function SolicitudesPagoGeneral({
     }
   };
 
-  const toggleSelection = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  // Get IDs of reviewed solicitudes that are my turn to approve
+  const reviewedIds = solicitudes
+    .filter((s) => s.revisada && s.es_mi_turno)
+    .map((s) => s.id);
 
   const handleConfirmApproval = async () => {
     if (!bulkPassword.trim()) return;
@@ -769,19 +764,19 @@ export default function SolicitudesPagoGeneral({
         setSearchTerm('');
         await loadData();
         window.dispatchEvent(new Event('solicitud-status-changed'));
-      } else if (selectedIds.size > 0) {
-        // Bulk approval
+      } else if (reviewedIds.length > 0) {
+        // Bulk approval of reviewed solicitudes
         const response = await api.post('/solicitudes-pago/aprobar-masivo', {
-          ids: Array.from(selectedIds),
+          ids: reviewedIds,
           password: bulkPassword,
         });
         if (response.data.success) {
           setShowPasswordModal(false);
           setBulkPassword('');
-          setSelectedIds(new Set());
-          alert(
+          setBulkSuccessMessage(
             `${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`,
           );
+          setTimeout(() => setBulkSuccessMessage(null), 5000);
           loadData();
           window.dispatchEvent(new Event('solicitud-status-changed'));
         }
@@ -996,14 +991,29 @@ export default function SolicitudesPagoGeneral({
         </label>
       </div>
 
+      {/* Bulk approve reviewed button */}
+      {reviewedIds.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              setPendingApprovalId(null);
+              setBulkError(null);
+              setBulkPassword('');
+              setShowPasswordModal(true);
+            }}
+            size="sm"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            Aprobar solicitudes revisadas ({reviewedIds.length})
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              {filterMyApproval && (
-                <TableHead className="w-10 px-2"></TableHead>
-              )}
               <TableHead className="w-[100px]">Numero</TableHead>
               <TableHead className="w-6 px-0"></TableHead>
               <TableHead>Proyecto</TableHead>
@@ -1016,7 +1026,7 @@ export default function SolicitudesPagoGeneral({
             {filteredSolicitudes.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={filterMyApproval ? 7 : 6}
+                  colSpan={6}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No se encontraron solicitudes de pago
@@ -1029,18 +1039,6 @@ export default function SolicitudesPagoGeneral({
                   className={`cursor-pointer hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
                   onClick={() => openDetail(sol)}
                 >
-                  {filterMyApproval && (
-                    <TableCell
-                      className="px-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Checkbox
-                        checked={selectedIds.has(sol.id)}
-                        onCheckedChange={() => toggleSelection(sol.id)}
-                        disabled={!sol.revisada}
-                      />
-                    </TableCell>
-                  )}
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-1">
                       {sol.numero}
@@ -1100,33 +1098,17 @@ export default function SolicitudesPagoGeneral({
         </Table>
       </div>
 
-      {/* Bulk Approval Bar */}
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t shadow-lg">
-          <div className="flex items-center justify-center gap-3 px-4 py-2.5">
-            <span className="text-sm font-medium whitespace-nowrap">
-              {selectedIds.size} seleccionada{selectedIds.size > 1 ? 's' : ''}
-            </span>
-            <Button
-              onClick={() => {
-                setPendingApprovalId(null);
-                setBulkError(null);
-                setBulkPassword('');
-                setShowPasswordModal(true);
-              }}
-              size="sm"
-            >
-              <Check className="h-4 w-4 mr-1" />
-              Aprobar seleccionadas
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedIds(new Set())}
-            >
-              Cancelar
-            </Button>
-          </div>
+      {/* Bulk Approval Success Banner */}
+      {bulkSuccessMessage && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          <span className="text-sm font-medium">{bulkSuccessMessage}</span>
+          <button
+            onClick={() => setBulkSuccessMessage(null)}
+            className="ml-2 hover:opacity-80"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -1906,7 +1888,7 @@ export default function SolicitudesPagoGeneral({
             <DialogDescription>
               {pendingApprovalId
                 ? 'Ingresa tu contraseña para aprobar esta solicitud.'
-                : `Vas a aprobar ${selectedIds.size} solicitud${selectedIds.size > 1 ? 'es' : ''}. Ingresa tu contraseña para confirmar.`}
+                : `Vas a aprobar ${reviewedIds.length} solicitud${reviewedIds.length > 1 ? 'es' : ''} revisada${reviewedIds.length > 1 ? 's' : ''}. Ingresa tu contraseña para confirmar.`}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-3">
