@@ -1920,7 +1920,7 @@ export default function ProjectSolicitudesPago({
                 value={bulkPassword}
                 onChange={(e) => setBulkPassword(e.target.value)}
                 placeholder="Tu contraseña"
-                autoComplete="off"
+                autoComplete="new-password"
                 className="mt-1"
                 onKeyDown={(e) => e.key === 'Enter' && handleConfirmApproval()}
               />
