@@ -1803,7 +1803,9 @@ export default function ProjectSolicitudesPago({
               </div>
 
               {/* Delete */}
-              {(user?.rol === 'admin' ||
+              {((user?.rol === 'admin' &&
+                detailSolicitud.estado !== 'pagada' &&
+                detailSolicitud.estado !== 'facturada') ||
                 (canManage &&
                   detailSolicitud.estado === 'pendiente' &&
                   detailAprobaciones.length === 0 &&
