@@ -207,7 +207,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
     pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
     facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
-    devolucion: { variant: 'secondary', label: 'Devolución', icon: Ban },
+    devolucion: { variant: 'outline', label: 'Devolución', icon: Ban },
   };
 
   const config = variants[estado] || {
@@ -221,7 +221,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     pendiente: ' bg-yellow-100 text-yellow-800 border border-yellow-300',
     pagada: ' bg-green-600 text-white',
     facturada: ' bg-blue-600 text-white',
-    devolucion: ' bg-gray-500 text-white',
+    devolucion: ' bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200',
   };
 
   let extraClass = colorOverrides[estado] || '';
