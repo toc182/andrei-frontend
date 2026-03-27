@@ -25,6 +25,7 @@ import {
   Upload,
   ChevronsUpDown,
   Undo2,
+  Ban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -187,7 +188,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
     pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
     facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
-    devolucion: { variant: 'destructive', label: 'Devolución', icon: Undo2 },
+    devolucion: { variant: 'secondary', label: 'Devolución', icon: Ban },
   };
 
   const config = variants[estado] || {
@@ -1572,12 +1573,17 @@ export default function ProjectSolicitudesPago({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const token = localStorage.getItem('token');
-                          window.open(
-                            `${api.defaults.baseURL}/solicitudes-pago/adjuntos/download/${encodeURIComponent(detailDevolucion.comprobante_url)}?token=${token}`,
-                            '_blank',
-                          );
+                        onClick={async () => {
+                          try {
+                            const resp = await api.get(
+                              `/solicitudes-pago/${detailSolicitud.id}/devolucion/comprobante`,
+                            );
+                            if (resp.data.success && resp.data.url) {
+                              window.open(resp.data.url, '_blank');
+                            }
+                          } catch {
+                            alert('Error al descargar comprobante');
+                          }
                         }}
                       >
                         <Download className="h-3.5 w-3.5 mr-1" />
