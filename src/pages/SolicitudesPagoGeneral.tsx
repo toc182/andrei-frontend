@@ -23,6 +23,8 @@ import {
   RefreshCw,
   Upload,
   ChevronsUpDown,
+  Settings,
+  Undo2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +57,12 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -85,7 +93,8 @@ type EstadoSolicitud =
   | 'aprobada'
   | 'rechazada'
   | 'pagada'
-  | 'facturada';
+  | 'facturada'
+  | 'devolucion';
 
 interface SolicitudPago {
   id: number;
@@ -184,6 +193,7 @@ const ESTADO_OPTIONS = [
   { value: 'aprobada', label: 'Aprobada' },
   { value: 'pagada', label: 'Pagada' },
   { value: 'facturada', label: 'Facturada' },
+  { value: 'devolucion', label: 'Devolución' },
 ];
 
 const ALL_ESTADOS = ESTADO_OPTIONS.map((e) => e.value);
@@ -196,6 +206,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
     pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
     facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
+    devolucion: { variant: 'destructive', label: 'Devolución', icon: Undo2 },
   };
 
   const config = variants[estado] || {
@@ -209,6 +220,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     pendiente: ' bg-yellow-100 text-yellow-800 border border-yellow-300',
     pagada: ' bg-green-600 text-white',
     facturada: ' bg-blue-600 text-white',
+    devolucion: ' bg-gray-500 text-white',
   };
 
   let extraClass = colorOverrides[estado] || '';
@@ -382,6 +394,21 @@ export default function SolicitudesPagoGeneral({
   const [reembolsoFile, setReembolsoFile] = useState<File | null>(null);
   const [registrandoReembolso, setRegistrandoReembolso] = useState(false);
 
+  // Devolución
+  const [detailDevolucion, setDetailDevolucion] = useState<{
+    id: number;
+    fecha_devolucion: string;
+    motivo: string;
+    comprobante_url: string;
+    comprobante_nombre: string;
+    registrado_por_nombre: string;
+  } | null>(null);
+  const [showDevolucionModal, setShowDevolucionModal] = useState(false);
+  const [devolucionFecha, setDevolucionFecha] = useState('');
+  const [devolucionMotivo, setDevolucionMotivo] = useState('');
+  const [devolucionFile, setDevolucionFile] = useState<File | null>(null);
+  const [registrandoDevolucion, setRegistrandoDevolucion] = useState(false);
+
   // Edit confirmation (AlertDialog)
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditSolicitud, setPendingEditSolicitud] =
@@ -514,6 +541,7 @@ export default function SolicitudesPagoGeneral({
         setDetailComprobante(response.data.comprobante || null);
         setDetailFactura(response.data.factura || null);
         setDetailReembolso(response.data.reembolso || null);
+        setDetailDevolucion(response.data.devolucion || null);
         setDetailRevisada(!!solicitud.revisada);
         setShowDetail(true);
       }
@@ -657,6 +685,30 @@ export default function SolicitudesPagoGeneral({
       alert(apiError.response?.data?.message || 'Error al registrar reembolso');
     } finally {
       setRegistrandoReembolso(false);
+    }
+  };
+
+  const handleRegistrarDevolucion = async (solicitudId: number) => {
+    if (!devolucionFecha || !devolucionMotivo.trim() || !devolucionFile) return;
+    try {
+      setRegistrandoDevolucion(true);
+      const formData = new FormData();
+      formData.append('fecha_devolucion', devolucionFecha);
+      formData.append('motivo', devolucionMotivo.trim());
+      formData.append('comprobante', devolucionFile);
+      await api.post(`/solicitudes-pago/${solicitudId}/devolucion`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setShowDevolucionModal(false);
+      setShowDetail(false);
+      await loadData();
+      window.dispatchEvent(new Event('solicitud-status-changed'));
+    } catch (err) {
+      console.error('Error registering devolucion:', err);
+      const apiError = err as { response?: { data?: { message?: string } } };
+      alert(apiError.response?.data?.message || 'Error al registrar devolución');
+    } finally {
+      setRegistrandoDevolucion(false);
     }
   };
 
@@ -1209,6 +1261,31 @@ export default function SolicitudesPagoGeneral({
                 </Button>
               )}
               {detailSolicitud &&
+                (detailSolicitud.estado === 'pagada' ||
+                  detailSolicitud.estado === 'facturada') &&
+                (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                        <Settings className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setDevolucionFecha('');
+                          setDevolucionMotivo('');
+                          setDevolucionFile(null);
+                          setShowDevolucionModal(true);
+                        }}
+                      >
+                        <Undo2 className="h-4 w-4 mr-2" />
+                        Registrar Devolución
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              {detailSolicitud &&
                 detailSolicitud.estado === 'pendiente' &&
                 canManageSolicitud(detailSolicitud) && (
                   <Button
@@ -1458,6 +1535,43 @@ export default function SolicitudesPagoGeneral({
                         readOnly
                         title={detailFactura.tipo === 'recibo' ? 'Recibos' : 'Facturas'}
                       />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Devolución */}
+              {detailSolicitud.estado === 'devolucion' && detailDevolucion && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
+                    <h4 className="font-medium text-red-900">Devolución</h4>
+                    <div className="text-sm text-red-800 space-y-1">
+                      <div>
+                        Fecha:{' '}
+                        {new Date(
+                          detailDevolucion.fecha_devolucion.split('T')[0] + 'T12:00:00',
+                        ).toLocaleDateString('es-PA')}
+                      </div>
+                      <div>Motivo: {detailDevolucion.motivo}</div>
+                      <div>
+                        Registrado por: {detailDevolucion.registrado_por_nombre}
+                      </div>
+                    </div>
+                    {detailDevolucion.comprobante_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const token = localStorage.getItem('token');
+                          window.open(
+                            `${api.defaults.baseURL}/solicitudes-pago/adjuntos/download/${encodeURIComponent(detailDevolucion.comprobante_url)}?token=${token}`,
+                            '_blank',
+                          );
+                        }}
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        {detailDevolucion.comprobante_nombre}
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -2119,6 +2233,70 @@ export default function SolicitudesPagoGeneral({
               disabled={!reembolsoFecha || !reembolsoFile || registrandoReembolso}
             >
               {registrandoReembolso ? 'Registrando...' : 'Confirmar Reembolso'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrar Devolución Modal */}
+      <Dialog open={showDevolucionModal} onOpenChange={setShowDevolucionModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Devolución</DialogTitle>
+            <DialogDescription>
+              Registra la devolución total del proveedor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label>Fecha de devolución *</Label>
+              <Input
+                type="date"
+                value={devolucionFecha}
+                onChange={(e) => setDevolucionFecha(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Motivo *</Label>
+              <textarea
+                value={devolucionMotivo}
+                onChange={(e) => setDevolucionMotivo(e.target.value)}
+                placeholder="Describe el motivo de la devolución..."
+                className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
+              />
+            </div>
+            <div>
+              <Label>Comprobante de devolución *</Label>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setDevolucionFile(e.target.files?.[0] || null)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDevolucionModal(false)}
+              disabled={registrandoDevolucion}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                detailSolicitud && handleRegistrarDevolucion(detailSolicitud.id)
+              }
+              disabled={
+                !devolucionFecha ||
+                !devolucionMotivo.trim() ||
+                !devolucionFile ||
+                registrandoDevolucion
+              }
+            >
+              {registrandoDevolucion ? 'Registrando...' : 'Confirmar Devolución'}
             </Button>
           </DialogFooter>
         </DialogContent>
