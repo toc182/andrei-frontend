@@ -155,9 +155,9 @@ export default function CorreccionSolicitudModal({
       id: it.id,
       descripcion: it.descripcion,
       descripcion_detallada: it.descripcion_detallada,
-      cantidad: it.cantidad,
+      cantidad: parseFloat(String(it.cantidad)) || 0,
       unidad: it.unidad,
-      precio_unitario: it.precio_unitario,
+      precio_unitario: parseFloat(String(it.precio_unitario)) || 0,
     })),
   );
 
@@ -167,8 +167,8 @@ export default function CorreccionSolicitudModal({
       _key: nextKey(),
       tipo: a.tipo,
       descripcion: a.descripcion,
-      porcentaje: a.porcentaje,
-      monto: a.monto,
+      porcentaje: a.porcentaje != null ? parseFloat(String(a.porcentaje)) : null,
+      monto: parseFloat(String(a.monto)) || 0,
     })),
   );
 
@@ -431,13 +431,14 @@ export default function CorreccionSolicitudModal({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
+      onClose();
       onSuccess();
     } catch (err: unknown) {
       const axiosErr = err as {
-        response?: { data?: { error?: string } };
+        response?: { data?: { message?: string } };
       };
       setError(
-        axiosErr.response?.data?.error ||
+        axiosErr.response?.data?.message ||
           'Error al guardar la corrección. Intente nuevamente.',
       );
     } finally {
