@@ -78,6 +78,7 @@ import { formatMoney } from '../../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../../types/api';
 import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
 import AdjuntosPreview from '../../components/AdjuntosPreview';
+import CorreccionSolicitudModal from '@/components/CorreccionSolicitudModal';
 
 // --- Types ---
 
@@ -110,6 +111,7 @@ interface SolicitudPago {
   numero_cuenta: string | null;
   urgente: boolean;
   pinellas_paga: boolean;
+  updated_at?: string;
   revisada?: boolean;
   es_mi_turno?: boolean;
   aprobadores_estado?: { nombre: string; estado: string }[];
@@ -397,6 +399,17 @@ export default function ProjectSolicitudesPago({
   const [devolucionFile, setDevolucionFile] = useState<File | null>(null);
   const [registrandoDevolucion, setRegistrandoDevolucion] = useState(false);
 
+  // Corrección (admin)
+  const [showCorreccionModal, setShowCorreccionModal] = useState(false);
+  const [detailCorrecciones, setDetailCorrecciones] = useState<{
+    id: number;
+    motivo: string;
+    cambios: unknown[];
+    version_pdf: string | null;
+    created_at: string;
+    usuario_nombre: string;
+  }[]>([]);
+
   // Edit confirmation (AlertDialog)
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditSolicitud, setPendingEditSolicitud] =
@@ -513,6 +526,22 @@ export default function ProjectSolicitudesPago({
         setDetailReembolso(response.data.reembolso || null);
         setDetailDevolucion(response.data.devolucion || null);
         setDetailRevisada(!!solicitud.revisada);
+
+        // Load corrections if any exist
+        const corrCount = response.data.solicitud?.correcciones_count || 0;
+        if (corrCount > 0) {
+          try {
+            const corrResp = await api.get(`/solicitudes-pago/${solicitud.id}/correcciones`);
+            if (corrResp.data.success) {
+              setDetailCorrecciones(corrResp.data.data);
+            }
+          } catch {
+            // Non-critical
+          }
+        } else {
+          setDetailCorrecciones([]);
+        }
+
         setShowDetail(true);
       }
     } catch (err) {
@@ -1279,6 +1308,14 @@ export default function ProjectSolicitudesPago({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {user?.rol === 'admin' && (detailSolicitud.estado === 'pagada' || detailSolicitud.estado === 'facturada') && (
+                        <DropdownMenuItem
+                          onClick={() => setShowCorreccionModal(true)}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Corregir solicitud
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem
                         onClick={() => {
                           setDevolucionFecha('');
@@ -1590,6 +1627,100 @@ export default function ProjectSolicitudesPago({
                         {detailDevolucion.comprobante_nombre}
                       </Button>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Historial de Correcciones */}
+              {detailCorrecciones.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-700">Historial de Correcciones</h4>
+                  <div className="space-y-2">
+                    {detailCorrecciones.map((correccion) => {
+                      const cambios = correccion.cambios as { campo: string; anterior?: string; nuevo?: string; cambios?: unknown[]; descripcion?: string }[];
+                      return (
+                        <details key={correccion.id} className="border border-gray-200 rounded-lg">
+                          <summary className="px-4 py-3 bg-gray-50 cursor-pointer flex items-center justify-between rounded-lg hover:bg-gray-100">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">
+                                {new Date(correccion.created_at).toLocaleDateString('es-PA', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                — {correccion.usuario_nombre}
+                              </span>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {cambios.length} cambio{cambios.length !== 1 ? 's' : ''}
+                            </Badge>
+                          </summary>
+                          <div className="px-4 py-3 space-y-3">
+                            <div className="text-sm text-gray-600 italic">
+                              Motivo: {correccion.motivo}
+                            </div>
+                            <table className="w-full text-xs border-collapse">
+                              <thead>
+                                <tr className="text-left text-gray-500">
+                                  <th className="pb-1 pr-3">Campo</th>
+                                  <th className="pb-1 pr-3">Anterior</th>
+                                  <th className="pb-1">Nuevo</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cambios.map((cambio, idx) => {
+                                  if (cambio.campo === 'item' && 'cambios' in cambio) {
+                                    const itemCambios = cambio.cambios as { campo: string; anterior: string; nuevo: string }[];
+                                    return itemCambios.map((ic, icIdx) => (
+                                      <tr key={`${idx}-${icIdx}`} className="border-t border-gray-100">
+                                        <td className="py-1.5 pr-3 text-gray-700">
+                                          Item &quot;{cambio.descripcion}&quot; — {ic.campo}
+                                        </td>
+                                        <td className="py-1.5 pr-3 text-red-600 line-through">{ic.anterior}</td>
+                                        <td className="py-1.5 text-green-600">{ic.nuevo}</td>
+                                      </tr>
+                                    ));
+                                  }
+                                  if (cambio.campo === 'item_agregado') {
+                                    return (
+                                      <tr key={idx} className="border-t border-gray-100">
+                                        <td className="py-1.5 pr-3 text-gray-700">Item agregado</td>
+                                        <td className="py-1.5 pr-3 text-gray-400">—</td>
+                                        <td className="py-1.5 text-green-600">{cambio.descripcion}</td>
+                                      </tr>
+                                    );
+                                  }
+                                  if (cambio.campo === 'item_eliminado') {
+                                    return (
+                                      <tr key={idx} className="border-t border-gray-100">
+                                        <td className="py-1.5 pr-3 text-gray-700">Item eliminado</td>
+                                        <td className="py-1.5 pr-3 text-red-600 line-through">{cambio.descripcion}</td>
+                                        <td className="py-1.5 text-gray-400">—</td>
+                                      </tr>
+                                    );
+                                  }
+                                  return (
+                                    <tr key={idx} className="border-t border-gray-100">
+                                      <td className="py-1.5 pr-3 text-gray-700">{cambio.campo}</td>
+                                      <td className="py-1.5 pr-3 text-red-600 line-through">
+                                        {typeof cambio.anterior === 'string' ? cambio.anterior : '—'}
+                                      </td>
+                                      <td className="py-1.5 text-green-600">
+                                        {typeof cambio.nuevo === 'string' ? cambio.nuevo : '—'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </details>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -2326,6 +2457,38 @@ export default function ProjectSolicitudesPago({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Corrección Modal */}
+      {detailSolicitud && (
+        <CorreccionSolicitudModal
+          open={showCorreccionModal}
+          onClose={() => setShowCorreccionModal(false)}
+          onSuccess={() => {
+            openDetail(detailSolicitud);
+            loadSolicitudes();
+          }}
+          solicitud={{
+            id: detailSolicitud.id,
+            estado: detailSolicitud.estado,
+            proveedor: detailSolicitud.proveedor,
+            fecha: detailSolicitud.fecha,
+            observaciones: detailSolicitud.observaciones,
+            beneficiario: detailSolicitud.beneficiario,
+            banco: detailSolicitud.banco,
+            tipo_cuenta: detailSolicitud.tipo_cuenta,
+            numero_cuenta: detailSolicitud.numero_cuenta,
+            updated_at: detailSolicitud.updated_at || '',
+          }}
+          items={detailItems}
+          ajustes={detailAjustes}
+          comprobante={detailComprobante}
+          factura={detailFactura ? {
+            fecha_factura: detailFactura.fecha_factura,
+            numero_factura: detailFactura.numero_factura ?? null,
+            tipo: detailFactura.tipo ?? 'factura',
+          } : null}
+        />
+      )}
 
       {/* AlertDialog para confirmar edición con aprobaciones parciales */}
       <AlertDialog open={showEditConfirm} onOpenChange={setShowEditConfirm}>
