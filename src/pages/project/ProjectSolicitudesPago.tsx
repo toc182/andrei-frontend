@@ -79,8 +79,9 @@ import type { SolicitudPagoAdjunto } from '../../types/api';
 import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
 import AdjuntosPreview from '../../components/AdjuntosPreview';
 import CorreccionSolicitudModal from '@/components/CorreccionSolicitudModal';
-import { SortableHeader, getSortComparator, applyColumnFilters } from '@/components/SortableHeader';
-import type { SortState, SortDirection, ColumnFilters } from '@/components/SortableHeader';
+import { SortableHeader } from '@/components/SortableHeader';
+import { getSortComparator, applyColumnFilters } from '@/components/sortableHeaderUtils';
+import type { SortState, SortDirection, ColumnFilters } from '@/components/sortableHeaderUtils';
 
 // --- Types ---
 
