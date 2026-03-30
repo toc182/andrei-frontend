@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import api from '@/services/api';
-import { Plus, Trash2, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Upload, AlertTriangle, MinusCircle, PlusCircle } from 'lucide-react';
+import { formatMoney } from '@/utils/formatters';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,41 +78,22 @@ interface CorreccionSolicitudModalProps {
 }
 
 // ---------------------------------------------------------------------------
-// Editable item type (local state uses a temp key for new rows)
+// Form data types (strings, matching SolicitudPagoForm)
 // ---------------------------------------------------------------------------
 
-interface EditableItem {
-  _key: number; // stable key for React list
-  id: number | null;
+interface ItemFormData {
   descripcion: string;
-  descripcion_detallada: string | null;
-  cantidad: number;
+  descripcion_detallada: string;
+  cantidad: string;
   unidad: string;
-  precio_unitario: number;
+  precio_unitario: string;
+  id?: number;
 }
 
-interface EditableAjuste {
-  _key: number;
-  tipo: string;
+interface AjusteFormData {
+  tipo: 'aumento' | 'disminucion';
   descripcion: string;
-  porcentaje: number | null;
-  monto: number;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-let keyCounter = 0;
-function nextKey() {
-  return ++keyCounter;
-}
-
-function formatCurrency(n: number) {
-  return n.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  monto: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,62 +114,35 @@ export default function CorreccionSolicitudModal({
   const [motivo, setMotivo] = useState('');
 
   // --- datos principales ---
-  const [proveedor, setProveedor] = useState(solicitud.proveedor);
-  const [fecha, setFecha] = useState(solicitud.fecha?.slice(0, 10) ?? '');
-  const [observaciones, setObservaciones] = useState(
-    solicitud.observaciones ?? '',
-  );
+  const [proveedor, setProveedor] = useState('');
+  const [fecha, setFecha] = useState('');
+  const [observaciones, setObservaciones] = useState('');
 
   // --- datos bancarios ---
-  const [beneficiario, setBeneficiario] = useState(
-    solicitud.beneficiario ?? '',
-  );
-  const [banco, setBanco] = useState(solicitud.banco ?? '');
-  const [tipoCuenta, setTipoCuenta] = useState(solicitud.tipo_cuenta ?? '');
-  const [numeroCuenta, setNumeroCuenta] = useState(
-    solicitud.numero_cuenta ?? '',
-  );
+  const [beneficiario, setBeneficiario] = useState('');
+  const [banco, setBanco] = useState('');
+  const [tipoCuenta, setTipoCuenta] = useState('');
+  const [numeroCuenta, setNumeroCuenta] = useState('');
 
-  // --- items ---
-  const [editItems, setEditItems] = useState<EditableItem[]>(() =>
-    items.map((it) => ({
-      _key: nextKey(),
-      id: it.id,
-      descripcion: it.descripcion,
-      descripcion_detallada: it.descripcion_detallada,
-      cantidad: parseFloat(String(it.cantidad)) || 0,
-      unidad: it.unidad,
-      precio_unitario: parseFloat(String(it.precio_unitario)) || 0,
-    })),
-  );
+  // --- items (strings) ---
+  const [editItems, setEditItems] = useState<ItemFormData[]>([]);
+
+  // --- ITBMS ---
+  const [itbmsActivo, setItbmsActivo] = useState(true);
 
   // --- ajustes ---
-  const [editAjustes, setEditAjustes] = useState<EditableAjuste[]>(() =>
-    ajustes.map((a) => ({
-      _key: nextKey(),
-      tipo: a.tipo,
-      descripcion: a.descripcion,
-      porcentaje: a.porcentaje != null ? parseFloat(String(a.porcentaje)) : null,
-      monto: parseFloat(String(a.monto)) || 0,
-    })),
-  );
+  const [editAjustes, setEditAjustes] = useState<AjusteFormData[]>([]);
 
   // --- comprobante ---
-  const [fechaPago, setFechaPago] = useState(
-    comprobante?.fecha_pago?.slice(0, 10) ?? '',
-  );
-  const [archivosComprobante, setArchivosComprobante] = useState<File[]>([]);
+  const [fechaPago, setFechaPago] = useState('');
+  const [comprobanteFiles, setComprobanteFiles] = useState<File[]>([]);
   const comprobanteInputRef = useRef<HTMLInputElement>(null);
 
   // --- factura ---
-  const [fechaFactura, setFechaFactura] = useState(
-    factura?.fecha_factura?.slice(0, 10) ?? '',
-  );
-  const [numeroFactura, setNumeroFactura] = useState(
-    factura?.numero_factura ?? '',
-  );
-  const [tipoFactura, setTipoFactura] = useState(factura?.tipo ?? '');
-  const [archivosFactura, setArchivosFactura] = useState<File[]>([]);
+  const [fechaFactura, setFechaFactura] = useState('');
+  const [numeroFactura, setNumeroFactura] = useState('');
+  const [tipoFactura, setTipoFactura] = useState('');
+  const [facturaFiles, setFacturaFiles] = useState<File[]>([]);
   const facturaInputRef = useRef<HTMLInputElement>(null);
 
   // --- UI state ---
@@ -195,170 +150,159 @@ export default function CorreccionSolicitudModal({
   const [error, setError] = useState('');
 
   // ---------------------------------------------------------------------------
-  // Computed totals
+  // Reset all state when modal opens
   // ---------------------------------------------------------------------------
 
-  const subtotal = useMemo(
-    () =>
-      editItems.reduce(
-        (sum, it) => sum + (it.cantidad || 0) * (it.precio_unitario || 0),
-        0,
-      ),
-    [editItems],
+  useEffect(() => {
+    if (!open) return;
+
+    setMotivo('');
+    setError('');
+    setProveedor(solicitud.proveedor);
+    setFecha(solicitud.fecha?.slice(0, 10) ?? '');
+    setObservaciones(solicitud.observaciones ?? '');
+    setBeneficiario(solicitud.beneficiario ?? '');
+    setBanco(solicitud.banco ?? '');
+    setTipoCuenta(solicitud.tipo_cuenta ?? '');
+    setNumeroCuenta(solicitud.numero_cuenta ?? '');
+
+    // Initialize items as strings
+    setEditItems(
+      items.map((it) => ({
+        id: it.id,
+        descripcion: it.descripcion,
+        descripcion_detallada: it.descripcion_detallada || '',
+        cantidad: String(it.cantidad),
+        unidad: it.unidad,
+        precio_unitario: String(it.precio_unitario),
+      })),
+    );
+
+    // Separate ITBMS from other ajustes
+    const itbmsAjuste = ajustes.find(
+      (a) => a.tipo === 'impuesto' && a.porcentaje === 7,
+    );
+    setItbmsActivo(!!itbmsAjuste);
+    const otrosAjustes = ajustes.filter((a) => a !== itbmsAjuste);
+    setEditAjustes(
+      otrosAjustes.map((a) => ({
+        tipo: (a.tipo === 'impuesto' ? 'aumento' : 'disminucion') as
+          | 'aumento'
+          | 'disminucion',
+        descripcion: a.descripcion || '',
+        monto: String(a.monto),
+      })),
+    );
+
+    // Comprobante
+    setFechaPago(comprobante?.fecha_pago?.slice(0, 10) ?? '');
+    setComprobanteFiles([]);
+
+    // Factura
+    setFechaFactura(factura?.fecha_factura?.slice(0, 10) ?? '');
+    setNumeroFactura(factura?.numero_factura ?? '');
+    setTipoFactura(factura?.tipo ?? '');
+    setFacturaFiles([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // ---------------------------------------------------------------------------
+  // Calculations
+  // ---------------------------------------------------------------------------
+
+  const calculateItemTotal = (item: ItemFormData) => {
+    const cant = parseFloat(item.cantidad) || 0;
+    const precio = parseFloat(item.precio_unitario) || 0;
+    return cant * precio;
+  };
+
+  const subtotal = editItems.reduce(
+    (sum, item) => sum + calculateItemTotal(item),
+    0,
   );
 
-  const ajustesTotal = useMemo(
-    () => editAjustes.reduce((sum, a) => sum + (a.monto || 0), 0),
-    [editAjustes],
-  );
+  const itbmsMonto = itbmsActivo ? subtotal * 0.07 : 0;
 
-  const total = subtotal + ajustesTotal;
+  const totalAumentos = editAjustes
+    .filter((a) => a.tipo === 'aumento')
+    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0);
 
-  // ---------------------------------------------------------------------------
-  // Change detection
-  // ---------------------------------------------------------------------------
+  const totalDisminuciones = editAjustes
+    .filter((a) => a.tipo === 'disminucion')
+    .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0);
 
-  const hasChanges = useMemo(() => {
-    if (proveedor !== solicitud.proveedor) return true;
-    if (fecha !== (solicitud.fecha?.slice(0, 10) ?? '')) return true;
-    if (observaciones !== (solicitud.observaciones ?? '')) return true;
-    if (beneficiario !== (solicitud.beneficiario ?? '')) return true;
-    if (banco !== (solicitud.banco ?? '')) return true;
-    if (tipoCuenta !== (solicitud.tipo_cuenta ?? '')) return true;
-    if (numeroCuenta !== (solicitud.numero_cuenta ?? '')) return true;
-
-    // items changed?
-    if (editItems.length !== items.length) return true;
-    for (let i = 0; i < editItems.length; i++) {
-      const e = editItems[i];
-      const o = items[i];
-      if (
-        e.descripcion !== o.descripcion ||
-        e.cantidad !== o.cantidad ||
-        e.unidad !== o.unidad ||
-        e.precio_unitario !== o.precio_unitario
-      )
-        return true;
-    }
-
-    // ajustes changed?
-    if (editAjustes.length !== ajustes.length) return true;
-    for (let i = 0; i < editAjustes.length; i++) {
-      const e = editAjustes[i];
-      const o = ajustes[i];
-      if (
-        e.tipo !== o.tipo ||
-        e.descripcion !== o.descripcion ||
-        e.monto !== o.monto
-      )
-        return true;
-    }
-
-    // comprobante
-    if (comprobante && fechaPago !== (comprobante.fecha_pago?.slice(0, 10) ?? ''))
-      return true;
-    if (archivosComprobante.length > 0) return true;
-
-    // factura
-    if (factura) {
-      if (fechaFactura !== (factura.fecha_factura?.slice(0, 10) ?? ''))
-        return true;
-      if (numeroFactura !== (factura.numero_factura ?? '')) return true;
-      if (tipoFactura !== (factura.tipo ?? '')) return true;
-    }
-    if (archivosFactura.length > 0) return true;
-
-    return false;
-  }, [
-    proveedor,
-    fecha,
-    observaciones,
-    beneficiario,
-    banco,
-    tipoCuenta,
-    numeroCuenta,
-    editItems,
-    editAjustes,
-    fechaPago,
-    archivosComprobante,
-    fechaFactura,
-    numeroFactura,
-    tipoFactura,
-    archivosFactura,
-    solicitud,
-    items,
-    ajustes,
-    comprobante,
-    factura,
-  ]);
-
-  const canSave = motivo.trim().length > 0 && hasChanges && !saving;
+  const montoTotal = subtotal + itbmsMonto + totalAumentos - totalDisminuciones;
 
   // ---------------------------------------------------------------------------
   // Item helpers
   // ---------------------------------------------------------------------------
 
-  const addItem = useCallback(() => {
+  const handleItemChange = (
+    index: number,
+    field: keyof ItemFormData,
+    value: string,
+  ) => {
+    setEditItems((prev) => {
+      const newItems = [...prev];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return newItems;
+    });
+  };
+
+  const addItem = () =>
     setEditItems((prev) => [
       ...prev,
       {
-        _key: nextKey(),
-        id: null,
         descripcion: '',
-        descripcion_detallada: null,
-        cantidad: 1,
-        unidad: 'und',
-        precio_unitario: 0,
+        descripcion_detallada: '',
+        cantidad: '1',
+        unidad: 'unidad',
+        precio_unitario: '',
       },
     ]);
-  }, []);
 
-  const removeItem = useCallback((key: number) => {
-    setEditItems((prev) => prev.filter((it) => it._key !== key));
-  }, []);
-
-  const updateItem = useCallback(
-    (key: number, field: keyof EditableItem, value: string | number) => {
-      setEditItems((prev) =>
-        prev.map((it) => (it._key === key ? { ...it, [field]: value } : it)),
-      );
-    },
-    [],
-  );
+  const removeItem = (index: number) => {
+    if (editItems.length > 1) {
+      setEditItems((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // Ajuste helpers
   // ---------------------------------------------------------------------------
 
-  const addAjuste = useCallback(() => {
+  const handleAjusteChange = (
+    index: number,
+    field: keyof AjusteFormData,
+    value: string,
+  ) => {
+    setEditAjustes((prev) => {
+      const newAjustes = [...prev];
+      newAjustes[index] = { ...newAjustes[index], [field]: value };
+      return newAjustes;
+    });
+  };
+
+  const toggleAjusteTipo = (index: number) => {
+    setEditAjustes((prev) => {
+      const newAjustes = [...prev];
+      newAjustes[index] = {
+        ...newAjustes[index],
+        tipo: newAjustes[index].tipo === 'aumento' ? 'disminucion' : 'aumento',
+      };
+      return newAjustes;
+    });
+  };
+
+  const addAjuste = () =>
     setEditAjustes((prev) => [
       ...prev,
-      {
-        _key: nextKey(),
-        tipo: 'impuesto',
-        descripcion: '',
-        porcentaje: null,
-        monto: 0,
-      },
+      { tipo: 'disminucion', descripcion: '', monto: '' },
     ]);
-  }, []);
 
-  const removeAjuste = useCallback((key: number) => {
-    setEditAjustes((prev) => prev.filter((a) => a._key !== key));
-  }, []);
-
-  const updateAjuste = useCallback(
-    (
-      key: number,
-      field: keyof EditableAjuste,
-      value: string | number | null,
-    ) => {
-      setEditAjustes((prev) =>
-        prev.map((a) => (a._key === key ? { ...a, [field]: value } : a)),
-      );
-    },
-    [],
-  );
+  const removeAjuste = (index: number) => {
+    setEditAjustes((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // ---------------------------------------------------------------------------
   // Submit
@@ -366,6 +310,12 @@ export default function CorreccionSolicitudModal({
 
   const handleSubmit = async () => {
     setError('');
+
+    if (!motivo.trim()) {
+      setError('Debe indicar el motivo de la corrección.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -383,37 +333,49 @@ export default function CorreccionSolicitudModal({
       fd.append('numero_cuenta', numeroCuenta);
 
       // Items
-      fd.append(
-        'items',
-        JSON.stringify(
-          editItems.map((it) => ({
-            id: it.id,
-            descripcion: it.descripcion,
-            cantidad: it.cantidad,
-            unidad: it.unidad,
-            precio_unitario: it.precio_unitario,
-          })),
-        ),
+      const validItems = editItems.filter(
+        (i) => i.descripcion.trim() && parseFloat(i.precio_unitario) > 0,
       );
+      const itemsPayload = validItems.map((item) => ({
+        id: item.id || undefined,
+        descripcion: item.descripcion.trim(),
+        descripcion_detallada: item.descripcion_detallada?.trim() || null,
+        cantidad: parseFloat(item.cantidad) || 1,
+        unidad: item.unidad || 'unidad',
+        precio_unitario: parseFloat(item.precio_unitario) || 0,
+      }));
+      fd.append('items', JSON.stringify(itemsPayload));
 
       // Ajustes
-      fd.append(
-        'ajustes',
-        JSON.stringify(
-          editAjustes.map((a) => ({
-            tipo: a.tipo,
-            descripcion: a.descripcion,
-            porcentaje: a.porcentaje,
-            monto: a.monto,
+      const ajustesPayload = [
+        // ITBMS
+        ...(itbmsActivo
+          ? [
+              {
+                tipo: 'impuesto',
+                descripcion: 'ITBMS 7%',
+                porcentaje: 7,
+                monto: subtotal * 0.07,
+              },
+            ]
+          : []),
+        // Other ajustes
+        ...editAjustes
+          .filter((a) => a.descripcion.trim() && parseFloat(a.monto) > 0)
+          .map((a) => ({
+            tipo: a.tipo === 'aumento' ? 'impuesto' : 'descuento',
+            descripcion: a.descripcion.trim(),
+            porcentaje: null,
+            monto: parseFloat(a.monto),
           })),
-        ),
-      );
+      ];
+      fd.append('ajustes', JSON.stringify(ajustesPayload));
 
       // Comprobante
       if (comprobante) {
         fd.append('fecha_pago', fechaPago);
       }
-      for (const f of archivosComprobante) {
+      for (const f of comprobanteFiles) {
         fd.append('archivos_comprobante', f);
       }
 
@@ -423,7 +385,7 @@ export default function CorreccionSolicitudModal({
         fd.append('numero_factura', numeroFactura);
         fd.append('tipo', tipoFactura);
       }
-      for (const f of archivosFactura) {
+      for (const f of facturaFiles) {
         fd.append('archivos_factura', f);
       }
 
@@ -452,7 +414,7 @@ export default function CorreccionSolicitudModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[750px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Corregir Solicitud #{solicitud.id}</DialogTitle>
           <DialogDescription>
@@ -558,7 +520,7 @@ export default function CorreccionSolicitudModal({
         <Separator />
 
         {/* ---- Items ---- */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Items</h3>
             <Button
@@ -566,187 +528,346 @@ export default function CorreccionSolicitudModal({
               variant="outline"
               size="sm"
               onClick={addItem}
+              className="h-7 text-xs"
             >
-              <Plus className="h-4 w-4 mr-1" /> Agregar
+              <Plus className="h-3 w-3 mr-1" /> Agregar Item
             </Button>
           </div>
 
-          {editItems.map((item) => (
-            <div
-              key={item._key}
-              className="rounded-md border p-3 space-y-2"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                <div className="md:col-span-2 space-y-1">
-                  <Label>Descripción</Label>
-                  <Input
-                    value={item.descripcion}
-                    onChange={(e) =>
-                      updateItem(item._key, 'descripcion', e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Cantidad</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="any"
-                    value={item.cantidad}
-                    onChange={(e) =>
-                      updateItem(
-                        item._key,
-                        'cantidad',
-                        parseFloat(e.target.value) || 0,
-                      )
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Unidad</Label>
-                  <Input
-                    value={item.unidad}
-                    onChange={(e) =>
-                      updateItem(item._key, 'unidad', e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
-                <div className="space-y-1">
-                  <Label>Precio unitario</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="any"
-                    value={item.precio_unitario}
-                    onChange={(e) =>
-                      updateItem(
-                        item._key,
-                        'precio_unitario',
-                        parseFloat(e.target.value) || 0,
-                      )
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Total</Label>
-                  <p className="text-sm font-medium py-2">
-                    ${formatCurrency(item.cantidad * item.precio_unitario)}
-                  </p>
-                </div>
-                <div className="md:col-span-2 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => removeItem(item._key)}
-                    disabled={editItems.length <= 1}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" /> Eliminar
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
+          {/* Table Header - Desktop */}
+          <div className="hidden sm:grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 text-xs font-medium text-muted-foreground px-1">
+            <span>Descripcion</span>
+            <span>Cant.</span>
+            <span>Unidad</span>
+            <span>P. Unit. (B/.)</span>
+            <span className="text-right">Total</span>
+            <span></span>
+          </div>
 
-          <div className="text-right text-sm">
-            Subtotal: <span className="font-semibold">${formatCurrency(subtotal)}</span>
+          {/* Items Rows */}
+          <div className="space-y-2">
+            {editItems.map((item, index) => {
+              const itemTotal = calculateItemTotal(item);
+              return (
+                <div key={index} className="space-y-1">
+                  {/* Mobile layout */}
+                  <div className="sm:hidden space-y-2 p-3 border rounded-lg">
+                    <Input
+                      placeholder="Descripcion del item"
+                      value={item.descripcion}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(index, 'descripcion', e.target.value)
+                      }
+                      className="h-9"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-xs">Cant.</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={item.cantidad}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            handleItemChange(index, 'cantidad', e.target.value)
+                          }
+                          className="h-8"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Unidad</Label>
+                        <Select
+                          value={item.unidad}
+                          onValueChange={(v) =>
+                            handleItemChange(index, 'unidad', v)
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unidad">Und</SelectItem>
+                            <SelectItem value="metro">Metro</SelectItem>
+                            <SelectItem value="m2">M2</SelectItem>
+                            <SelectItem value="m3">M3</SelectItem>
+                            <SelectItem value="kg">Kg</SelectItem>
+                            <SelectItem value="galon">Galon</SelectItem>
+                            <SelectItem value="global">Global</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">P. Unit.</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={item.precio_unitario}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            handleItemChange(
+                              index,
+                              'precio_unitario',
+                              e.target.value,
+                            )
+                          }
+                          className="h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeItem(index)}
+                        disabled={editItems.length === 1}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                      <span className="font-medium">
+                        {formatMoney(itemTotal)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Desktop layout */}
+                  <div className="hidden sm:grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
+                    <Input
+                      placeholder="Descripcion del item"
+                      value={item.descripcion}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(index, 'descripcion', e.target.value)
+                      }
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.cantidad}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(index, 'cantidad', e.target.value)
+                      }
+                      className="h-8 text-sm"
+                    />
+                    <Select
+                      value={item.unidad}
+                      onValueChange={(v) =>
+                        handleItemChange(index, 'unidad', v)
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unidad">Und</SelectItem>
+                        <SelectItem value="metro">Metro</SelectItem>
+                        <SelectItem value="m2">M2</SelectItem>
+                        <SelectItem value="m3">M3</SelectItem>
+                        <SelectItem value="kg">Kg</SelectItem>
+                        <SelectItem value="galon">Galon</SelectItem>
+                        <SelectItem value="global">Global</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={item.precio_unitario}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        handleItemChange(
+                          index,
+                          'precio_unitario',
+                          e.target.value,
+                        )
+                      }
+                      className="h-8 text-sm"
+                    />
+                    <div className="text-sm text-right font-medium">
+                      {formatMoney(itemTotal)}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeItem(index)}
+                      disabled={editItems.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary rows — desktop */}
+          <div className="hidden sm:block border-t pt-2 mt-2 space-y-1">
+            {/* Subtotal */}
+            <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div className="text-sm text-muted-foreground text-right">
+                Subtotal:
+              </div>
+              <div className="text-sm font-medium text-right">
+                {formatMoney(subtotal)}
+              </div>
+              <div></div>
+            </div>
+            {/* ITBMS */}
+            <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div className="text-sm text-muted-foreground text-right flex items-center justify-end gap-1">
+                {itbmsActivo ? (
+                  <MinusCircle
+                    className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                    onClick={() => setItbmsActivo(false)}
+                  />
+                ) : (
+                  <PlusCircle
+                    className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                    onClick={() => setItbmsActivo(true)}
+                  />
+                )}
+                <span
+                  className={itbmsActivo ? '' : 'text-muted-foreground/50'}
+                >
+                  ITBMS (7%):
+                </span>
+              </div>
+              <div
+                className={`text-sm font-medium text-right ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}
+              >
+                {itbmsActivo ? formatMoney(itbmsMonto) : '—'}
+              </div>
+              <div></div>
+            </div>
+            {/* Total */}
+            <div className="grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 items-center border-t pt-1">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div className="text-base font-bold text-right">TOTAL:</div>
+              <div className="text-base font-bold text-right">
+                {formatMoney(montoTotal)}
+              </div>
+              <div></div>
+            </div>
+          </div>
+
+          {/* Summary rows — mobile */}
+          <div className="sm:hidden border-t pt-2 mt-2 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal:</span>
+              <span className="font-medium">{formatMoney(subtotal)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="flex items-center gap-1 text-muted-foreground">
+                {itbmsActivo ? (
+                  <MinusCircle
+                    className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                    onClick={() => setItbmsActivo(false)}
+                  />
+                ) : (
+                  <PlusCircle
+                    className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                    onClick={() => setItbmsActivo(true)}
+                  />
+                )}
+                <span
+                  className={itbmsActivo ? '' : 'text-muted-foreground/50'}
+                >
+                  ITBMS (7%):
+                </span>
+              </span>
+              <span
+                className={`font-medium ${itbmsActivo ? '' : 'text-muted-foreground/50'}`}
+              >
+                {itbmsActivo ? formatMoney(itbmsMonto) : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between text-base font-bold border-t pt-1">
+              <span>TOTAL:</span>
+              <span>{formatMoney(montoTotal)}</span>
+            </div>
           </div>
         </div>
 
-        <Separator />
-
         {/* ---- Ajustes ---- */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
             <h3 className="text-sm font-semibold">Ajustes</h3>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={addAjuste}
+              className="h-7 text-xs"
             >
-              <Plus className="h-4 w-4 mr-1" /> Agregar
+              <Plus className="h-3 w-3 mr-1" /> Agregar Ajuste
             </Button>
           </div>
 
-          {editAjustes.length === 0 && (
-            <p className="text-sm text-muted-foreground">Sin ajustes</p>
-          )}
-
-          {editAjustes.map((ajuste) => (
-            <div
-              key={ajuste._key}
-              className="rounded-md border p-3 grid grid-cols-1 md:grid-cols-5 gap-2 items-end"
-            >
-              <div className="space-y-1">
-                <Label>Tipo</Label>
-                <Select
-                  value={ajuste.tipo}
-                  onValueChange={(v) => updateAjuste(ajuste._key, 'tipo', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="impuesto">Impuesto</SelectItem>
-                    <SelectItem value="descuento">Descuento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-2 space-y-1">
-                <Label>Descripción</Label>
-                <Input
-                  value={ajuste.descripcion}
-                  onChange={(e) =>
-                    updateAjuste(ajuste._key, 'descripcion', e.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Monto</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={ajuste.monto}
-                  onChange={(e) =>
-                    updateAjuste(
-                      ajuste._key,
-                      'monto',
-                      parseFloat(e.target.value) || 0,
-                    )
-                  }
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => removeAjuste(ajuste._key)}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" /> Eliminar
-                </Button>
-              </div>
-            </div>
-          ))}
-
-          {editAjustes.length > 0 && (
-            <div className="text-right text-sm">
-              Ajustes:{' '}
-              <span className="font-semibold">${formatCurrency(ajustesTotal)}</span>
+          {editAjustes.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Sin ajustes.</p>
+          ) : (
+            <div className="space-y-2">
+              {editAjustes.map((ajuste, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`}
+                    onClick={() => toggleAjusteTipo(index)}
+                    title={
+                      ajuste.tipo === 'aumento'
+                        ? 'Aumento (click para cambiar)'
+                        : 'Disminucion (click para cambiar)'
+                    }
+                  >
+                    {ajuste.tipo === 'aumento' ? '+' : '-'}
+                  </Button>
+                  <Input
+                    placeholder="Descripcion del ajuste"
+                    value={ajuste.descripcion}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      handleAjusteChange(index, 'descripcion', e.target.value)
+                    }
+                    className="h-8 text-sm flex-1"
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={ajuste.monto}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      handleAjusteChange(index, 'monto', e.target.value)
+                    }
+                    className="h-8 text-sm w-28"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeAjuste(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
-        </div>
-
-        <Separator />
-
-        {/* ---- Total ---- */}
-        <div className="text-right font-semibold">
-          Total: ${formatCurrency(total)}
         </div>
 
         <Separator />
@@ -755,7 +876,7 @@ export default function CorreccionSolicitudModal({
         {comprobante && (
           <>
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Comprobante</h3>
+              <h3 className="text-sm font-semibold">Comprobante de pago</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="corr-fecha-pago">Fecha de pago</Label>
@@ -775,7 +896,7 @@ export default function CorreccionSolicitudModal({
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files) {
-                        setArchivosComprobante(Array.from(e.target.files));
+                        setComprobanteFiles(Array.from(e.target.files));
                       }
                     }}
                   />
@@ -787,8 +908,8 @@ export default function CorreccionSolicitudModal({
                     onClick={() => comprobanteInputRef.current?.click()}
                   >
                     <Upload className="h-4 w-4 mr-1" />
-                    {archivosComprobante.length > 0
-                      ? `${archivosComprobante.length} archivo(s) seleccionado(s)`
+                    {comprobanteFiles.length > 0
+                      ? `${comprobanteFiles.length} archivo(s) seleccionado(s)`
                       : 'Seleccionar archivos'}
                   </Button>
                 </div>
@@ -799,7 +920,7 @@ export default function CorreccionSolicitudModal({
         )}
 
         {/* ---- Factura ---- */}
-        {factura && solicitud.estado === 'facturada' && (
+        {factura && (
           <>
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Factura</h3>
@@ -843,7 +964,7 @@ export default function CorreccionSolicitudModal({
                   className="hidden"
                   onChange={(e) => {
                     if (e.target.files) {
-                      setArchivosFactura(Array.from(e.target.files));
+                      setFacturaFiles(Array.from(e.target.files));
                     }
                   }}
                 />
@@ -855,8 +976,8 @@ export default function CorreccionSolicitudModal({
                   onClick={() => facturaInputRef.current?.click()}
                 >
                   <Upload className="h-4 w-4 mr-1" />
-                  {archivosFactura.length > 0
-                    ? `${archivosFactura.length} archivo(s) seleccionado(s)`
+                  {facturaFiles.length > 0
+                    ? `${facturaFiles.length} archivo(s) seleccionado(s)`
                     : 'Seleccionar archivos'}
                 </Button>
               </div>
@@ -877,11 +998,10 @@ export default function CorreccionSolicitudModal({
           </Button>
           <Button
             type="button"
-            disabled={!canSave}
+            disabled={saving || !motivo.trim()}
             onClick={handleSubmit}
           >
-            {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Guardar corrección
+            {saving ? 'Guardando...' : 'Guardar corrección'}
           </Button>
         </div>
       </DialogContent>
