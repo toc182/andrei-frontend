@@ -180,7 +180,7 @@ export default function CorreccionSolicitudModal({
 
     // Separate ITBMS from other ajustes
     const itbmsAjuste = ajustes.find(
-      (a) => a.tipo === 'impuesto' && a.porcentaje === 7,
+      (a) => a.tipo === 'impuesto' && parseFloat(String(a.porcentaje)) === 7,
     );
     setItbmsActivo(!!itbmsAjuste);
     const otrosAjustes = ajustes.filter((a) => a !== itbmsAjuste);
