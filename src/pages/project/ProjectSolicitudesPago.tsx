@@ -1673,12 +1673,23 @@ export default function ProjectSolicitudesPago({
                               </thead>
                               <tbody>
                                 {cambios.map((cambio, idx) => {
+                                  const labelMap: Record<string, string> = {
+                                    proveedor: 'Proveedor', fecha: 'Fecha', observaciones: 'Observaciones',
+                                    beneficiario: 'Beneficiario', banco: 'Banco', tipo_cuenta: 'Tipo de cuenta',
+                                    numero_cuenta: 'Número de cuenta', fecha_pago: 'Fecha de pago',
+                                    fecha_factura: 'Fecha de factura', numero_factura: 'Número de factura',
+                                    tipo: 'Tipo', subtotal: 'Subtotal', monto_total: 'Monto total',
+                                    comprobante: 'Comprobante', factura: 'Factura',
+                                    descripcion: 'Descripción', cantidad: 'Cantidad', unidad: 'Unidad',
+                                    precio_unitario: 'Precio unitario',
+                                  };
+                                  const label = (campo: string) => labelMap[campo] || campo;
                                   if (cambio.campo === 'item' && 'cambios' in cambio) {
                                     const itemCambios = cambio.cambios as { campo: string; anterior: string; nuevo: string }[];
                                     return itemCambios.map((ic, icIdx) => (
                                       <tr key={`${idx}-${icIdx}`} className="border-t border-gray-100">
                                         <td className="py-1.5 pr-3 text-gray-700">
-                                          Item &quot;{cambio.descripcion}&quot; — {ic.campo}
+                                          Item &quot;{cambio.descripcion}&quot; — {label(ic.campo)}
                                         </td>
                                         <td className="py-1.5 pr-3 text-red-600 line-through">{ic.anterior}</td>
                                         <td className="py-1.5 text-green-600">{ic.nuevo}</td>
@@ -1705,7 +1716,7 @@ export default function ProjectSolicitudesPago({
                                   }
                                   return (
                                     <tr key={idx} className="border-t border-gray-100">
-                                      <td className="py-1.5 pr-3 text-gray-700">{cambio.campo}</td>
+                                      <td className="py-1.5 pr-3 text-gray-700">{label(cambio.campo)}</td>
                                       <td className="py-1.5 pr-3 text-red-600 line-through">
                                         {typeof cambio.anterior === 'string' ? cambio.anterior : '—'}
                                       </td>
