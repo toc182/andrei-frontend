@@ -201,9 +201,10 @@ function SortableHeader({
 }
 
 // Sort comparator helper
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getSortComparator(
   sortState: SortState,
-): ((a: Record<string, unknown>, b: Record<string, unknown>) => number) | null {
+): ((a: Record<string, any>, b: Record<string, any>) => number) | null {
   if (!sortState.column || !sortState.direction) return null;
 
   const { column, direction } = sortState;
@@ -238,7 +239,8 @@ function getSortComparator(
 }
 
 // Filter helper
-function applyColumnFilters<T extends Record<string, unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyColumnFilters<T extends Record<string, any>>(
   items: T[],
   columnFilters: ColumnFilters,
 ): T[] {

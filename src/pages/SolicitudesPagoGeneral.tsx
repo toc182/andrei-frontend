@@ -86,6 +86,8 @@ import type { SolicitudPagoAdjunto } from '../types/api';
 import SolicitudPagoForm from '../components/forms/SolicitudPagoForm';
 import AdjuntosPreview from '../components/AdjuntosPreview';
 import CorreccionSolicitudModal from '../components/CorreccionSolicitudModal';
+import { SortableHeader, getSortComparator, applyColumnFilters } from '@/components/SortableHeader';
+import type { SortState, SortDirection, ColumnFilters } from '@/components/SortableHeader';
 
 // --- Types ---
 
@@ -299,6 +301,18 @@ export default function SolicitudesPagoGeneral({
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false);
 
+  // Column sort & filter state
+  const [sortState, setSortState] = useState<SortState>({ column: null, direction: null });
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
+
+  const handleSortChange = (column: string, direction: SortDirection | null) => {
+    setSortState(direction ? { column, direction } : { column: null, direction: null });
+  };
+
+  const handleFilterChange = (column: string, values: string[]) => {
+    setColumnFilters((prev) => ({ ...prev, [column]: values }));
+  };
+
   // Form
   const [showForm, setShowForm] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
@@ -481,30 +495,45 @@ export default function SolicitudesPagoGeneral({
     }
   };
 
-  // Filter
-  const filteredSolicitudes = solicitudes
-    .filter((sol) => {
-      if (filterPinellasPaga && !sol.pinellas_paga) return false;
-      if (
-        filterProyecto !== 'all' &&
-        sol.proyecto_id !== parseInt(filterProyecto)
-      )
-        return false;
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        return (
-          sol.numero?.toLowerCase().includes(search) ||
-          sol.proveedor?.toLowerCase().includes(search) ||
-          sol.proyecto_nombre?.toLowerCase().includes(search)
-        );
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.es_mi_turno && !b.es_mi_turno) return -1;
-      if (!a.es_mi_turno && b.es_mi_turno) return 1;
-      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
-    });
+  // Apply column header filters
+  const afterColumnFilters = applyColumnFilters(
+    solicitudes
+      .filter((sol) => {
+        if (filterPinellasPaga && !sol.pinellas_paga) return false;
+        if (
+          filterProyecto !== 'all' &&
+          sol.proyecto_id !== parseInt(filterProyecto)
+        )
+          return false;
+        if (!filterEstados.includes(sol.estado)) return false;
+        if (searchTerm) {
+          const search = searchTerm.toLowerCase();
+          return (
+            sol.numero?.toLowerCase().includes(search) ||
+            sol.proveedor?.toLowerCase().includes(search) ||
+            sol.proyecto_nombre?.toLowerCase().includes(search)
+          );
+        }
+        return true;
+      }),
+    columnFilters,
+  );
+
+  const sortComparator = getSortComparator(sortState);
+  const filteredSolicitudes = afterColumnFilters.sort((a, b) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (sortComparator) return sortComparator(a as any, b as any);
+    // Default sort: mi turno first, then fecha desc
+    if (a.es_mi_turno && !b.es_mi_turno) return -1;
+    if (!a.es_mi_turno && b.es_mi_turno) return 1;
+    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+  });
+
+  // Unique values for column filters (computed from full list, before column filters)
+  const uniqueNumeros = [...new Set(solicitudes.map((s) => s.numero).filter(Boolean))].sort();
+  const uniqueProyectos = [...new Set(solicitudes.map((s) => s.proyecto_nombre || '').filter(Boolean))].sort();
+  const uniqueProveedores = [...new Set(solicitudes.map((s) => s.proveedor).filter(Boolean))].sort();
+  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
 
   // Stats
   const stats = {
@@ -1096,12 +1125,59 @@ export default function SolicitudesPagoGeneral({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Numero</TableHead>
+              <SortableHeader
+                columnKey="numero"
+                label="Numero"
+                type="discrete"
+                sortState={sortState}
+                onSortChange={handleSortChange}
+                uniqueValues={uniqueNumeros}
+                activeFilters={columnFilters.numero ?? uniqueNumeros}
+                onFilterChange={handleFilterChange}
+                className="w-[100px]"
+              />
               <TableHead className="w-6 px-0"></TableHead>
-              <TableHead>Proyecto</TableHead>
-              <TableHead className="hidden sm:table-cell">Proveedor</TableHead>
-              <TableHead className="text-right w-[100px]">Total</TableHead>
-              <TableHead className="w-[120px]">Estado</TableHead>
+              <SortableHeader
+                columnKey="proyecto_nombre"
+                label="Proyecto"
+                type="discrete"
+                sortState={sortState}
+                onSortChange={handleSortChange}
+                uniqueValues={uniqueProyectos}
+                activeFilters={columnFilters.proyecto_nombre ?? uniqueProyectos}
+                onFilterChange={handleFilterChange}
+              />
+              <SortableHeader
+                columnKey="proveedor"
+                label="Proveedor"
+                type="discrete"
+                sortState={sortState}
+                onSortChange={handleSortChange}
+                uniqueValues={uniqueProveedores}
+                activeFilters={columnFilters.proveedor ?? uniqueProveedores}
+                onFilterChange={handleFilterChange}
+                className="hidden sm:table-cell"
+              />
+              <SortableHeader
+                columnKey="monto_total"
+                label="Total"
+                type="numeric"
+                sortState={sortState}
+                onSortChange={handleSortChange}
+                className="w-[100px]"
+                align="right"
+              />
+              <SortableHeader
+                columnKey="estado"
+                label="Estado"
+                type="discrete"
+                sortState={sortState}
+                onSortChange={handleSortChange}
+                uniqueValues={uniqueEstados}
+                activeFilters={columnFilters.estado ?? uniqueEstados}
+                onFilterChange={handleFilterChange}
+                className="w-[120px]"
+              />
             </TableRow>
           </TableHeader>
           <TableBody>
