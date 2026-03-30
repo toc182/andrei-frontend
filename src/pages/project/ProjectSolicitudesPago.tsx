@@ -79,6 +79,8 @@ import type { SolicitudPagoAdjunto } from '../../types/api';
 import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
 import AdjuntosPreview from '../../components/AdjuntosPreview';
 import CorreccionSolicitudModal from '@/components/CorreccionSolicitudModal';
+import { SortableHeader, getSortComparator, applyColumnFilters } from '@/components/SortableHeader';
+import type { SortState, SortDirection, ColumnFilters } from '@/components/SortableHeader';
 
 // --- Types ---
 
@@ -291,6 +293,10 @@ export default function ProjectSolicitudesPago({
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false);
 
+  // Column sort & filter state
+  const [sortState, setSortState] = useState<SortState>({ column: null, direction: null });
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
+
   // Form modal
   const [showForm, setShowForm] = useState(false);
   const [editingSolicitud, setEditingSolicitud] =
@@ -476,24 +482,44 @@ export default function ProjectSolicitudesPago({
     }
   };
 
+  const handleSortChange = (column: string, direction: SortDirection | null) => {
+    setSortState(direction ? { column, direction } : { column: null, direction: null });
+  };
+
+  const handleFilterChange = (column: string, values: string[]) => {
+    setColumnFilters((prev) => ({ ...prev, [column]: values }));
+  };
+
   // Client-side search filter
-  const filteredSolicitudes = solicitudes
-    .filter((sol) => {
-      if (filterPinellasPaga && !sol.pinellas_paga) return false;
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        return (
-          sol.numero?.toLowerCase().includes(search) ||
-          sol.proveedor?.toLowerCase().includes(search)
-        );
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.es_mi_turno && !b.es_mi_turno) return -1;
-      if (!a.es_mi_turno && b.es_mi_turno) return 1;
-      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
-    });
+  const afterColumnFilters = applyColumnFilters(
+    solicitudes
+      .filter((sol) => {
+        if (filterPinellasPaga && !sol.pinellas_paga) return false;
+        if (!filterEstados.includes(sol.estado)) return false;
+        if (searchTerm) {
+          const search = searchTerm.toLowerCase();
+          return (
+            sol.numero?.toLowerCase().includes(search) ||
+            sol.proveedor?.toLowerCase().includes(search)
+          );
+        }
+        return true;
+      }),
+    columnFilters,
+  );
+
+  const sortComparator = getSortComparator(sortState);
+  const filteredSolicitudes = afterColumnFilters.sort((a, b) => {
+    if (sortComparator) return sortComparator(a as unknown as Record<string, any>, b as unknown as Record<string, any>);
+    if (a.es_mi_turno && !b.es_mi_turno) return -1;
+    if (!a.es_mi_turno && b.es_mi_turno) return 1;
+    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+  });
+
+  // Unique values for column filters
+  const uniqueNumeros = [...new Set(solicitudes.map((s) => s.numero).filter(Boolean))].sort();
+  const uniqueProveedores = [...new Set(solicitudes.map((s) => s.proveedor).filter(Boolean))].sort();
+  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
 
   const handleSavePrefijo = async () => {
     if (!prefijoInput.trim()) return;
@@ -1181,12 +1207,52 @@ export default function ProjectSolicitudesPago({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Numero</TableHead>
+                  <SortableHeader
+                    columnKey="numero"
+                    label="Numero"
+                    type="discrete"
+                    sortState={sortState}
+                    onSortChange={handleSortChange}
+                    uniqueValues={uniqueNumeros}
+                    activeFilters={columnFilters.numero ?? uniqueNumeros}
+                    onFilterChange={handleFilterChange}
+                  />
                   <TableHead className="w-6 px-0"></TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead className="text-right">Monto Total</TableHead>
-                  <TableHead>Estado</TableHead>
+                  <SortableHeader
+                    columnKey="fecha"
+                    label="Fecha"
+                    type="numeric"
+                    sortState={sortState}
+                    onSortChange={handleSortChange}
+                  />
+                  <SortableHeader
+                    columnKey="proveedor"
+                    label="Proveedor"
+                    type="discrete"
+                    sortState={sortState}
+                    onSortChange={handleSortChange}
+                    uniqueValues={uniqueProveedores}
+                    activeFilters={columnFilters.proveedor ?? uniqueProveedores}
+                    onFilterChange={handleFilterChange}
+                  />
+                  <SortableHeader
+                    columnKey="monto_total"
+                    label="Monto Total"
+                    type="numeric"
+                    sortState={sortState}
+                    onSortChange={handleSortChange}
+                    align="right"
+                  />
+                  <SortableHeader
+                    columnKey="estado"
+                    label="Estado"
+                    type="discrete"
+                    sortState={sortState}
+                    onSortChange={handleSortChange}
+                    uniqueValues={uniqueEstados}
+                    activeFilters={columnFilters.estado ?? uniqueEstados}
+                    onFilterChange={handleFilterChange}
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
