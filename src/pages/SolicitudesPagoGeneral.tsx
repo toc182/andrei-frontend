@@ -496,45 +496,45 @@ export default function SolicitudesPagoGeneral({
     }
   };
 
-  // Apply column header filters
-  const afterColumnFilters = applyColumnFilters(
-    solicitudes
-      .filter((sol) => {
-        if (filterPinellasPaga && !sol.pinellas_paga) return false;
-        if (
-          filterProyecto !== 'all' &&
-          sol.proyecto_id !== parseInt(filterProyecto)
-        )
-          return false;
-        if (!filterEstados.includes(sol.estado)) return false;
-        if (searchTerm) {
-          const search = searchTerm.toLowerCase();
-          return (
-            sol.numero?.toLowerCase().includes(search) ||
-            sol.proveedor?.toLowerCase().includes(search) ||
-            sol.proyecto_nombre?.toLowerCase().includes(search)
-          );
-        }
-        return true;
-      }),
-    columnFilters,
-  );
+  // Filter by top-level controls first
+  const preFiltered = solicitudes.filter((sol) => {
+    if (filterPinellasPaga && !sol.pinellas_paga) return false;
+    if (!filterEstados.includes(sol.estado)) return false;
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        sol.numero?.toLowerCase().includes(search) ||
+        sol.proveedor?.toLowerCase().includes(search) ||
+        sol.proyecto_nombre?.toLowerCase().includes(search)
+      );
+    }
+    return true;
+  });
+
+  // Unique values: apply all column filters EXCEPT the column itself
+  // so each filter dropdown shows values available given the other active filters
+  const getFilteredExcluding = (excludeColumn: string) => {
+    const otherFilters = Object.fromEntries(
+      Object.entries(columnFilters).filter(([key]) => key !== excludeColumn)
+    );
+    return applyColumnFilters(preFiltered, otherFilters);
+  };
+
+  const uniqueProyectos = [...new Set(getFilteredExcluding('proyecto_nombre').map((s) => s.proyecto_nombre || '').filter(Boolean))].sort();
+  const uniqueProveedores = [...new Set(getFilteredExcluding('proveedor').map((s) => s.proveedor).filter(Boolean))].sort();
+  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
+
+  // Apply all column header filters + sort
+  const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
 
   const sortComparator = getSortComparator(sortState);
   const filteredSolicitudes = afterColumnFilters.sort((a, b) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (sortComparator) return sortComparator(a as any, b as any);
-    // Default sort: mi turno first, then fecha desc
     if (a.es_mi_turno && !b.es_mi_turno) return -1;
     if (!a.es_mi_turno && b.es_mi_turno) return 1;
     return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
   });
-
-  // Unique values for column filters (computed from full list, before column filters)
-  const uniqueNumeros = [...new Set(solicitudes.map((s) => s.numero).filter(Boolean))].sort();
-  const uniqueProyectos = [...new Set(solicitudes.map((s) => s.proyecto_nombre || '').filter(Boolean))].sort();
-  const uniqueProveedores = [...new Set(solicitudes.map((s) => s.proveedor).filter(Boolean))].sort();
-  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
 
   // Stats
   const stats = {
@@ -1003,7 +1003,7 @@ export default function SolicitudesPagoGeneral({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold whitespace-nowrap">
+            <div className="text-base font-bold">
               {formatMoney(stats.montoTotal)}
             </div>
           </CardContent>
@@ -1012,66 +1012,6 @@ export default function SolicitudesPagoGeneral({
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <Popover open={estadoPopoverOpen} onOpenChange={setEstadoPopoverOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full sm:w-[220px] justify-between"
-            >
-              {filterEstados.length === ALL_ESTADOS.length
-                ? 'Todos los estados'
-                : filterEstados.length === 0
-                  ? 'Ningún estado'
-                  : `${filterEstados.length} estado${filterEstados.length > 1 ? 's' : ''}`}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[220px] p-2">
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
-                <Checkbox
-                  checked={filterEstados.length === ALL_ESTADOS.length}
-                  onCheckedChange={(checked) =>
-                    setFilterEstados(checked ? [...ALL_ESTADOS] : [])
-                  }
-                />
-                <span className="text-sm font-medium">Todos</span>
-              </label>
-              <div className="border-t my-1" />
-              {ESTADO_OPTIONS.map((opt) => (
-                <label
-                  key={opt.value}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                >
-                  <Checkbox
-                    checked={filterEstados.includes(opt.value)}
-                    onCheckedChange={(checked) => {
-                      setFilterEstados((prev) =>
-                        checked
-                          ? [...prev, opt.value]
-                          : prev.filter((e) => e !== opt.value),
-                      );
-                    }}
-                  />
-                  <span className="text-sm">{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-        <Select value={filterProyecto} onValueChange={setFilterProyecto}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Proyecto" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los proyectos</SelectItem>
-            {proyectos.map((p) => (
-              <SelectItem key={p.id} value={p.id.toString()}>
-                {p.nombre_corto || p.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <div className="flex-1">
           <Input
             placeholder="Buscar por numero, proveedor, proyecto..."
@@ -1129,12 +1069,9 @@ export default function SolicitudesPagoGeneral({
               <SortableHeader
                 columnKey="numero"
                 label="Numero"
-                type="discrete"
+                type="numeric"
                 sortState={sortState}
                 onSortChange={handleSortChange}
-                uniqueValues={uniqueNumeros}
-                activeFilters={columnFilters.numero ?? uniqueNumeros}
-                onFilterChange={handleFilterChange}
                 className="w-[100px]"
               />
               <TableHead className="w-6 px-0"></TableHead>

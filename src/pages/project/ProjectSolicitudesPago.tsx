@@ -491,23 +491,33 @@ export default function ProjectSolicitudesPago({
     setColumnFilters((prev) => ({ ...prev, [column]: values }));
   };
 
-  // Client-side search filter
-  const afterColumnFilters = applyColumnFilters(
-    solicitudes
-      .filter((sol) => {
-        if (filterPinellasPaga && !sol.pinellas_paga) return false;
-        if (!filterEstados.includes(sol.estado)) return false;
-        if (searchTerm) {
-          const search = searchTerm.toLowerCase();
-          return (
-            sol.numero?.toLowerCase().includes(search) ||
-            sol.proveedor?.toLowerCase().includes(search)
-          );
-        }
-        return true;
-      }),
-    columnFilters,
-  );
+  // Filter by top-level controls first
+  const preFiltered = solicitudes.filter((sol) => {
+    if (filterPinellasPaga && !sol.pinellas_paga) return false;
+    if (!filterEstados.includes(sol.estado)) return false;
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        sol.numero?.toLowerCase().includes(search) ||
+        sol.proveedor?.toLowerCase().includes(search)
+      );
+    }
+    return true;
+  });
+
+  // Unique values: apply all column filters EXCEPT the column itself
+  const getFilteredExcluding = (excludeColumn: string) => {
+    const otherFilters = Object.fromEntries(
+      Object.entries(columnFilters).filter(([key]) => key !== excludeColumn)
+    );
+    return applyColumnFilters(preFiltered, otherFilters);
+  };
+
+  const uniqueProveedores = [...new Set(getFilteredExcluding('proveedor').map((s) => s.proveedor).filter(Boolean))].sort();
+  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
+
+  // Apply all column header filters + sort
+  const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
 
   const sortComparator = getSortComparator(sortState);
   const filteredSolicitudes = afterColumnFilters.sort((a, b) => {
@@ -516,11 +526,6 @@ export default function ProjectSolicitudesPago({
     if (!a.es_mi_turno && b.es_mi_turno) return 1;
     return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
   });
-
-  // Unique values for column filters
-  const uniqueNumeros = [...new Set(solicitudes.map((s) => s.numero).filter(Boolean))].sort();
-  const uniqueProveedores = [...new Set(solicitudes.map((s) => s.proveedor).filter(Boolean))].sort();
-  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
 
   const handleSavePrefijo = async () => {
     if (!prefijoInput.trim()) return;
@@ -1211,12 +1216,9 @@ export default function ProjectSolicitudesPago({
                   <SortableHeader
                     columnKey="numero"
                     label="Numero"
-                    type="discrete"
+                    type="numeric"
                     sortState={sortState}
                     onSortChange={handleSortChange}
-                    uniqueValues={uniqueNumeros}
-                    activeFilters={columnFilters.numero ?? uniqueNumeros}
-                    onFilterChange={handleFilterChange}
                   />
                   <TableHead className="w-6 px-0"></TableHead>
                   <SortableHeader
