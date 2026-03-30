@@ -414,6 +414,7 @@ export default function SolicitudesPagoGeneral({
 
   // Correction mode
   const [showCorreccionModal, setShowCorreccionModal] = useState(false);
+  const [detailPuedeEliminar, setDetailPuedeEliminar] = useState(false);
   const [detailCorrecciones, setDetailCorrecciones] = useState<{
     id: number;
     motivo: string;
@@ -556,6 +557,7 @@ export default function SolicitudesPagoGeneral({
         setDetailFactura(response.data.factura || null);
         setDetailReembolso(response.data.reembolso || null);
         setDetailDevolucion(response.data.devolucion || null);
+        setDetailPuedeEliminar(!!response.data.puede_eliminar);
         setDetailRevisada(!!solicitud.revisada);
         // Load corrections
         const corrCount = response.data.solicitud?.correcciones_count || 0;
@@ -2047,13 +2049,7 @@ export default function SolicitudesPagoGeneral({
               </div>
 
               {/* Delete */}
-              {((user?.rol === 'admin' &&
-                detailSolicitud.estado !== 'pagada' &&
-                detailSolicitud.estado !== 'facturada') ||
-                (canManage &&
-                  detailSolicitud.estado === 'pendiente' &&
-                  detailAprobaciones.length === 0 &&
-                  canManageSolicitud(detailSolicitud))) && (
+              {detailPuedeEliminar && (
                 <div className="pt-4 border-t">
                   <Button
                     variant="outline"

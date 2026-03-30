@@ -399,6 +399,8 @@ export default function ProjectSolicitudesPago({
   const [devolucionFile, setDevolucionFile] = useState<File | null>(null);
   const [registrandoDevolucion, setRegistrandoDevolucion] = useState(false);
 
+  const [detailPuedeEliminar, setDetailPuedeEliminar] = useState(false);
+
   // Corrección (admin)
   const [showCorreccionModal, setShowCorreccionModal] = useState(false);
   const [detailCorrecciones, setDetailCorrecciones] = useState<{
@@ -525,6 +527,7 @@ export default function ProjectSolicitudesPago({
         setDetailFactura(response.data.factura || null);
         setDetailReembolso(response.data.reembolso || null);
         setDetailDevolucion(response.data.devolucion || null);
+        setDetailPuedeEliminar(!!response.data.puede_eliminar);
         setDetailRevisada(!!solicitud.revisada);
 
         // Load corrections if any exist
@@ -2063,13 +2066,7 @@ export default function ProjectSolicitudesPago({
               </div>
 
               {/* Delete */}
-              {((user?.rol === 'admin' &&
-                detailSolicitud.estado !== 'pagada' &&
-                detailSolicitud.estado !== 'facturada') ||
-                (canManage &&
-                  detailSolicitud.estado === 'pendiente' &&
-                  detailAprobaciones.length === 0 &&
-                  canManageSolicitud(detailSolicitud))) && (
+              {detailPuedeEliminar && (
                 <div className="pt-4 border-t">
                   <Button
                     variant="outline"
