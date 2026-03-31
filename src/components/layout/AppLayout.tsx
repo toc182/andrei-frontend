@@ -306,6 +306,7 @@ export function AppLayout({
     { key: 'costos', label: 'Costos', icon: DollarSign },
     { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
     { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
+    { key: 'caja-menuda', label: 'Caja Menuda', icon: Wallet },
     { key: 'tareas', label: 'Tareas', icon: CheckSquare },
     { key: 'bitacora', label: 'Bitácora', icon: BookOpen },
     { key: 'miembros', label: 'Miembros', icon: Users },

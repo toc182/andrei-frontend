@@ -69,7 +69,11 @@ const formatMonto = (valor: string | number | undefined) => {
 
 // --- Component ---
 
-const CajasMenudasPage = () => {
+interface CajasMenudasPageProps {
+  projectId?: number;
+}
+
+const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [cajas, setCajas] = useState<CajaMenuda[]>([]);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -100,7 +104,8 @@ const CajasMenudasPage = () => {
   const loadCajas = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/cajas-menudas');
+      const url = projectId ? `/cajas-menudas/proyecto/${projectId}` : '/cajas-menudas';
+      const response = await api.get(url);
       if (response.data.success) {
         setCajas(response.data.data);
       }
@@ -138,7 +143,7 @@ const CajasMenudasPage = () => {
   const handleNew = () => {
     setEditingCaja(null);
     form.reset({
-      proyecto_id: '',
+      proyecto_id: projectId ? String(projectId) : '',
       responsable_id: '',
       nombre: '',
       monto_asignado: '',
@@ -259,7 +264,7 @@ const CajasMenudasPage = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium">{caja.nombre}</p>
-                      <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>
+                      {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
                     </div>
                     {estadoBadge(caja.estado)}
                   </div>
@@ -285,7 +290,7 @@ const CajasMenudasPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Proyecto</TableHead>
+                  {!projectId && <TableHead>Proyecto</TableHead>}
                   <TableHead>Responsable</TableHead>
                   <TableHead className="text-right">Monto Asignado</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
@@ -297,7 +302,7 @@ const CajasMenudasPage = () => {
                 {cajas.map((caja) => (
                   <TableRow key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
                     <TableCell className="font-medium">{caja.nombre}</TableCell>
-                    <TableCell>{caja.proyecto_nombre}</TableCell>
+                    {!projectId && <TableCell>{caja.proyecto_nombre}</TableCell>}
                     <TableCell>{caja.responsable_nombre}</TableCell>
                     <TableCell className="text-right">{formatMonto(caja.monto_asignado)}</TableCell>
                     <TableCell className={`text-right font-medium ${Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -341,8 +346,8 @@ const CajasMenudasPage = () => {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Proyecto (only on create) */}
-              {!editingCaja && (
+              {/* Proyecto (only on create, and only when not inside a project) */}
+              {!editingCaja && !projectId && (
                 <FormField
                   control={form.control}
                   name="proyecto_id"
