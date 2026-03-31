@@ -5,6 +5,7 @@ import * as z from 'zod';
 import api from '../services/api';
 import { Plus, Pencil, Loader2, Wallet } from 'lucide-react';
 import type { CajaMenuda } from '../types/api';
+import CajaMenudaDetail from './CajaMenudaDetail';
 
 // Shadcn Components
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,7 @@ const CajasMenudasPage = () => {
   const [editingCaja, setEditingCaja] = useState<CajaMenuda | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [selectedCajaId, setSelectedCajaId] = useState<number | null>(null);
 
   const form: UseFormReturn<CajaFormData> = useForm<CajaFormData>({
     resolver: zodResolver(cajaSchema),
@@ -190,6 +192,19 @@ const CajasMenudasPage = () => {
     }
   };
 
+  // Detail view
+  if (selectedCajaId) {
+    return (
+      <CajaMenudaDetail
+        cajaId={selectedCajaId}
+        onBack={() => {
+          setSelectedCajaId(null);
+          loadCajas();
+        }}
+      />
+    );
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -239,7 +254,7 @@ const CajasMenudasPage = () => {
           {/* Mobile: Cards */}
           <div className="md:hidden space-y-3">
             {cajas.map((caja) => (
-              <Card key={caja.id} className="cursor-pointer" onClick={() => handleEdit(caja)}>
+              <Card key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
                 <CardContent className="p-4 space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
@@ -280,7 +295,7 @@ const CajasMenudasPage = () => {
               </TableHeader>
               <TableBody>
                 {cajas.map((caja) => (
-                  <TableRow key={caja.id}>
+                  <TableRow key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
                     <TableCell className="font-medium">{caja.nombre}</TableCell>
                     <TableCell>{caja.proyecto_nombre}</TableCell>
                     <TableCell>{caja.responsable_nombre}</TableCell>
@@ -293,7 +308,10 @@ const CajasMenudasPage = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit(caja)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(caja);
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
