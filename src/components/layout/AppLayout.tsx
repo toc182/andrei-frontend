@@ -73,6 +73,7 @@ import {
   CheckSquare,
   BookOpen,
   Layers,
+  Wallet,
 } from 'lucide-react';
 
 interface SubMenuItem {
@@ -208,6 +209,16 @@ export function AppLayout({
       icon: Banknote,
       view: 'solicitudes-pago',
     },
+    ...(hasPermission('caja_menuda')
+      ? [
+          {
+            id: 'cajas-menudas',
+            label: 'Cajas Menudas',
+            icon: Wallet as LucideIcon,
+            view: 'cajas-menudas',
+          },
+        ]
+      : []),
     ...(hasPermission('equipos_ver')
       ? [
           {

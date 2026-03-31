@@ -30,6 +30,7 @@ import PermisosPage from './PermisosPage';
 import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
 import OportunidadesPage from './OportunidadesPage';
 import MiCuentaPage from './MiCuentaPage';
+import CajasMenudasPage from './CajasMenudasPage';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -329,6 +330,9 @@ export default function DashboardNew() {
 
       case 'solicitudes-pago':
         return <SolicitudesPagoGeneral onNavigate={setCurrentView} />;
+
+      case 'cajas-menudas':
+        return <CajasMenudasPage />;
 
       case 'equipos':
       case 'equipos-informacion':
