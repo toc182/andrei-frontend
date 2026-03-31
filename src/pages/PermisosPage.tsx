@@ -53,6 +53,7 @@ interface PermUser {
   documentos_acceso: boolean | null;
   oportunidades_ver: boolean | null;
   registrar_pago: boolean | null;
+  caja_menuda: boolean | null;
 }
 
 interface ProjectOption {
@@ -85,6 +86,7 @@ const DEFAULT_PERMS: UserPermissions = {
   documentos_acceso: false,
   oportunidades_ver: false,
   registrar_pago: false,
+  caja_menuda: false,
 };
 
 export default function PermisosPage() {
@@ -471,6 +473,11 @@ export default function PermisosPage() {
                     label="Registrar pagos y facturas"
                     checked={perms.registrar_pago}
                     onChange={() => togglePerm('registrar_pago')}
+                  />
+                  <PermCheckbox
+                    label="Acceso a cajas menudas"
+                    checked={perms.caja_menuda}
+                    onChange={() => togglePerm('caja_menuda')}
                   />
                 </div>
               </div>
