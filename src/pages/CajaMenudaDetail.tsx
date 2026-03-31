@@ -5,7 +5,7 @@ import * as z from 'zod';
 import api from '../services/api';
 import type { CajaMenudaDetail as CajaMenudaDetailType, CajaMenudaGasto, CajaMenudaAdjunto } from '../types/api';
 import {
-  ArrowLeft, Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt,
+  ArrowLeft, Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -89,6 +89,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   // Adjunto upload
   const [uploading, setUploading] = useState(false);
   const [deleteAdjuntoId, setDeleteAdjuntoId] = useState<number | null>(null);
+  const [showReembolsoConfirm, setShowReembolsoConfirm] = useState(false);
+  const [reembolsoSubmitting, setReembolsoSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const gastoForm = useForm<GastoFormData>({
@@ -279,6 +281,27 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     }
   };
 
+  // --- Reembolso handler ---
+
+  const handleReembolso = async () => {
+    try {
+      setReembolsoSubmitting(true);
+      setError('');
+      const response = await api.post(`/cajas-menudas/${cajaId}/reembolso`);
+      if (response.data.success) {
+        setShowReembolsoConfirm(false);
+        setGastosFilter('pending');
+        loadCaja();
+        loadGastos();
+      }
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { error?: string } } };
+      setError(apiError.response?.data?.error || 'Error al solicitar reembolso');
+    } finally {
+      setReembolsoSubmitting(false);
+    }
+  };
+
   // --- Render ---
 
   if (loading) {
@@ -385,9 +408,16 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             </Select>
           </div>
           {isPending && caja.estado === 'abierta' && (
-            <Button size="sm" onClick={handleNewGasto}>
-              <Plus className="mr-2 h-4 w-4" /> Registrar Gasto
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleNewGasto}>
+                <Plus className="mr-2 h-4 w-4" /> Registrar Gasto
+              </Button>
+              {gastos.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setShowReembolsoConfirm(true)}>
+                  <Send className="mr-2 h-4 w-4" /> Solicitar Reembolso
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
@@ -683,6 +713,26 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAdjunto}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reembolso Confirmation */}
+      <AlertDialog open={showReembolsoConfirm} onOpenChange={setShowReembolsoConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Solicitar reembolso?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se creará una solicitud de pago por {formatMonto(gastosTotal)} con {gastos.length} gasto{gastos.length !== 1 ? 's' : ''} pendiente{gastos.length !== 1 ? 's' : ''}.
+              Los gastos quedarán vinculados a la solicitud y no podrán ser editados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={reembolsoSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReembolso} disabled={reembolsoSubmitting}>
+              {reembolsoSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Solicitar Reembolso
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
