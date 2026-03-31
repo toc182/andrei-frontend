@@ -3,7 +3,6 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { Plus, Pencil, Loader2, Wallet } from 'lucide-react';
 import type { CajaMenuda } from '../types/api';
 
@@ -70,7 +69,6 @@ const formatMonto = (valor: string | number | undefined) => {
 // --- Component ---
 
 const CajasMenudasPage = () => {
-  const { hasPermission } = useAuth();
   const [cajas, setCajas] = useState<CajaMenuda[]>([]);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
