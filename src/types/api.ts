@@ -555,3 +555,49 @@ export interface CajaMenuda {
   responsable_nombre?: string;
   saldo?: string;
 }
+
+export interface CajaMenudaGasto {
+  id: number;
+  caja_menuda_id: number;
+  fecha: string;
+  proveedor: string;
+  descripcion: string;
+  monto: string;
+  itbms: string;
+  monto_total: string;
+  solicitud_reembolso_id: number | null;
+  registrado_por: number;
+  created_at: string;
+  registrado_por_nombre?: string;
+}
+
+export interface CajaMenudaAdjunto {
+  id: number;
+  caja_menuda_id: number;
+  nombre_original: string;
+  r2_key: string;
+  tipo_mime: string;
+  tamano: number;
+  subido_por: number;
+  created_at: string;
+  subido_por_nombre?: string;
+}
+
+export interface CajaMenudaDetail extends CajaMenuda {
+  created_by: number;
+  total_gastado?: string;
+  historial_montos: Array<{
+    id: number;
+    monto_anterior: string;
+    monto_nuevo: string;
+    cambiado_por_nombre: string;
+    created_at: string;
+  }>;
+  reembolsos: Array<{
+    id: number;
+    numero: string;
+    estado: string;
+    monto_total: string;
+    created_at: string;
+  }>;
+}
