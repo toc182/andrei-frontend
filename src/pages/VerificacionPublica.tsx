@@ -52,6 +52,11 @@ const estadoLabels: Record<
     color: 'text-gray-700',
     bg: 'bg-gray-50 border-gray-200',
   },
+  devolucion: {
+    label: 'Devolución',
+    color: 'text-red-700',
+    bg: 'bg-red-50 border-red-200',
+  },
 };
 
 function formatMoney(amount: number): string {
