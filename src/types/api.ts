@@ -55,6 +55,7 @@ export interface UserPermissions {
   documentos_acceso: boolean;
   oportunidades_ver: boolean;
   registrar_pago: boolean;
+  caja_menuda: boolean;
 }
 
 export interface User {
@@ -535,4 +536,22 @@ export interface SolicitudPagoAdjunto {
   subido_por_nombre: string;
   created_at: string;
   tipo_adjunto?: string;
+}
+
+// ============================================
+// CAJAS MENUDAS
+// ============================================
+
+export interface CajaMenuda {
+  id: number;
+  proyecto_id: number;
+  responsable_id: number;
+  nombre: string;
+  monto_asignado: string;
+  estado: 'abierta' | 'cerrada';
+  created_at: string;
+  updated_at: string;
+  proyecto_nombre?: string;
+  responsable_nombre?: string;
+  saldo?: string;
 }
