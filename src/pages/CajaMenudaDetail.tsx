@@ -319,18 +319,20 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   // --- Adjunto handlers ---
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     try {
       setUploading(true);
       setError('');
-      const formData = new FormData();
-      formData.append('archivo', file);
 
-      await api.post(`/cajas-menudas/${cajaId}/adjuntos`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('archivo', file);
+        await api.post(`/cajas-menudas/${cajaId}/adjuntos`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
 
       loadAdjuntos();
     } catch (err: unknown) {
@@ -613,6 +615,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
+                multiple
                 className="hidden"
                 onChange={handleUpload}
               />
