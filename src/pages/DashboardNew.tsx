@@ -54,7 +54,12 @@ interface ProjectContext {
 
 export default function DashboardNew() {
   const { isAdminOrCoAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, _setCurrentView] = useState('dashboard');
+  const [navKey, setNavKey] = useState(0);
+  const setCurrentView = (view: string) => {
+    _setCurrentView(view);
+    setNavKey((k) => k + 1);
+  };
   const [stats, setStats] = useState<DashboardStats>({
     proyectos: null,
     clientes: null,
@@ -134,6 +139,7 @@ export default function DashboardNew() {
           <ProjectDetailLayout
             projectId={projectId}
             subview={subview}
+            navKey={navKey}
             onNavigate={setCurrentView}
             onTitleChange={setPageTitle}
             onProjectLoad={(ctx) => setProjectContext(ctx)}
@@ -332,7 +338,7 @@ export default function DashboardNew() {
         return <SolicitudesPagoGeneral onNavigate={setCurrentView} />;
 
       case 'cajas-menudas':
-        return <CajasMenudasPage />;
+        return <CajasMenudasPage key={navKey} />;
 
       case 'equipos':
       case 'equipos-informacion':

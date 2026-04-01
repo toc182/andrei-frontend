@@ -35,6 +35,7 @@ import type { Project, Adenda } from '@/types';
 interface ProjectDetailLayoutProps {
   projectId: number;
   subview: string;
+  navKey?: number;
   onNavigate: (view: string) => void;
   onTitleChange?: (title: string) => void;
   onProjectLoad?: (ctx: { id: number; name: string }) => void;
@@ -58,6 +59,7 @@ const getEstadoBadge = (estado: string) => {
 export default function ProjectDetailLayout({
   projectId,
   subview,
+  navKey,
   onNavigate,
   onTitleChange,
   onProjectLoad,
@@ -204,7 +206,7 @@ export default function ProjectDetailLayout({
         );
 
       case 'caja-menuda':
-        return <CajasMenudasPage projectId={projectId} />;
+        return <CajasMenudasPage key={navKey} projectId={projectId} />;
 
       case 'tareas':
         return <ProjectTodos projectId={projectId} />;
