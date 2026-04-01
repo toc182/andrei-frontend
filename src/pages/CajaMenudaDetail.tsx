@@ -93,6 +93,14 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [deleteGastoId, setDeleteGastoId] = useState<number | null>(null);
 
+  // Batch gastos modal
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchRows, setBatchRows] = useState<Array<{
+    fecha: string; proveedor: string; descripcion: string;
+    monto: string; itbms: string; monto_total: string;
+  }>>([]);
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
+
   // Adjunto upload
   const [uploading, setUploading] = useState(false);
   const [deleteAdjuntoId, setDeleteAdjuntoId] = useState<number | null>(null);
@@ -168,13 +176,6 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
   // --- Gasto handlers ---
 
-  const handleNewGasto = () => {
-    setEditingGasto(null);
-    gastoForm.reset({ fecha: '', proveedor: '', descripcion: '', monto: '', itbms: '0', monto_total: '' });
-    setError('');
-    setShowGastoModal(true);
-  };
-
   const handleEditGasto = (gasto: CajaMenudaGasto) => {
     setEditingGasto(gasto);
     gastoForm.reset({
@@ -236,6 +237,84 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       setSubmitting(false);
     }
   };
+
+  // --- Batch gasto handlers ---
+
+  const emptyRow = () => ({ fecha: '', proveedor: '', descripcion: '', monto: '', itbms: '0', monto_total: '' });
+
+  const handleOpenBatch = () => {
+    setBatchRows([emptyRow()]);
+    setError('');
+    setShowBatchModal(true);
+  };
+
+  const handleBatchRowChange = (index: number, field: string, value: string) => {
+    setBatchRows(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      // Auto-calculate total
+      if (field === 'monto' || field === 'itbms') {
+        const monto = Number(field === 'monto' ? value : updated[index].monto) || 0;
+        const itbms = Number(field === 'itbms' ? value : updated[index].itbms) || 0;
+        updated[index].monto_total = (monto + itbms).toFixed(2);
+      }
+      return updated;
+    });
+  };
+
+  const handleAddBatchRow = () => {
+    setBatchRows(prev => [...prev, emptyRow()]);
+  };
+
+  const handleRemoveBatchRow = (index: number) => {
+    setBatchRows(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmitBatch = async () => {
+    // Filter out empty rows
+    const validRows = batchRows.filter(r => r.fecha && r.proveedor && r.descripcion && Number(r.monto) > 0);
+    if (validRows.length === 0) {
+      setError('Agrega al menos un gasto con todos los campos');
+      return;
+    }
+    // Validate max 2 decimals
+    for (const row of validRows) {
+      for (const field of ['monto', 'itbms', 'monto_total']) {
+        const val = row[field as keyof typeof row];
+        const parts = val.split('.');
+        if (parts.length >= 2 && parts[1].length > 2) {
+          setError(`Máximo 2 decimales en ${field}`);
+          return;
+        }
+      }
+    }
+    try {
+      setBatchSubmitting(true);
+      setError('');
+      for (const row of validRows) {
+        await api.post(`/cajas-menudas/${cajaId}/gastos`, {
+          fecha: row.fecha,
+          proveedor: row.proveedor,
+          descripcion: row.descripcion,
+          monto: Number(row.monto),
+          itbms: Number(row.itbms || 0),
+          monto_total: Number(row.monto_total),
+        });
+      }
+      setShowBatchModal(false);
+      setBatchRows([]);
+      loadGastos();
+      loadCaja();
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { error?: string } } };
+      setError(apiError.response?.data?.error || 'Error al guardar los gastos');
+    } finally {
+      setBatchSubmitting(false);
+    }
+  };
+
+  const batchTotal = batchRows.reduce((sum, r) => sum + (Number(r.monto_total) || 0), 0);
+  const batchValidCount = batchRows.filter(r => r.fecha && r.proveedor && Number(r.monto) > 0).length;
 
   // --- Adjunto handlers ---
 
@@ -412,8 +491,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           </div>
           {isPending && caja.estado === 'abierta' && (
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleNewGasto}>
-                <Plus className="mr-2 h-4 w-4" /> Registrar Gasto
+              <Button size="sm" onClick={handleOpenBatch}>
+                <Plus className="mr-2 h-4 w-4" /> Registrar Gastos
               </Button>
               {gastos.length > 0 && (
                 <Button size="sm" variant="outline" onClick={() => setShowReembolsoConfirm(true)}>
@@ -585,7 +664,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       <Dialog open={showGastoModal} onOpenChange={setShowGastoModal}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editingGasto ? 'Editar Gasto' : 'Registrar Gasto'}</DialogTitle>
+            <DialogTitle>Editar Gasto</DialogTitle>
           </DialogHeader>
 
           {error && (
@@ -688,11 +767,119 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 </Button>
                 <Button type="submit" disabled={submitting}>
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingGasto ? 'Actualizar' : 'Registrar'}
+                  Actualizar
                 </Button>
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch Gastos Modal */}
+      <Dialog open={showBatchModal} onOpenChange={(open) => { if (!open) setShowBatchModal(false); }}>
+        <DialogContent className="sm:max-w-[800px] p-0">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle>Registrar Gastos</DialogTitle>
+          </DialogHeader>
+
+          {error && (
+            <div className="px-4">
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            {/* Header */}
+            <div className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] bg-muted/50 border-y px-1">
+              <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Fecha</span>
+              <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Proveedor</span>
+              <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Descripción</span>
+              <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase text-right">Monto</span>
+              <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase text-right">ITBMS</span>
+              <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase text-right">Total</span>
+              <span></span>
+            </div>
+
+            {/* Rows */}
+            {batchRows.map((row, index) => (
+              <div key={index} className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] border-b last:border-b-0 px-1">
+                <input
+                  type="date"
+                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  value={row.fecha}
+                  onChange={(e) => handleBatchRowChange(index, 'fecha', e.target.value)}
+                />
+                <input
+                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  placeholder="Proveedor"
+                  value={row.proveedor}
+                  onChange={(e) => handleBatchRowChange(index, 'proveedor', e.target.value)}
+                />
+                <input
+                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  placeholder="Descripción"
+                  value={row.descripcion}
+                  onChange={(e) => handleBatchRowChange(index, 'descripcion', e.target.value)}
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-2 py-2 text-sm text-right border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  placeholder="0.00"
+                  value={row.monto}
+                  onChange={(e) => handleBatchRowChange(index, 'monto', e.target.value)}
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  className="px-2 py-2 text-sm text-right border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  placeholder="0.00"
+                  value={row.itbms}
+                  onChange={(e) => handleBatchRowChange(index, 'itbms', e.target.value)}
+                />
+                <input
+                  type="number"
+                  className="px-2 py-2 text-sm text-right bg-muted/30 outline-none"
+                  value={row.monto_total}
+                  readOnly
+                />
+                <div className="flex items-center justify-center">
+                  {batchRows.length > 1 && (
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRemoveBatchRow(index)}>
+                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Add row */}
+            <button
+              type="button"
+              className="w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50/50 text-left border-t"
+              onClick={handleAddBatchRow}
+            >
+              ＋ Agregar fila
+            </button>
+          </div>
+
+          <DialogFooter className="p-4 pt-0 flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">
+              Total: <strong className="text-foreground">{formatMonto(batchTotal)}</strong>
+              {batchValidCount > 0 && ` (${batchValidCount} gasto${batchValidCount !== 1 ? 's' : ''})`}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowBatchModal(false)} disabled={batchSubmitting}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmitBatch} disabled={batchSubmitting}>
+                {batchSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Todo
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
