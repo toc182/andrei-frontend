@@ -121,7 +121,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     try {
       const response = await api.get('/projects');
       if (response.data.success) {
-        setProyectos(response.data.data);
+        setProyectos(response.data.proyectos || response.data.data || []);
       }
     } catch (err) {
       console.error('Error cargando proyectos:', err);
