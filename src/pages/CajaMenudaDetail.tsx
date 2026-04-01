@@ -69,7 +69,8 @@ const formatMonto = (valor: string | number | undefined) => {
 };
 
 const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr + 'T00:00:00');
+  const clean = dateStr.split('T')[0];
+  const d = new Date(clean + 'T00:00:00');
   return d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
