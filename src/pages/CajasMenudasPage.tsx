@@ -101,9 +101,9 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     loadUsuarios();
   }, []);
 
-  const loadCajas = async () => {
+  const loadCajas = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const url = projectId ? `/cajas-menudas/proyecto/${projectId}` : '/cajas-menudas';
       const response = await api.get(url);
       if (response.data.success) {
@@ -185,7 +185,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         });
       }
 
-      loadCajas();
+      loadCajas(false);
       setShowFormModal(false);
       form.reset();
     } catch (err: unknown) {
@@ -204,7 +204,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         cajaId={selectedCajaId}
         onBack={() => {
           setSelectedCajaId(null);
-          loadCajas();
+          loadCajas(false);
         }}
       />
     );
