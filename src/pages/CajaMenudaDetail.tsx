@@ -499,13 +499,13 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             </Select>
           </div>
           {isPending && caja.estado === 'abierta' && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={handleOpenBatch}>
-                <Plus className="mr-2 h-4 w-4" /> Registrar Gastos
+                <Plus className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Registrar</span> Gastos
               </Button>
               {gastos.length > 0 && (
                 <Button size="sm" variant="outline" onClick={() => setShowReembolsoConfirm(true)}>
-                  <Send className="mr-2 h-4 w-4" /> Solicitar Reembolso
+                  <Send className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Solicitar</span> Reembolso
                 </Button>
               )}
             </div>
