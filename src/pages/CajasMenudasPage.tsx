@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
-import { Plus, Pencil, Loader2, Wallet } from 'lucide-react';
+import { Plus, Pencil, Loader2, Wallet, Upload } from 'lucide-react';
 import type { CajaMenuda } from '../types/api';
 import CajaMenudaDetail from './CajaMenudaDetail';
 
@@ -82,6 +82,8 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedCajaId, setSelectedCajaId] = useState<number | null>(null);
+  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
+  const comprobanteRef = useRef<HTMLInputElement>(null);
 
   const form: UseFormReturn<CajaFormData> = useForm<CajaFormData>({
     resolver: zodResolver(cajaSchema),
@@ -92,6 +94,8 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       monto_asignado: '',
     },
   });
+
+  const watchEstado = form.watch('estado');
 
   // Load data
   useEffect(() => {
@@ -161,6 +165,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       estado: caja.estado as 'abierta' | 'cerrada',
     });
     setError('');
+    setComprobanteFile(null);
     setShowFormModal(true);
   };
 
@@ -170,10 +175,14 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       setError('');
 
       if (editingCaja) {
-        await api.put(`/cajas-menudas/${editingCaja.id}`, {
-          nombre: data.nombre,
-          responsable_id: Number(data.responsable_id),
-          estado: data.estado,
+        const formData = new FormData();
+        formData.append('nombre', data.nombre);
+        formData.append('responsable_id', data.responsable_id);
+        if (data.estado) formData.append('estado', data.estado);
+        if (comprobanteFile) formData.append('comprobante_cierre', comprobanteFile);
+
+        await api.put(`/cajas-menudas/${editingCaja.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
         await api.post('/cajas-menudas', {
@@ -273,8 +282,8 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Saldo</span>
-                    <span className={`font-medium ${Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatMonto(caja.saldo)}
+                    <span className={`font-medium ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">Responsable: {caja.responsable_nombre}</p>
@@ -304,8 +313,8 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                     {!projectId && <TableCell>{caja.proyecto_nombre}</TableCell>}
                     <TableCell>{caja.responsable_nombre}</TableCell>
                     <TableCell className="text-right">{formatMonto(caja.monto_asignado)}</TableCell>
-                    <TableCell className={`text-right font-medium ${Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatMonto(caja.saldo)}
+                    <TableCell className={`text-right font-medium ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
                     </TableCell>
                     <TableCell>{estadoBadge(caja.estado)}</TableCell>
                     <TableCell>
@@ -454,6 +463,34 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                     </FormItem>
                   )}
                 />
+              )}
+
+              {/* Comprobante de cierre (required when closing) */}
+              {editingCaja && watchEstado === 'cerrada' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Comprobante de cierre *</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={comprobanteRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => comprobanteRef.current?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Documento firmado de devolución del saldo
+                  </p>
+                </div>
               )}
 
               <DialogFooter className="gap-2">

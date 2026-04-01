@@ -453,8 +453,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Saldo Disponible</p>
-            <p className={`text-xl font-bold ${Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {formatMonto(caja.saldo)}
+            <p className={`text-xl font-bold ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
             </p>
           </CardContent>
         </Card>
