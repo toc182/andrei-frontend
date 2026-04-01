@@ -301,6 +301,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         setGastosFilter('pending');
         loadCaja();
         loadGastos();
+        loadAdjuntos();
       }
     } catch (err: unknown) {
       const apiError = err as { response?: { data?: { error?: string } } };
