@@ -499,7 +499,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             </Select>
           </div>
           {isPending && caja.estado === 'abierta' && (
-            <div className="flex flex-wrap gap-2 ml-auto">
+            <div className="flex flex-wrap gap-2 self-end sm:self-auto">
               <Button size="sm" onClick={handleOpenBatch}>
                 <Plus className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Registrar</span> Gastos
               </Button>
