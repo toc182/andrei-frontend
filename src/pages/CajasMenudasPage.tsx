@@ -33,10 +33,9 @@ const cajaSchema = z.object({
   proyecto_id: z.string().min(1, 'Proyecto es obligatorio'),
   responsable_id: z.string().min(1, 'Responsable es obligatorio'),
   nombre: z.string().min(1, 'Nombre es obligatorio'),
-  monto_asignado: z.string().min(1, 'Monto es obligatorio').refine(
-    (v) => !isNaN(Number(v)) && Number(v) > 0,
-    'Monto debe ser mayor a 0',
-  ),
+  monto_asignado: z.string().min(1, 'Monto es obligatorio')
+    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Monto debe ser mayor a 0')
+    .refine((v) => { const parts = v.split('.'); return parts.length < 2 || parts[1].length <= 2; }, 'Máximo 2 decimales'),
   estado: z.enum(['abierta', 'cerrada']).optional(),
 });
 

@@ -33,17 +33,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Zod schemas ---
 
+const max2Decimals = (v: string) => {
+  const parts = v.split('.');
+  return parts.length < 2 || parts[1].length <= 2;
+};
+
 const gastoSchema = z.object({
   fecha: z.string().min(1, 'Fecha es obligatoria'),
   proveedor: z.string().min(1, 'Proveedor es obligatorio'),
   descripcion: z.string().min(1, 'Descripción es obligatoria'),
-  monto: z.string().min(1, 'Monto es obligatorio').refine(
-    (v) => !isNaN(Number(v)) && Number(v) > 0, 'Monto debe ser mayor a 0',
-  ),
-  itbms: z.string().optional(),
-  monto_total: z.string().min(1, 'Total es obligatorio').refine(
-    (v) => !isNaN(Number(v)) && Number(v) > 0, 'Total debe ser mayor a 0',
-  ),
+  monto: z.string().min(1, 'Monto es obligatorio')
+    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Monto debe ser mayor a 0')
+    .refine(max2Decimals, 'Máximo 2 decimales'),
+  itbms: z.string().optional()
+    .refine((v) => !v || max2Decimals(v), 'Máximo 2 decimales'),
+  monto_total: z.string().min(1, 'Total es obligatorio')
+    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Total debe ser mayor a 0')
+    .refine(max2Decimals, 'Máximo 2 decimales'),
 });
 
 type GastoFormData = z.infer<typeof gastoSchema>;
