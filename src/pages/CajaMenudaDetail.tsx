@@ -5,7 +5,7 @@ import * as z from 'zod';
 import api from '../services/api';
 import type { CajaMenudaDetail as CajaMenudaDetailType, CajaMenudaGasto, CajaMenudaAdjunto } from '../types/api';
 import {
-  ArrowLeft, Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send,
+  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -328,9 +328,6 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   if (!caja) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-        </Button>
         <Alert variant="destructive">
           <AlertDescription>Caja menuda no encontrada</AlertDescription>
         </Alert>
@@ -345,10 +342,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-        </Button>
+      <div className="flex items-center gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{caja.nombre}</h2>
           <p className="text-muted-foreground text-sm">{caja.proyecto_nombre}</p>
