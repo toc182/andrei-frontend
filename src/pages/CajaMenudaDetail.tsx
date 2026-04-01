@@ -140,7 +140,12 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       setLoading(true);
       const response = await api.get(`/cajas-menudas/${cajaId}`);
       if (response.data.success) {
-        setCaja(response.data.data);
+        const cajaData = response.data.data;
+        setCaja(cajaData);
+        // If cerrada, default to latest reembolso instead of "pending"
+        if (cajaData.estado === 'cerrada' && cajaData.reembolsos?.length > 0) {
+          setGastosFilter(String(cajaData.reembolsos[0].id));
+        }
       }
     } catch (err) {
       console.error('Error cargando caja menuda:', err);
@@ -482,7 +487,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Gastos actuales (pendientes de reembolso)</SelectItem>
+                {caja.estado !== 'cerrada' && (
+                  <SelectItem value="pending">Gastos actuales (pendientes de reembolso)</SelectItem>
+                )}
                 {caja.reembolsos?.map((r) => (
                   <SelectItem key={r.id} value={String(r.id)}>
                     Reembolso #{r.numero} — {r.estado}
