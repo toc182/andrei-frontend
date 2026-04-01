@@ -120,11 +120,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   // Load data
   useEffect(() => {
     loadCaja();
-    loadAdjuntos();
   }, [cajaId]);
 
   useEffect(() => {
     loadGastos();
+    loadAdjuntos();
   }, [cajaId, gastosFilter]);
 
   const loadCaja = async () => {
@@ -156,7 +156,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
   const loadAdjuntos = async () => {
     try {
-      const response = await api.get(`/cajas-menudas/${cajaId}/adjuntos`);
+      const filter = gastosFilter === 'pending' ? 'null' : gastosFilter;
+      const response = await api.get(`/cajas-menudas/${cajaId}/adjuntos?solicitud_reembolso_id=${filter}`);
       if (response.data.success) {
         setAdjuntos(response.data.data);
       }
@@ -532,24 +533,26 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Adjuntos</h3>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              className="hidden"
-              onChange={handleUpload}
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-              Subir archivo
-            </Button>
-          </div>
+          {isPending && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={handleUpload}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Subir archivo
+              </Button>
+            </div>
+          )}
         </div>
 
         {adjuntos.length === 0 ? (
@@ -571,9 +574,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                   <Button variant="ghost" size="sm" onClick={() => handleDownload(adj)}>
                     <Download className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setDeleteAdjuntoId(adj.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+                  {isPending && (
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteAdjuntoId(adj.id)}>
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
