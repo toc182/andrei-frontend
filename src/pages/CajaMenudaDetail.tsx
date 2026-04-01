@@ -5,7 +5,7 @@ import * as z from 'zod';
 import api from '../services/api';
 import type { CajaMenudaDetail as CajaMenudaDetailType, CajaMenudaGasto, CajaMenudaAdjunto } from '../types/api';
 import {
-  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send, Check, X,
+  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -15,10 +15,15 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Form } from '@/components/ui/form';
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from '@/components/ui/form';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -83,8 +88,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   const [gastosFilter, setGastosFilter] = useState<string>('pending');
 
   // Gasto form
-  const [showInlineForm, setShowInlineForm] = useState(false);
-  const [editingGastoId, setEditingGastoId] = useState<number | null>(null);
+  const [showGastoModal, setShowGastoModal] = useState(false);
+  const [editingGasto, setEditingGasto] = useState<CajaMenudaGasto | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteGastoId, setDeleteGastoId] = useState<number | null>(null);
 
@@ -164,14 +169,14 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   // --- Gasto handlers ---
 
   const handleNewGasto = () => {
-    setEditingGastoId(null);
+    setEditingGasto(null);
     gastoForm.reset({ fecha: '', proveedor: '', descripcion: '', monto: '', itbms: '0', monto_total: '' });
     setError('');
-    setShowInlineForm(true);
+    setShowGastoModal(true);
   };
 
   const handleEditGasto = (gasto: CajaMenudaGasto) => {
-    setEditingGastoId(gasto.id);
+    setEditingGasto(gasto);
     gastoForm.reset({
       fecha: gasto.fecha.split('T')[0],
       proveedor: gasto.proveedor,
@@ -181,14 +186,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       monto_total: String(gasto.monto_total),
     });
     setError('');
-    setShowInlineForm(true);
-  };
-
-  const handleCancelInline = () => {
-    setShowInlineForm(false);
-    setEditingGastoId(null);
-    gastoForm.reset();
-    setError('');
+    setShowGastoModal(true);
   };
 
   const handleSubmitGasto = async (data: GastoFormData) => {
@@ -205,14 +203,13 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         monto_total: Number(data.monto_total),
       };
 
-      if (editingGastoId) {
-        await api.put(`/cajas-menudas/${cajaId}/gastos/${editingGastoId}`, payload);
+      if (editingGasto) {
+        await api.put(`/cajas-menudas/${cajaId}/gastos/${editingGasto.id}`, payload);
       } else {
         await api.post(`/cajas-menudas/${cajaId}/gastos`, payload);
       }
 
-      setShowInlineForm(false);
-      setEditingGastoId(null);
+      setShowGastoModal(false);
       gastoForm.reset();
       loadGastos();
       loadCaja(); // Refresh saldo
@@ -437,218 +434,94 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           </div>
         )}
 
-        <Form {...gastoForm}>
-          <form onSubmit={gastoForm.handleSubmit(handleSubmitGasto)}>
+        {gastos.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <p className="text-muted-foreground">No hay gastos registrados</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
             {/* Mobile: Cards */}
             <div className="md:hidden space-y-3">
-              {showInlineForm && !editingGastoId && (
-                <Card className="bg-muted/30">
-                  <CardContent className="p-4 space-y-3">
-                    <Input type="date" className="h-8" {...gastoForm.register('fecha')} />
-                    <Input className="h-8" placeholder="Proveedor" {...gastoForm.register('proveedor')} />
-                    <Input className="h-8" placeholder="Descripción" {...gastoForm.register('descripcion')} />
-                    <div className="grid grid-cols-3 gap-2">
-                      <Input type="number" step="0.01" className="h-8" placeholder="Monto" {...gastoForm.register('monto')} />
-                      <Input type="number" step="0.01" className="h-8" placeholder="ITBMS" {...gastoForm.register('itbms')} />
-                      <Input type="number" step="0.01" className="h-8 bg-muted" placeholder="Total" readOnly {...gastoForm.register('monto_total')} />
+              {gastos.map((gasto) => (
+                <Card key={gasto.id}>
+                  <CardContent className="p-4 space-y-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{gasto.proveedor}</p>
+                        <p className="text-sm text-muted-foreground">{gasto.descripcion}</p>
+                      </div>
+                      {isPending && (
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditGasto(gasto)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button type="button" variant="outline" size="sm" onClick={handleCancelInline}>
-                        Cancelar
-                      </Button>
-                      <Button type="submit" size="sm" disabled={submitting}>
-                        {submitting && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                        Registrar
-                      </Button>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{formatDate(gasto.fecha)}</span>
+                      <span className="font-medium">{formatMonto(gasto.monto_total)}</span>
                     </div>
                   </CardContent>
                 </Card>
-              )}
-              {gastos.length === 0 && !showInlineForm ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <p className="text-muted-foreground">No hay gastos registrados</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                gastos.map((gasto) => (
-                  editingGastoId === gasto.id && showInlineForm ? (
-                    <Card key={gasto.id} className="bg-muted/30">
-                      <CardContent className="p-4 space-y-3">
-                        <Input type="date" className="h-8" {...gastoForm.register('fecha')} />
-                        <Input className="h-8" placeholder="Proveedor" {...gastoForm.register('proveedor')} />
-                        <Input className="h-8" placeholder="Descripción" {...gastoForm.register('descripcion')} />
-                        <div className="grid grid-cols-3 gap-2">
-                          <Input type="number" step="0.01" className="h-8" placeholder="Monto" {...gastoForm.register('monto')} />
-                          <Input type="number" step="0.01" className="h-8" placeholder="ITBMS" {...gastoForm.register('itbms')} />
-                          <Input type="number" step="0.01" className="h-8 bg-muted" placeholder="Total" readOnly {...gastoForm.register('monto_total')} />
-                        </div>
-                        <div className="flex gap-2 justify-end">
-                          <Button type="button" variant="outline" size="sm" onClick={handleCancelInline}>
-                            Cancelar
-                          </Button>
-                          <Button type="submit" size="sm" disabled={submitting}>
-                            {submitting && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                            Guardar
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card key={gasto.id}>
-                      <CardContent className="p-4 space-y-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">{gasto.proveedor}</p>
-                            <p className="text-sm text-muted-foreground">{gasto.descripcion}</p>
-                          </div>
-                          {isPending && (
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => handleEditGasto(gasto)}>
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
-                                <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{formatDate(gasto.fecha)}</span>
-                          <span className="font-medium">{formatMonto(gasto.monto_total)}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                ))
-              )}
+              ))}
             </div>
 
             {/* Desktop: Table */}
-            {gastos.length === 0 && !showInlineForm ? (
-              <Card className="hidden md:block">
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <p className="text-muted-foreground">No hay gastos registrados</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="hidden md:block rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Proveedor</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
-                      <TableHead className="text-right">ITBMS</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      {isPending && <TableHead className="w-[80px]"></TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {showInlineForm && !editingGastoId && (
-                      <TableRow className="bg-muted/30">
-                        <TableCell>
-                          <Input type="date" className="h-8 w-[130px]" {...gastoForm.register('fecha')} />
-                        </TableCell>
-                        <TableCell>
-                          <Input className="h-8" placeholder="Proveedor" {...gastoForm.register('proveedor')} />
-                        </TableCell>
-                        <TableCell>
-                          <Input className="h-8" placeholder="Descripción" {...gastoForm.register('descripcion')} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" className="h-8 w-[90px] text-right" placeholder="0.00" {...gastoForm.register('monto')} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" className="h-8 w-[80px] text-right" placeholder="0.00" {...gastoForm.register('itbms')} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" className="h-8 w-[90px] text-right bg-muted" readOnly {...gastoForm.register('monto_total')} />
-                        </TableCell>
+            <div className="hidden md:block rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Proveedor</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                    <TableHead className="text-right">ITBMS</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    {isPending && <TableHead className="w-[80px]"></TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {gastos.map((gasto) => (
+                    <TableRow key={gasto.id}>
+                      <TableCell>{formatDate(gasto.fecha)}</TableCell>
+                      <TableCell>{gasto.proveedor}</TableCell>
+                      <TableCell>{gasto.descripcion}</TableCell>
+                      <TableCell className="text-right">{formatMonto(gasto.monto)}</TableCell>
+                      <TableCell className="text-right">{formatMonto(gasto.itbms)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatMonto(gasto.monto_total)}</TableCell>
+                      {isPending && (
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button type="submit" variant="ghost" size="sm" disabled={submitting}>
-                              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 text-green-600" />}
+                            <Button variant="ghost" size="sm" onClick={() => handleEditGasto(gasto)}>
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button type="button" variant="ghost" size="sm" onClick={handleCancelInline}>
-                              <X className="h-3.5 w-3.5 text-red-500" />
+                            <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
+                              <Trash2 className="h-3.5 w-3.5 text-red-500" />
                             </Button>
                           </div>
                         </TableCell>
-                      </TableRow>
-                    )}
-                    {gastos.map((gasto) => (
-                      editingGastoId === gasto.id && showInlineForm ? (
-                        <TableRow key={gasto.id} className="bg-muted/30">
-                          <TableCell>
-                            <Input type="date" className="h-8 w-[130px]" {...gastoForm.register('fecha')} />
-                          </TableCell>
-                          <TableCell>
-                            <Input className="h-8" placeholder="Proveedor" {...gastoForm.register('proveedor')} />
-                          </TableCell>
-                          <TableCell>
-                            <Input className="h-8" placeholder="Descripción" {...gastoForm.register('descripcion')} />
-                          </TableCell>
-                          <TableCell>
-                            <Input type="number" step="0.01" className="h-8 w-[90px] text-right" placeholder="0.00" {...gastoForm.register('monto')} />
-                          </TableCell>
-                          <TableCell>
-                            <Input type="number" step="0.01" className="h-8 w-[80px] text-right" placeholder="0.00" {...gastoForm.register('itbms')} />
-                          </TableCell>
-                          <TableCell>
-                            <Input type="number" step="0.01" className="h-8 w-[90px] text-right bg-muted" readOnly {...gastoForm.register('monto_total')} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button type="submit" variant="ghost" size="sm" disabled={submitting}>
-                                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 text-green-600" />}
-                              </Button>
-                              <Button type="button" variant="ghost" size="sm" onClick={handleCancelInline}>
-                                <X className="h-3.5 w-3.5 text-red-500" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        <TableRow key={gasto.id}>
-                          <TableCell>{formatDate(gasto.fecha)}</TableCell>
-                          <TableCell>{gasto.proveedor}</TableCell>
-                          <TableCell>{gasto.descripcion}</TableCell>
-                          <TableCell className="text-right">{formatMonto(gasto.monto)}</TableCell>
-                          <TableCell className="text-right">{formatMonto(gasto.itbms)}</TableCell>
-                          <TableCell className="text-right font-medium">{formatMonto(gasto.monto_total)}</TableCell>
-                          {isPending && (
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="sm" onClick={() => handleEditGasto(gasto)}>
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
-                                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      )
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
             {/* Footer total */}
-            {(gastos.length > 0 || showInlineForm) && (
-              <div className="flex justify-end mt-2">
-                <div className="text-sm text-muted-foreground">
-                  {isPending ? 'Total pendiente:' : 'Total reembolsado:'}{' '}
-                  <span className="font-bold text-foreground">{formatMonto(gastosTotal)}</span>
-                </div>
+            <div className="flex justify-end">
+              <div className="text-sm text-muted-foreground">
+                {isPending ? 'Total pendiente:' : 'Total reembolsado:'}{' '}
+                <span className="font-bold text-foreground">{formatMonto(gastosTotal)}</span>
               </div>
-            )}
-          </form>
-        </Form>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Adjuntos Section */}
@@ -707,6 +580,121 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           </div>
         )}
       </div>
+
+      {/* Gasto Form Dialog */}
+      <Dialog open={showGastoModal} onOpenChange={setShowGastoModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{editingGasto ? 'Editar Gasto' : 'Registrar Gasto'}</DialogTitle>
+          </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Form {...gastoForm}>
+            <form onSubmit={gastoForm.handleSubmit(handleSubmitGasto)} className="space-y-4">
+              <FormField
+                control={gastoForm.control}
+                name="fecha"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={gastoForm.control}
+                name="proveedor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proveedor *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nombre del proveedor" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={gastoForm.control}
+                name="descripcion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Descripción del gasto" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-3 gap-3">
+                <FormField
+                  control={gastoForm.control}
+                  name="monto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monto *</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={gastoForm.control}
+                  name="itbms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ITBMS</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={gastoForm.control}
+                  name="monto_total"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total *</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} readOnly className="bg-muted" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowGastoModal(false)} disabled={submitting}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingGasto ? 'Actualizar' : 'Registrar'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Gasto Confirmation */}
       <AlertDialog open={deleteGastoId !== null} onOpenChange={(open) => !open && setDeleteGastoId(null)}>
