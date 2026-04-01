@@ -479,11 +479,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
       {/* Gastos Section */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold">Gastos</h3>
             <Select value={gastosFilter} onValueChange={setGastosFilter}>
-              <SelectTrigger className="w-[280px]">
+              <SelectTrigger className="w-[180px] sm:w-[280px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -499,7 +499,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             </Select>
           </div>
           {isPending && caja.estado === 'abierta' && (
-            <div className="flex flex-wrap gap-2 self-end sm:self-auto">
+            <div className="flex flex-wrap gap-2">
               <Button size="sm" onClick={handleOpenBatch}>
                 <Plus className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Registrar</span> Gastos
               </Button>
