@@ -339,15 +339,20 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     return '';
   };
 
-  // Parse a pasted number (strip thousands separators, normalize decimal)
+  // Parse a pasted number (strip currency symbols, thousands separators, normalize decimal)
+  // Handles: "B/. 205.75", "$1,234.56", "1.234,56", "205,75", "205.75", "1234"
   const parsePastedNumber = (raw: string): string => {
-    const s = raw.trim().replace(/[^\d.,-]/g, '');
+    // Keep only digits, dots, commas, and a leading minus
+    const negative = /-/.test(raw.trim().replace(/^[^-\d]*/, '').slice(0, 1));
+    const s = raw.replace(/[^\d.,]/g, '');
     if (!s) return '';
-    // If both . and , exist, assume the last one is decimal separator
+
     const lastDot = s.lastIndexOf('.');
     const lastComma = s.lastIndexOf(',');
-    let cleaned = s;
+    let cleaned: string;
+
     if (lastDot >= 0 && lastComma >= 0) {
+      // Both present — the rightmost one is the decimal separator
       if (lastComma > lastDot) {
         // 1.234,56 → 1234.56
         cleaned = s.replace(/\./g, '').replace(',', '.');
@@ -356,11 +361,25 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         cleaned = s.replace(/,/g, '');
       }
     } else if (lastComma >= 0) {
-      // Only commas — assume decimal
+      // Only commas — assume decimal separator
       cleaned = s.replace(',', '.');
+    } else if (lastDot >= 0) {
+      // Only dots — could be thousands or decimal. If more than one dot,
+      // treat all but the last as thousands separators.
+      const dotCount = (s.match(/\./g) || []).length;
+      if (dotCount > 1) {
+        const lastIdx = s.lastIndexOf('.');
+        cleaned = s.slice(0, lastIdx).replace(/\./g, '') + '.' + s.slice(lastIdx + 1);
+      } else {
+        cleaned = s;
+      }
+    } else {
+      cleaned = s;
     }
+
     const n = Number(cleaned);
-    return isNaN(n) ? '' : String(n);
+    if (isNaN(n)) return '';
+    return String(negative ? -n : n);
   };
 
   const handleBatchPaste = (
@@ -378,9 +397,18 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     const cells = rawRows.map((r) => r.split('\t'));
 
     const isSingleCell = cells.length === 1 && cells[0].length === 1;
-    if (isSingleCell) return; // Let the browser handle a normal paste
+    // For numeric fields, always intercept so we can strip currency symbols
+    // (e.g. "B/. 205.75"). Other fields fall through to default paste.
+    const isNumericField = field === 'monto' || field === 'itbms';
+    if (isSingleCell && !isNumericField) return;
 
     e.preventDefault();
+
+    if (isSingleCell && isNumericField) {
+      const cleaned = parsePastedNumber(cells[0][0]);
+      handleBatchRowChange(rowIndex, field, cleaned);
+      return;
+    }
 
     const startCol = BATCH_COLUMNS.indexOf(field);
 
