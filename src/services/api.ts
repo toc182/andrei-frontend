@@ -38,6 +38,9 @@ api.interceptors.response.use(
     if (status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('token');
       window.location.href = '/';
+      // Swallow the error so components don't briefly render an error state
+      // while the browser is navigating away.
+      return new Promise(() => {});
     }
     return Promise.reject(error);
   },
