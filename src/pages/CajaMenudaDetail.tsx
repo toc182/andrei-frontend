@@ -271,6 +271,155 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     setBatchRows(prev => [...prev, emptyRow()]);
   };
 
+  // --- Paste-from-Excel helpers ---
+
+  // Column order in the batch grid (read-only "monto_total" excluded)
+  const BATCH_COLUMNS: Array<'fecha' | 'proveedor' | 'descripcion' | 'monto' | 'itbms'> = [
+    'fecha',
+    'proveedor',
+    'descripcion',
+    'monto',
+    'itbms',
+  ];
+
+  // Parse a pasted date string into YYYY-MM-DD, or '' if unparseable.
+  // Accepted: DD/MM/YYYY, D/M/YYYY, DD-MM-YYYY, YYYY-MM-DD,
+  // D-mes-YY, D-mes-YYYY, D/mes/YY, D mes YYYY (Spanish or English month abbr)
+  const parsePastedDate = (raw: string): string => {
+    const s = raw.trim();
+    if (!s) return '';
+
+    // YYYY-MM-DD (already correct format)
+    const isoMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (isoMatch) {
+      const [, y, m, d] = isoMatch;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+
+    // DD/MM/YYYY or DD-MM-YYYY (4-digit year required)
+    const numMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    if (numMatch) {
+      const [, d, m, y] = numMatch;
+      const dn = parseInt(d, 10);
+      const mn = parseInt(m, 10);
+      if (dn >= 1 && dn <= 31 && mn >= 1 && mn <= 12) {
+        return `${y}-${String(mn).padStart(2, '0')}-${String(dn).padStart(2, '0')}`;
+      }
+      return '';
+    }
+
+    // D-mes-YY(YY) or D/mes/YY(YY) or D mes YY(YY)
+    const MONTHS: Record<string, number> = {
+      ene: 1, jan: 1,
+      feb: 2,
+      mar: 3,
+      abr: 4, apr: 4,
+      may: 5,
+      jun: 6,
+      jul: 7,
+      ago: 8, aug: 8,
+      sep: 9, sept: 9,
+      oct: 10,
+      nov: 11,
+      dic: 12, dec: 12,
+    };
+    const monMatch = s.match(/^(\d{1,2})[\s/-]([a-zA-ZáéíóúÁÉÍÓÚ]{3,4})[\s/-](\d{2}|\d{4})$/);
+    if (monMatch) {
+      const [, dStr, monStr, yStr] = monMatch;
+      const monKey = monStr.toLowerCase().slice(0, 4);
+      const mn = MONTHS[monKey] ?? MONTHS[monKey.slice(0, 3)];
+      if (!mn) return '';
+      const dn = parseInt(dStr, 10);
+      if (dn < 1 || dn > 31) return '';
+      let y = parseInt(yStr, 10);
+      if (yStr.length === 2) y = y >= 70 ? 1900 + y : 2000 + y;
+      return `${y}-${String(mn).padStart(2, '0')}-${String(dn).padStart(2, '0')}`;
+    }
+
+    return '';
+  };
+
+  // Parse a pasted number (strip thousands separators, normalize decimal)
+  const parsePastedNumber = (raw: string): string => {
+    const s = raw.trim().replace(/[^\d.,-]/g, '');
+    if (!s) return '';
+    // If both . and , exist, assume the last one is decimal separator
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    let cleaned = s;
+    if (lastDot >= 0 && lastComma >= 0) {
+      if (lastComma > lastDot) {
+        // 1.234,56 → 1234.56
+        cleaned = s.replace(/\./g, '').replace(',', '.');
+      } else {
+        // 1,234.56 → 1234.56
+        cleaned = s.replace(/,/g, '');
+      }
+    } else if (lastComma >= 0) {
+      // Only commas — assume decimal
+      cleaned = s.replace(',', '.');
+    }
+    const n = Number(cleaned);
+    return isNaN(n) ? '' : String(n);
+  };
+
+  const handleBatchPaste = (
+    e: React.ClipboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    field: 'fecha' | 'proveedor' | 'descripcion' | 'monto' | 'itbms',
+  ) => {
+    const text = e.clipboardData.getData('text');
+    if (!text) return;
+
+    // Split into rows and columns. Excel uses \r\n between rows and \t between cols.
+    const rawRows = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    // Drop a single trailing empty row (Excel often appends one)
+    if (rawRows.length > 1 && rawRows[rawRows.length - 1] === '') rawRows.pop();
+    const cells = rawRows.map((r) => r.split('\t'));
+
+    const isSingleCell = cells.length === 1 && cells[0].length === 1;
+    if (isSingleCell) return; // Let the browser handle a normal paste
+
+    e.preventDefault();
+
+    const startCol = BATCH_COLUMNS.indexOf(field);
+
+    setBatchRows((prev) => {
+      const updated = [...prev];
+      // Ensure enough rows exist
+      while (updated.length < rowIndex + cells.length) {
+        updated.push(emptyRow());
+      }
+
+      cells.forEach((rowCells, rOff) => {
+        const targetRow = rowIndex + rOff;
+        rowCells.forEach((cellValue, cOff) => {
+          const targetCol = startCol + cOff;
+          if (targetCol >= BATCH_COLUMNS.length) return;
+          const targetField = BATCH_COLUMNS[targetCol];
+          let value = cellValue;
+
+          if (targetField === 'fecha') {
+            value = parsePastedDate(cellValue);
+          } else if (targetField === 'monto' || targetField === 'itbms') {
+            value = parsePastedNumber(cellValue);
+          }
+
+          updated[targetRow] = { ...updated[targetRow], [targetField]: value };
+        });
+
+        // Recalculate total for this row if monto or itbms was touched
+        const monto = Number(updated[targetRow].monto) || 0;
+        const itbms = Number(updated[targetRow].itbms) || 0;
+        if (monto > 0 || itbms > 0) {
+          updated[targetRow].monto_total = (monto + itbms).toFixed(2);
+        }
+      });
+
+      return updated;
+    });
+  };
+
   const handleRemoveBatchRow = (index: number) => {
     setBatchRows(prev => prev.filter((_, i) => i !== index));
   };
@@ -800,6 +949,10 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             </div>
           )}
 
+          <div className="px-4 pb-2 text-xs text-muted-foreground">
+            Tip: puedes copiar varias celdas desde Excel y pegarlas aquí. Usa fechas en formato <strong>DD/MM/AAAA</strong> o <strong>1-mar-26</strong>.
+          </div>
+
           <div className="overflow-x-auto">
             {/* Header */}
             <div className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] bg-muted/50 border-y px-1">
@@ -820,18 +973,21 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                   className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
                   value={row.fecha}
                   onChange={(e) => handleBatchRowChange(index, 'fecha', e.target.value)}
+                  onPaste={(e) => handleBatchPaste(e, index, 'fecha')}
                 />
                 <input
                   className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
                   placeholder="Proveedor"
                   value={row.proveedor}
                   onChange={(e) => handleBatchRowChange(index, 'proveedor', e.target.value)}
+                  onPaste={(e) => handleBatchPaste(e, index, 'proveedor')}
                 />
                 <input
                   className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
                   placeholder="Descripción"
                   value={row.descripcion}
                   onChange={(e) => handleBatchRowChange(index, 'descripcion', e.target.value)}
+                  onPaste={(e) => handleBatchPaste(e, index, 'descripcion')}
                 />
                 <input
                   type="number"
@@ -840,6 +996,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                   placeholder="0.00"
                   value={row.monto}
                   onChange={(e) => handleBatchRowChange(index, 'monto', e.target.value)}
+                  onPaste={(e) => handleBatchPaste(e, index, 'monto')}
                 />
                 <input
                   type="number"
@@ -848,6 +1005,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                   placeholder="0.00"
                   value={row.itbms}
                   onChange={(e) => handleBatchRowChange(index, 'itbms', e.target.value)}
+                  onPaste={(e) => handleBatchPaste(e, index, 'itbms')}
                 />
                 <input
                   type="number"
