@@ -25,6 +25,24 @@ api.interceptors.request.use(
   },
 );
 
+// Interceptor de respuesta: si el token expira o es inválido, cerrar sesión
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const requestUrl: string = error?.config?.url ?? '';
+    const isAuthEndpoint =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/change-password');
+
+    if (status === 401 && !isAuthEndpoint) {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  },
+);
+
 // Tipos para respuestas de autenticación
 interface LoginResponse {
   success: boolean;
