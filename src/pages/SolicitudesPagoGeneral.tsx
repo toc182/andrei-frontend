@@ -23,6 +23,10 @@ import {
   RefreshCw,
   Upload,
   ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Settings,
   Undo2,
   Ban,
@@ -457,9 +461,37 @@ export default function SolicitudesPagoGeneral({
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Pagination
+  const PAGE_SIZE_OPTIONS = [25, 50, 100];
+  const [pageSize, setPageSize] = useState<number>(() => {
+    const stored = localStorage.getItem('solicitudes_page_size');
+    const parsed = stored ? parseInt(stored, 10) : NaN;
+    return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : 25;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     loadData();
   }, [filterEstados, filterMyApproval]);
+
+  // Reset to page 1 whenever filters, search, sort or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    filterEstados,
+    filterMyApproval,
+    filterPinellasPaga,
+    filterProyecto,
+    searchTerm,
+    sortState,
+    columnFilters,
+    pageSize,
+  ]);
+
+  // Persist page size
+  useEffect(() => {
+    localStorage.setItem('solicitudes_page_size', String(pageSize));
+  }, [pageSize]);
 
   const loadData = async () => {
     try {
@@ -528,13 +560,41 @@ export default function SolicitudesPagoGeneral({
   const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
 
   const sortComparator = getSortComparator(sortState);
-  const filteredSolicitudes = afterColumnFilters.sort((a, b) => {
+  // Smart default sort priority groups (lower = higher in the list)
+  const ESTADO_PRIORITY: Record<string, number> = {
+    pendiente: 1,
+    aprobada: 2,
+    pagada: 3,
+    devolucion: 3,
+    facturada: 4,
+    rechazada: 5,
+  };
+  const filteredSolicitudes = [...afterColumnFilters].sort((a, b) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (sortComparator) return sortComparator(a as any, b as any);
+    // 1. Need my approval first
     if (a.es_mi_turno && !b.es_mi_turno) return -1;
     if (!a.es_mi_turno && b.es_mi_turno) return 1;
-    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+    // 2. Estado priority group
+    const aPrio = ESTADO_PRIORITY[a.estado] ?? 99;
+    const bPrio = ESTADO_PRIORITY[b.estado] ?? 99;
+    if (aPrio !== bPrio) return aPrio - bPrio;
+    // 3. Date desc, with id as tiebreaker (higher id = more recent)
+    const dateDiff =
+      new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return b.id - a.id;
   });
+
+  // Pagination slice
+  const totalItems = filteredSolicitudes.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const paginatedSolicitudes = filteredSolicitudes.slice(startIdx, endIdx);
+  const showingFrom = totalItems === 0 ? 0 : startIdx + 1;
+  const showingTo = Math.min(endIdx, totalItems);
 
   // Stats
   const stats = {
@@ -1119,7 +1179,7 @@ export default function SolicitudesPagoGeneral({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSolicitudes.length === 0 ? (
+            {paginatedSolicitudes.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -1129,7 +1189,7 @@ export default function SolicitudesPagoGeneral({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSolicitudes.map((sol) => (
+              paginatedSolicitudes.map((sol) => (
                 <TableRow
                   key={sol.id}
                   className={`cursor-pointer hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
@@ -1192,6 +1252,78 @@ export default function SolicitudesPagoGeneral({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            {totalItems === 0
+              ? 'Sin resultados'
+              : `Mostrando ${showingFrom}–${showingTo} de ${totalItems}`}
+          </span>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => setPageSize(parseInt(v, 10))}
+          >
+            <SelectTrigger className="h-8 w-[80px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="hidden sm:inline">por página</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setCurrentPage(1)}
+            disabled={safePage <= 1}
+            aria-label="Primera página"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            aria-label="Página anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm px-2 min-w-[80px] text-center">
+            Página {safePage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            aria-label="Página siguiente"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={safePage >= totalPages}
+            aria-label="Última página"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Bulk Approval Success Banner */}
