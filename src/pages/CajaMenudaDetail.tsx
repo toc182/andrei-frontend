@@ -981,9 +981,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             Tip: puedes copiar varias celdas desde Excel y pegarlas aquí. Usa fechas en formato <strong>DD/MM/AAAA</strong> o <strong>1-mar-26</strong>.
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
             {/* Header */}
-            <div className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] bg-muted/50 border-y px-1">
+            <div className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] bg-muted border-y px-1 sticky top-0 z-10">
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Fecha</span>
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Proveedor</span>
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Descripción</span>
