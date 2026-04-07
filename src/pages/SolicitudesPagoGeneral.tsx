@@ -29,7 +29,6 @@ import {
   ChevronsRight,
   Settings,
   Undo2,
-  Ban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,102 +92,18 @@ import CorreccionSolicitudModal from '../components/CorreccionSolicitudModal';
 import { SortableHeader } from '@/components/SortableHeader';
 import { getSortComparator, applyColumnFilters } from '@/components/sortableHeaderUtils';
 import type { SortState, SortDirection, ColumnFilters } from '@/components/sortableHeaderUtils';
-
-// --- Types ---
-
-type EstadoSolicitud =
-  | 'borrador'
-  | 'pendiente'
-  | 'aprobada'
-  | 'rechazada'
-  | 'pagada'
-  | 'facturada'
-  | 'devolucion'
-  | 'reembolsada';
-
-type TipoSolicitud = 'regular' | 'reembolso';
-
-interface SolicitudPago {
-  id: number;
-  proyecto_id: number | null;
-  numero: string;
-  fecha: string;
-  proveedor: string;
-  preparado_por: number;
-  solicitado_por: number | null;
-  requisicion_id: number | null;
-  subtotal: number;
-  descuentos: number;
-  impuestos: number;
-  monto_total: number;
-  estado: EstadoSolicitud;
-  tipo: TipoSolicitud;
-  observaciones: string | null;
-  beneficiario: string | null;
-  banco: string | null;
-  tipo_cuenta: string | null;
-  numero_cuenta: string | null;
-  urgente: boolean;
-  pinellas_paga: boolean;
-  revisada?: boolean;
-  es_mi_turno?: boolean;
-  aprobadores_estado?: { nombre: string; estado: string }[];
-  reembolso_registrado?: boolean;
-  proyecto_nombre?: string;
-  preparado_nombre?: string;
-  solicitado_nombre?: string;
-  requisicion_numero?: string;
-  updated_at?: string;
-}
-
-interface SolicitudItem {
-  id: number;
-  cantidad: number;
-  unidad: string;
-  descripcion: string;
-  descripcion_detallada: string | null;
-  precio_unitario: number;
-  precio_total: number;
-}
-
-interface SolicitudAjuste {
-  id: number;
-  tipo: string;
-  descripcion: string;
-  porcentaje: number | null;
-  monto: number;
-}
-
-interface ProjectOption {
-  id: number;
-  nombre: string;
-  nombre_corto?: string;
-  sp_prefijo?: string | null;
-}
-
-interface Aprobacion {
-  id: number;
-  solicitud_pago_id: number;
-  user_id: number;
-  orden: number;
-  accion: 'aprobado' | 'rechazado';
-  comentario: string | null;
-  fecha: string;
-  usuario_nombre: string;
-}
-
-interface AprobadorProyecto {
-  user_id: number;
-  orden: number;
-  nombre: string;
-  email: string;
-}
-
-interface BadgeConfig {
-  variant: 'secondary' | 'outline' | 'default' | 'destructive';
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
+import type {
+  SolicitudPago,
+  SolicitudItem,
+  SolicitudAjuste,
+  ProjectOption,
+  Aprobacion,
+  AprobadorProyecto,
+} from './solicitudes/types';
+import { ESTADO_OPTIONS, ALL_ESTADOS } from './solicitudes/types';
+import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
+import { EstadoBadge } from './solicitudes/components/EstadoBadge';
+import { AprobadoresAvatars } from './solicitudes/components/AprobadoresAvatars';
 
 // --- Helpers ---
 
@@ -202,89 +117,11 @@ const formatDate = (dateString: string | null | undefined): string => {
   });
 };
 
-const ESTADO_OPTIONS = [
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'aprobada', label: 'Aprobada' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'facturada', label: 'Facturada' },
-  { value: 'reembolsada', label: 'Reembolsada' },
-  { value: 'devolucion', label: 'Devolución' },
-];
-
-const ALL_ESTADOS = ESTADO_OPTIONS.map((e) => e.value);
-
-const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
-  const variants: Record<string, BadgeConfig> = {
-    borrador: { variant: 'secondary', label: 'Borrador', icon: Clock },
-    pendiente: { variant: 'outline', label: 'Pendiente', icon: Send },
-    aprobada: { variant: 'default', label: 'Aprobada', icon: Check },
-    rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
-    pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
-    facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
-    reembolsada: { variant: 'default', label: 'Reembolsada', icon: CreditCard },
-    devolucion: { variant: 'outline', label: 'Devolución', icon: Ban },
-  };
-
-  const config = variants[estado] || {
-    variant: 'secondary' as const,
-    label: estado,
-    icon: Clock,
-  };
-  const Icon = config.icon;
-
-  const colorOverrides: Record<string, string> = {
-    pendiente: ' bg-yellow-100 text-yellow-800 border border-yellow-300',
-    pagada: ' bg-green-600 text-white',
-    facturada: ' bg-blue-600 text-white',
-    reembolsada: ' bg-blue-600 text-white',
-    devolucion: ' bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200',
-  };
-
-  let extraClass = colorOverrides[estado] || '';
-  if (estado === 'pendiente' && esMiTurno)
-    extraClass = ' bg-white text-yellow-800 border border-yellow-300';
-
-  return (
-    <Badge
-      variant={config.variant}
-      className={`flex items-center gap-1 w-fit${extraClass}`}
-    >
-      <Icon className="h-3 w-3" />
-      {config.label}
-    </Badge>
-  );
-};
-
-const getInitials = (nombre: string): string => {
-  const parts = nombre.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return nombre.substring(0, 2).toUpperCase();
-};
-
-const AprobadoresAvatars = ({
-  aprobadores,
-}: {
-  aprobadores: { nombre: string; estado: string }[];
-}) => {
-  const colorMap: Record<string, string> = {
-    aprobado: 'bg-green-500 text-white',
-    pendiente: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-    rechazado: 'bg-red-500 text-white',
-  };
-  return (
-    <div className="flex items-center -space-x-1">
-      {aprobadores.map((a, i) => (
-        <div
-          key={i}
-          title={`${a.nombre}: ${a.estado}`}
-          className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${colorMap[a.estado] || colorMap['pendiente']}`}
-        >
-          {getInitials(a.nombre)}
-        </div>
-      ))}
-    </div>
-  );
-};
+// Backwards-compatible wrapper around <EstadoBadge /> so existing call sites
+// don't change in this phase. Will be inlined in a later phase.
+const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => (
+  <EstadoBadge estado={estado} esMiTurno={esMiTurno} />
+);
 
 interface SolicitudesPagoGeneralProps {
   onNavigate?: (view: string) => void;
@@ -567,31 +404,10 @@ export default function SolicitudesPagoGeneral({
   const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
 
   const sortComparator = getSortComparator(sortState);
-  // Smart default sort priority groups (lower = higher in the list)
-  const ESTADO_PRIORITY: Record<string, number> = {
-    pendiente: 1,
-    aprobada: 2,
-    pagada: 3,
-    devolucion: 3,
-    facturada: 4,
-    reembolsada: 4,
-    rechazada: 5,
-  };
   const filteredSolicitudes = [...afterColumnFilters].sort((a, b) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (sortComparator) return sortComparator(a as any, b as any);
-    // 1. Need my approval first
-    if (a.es_mi_turno && !b.es_mi_turno) return -1;
-    if (!a.es_mi_turno && b.es_mi_turno) return 1;
-    // 2. Estado priority group
-    const aPrio = ESTADO_PRIORITY[a.estado] ?? 99;
-    const bPrio = ESTADO_PRIORITY[b.estado] ?? 99;
-    if (aPrio !== bPrio) return aPrio - bPrio;
-    // 3. Date desc, with id as tiebreaker (higher id = more recent)
-    const dateDiff =
-      new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
-    if (dateDiff !== 0) return dateDiff;
-    return b.id - a.id;
+    return smartDefaultSort(a, b);
   });
 
   // Pagination slice
