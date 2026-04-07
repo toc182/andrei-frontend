@@ -5,7 +5,7 @@ import * as z from 'zod';
 import api from '../services/api';
 import type { CajaMenudaDetail as CajaMenudaDetailType, CajaMenudaGasto, CajaMenudaAdjunto } from '../types/api';
 import {
-  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send,
+  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send, AlertCircle,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,15 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   const [reembolsoSubmitting, setReembolsoSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Opening comprobante upload (from the warning banner)
+  const [uploadingApertura, setUploadingApertura] = useState(false);
+  const aperturaInputRef = useRef<HTMLInputElement>(null);
+
+  // Historial comprobante upload (per-row, from the historial table)
+  const [uploadingHistorialId, setUploadingHistorialId] = useState<number | null>(null);
+  const historialInputRef = useRef<HTMLInputElement>(null);
+  const [pendingHistorialId, setPendingHistorialId] = useState<number | null>(null);
+
   const gastoForm = useForm<GastoFormData>({
     resolver: zodResolver(gastoSchema),
     defaultValues: { fecha: '', proveedor: '', descripcion: '', monto: '', itbms: '0', monto_total: '' },
@@ -135,9 +144,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     loadAdjuntos();
   }, [cajaId, gastosFilter]);
 
-  const loadCaja = async () => {
+  const loadCaja = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await api.get(`/cajas-menudas/${cajaId}`);
       if (response.data.success) {
         const cajaData = response.data.data;
@@ -151,7 +160,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       console.error('Error cargando caja menuda:', err);
       setError('Error al cargar la caja menuda');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -498,6 +507,89 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   const batchTotal = batchRows.reduce((sum, r) => sum + (Number(r.monto_total) || 0), 0);
   const batchValidCount = batchRows.filter(r => r.fecha && r.proveedor && Number(r.monto) > 0).length;
 
+  // --- Comprobante handlers ---
+
+  const handleUploadApertura = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingApertura(true);
+      setError('');
+      const formData = new FormData();
+      formData.append('comprobante_apertura', file);
+      // PUT /:id accepts comprobante_apertura and doesn't require other fields
+      await api.put(`/cajas-menudas/${cajaId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await loadCaja(false);
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { error?: string } } };
+      setError(apiError.response?.data?.error || 'Error al subir el comprobante de apertura');
+    } finally {
+      setUploadingApertura(false);
+      if (aperturaInputRef.current) aperturaInputRef.current.value = '';
+    }
+  };
+
+  const handleDownloadApertura = async () => {
+    try {
+      const response = await api.get(`/cajas-menudas/${cajaId}/comprobante-apertura/download`);
+      if (response.data.success) window.open(response.data.data.url, '_blank');
+    } catch (err) {
+      console.error('Error descargando comprobante de apertura:', err);
+    }
+  };
+
+  const handleDownloadCierre = async () => {
+    try {
+      const response = await api.get(`/cajas-menudas/${cajaId}/comprobante-cierre/download`);
+      if (response.data.success) window.open(response.data.data.url, '_blank');
+    } catch (err) {
+      console.error('Error descargando comprobante de cierre:', err);
+    }
+  };
+
+  const handleUploadHistorialComprobante = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const historialId = pendingHistorialId;
+    if (!file || !historialId) return;
+    try {
+      setUploadingHistorialId(historialId);
+      setError('');
+      const formData = new FormData();
+      formData.append('comprobante', file);
+      await api.post(
+        `/cajas-menudas/${cajaId}/historial-monto/${historialId}/comprobante`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      await loadCaja(false);
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { error?: string } } };
+      setError(apiError.response?.data?.error || 'Error al subir el comprobante');
+    } finally {
+      setUploadingHistorialId(null);
+      setPendingHistorialId(null);
+      if (historialInputRef.current) historialInputRef.current.value = '';
+    }
+  };
+
+  const triggerHistorialUpload = (historialId: number) => {
+    setPendingHistorialId(historialId);
+    historialInputRef.current?.click();
+  };
+
+  const handleDownloadHistorialComprobante = async (historialId: number) => {
+    try {
+      const response = await api.get(
+        `/cajas-menudas/${cajaId}/historial-monto/${historialId}/comprobante/download`,
+      );
+      if (response.data.success) window.open(response.data.data.url, '_blank');
+    } catch (err) {
+      console.error('Error descargando comprobante de historial:', err);
+    }
+  };
+
   // --- Adjunto handlers ---
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -618,6 +710,71 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         </Badge>
       </div>
 
+      {/* Missing opening comprobante warning */}
+      {!caja.comprobante_apertura_r2_key && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
+            <span>Esta caja menuda no tiene comprobante de apertura cargado.</span>
+            <div className="flex items-center gap-2">
+              <input
+                ref={aperturaInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={handleUploadApertura}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => aperturaInputRef.current?.click()}
+                disabled={uploadingApertura}
+              >
+                {uploadingApertura ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                Subir comprobante
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Opening comprobante download button (when present) */}
+      {caja.comprobante_apertura_r2_key && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Comprobante de apertura:</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadApertura}
+          >
+            <Download className="mr-2 h-3 w-3" />
+            Descargar
+          </Button>
+        </div>
+      )}
+
+      {/* Closing comprobante download button (when present) */}
+      {caja.comprobante_cierre_r2_key && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Comprobante de cierre:</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadCierre}
+          >
+            <Download className="mr-2 h-3 w-3" />
+            Descargar
+          </Button>
+        </div>
+      )}
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -653,6 +810,79 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Shared hidden file input for uploading historial comprobantes */}
+      <input
+        ref={historialInputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        className="hidden"
+        onChange={handleUploadHistorialComprobante}
+      />
+
+      {/* Historial de cambios de monto */}
+      {caja.historial_montos && caja.historial_montos.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Historial de monto asignado</h3>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Cambiado por</TableHead>
+                  <TableHead className="text-right">Monto anterior</TableHead>
+                  <TableHead className="text-right">Monto nuevo</TableHead>
+                  <TableHead>Comprobante</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {caja.historial_montos.map((h) => (
+                  <TableRow key={h.id}>
+                    <TableCell>{formatDate(h.created_at)}</TableCell>
+                    <TableCell>{h.cambiado_por_nombre}</TableCell>
+                    <TableCell className="text-right">{formatMonto(h.monto_anterior)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatMonto(h.monto_nuevo)}</TableCell>
+                    <TableCell>
+                      {h.comprobante_r2_key ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadHistorialComprobante(h.id)}
+                        >
+                          <Download className="mr-2 h-3 w-3" />
+                          Descargar
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 text-sm text-red-500">
+                            <AlertCircle className="h-3 w-3" />
+                            Sin comprobante
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => triggerHistorialUpload(h.id)}
+                            disabled={uploadingHistorialId === h.id}
+                          >
+                            {uploadingHistorialId === h.id ? (
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Upload className="mr-2 h-3 w-3" />
+                            )}
+                            Subir
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       {/* Gastos Section */}
       <div className="space-y-4">

@@ -554,6 +554,12 @@ export interface CajaMenuda {
   proyecto_nombre?: string;
   responsable_nombre?: string;
   saldo?: string;
+  tiene_comprobante_apertura?: boolean;
+  historial_sin_comprobante?: boolean;
+  comprobante_apertura_r2_key?: string | null;
+  comprobante_apertura_nombre?: string | null;
+  comprobante_cierre_r2_key?: string | null;
+  comprobante_cierre_nombre?: string | null;
 }
 
 export interface CajaMenudaGasto {
@@ -592,6 +598,8 @@ export interface CajaMenudaDetail extends CajaMenuda {
     monto_nuevo: string;
     cambiado_por_nombre: string;
     created_at: string;
+    comprobante_r2_key?: string | null;
+    comprobante_nombre?: string | null;
   }>;
   reembolsos: Array<{
     id: number;

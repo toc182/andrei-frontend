@@ -3,7 +3,7 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
-import { Plus, Pencil, Loader2, Wallet, Upload } from 'lucide-react';
+import { Plus, Pencil, Loader2, Wallet, Upload, AlertCircle } from 'lucide-react';
 import type { CajaMenuda } from '../types/api';
 import CajaMenudaDetail from './CajaMenudaDetail';
 
@@ -26,6 +26,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
 
 // --- Zod schema ---
 
@@ -61,6 +64,39 @@ const estadoBadge = (estado: string) => {
   return <Badge variant="secondary">Cerrada</Badge>;
 };
 
+// Red alert icon shown when a caja is missing its opening comprobante or when
+// one of its historial_monto entries has no comprobante.
+const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
+  const faltaApertura = caja.tiene_comprobante_apertura === false;
+  const faltaHistorial = caja.historial_sin_comprobante === true;
+  if (!faltaApertura && !faltaHistorial) return null;
+
+  const messages: string[] = [];
+  if (faltaApertura) messages.push('No tiene comprobante de apertura cargado.');
+  if (faltaHistorial) messages.push('Uno o más cambios de monto no tienen comprobante.');
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Comprobantes faltantes"
+        >
+          <AlertCircle className="h-4 w-4 text-red-500" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 text-sm" side="top">
+        <p className="font-medium text-red-600 mb-1">Comprobantes pendientes</p>
+        <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+          {messages.map((m, i) => <li key={i}>{m}</li>)}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const formatMonto = (valor: string | number | undefined) => {
   const num = Number(valor || 0);
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -84,6 +120,10 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [selectedCajaId, setSelectedCajaId] = useState<number | null>(null);
   const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
   const comprobanteRef = useRef<HTMLInputElement>(null);
+  const [aperturaFile, setAperturaFile] = useState<File | null>(null);
+  const aperturaRef = useRef<HTMLInputElement>(null);
+  const [montoComprobanteFile, setMontoComprobanteFile] = useState<File | null>(null);
+  const montoComprobanteRef = useRef<HTMLInputElement>(null);
 
   const form: UseFormReturn<CajaFormData> = useForm<CajaFormData>({
     resolver: zodResolver(cajaSchema),
@@ -152,6 +192,9 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       monto_asignado: '',
     });
     setError('');
+    setAperturaFile(null);
+    setComprobanteFile(null);
+    setMontoComprobanteFile(null);
     setShowFormModal(true);
   };
 
@@ -166,6 +209,8 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     });
     setError('');
     setComprobanteFile(null);
+    setAperturaFile(null);
+    setMontoComprobanteFile(null);
     setShowFormModal(true);
   };
 
@@ -175,21 +220,41 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       setError('');
 
       if (editingCaja) {
+        // Update basic fields + optional comprobantes via PUT /:id
         const formData = new FormData();
         formData.append('nombre', data.nombre);
         formData.append('responsable_id', data.responsable_id);
         if (data.estado) formData.append('estado', data.estado);
         if (comprobanteFile) formData.append('comprobante_cierre', comprobanteFile);
+        if (aperturaFile) formData.append('comprobante_apertura', aperturaFile);
 
         await api.put(`/cajas-menudas/${editingCaja.id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+
+        // Separately update monto_asignado if it changed — uses dedicated endpoint
+        // that creates a historial row and accepts an optional comprobante.
+        const montoAntes = Number(editingCaja.monto_asignado);
+        const montoDespues = Number(data.monto_asignado);
+        if (!isNaN(montoDespues) && montoDespues > 0 && montoDespues !== montoAntes) {
+          const montoForm = new FormData();
+          montoForm.append('monto_asignado', String(montoDespues));
+          if (montoComprobanteFile) montoForm.append('comprobante', montoComprobanteFile);
+          await api.put(`/cajas-menudas/${editingCaja.id}/monto`, montoForm, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        }
       } else {
-        await api.post('/cajas-menudas', {
-          proyecto_id: Number(data.proyecto_id),
-          responsable_id: Number(data.responsable_id),
-          nombre: data.nombre,
-          monto_asignado: Number(data.monto_asignado),
+        // Create with optional opening comprobante → multipart
+        const formData = new FormData();
+        formData.append('proyecto_id', String(Number(data.proyecto_id)));
+        formData.append('responsable_id', String(Number(data.responsable_id)));
+        formData.append('nombre', data.nombre);
+        formData.append('monto_asignado', String(Number(data.monto_asignado)));
+        if (aperturaFile) formData.append('comprobante_apertura', aperturaFile);
+
+        await api.post('/cajas-menudas', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
       }
 
@@ -271,7 +336,10 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 <CardContent className="p-4 space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium">{caja.nombre}</p>
+                      <p className="font-medium flex items-center gap-2">
+                        {caja.nombre}
+                        <ComprobanteAlertIcon caja={caja} />
+                      </p>
                       {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
                     </div>
                     {estadoBadge(caja.estado)}
@@ -309,7 +377,12 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
               <TableBody>
                 {cajas.map((caja) => (
                   <TableRow key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
-                    <TableCell className="font-medium">{caja.nombre}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {caja.nombre}
+                        <ComprobanteAlertIcon caja={caja} />
+                      </div>
+                    </TableCell>
                     {!projectId && <TableCell>{caja.proyecto_nombre}</TableCell>}
                     <TableCell>{caja.responsable_nombre}</TableCell>
                     <TableCell className="text-right">{formatMonto(caja.monto_asignado)}</TableCell>
@@ -423,21 +496,78 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 )}
               />
 
-              {/* Monto asignado (only on create — editing uses PUT /:id/monto) */}
-              {!editingCaja && (
-                <FormField
-                  control={form.control}
-                  name="monto_asignado"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Monto Asignado *</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Monto asignado — on edit, changing this creates a historial row */}
+              <FormField
+                control={form.control}
+                name="monto_asignado"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto Asignado *</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
+                    </FormControl>
+                    {editingCaja && (
+                      <p className="text-xs text-muted-foreground">
+                        Si cambias este monto, se registrará en el historial.
+                        Puedes adjuntar un comprobante de la nueva transferencia abajo.
+                      </p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Comprobante for amount change (only shown when editing AND amount actually changed) */}
+              {editingCaja && form.watch('monto_asignado') !== String(editingCaja.monto_asignado) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Comprobante del nuevo monto</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={montoComprobanteRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={(e) => setMontoComprobanteFile(e.target.files?.[0] || null)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => montoComprobanteRef.current?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {montoComprobanteFile ? montoComprobanteFile.name : 'Seleccionar archivo'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Comprobante de apertura — only when creating, or when editing a caja that doesn't have one yet */}
+              {(!editingCaja || !editingCaja.tiene_comprobante_apertura) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Comprobante de apertura</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={aperturaRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={(e) => setAperturaFile(e.target.files?.[0] || null)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => aperturaRef.current?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {aperturaFile ? aperturaFile.name : 'Seleccionar archivo'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Comprobante de la transferencia inicial de fondos al responsable.
+                  </p>
+                </div>
               )}
 
               {/* Estado (only on edit) */}
