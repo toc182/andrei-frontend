@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -68,21 +67,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../types/api';
@@ -104,6 +88,11 @@ import { ESTADO_OPTIONS, ALL_ESTADOS } from './solicitudes/types';
 import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
 import { EstadoBadge } from './solicitudes/components/EstadoBadge';
 import { AprobadoresAvatars } from './solicitudes/components/AprobadoresAvatars';
+import { DeleteSolicitudDialog } from './solicitudes/dialogs/DeleteSolicitudDialog';
+import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitudDialog';
+import { BulkApprovalPasswordDialog } from './solicitudes/dialogs/BulkApprovalPasswordDialog';
+import { EditConfirmDialog } from './solicitudes/dialogs/EditConfirmDialog';
+import { PinellasPagaConfirmDialog } from './solicitudes/dialogs/PinellasPagaConfirmDialog';
 
 // --- Helpers ---
 
@@ -2039,122 +2028,38 @@ export default function SolicitudesPagoGeneral({
       </Dialog>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Eliminar Solicitud</DialogTitle>
-            <DialogDescription>
-              {user?.rol === 'admin' &&
-              detailSolicitud &&
-              detailSolicitud.estado !== 'pendiente'
-                ? `Esta solicitud está marcada como ${detailSolicitud.estado.toUpperCase()}. ¿Está seguro que desea eliminarla? Esta acción no se puede deshacer.`
-                : '¿Está seguro que desea eliminar esta solicitud? Esta acción no se puede deshacer.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              disabled={deleteLoading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteLoading}
-            >
-              {deleteLoading ? 'Eliminando...' : 'Si, Eliminar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteSolicitudDialog
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        solicitud={detailSolicitud}
+        isAdmin={user?.rol === 'admin'}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
 
       {/* Reject Modal */}
-      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Rechazar Solicitud</DialogTitle>
-            <DialogDescription>Indique el motivo del rechazo</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label>Comentario *</Label>
-            <Textarea
-              value={rejectComment}
-              onChange={(e) => setRejectComment(e.target.value)}
-              placeholder="Motivo del rechazo..."
-              className="mt-1"
-              rows={3}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectModal(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRechazar}
-              disabled={!rejectComment.trim()}
-            >
-              Rechazar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RechazarSolicitudDialog
+        open={showRejectModal}
+        onOpenChange={setShowRejectModal}
+        comment={rejectComment}
+        onCommentChange={setRejectComment}
+        onConfirm={handleRechazar}
+      />
 
-      {/* Password Confirmation Modal */}
-      <Dialog
+      <BulkApprovalPasswordDialog
         open={showPasswordModal}
         onOpenChange={(open) => {
           setShowPasswordModal(open);
           if (!open) setPendingApprovalId(null);
         }}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Confirmar Aprobacion</DialogTitle>
-            <DialogDescription>
-              {pendingApprovalId
-                ? 'Ingresa tu contraseña para aprobar esta solicitud.'
-                : `Vas a aprobar ${reviewedIds.length} solicitud${reviewedIds.length > 1 ? 'es' : ''} revisada${reviewedIds.length > 1 ? 's' : ''}. Ingresa tu contraseña para confirmar.`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-3">
-            <div>
-              <Label>Contraseña</Label>
-              <Input
-                type="password"
-                value={bulkPassword}
-                onChange={(e) => setBulkPassword(e.target.value)}
-                placeholder="Tu contraseña"
-                autoComplete="new-password"
-                className="mt-1"
-                onKeyDown={(e) => e.key === 'Enter' && handleConfirmApproval()}
-              />
-            </div>
-            {bulkError && (
-              <Alert variant="destructive">
-                <AlertDescription>{bulkError}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowPasswordModal(false)}
-              disabled={bulkApproving}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleConfirmApproval}
-              disabled={!bulkPassword.trim() || bulkApproving}
-            >
-              {bulkApproving ? 'Aprobando...' : 'Confirmar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        password={bulkPassword}
+        onPasswordChange={setBulkPassword}
+        pendingApprovalId={pendingApprovalId}
+        reviewedCount={reviewedIds.length}
+        loading={bulkApproving}
+        error={bulkError}
+        onConfirm={handleConfirmApproval}
+      />
 
       {/* Registrar Pago/Reembolso Modal */}
       <Dialog
@@ -2451,84 +2356,48 @@ export default function SolicitudesPagoGeneral({
       )}
 
       {/* AlertDialog para confirmar edición con aprobaciones parciales */}
-      <AlertDialog open={showEditConfirm} onOpenChange={setShowEditConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              ¿Editar solicitud con aprobaciones?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta solicitud tiene aprobaciones registradas. Al editarla, se
-              anularán todas las aprobaciones y volverá a estado pendiente.
-              ¿Desea continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingEditSolicitud(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingEditSolicitud) {
-                  openEditForm(pendingEditSolicitud);
-                }
-                setPendingEditSolicitud(null);
-                setShowEditConfirm(false);
-              }}
-            >
-              Continuar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <EditConfirmDialog
+        open={showEditConfirm}
+        onOpenChange={setShowEditConfirm}
+        onCancel={() => setPendingEditSolicitud(null)}
+        onConfirm={() => {
+          if (pendingEditSolicitud) {
+            openEditForm(pendingEditSolicitud);
+          }
+          setPendingEditSolicitud(null);
+          setShowEditConfirm(false);
+        }}
+      />
 
-      {/* AlertDialog para confirmar cambio de pinellas_paga */}
-      <AlertDialog
+      <PinellasPagaConfirmDialog
         open={showPinellasPagaConfirm}
         onOpenChange={setShowPinellasPagaConfirm}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar cambio</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingPinellasPaga
-                ? '¿Marcar esta solicitud como pago de Pinellas pendiente de reembolso?'
-                : '¿Quitar la marca de reembolso Pinellas a esta solicitud?'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (detailSolicitud) {
-                  try {
-                    await api.patch(
-                      `/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`,
-                      { pinellas_paga: pendingPinellasPaga },
-                    );
-                    setDetailSolicitud({
-                      ...detailSolicitud,
-                      pinellas_paga: pendingPinellasPaga,
-                    });
-                    loadData();
-                  } catch (err) {
-                    const apiError = err as {
-                      response?: { data?: { message?: string } };
-                    };
-                    alert(
-                      apiError.response?.data?.message ||
-                        'Error al cambiar pinellas_paga',
-                    );
-                  }
-                }
-                setShowPinellasPagaConfirm(false);
-              }}
-            >
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        pendingValue={pendingPinellasPaga}
+        onConfirm={async () => {
+          if (detailSolicitud) {
+            try {
+              await api.patch(
+                `/solicitudes-pago/${detailSolicitud.id}/pinellas-paga`,
+                { pinellas_paga: pendingPinellasPaga },
+              );
+              setDetailSolicitud({
+                ...detailSolicitud,
+                pinellas_paga: pendingPinellasPaga,
+              });
+              loadData();
+            } catch (err) {
+              const apiError = err as {
+                response?: { data?: { message?: string } };
+              };
+              alert(
+                apiError.response?.data?.message ||
+                  'Error al cambiar pinellas_paga',
+              );
+            }
+          }
+          setShowPinellasPagaConfirm(false);
+        }}
+      />
     </div>
   );
 }
