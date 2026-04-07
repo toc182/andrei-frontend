@@ -103,7 +103,10 @@ type EstadoSolicitud =
   | 'rechazada'
   | 'pagada'
   | 'facturada'
-  | 'devolucion';
+  | 'devolucion'
+  | 'reembolsada';
+
+type TipoSolicitud = 'regular' | 'reembolso';
 
 interface SolicitudPago {
   id: number;
@@ -119,6 +122,7 @@ interface SolicitudPago {
   impuestos: number;
   monto_total: number;
   estado: EstadoSolicitud;
+  tipo: TipoSolicitud;
   observaciones: string | null;
   beneficiario: string | null;
   banco: string | null;
@@ -203,6 +207,7 @@ const ESTADO_OPTIONS = [
   { value: 'aprobada', label: 'Aprobada' },
   { value: 'pagada', label: 'Pagada' },
   { value: 'facturada', label: 'Facturada' },
+  { value: 'reembolsada', label: 'Reembolsada' },
   { value: 'devolucion', label: 'Devolución' },
 ];
 
@@ -216,6 +221,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
     pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
     facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
+    reembolsada: { variant: 'default', label: 'Reembolsada', icon: CreditCard },
     devolucion: { variant: 'outline', label: 'Devolución', icon: Ban },
   };
 
@@ -230,6 +236,7 @@ const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => {
     pendiente: ' bg-yellow-100 text-yellow-800 border border-yellow-300',
     pagada: ' bg-green-600 text-white',
     facturada: ' bg-blue-600 text-white',
+    reembolsada: ' bg-blue-600 text-white',
     devolucion: ' bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200',
   };
 
@@ -567,6 +574,7 @@ export default function SolicitudesPagoGeneral({
     pagada: 3,
     devolucion: 3,
     facturada: 4,
+    reembolsada: 4,
     rechazada: 5,
   };
   const filteredSolicitudes = [...afterColumnFilters].sort((a, b) => {
@@ -2145,7 +2153,7 @@ export default function SolicitudesPagoGeneral({
                                 className="w-full"
                               >
                                 <CreditCard className="h-4 w-4 mr-2" />
-                                Registrar Pago
+                                {detailSolicitud.tipo === 'reembolso' ? 'Registrar Reembolso' : 'Registrar Pago'}
                               </Button>
                             </div>
                           )}
@@ -2332,21 +2340,25 @@ export default function SolicitudesPagoGeneral({
         </DialogContent>
       </Dialog>
 
-      {/* Registrar Pago Modal */}
+      {/* Registrar Pago/Reembolso Modal */}
       <Dialog
         open={showRegistrarPagoModal}
         onOpenChange={setShowRegistrarPagoModal}
       >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Registrar Pago</DialogTitle>
+            <DialogTitle>
+              {detailSolicitud?.tipo === 'reembolso' ? 'Registrar Reembolso' : 'Registrar Pago'}
+            </DialogTitle>
             <DialogDescription>
-              Ingresa la fecha de pago y adjunta el comprobante.
+              {detailSolicitud?.tipo === 'reembolso'
+                ? 'Ingresa la fecha del reembolso y adjunta el comprobante.'
+                : 'Ingresa la fecha de pago y adjunta el comprobante.'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
-              <Label>Fecha de pago</Label>
+              <Label>{detailSolicitud?.tipo === 'reembolso' ? 'Fecha de reembolso' : 'Fecha de pago'}</Label>
               <Input
                 type="date"
                 value={registroPagoFecha}
@@ -2384,7 +2396,11 @@ export default function SolicitudesPagoGeneral({
                 registrandoPago
               }
             >
-              {registrandoPago ? 'Registrando...' : 'Confirmar Pago'}
+              {registrandoPago
+                ? 'Registrando...'
+                : detailSolicitud?.tipo === 'reembolso'
+                  ? 'Confirmar Reembolso'
+                  : 'Confirmar Pago'}
             </Button>
           </DialogFooter>
         </DialogContent>
