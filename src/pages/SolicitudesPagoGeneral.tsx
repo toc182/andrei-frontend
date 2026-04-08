@@ -32,7 +32,11 @@ import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
 import { EstadoBadge } from './solicitudes/components/EstadoBadge';
 import { SolicitudesTable } from './solicitudes/components/SolicitudesTable';
 import { SolicitudesPagination } from './solicitudes/components/SolicitudesPagination';
-import { openSolicitudPDF, deleteSolicitud } from './solicitudes/utils/solicitudActions';
+import {
+  openSolicitudPDF,
+  deleteSolicitud,
+  reenviarSolicitud,
+} from './solicitudes/utils/solicitudActions';
 import { DeleteSolicitudDialog } from './solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitudDialog';
 import { BulkApprovalPasswordDialog } from './solicitudes/dialogs/BulkApprovalPasswordDialog';
@@ -324,7 +328,7 @@ export default function SolicitudesPagoGeneral({
 
   const uniqueProyectos = [...new Set(getFilteredExcluding('proyecto_nombre').map((s) => s.proyecto_nombre || '').filter(Boolean))].sort();
   const uniqueProveedores = [...new Set(getFilteredExcluding('proveedor').map((s) => s.proveedor).filter(Boolean))].sort();
-  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'devolucion'];
+  const uniqueEstados = ALL_ESTADOS;
 
   // Apply all column header filters + sort
   const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
@@ -582,23 +586,13 @@ export default function SolicitudesPagoGeneral({
     }
   };
 
-  const handleReenviar = async (solicitudId: number) => {
-    try {
-      setResubmitting(true);
-      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, {
-        estado: 'pendiente',
-      });
-      setShowDetail(false);
-      await loadData();
-      window.dispatchEvent(new Event('solicitud-status-changed'));
-    } catch (err) {
-      console.error('Error resubmitting:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al reenviar');
-    } finally {
-      setResubmitting(false);
-    }
-  };
+  const handleReenviar = (solicitudId: number) =>
+    reenviarSolicitud({
+      solicitudId,
+      setResubmitting,
+      setShowDetail,
+      refreshList: loadData,
+    });
 
   const handleUploadAdjuntos = async (files: FileList) => {
     if (!detailSolicitud || files.length === 0) return;

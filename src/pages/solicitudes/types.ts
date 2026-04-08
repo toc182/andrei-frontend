@@ -99,6 +99,7 @@ export const ESTADO_OPTIONS = [
   { value: 'facturada', label: 'Facturada' },
   { value: 'reembolsada', label: 'Reembolsada' },
   { value: 'devolucion', label: 'Devolución' },
+  { value: 'rechazada', label: 'Rechazada' },
 ];
 
 export const ALL_ESTADOS = ESTADO_OPTIONS.map((e) => e.value);

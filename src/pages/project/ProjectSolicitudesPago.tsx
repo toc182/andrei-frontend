@@ -46,7 +46,11 @@ import { RegistrarFacturaDialog } from '../solicitudes/dialogs/RegistrarFacturaD
 import { RegistrarReembolsoPinellasDialog } from '../solicitudes/dialogs/RegistrarReembolsoPinellasDialog';
 import { RegistrarDevolucionDialog } from '../solicitudes/dialogs/RegistrarDevolucionDialog';
 import { SolicitudDetailDialog } from '../solicitudes/dialogs/SolicitudDetailDialog';
-import { openSolicitudPDF, deleteSolicitud } from '../solicitudes/utils/solicitudActions';
+import {
+  openSolicitudPDF,
+  deleteSolicitud,
+  reenviarSolicitud,
+} from '../solicitudes/utils/solicitudActions';
 
 interface ProjectSolicitudesPagoProps {
   projectId: number;
@@ -308,7 +312,7 @@ export default function ProjectSolicitudesPago({
   };
 
   const uniqueProveedores = [...new Set(getFilteredExcluding('proveedor').map((s) => s.proveedor).filter(Boolean))].sort();
-  const uniqueEstados = ['pendiente', 'aprobada', 'pagada', 'facturada', 'reembolsada', 'devolucion'];
+  const uniqueEstados = ALL_ESTADOS;
 
   // Apply all column header filters + sort
   const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
@@ -537,23 +541,13 @@ export default function ProjectSolicitudesPago({
     }
   };
 
-  const handleReenviar = async (solicitudId: number) => {
-    try {
-      setResubmitting(true);
-      await api.patch(`/solicitudes-pago/${solicitudId}/estado`, {
-        estado: 'pendiente',
-      });
-      setShowDetail(false);
-      await loadSolicitudes();
-      window.dispatchEvent(new Event('solicitud-status-changed'));
-    } catch (err) {
-      console.error('Error resubmitting:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al reenviar');
-    } finally {
-      setResubmitting(false);
-    }
-  };
+  const handleReenviar = (solicitudId: number) =>
+    reenviarSolicitud({
+      solicitudId,
+      setResubmitting,
+      setShowDetail,
+      refreshList: loadSolicitudes,
+    });
 
   const handleUploadAdjuntos = async (files: FileList) => {
     if (!detailSolicitud || files.length === 0) return;
