@@ -12,22 +12,12 @@ import {
   X,
   Settings,
   AlertCircle,
-  CheckCircle2,
   ChevronsUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -39,7 +29,6 @@ import { formatMoney } from '../../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../../types/api';
 import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
 import CorreccionSolicitudModal from '@/components/CorreccionSolicitudModal';
-import { SortableHeader } from '@/components/SortableHeader';
 import { getSortComparator, applyColumnFilters } from '@/components/sortableHeaderUtils';
 import type { SortState, SortDirection, ColumnFilters } from '@/components/sortableHeaderUtils';
 import type {
@@ -52,7 +41,7 @@ import type {
 import { ESTADO_OPTIONS, ALL_ESTADOS } from '../solicitudes/types';
 import { smartDefaultSort } from '../solicitudes/utils/solicitudSort';
 import { EstadoBadge } from '../solicitudes/components/EstadoBadge';
-import { AprobadoresAvatars } from '../solicitudes/components/AprobadoresAvatars';
+import { SolicitudesTable } from '../solicitudes/components/SolicitudesTable';
 import { DeleteSolicitudDialog } from '../solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from '../solicitudes/dialogs/RechazarSolicitudDialog';
 import { BulkApprovalPasswordDialog } from '../solicitudes/dialogs/BulkApprovalPasswordDialog';
@@ -68,18 +57,6 @@ interface ProjectSolicitudesPagoProps {
   projectId: number;
   onNavigate?: (view: string) => void;
 }
-
-// --- Helpers ---
-
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
 
 // Backwards-compatible wrapper around <EstadoBadge /> so existing call sites
 // don't change in this phase. Will be inlined in a later phase.
@@ -955,191 +932,20 @@ export default function ProjectSolicitudesPago({
         </div>
       )}
 
-      {/* Mobile Cards */}
-      <div className="md:hidden space-y-3">
-        {filteredSolicitudes.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No hay solicitudes de pago
-            </CardContent>
-          </Card>
-        ) : (
-          filteredSolicitudes.map((sol) => (
-            <Card
-              key={sol.id}
-              className={`hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
-            >
-              <CardContent className="pt-4">
-                <div className="flex gap-3">
-                  <div
-                    className="flex-1 cursor-pointer"
-                    onClick={() => openDetail(sol)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="font-semibold flex items-center gap-1">
-                          {sol.numero}
-                          {sol.revisada && (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                          )}
-                          {sol.urgente && (
-                            <span className="text-red-600 font-bold ml-1">
-                              !
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {sol.proveedor}
-                        </div>
-                      </div>
-                      <div className="space-y-1 flex flex-col items-end">
-                        {sol.estado === 'pendiente' &&
-                        sol.aprobadores_estado?.length ? (
-                          <AprobadoresAvatars
-                            aprobadores={sol.aprobadores_estado}
-                          />
-                        ) : (
-                          getEstadoBadge(sol.estado)
-                        )}
-                        {sol.pinellas_paga && (
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
-                          >
-                            Reembolso
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold mb-1">
-                      {formatMoney(sol.monto_total)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {formatDate(sol.fecha)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Desktop Table */}
-      <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableHeader
-                    columnKey="numero"
-                    label="Numero"
-                    type="numeric"
-                    sortState={sortState}
-                    onSortChange={handleSortChange}
-                  />
-                  <TableHead className="w-6 px-0"></TableHead>
-                  <SortableHeader
-                    columnKey="fecha"
-                    label="Fecha"
-                    type="numeric"
-                    sortState={sortState}
-                    onSortChange={handleSortChange}
-                  />
-                  <SortableHeader
-                    columnKey="proveedor"
-                    label="Proveedor"
-                    type="discrete"
-                    sortState={sortState}
-                    onSortChange={handleSortChange}
-                    uniqueValues={uniqueProveedores}
-                    activeFilters={columnFilters.proveedor ?? uniqueProveedores}
-                    onFilterChange={handleFilterChange}
-                  />
-                  <SortableHeader
-                    columnKey="monto_total"
-                    label="Monto Total"
-                    type="numeric"
-                    sortState={sortState}
-                    onSortChange={handleSortChange}
-                    align="right"
-                  />
-                  <SortableHeader
-                    columnKey="estado"
-                    label="Estado"
-                    type="discrete"
-                    sortState={sortState}
-                    onSortChange={handleSortChange}
-                    uniqueValues={uniqueEstados}
-                    activeFilters={columnFilters.estado ?? uniqueEstados}
-                    onFilterChange={handleFilterChange}
-                  />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSolicitudes.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No hay solicitudes de pago
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredSolicitudes.map((sol) => (
-                    <TableRow
-                      key={sol.id}
-                      className={`cursor-pointer hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
-                      onClick={() => openDetail(sol)}
-                    >
-                      <TableCell className="font-medium">
-                        <span className="flex items-center gap-1">
-                          {sol.numero}
-                          {sol.revisada && (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-0 text-center">
-                        {sol.urgente && (
-                          <span className="text-red-600 font-bold">!</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{formatDate(sol.fecha)}</TableCell>
-                      <TableCell>{sol.proveedor}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatMoney(sol.monto_total)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {sol.estado === 'pendiente' &&
-                          sol.aprobadores_estado?.length ? (
-                            <AprobadoresAvatars
-                              aprobadores={sol.aprobadores_estado}
-                            />
-                          ) : (
-                            getEstadoBadge(sol.estado)
-                          )}
-                          {sol.pinellas_paga && (
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
-                            >
-                              Reembolso
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Table + Mobile cards — extracted to SolicitudesTable */}
+      <SolicitudesTable
+        solicitudes={filteredSolicitudes}
+        showProyectoColumn={false}
+        sortState={sortState}
+        onSortChange={handleSortChange}
+        columnFilters={columnFilters}
+        onFilterChange={handleFilterChange}
+        uniqueProveedores={uniqueProveedores}
+        uniqueProyectos={[]}
+        uniqueEstados={uniqueEstados}
+        onRowClick={openDetail}
+        renderEstadoBadge={getEstadoBadge}
+      />
 
       {/* Bulk Approval Success Banner */}
       {bulkSuccessMessage && (

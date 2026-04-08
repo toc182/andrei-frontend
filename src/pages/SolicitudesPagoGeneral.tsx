@@ -10,7 +10,6 @@ import {
   Plus,
   Check,
   AlertCircle,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -20,15 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -42,7 +32,6 @@ import { formatMoney } from '../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../types/api';
 import SolicitudPagoForm from '../components/forms/SolicitudPagoForm';
 import CorreccionSolicitudModal from '../components/CorreccionSolicitudModal';
-import { SortableHeader } from '@/components/SortableHeader';
 import { getSortComparator, applyColumnFilters } from '@/components/sortableHeaderUtils';
 import type { SortState, SortDirection, ColumnFilters } from '@/components/sortableHeaderUtils';
 import type {
@@ -56,7 +45,7 @@ import type {
 import { ESTADO_OPTIONS, ALL_ESTADOS } from './solicitudes/types';
 import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
 import { EstadoBadge } from './solicitudes/components/EstadoBadge';
-import { AprobadoresAvatars } from './solicitudes/components/AprobadoresAvatars';
+import { SolicitudesTable } from './solicitudes/components/SolicitudesTable';
 import { DeleteSolicitudDialog } from './solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitudDialog';
 import { BulkApprovalPasswordDialog } from './solicitudes/dialogs/BulkApprovalPasswordDialog';
@@ -68,18 +57,6 @@ import { RegistrarReembolsoPinellasDialog } from './solicitudes/dialogs/Registra
 import { RegistrarDevolucionDialog } from './solicitudes/dialogs/RegistrarDevolucionDialog';
 import { ProjectSelectorDialog } from './solicitudes/dialogs/ProjectSelectorDialog';
 import { SolicitudDetailDialog } from './solicitudes/dialogs/SolicitudDetailDialog';
-
-// --- Helpers ---
-
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
 
 // Backwards-compatible wrapper around <EstadoBadge /> so existing call sites
 // don't change in this phase. Will be inlined in a later phase.
@@ -909,138 +886,20 @@ export default function SolicitudesPagoGeneral({
         </div>
       )}
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHeader
-                columnKey="numero"
-                label="Numero"
-                type="numeric"
-                sortState={sortState}
-                onSortChange={handleSortChange}
-                className="w-[100px]"
-              />
-              <TableHead className="w-6 px-0"></TableHead>
-              <SortableHeader
-                columnKey="proyecto_nombre"
-                label="Proyecto"
-                type="discrete"
-                sortState={sortState}
-                onSortChange={handleSortChange}
-                uniqueValues={uniqueProyectos}
-                activeFilters={columnFilters.proyecto_nombre ?? uniqueProyectos}
-                onFilterChange={handleFilterChange}
-              />
-              <SortableHeader
-                columnKey="proveedor"
-                label="Proveedor"
-                type="discrete"
-                sortState={sortState}
-                onSortChange={handleSortChange}
-                uniqueValues={uniqueProveedores}
-                activeFilters={columnFilters.proveedor ?? uniqueProveedores}
-                onFilterChange={handleFilterChange}
-                className="hidden sm:table-cell"
-              />
-              <SortableHeader
-                columnKey="monto_total"
-                label="Total"
-                type="numeric"
-                sortState={sortState}
-                onSortChange={handleSortChange}
-                className="w-[100px]"
-                align="right"
-              />
-              <SortableHeader
-                columnKey="estado"
-                label="Estado"
-                type="discrete"
-                sortState={sortState}
-                onSortChange={handleSortChange}
-                uniqueValues={uniqueEstados}
-                activeFilters={columnFilters.estado ?? uniqueEstados}
-                onFilterChange={handleFilterChange}
-                className="w-[120px]"
-              />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedSolicitudes.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No se encontraron solicitudes de pago
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedSolicitudes.map((sol) => (
-                <TableRow
-                  key={sol.id}
-                  className={`cursor-pointer hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
-                  onClick={() => openDetail(sol)}
-                >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-1">
-                      {sol.numero}
-                      {sol.revisada && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(sol.fecha)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-0 text-center">
-                    {sol.urgente && (
-                      <span className="text-red-600 font-bold">!</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className={`text-xs px-2 py-1 rounded w-fit ${sol.es_mi_turno ? 'bg-gray-200 text-gray-700' : 'bg-muted'}`}
-                    >
-                      {sol.proyecto_nombre || '-'}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1 sm:hidden">
-                      {sol.proveedor}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {sol.proveedor}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatMoney(sol.monto_total)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {sol.estado === 'pendiente' &&
-                      sol.aprobadores_estado?.length ? (
-                        <AprobadoresAvatars
-                          aprobadores={sol.aprobadores_estado}
-                        />
-                      ) : (
-                        getEstadoBadge(sol.estado)
-                      )}
-                      {sol.pinellas_paga && (
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
-                        >
-                          Reembolso
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Table + Mobile cards — extracted to SolicitudesTable */}
+      <SolicitudesTable
+        solicitudes={paginatedSolicitudes}
+        showProyectoColumn={true}
+        sortState={sortState}
+        onSortChange={handleSortChange}
+        columnFilters={columnFilters}
+        onFilterChange={handleFilterChange}
+        uniqueProveedores={uniqueProveedores}
+        uniqueProyectos={uniqueProyectos}
+        uniqueEstados={uniqueEstados}
+        onRowClick={openDetail}
+        renderEstadoBadge={getEstadoBadge}
+      />
 
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
