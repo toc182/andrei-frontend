@@ -50,6 +50,8 @@ import {
   openSolicitudPDF,
   deleteSolicitud,
   reenviarSolicitud,
+  rechazarSolicitud,
+  toggleRevisadaSolicitud,
 } from '../solicitudes/utils/solicitudActions';
 
 interface ProjectSolicitudesPagoProps {
@@ -403,24 +405,16 @@ export default function ProjectSolicitudesPago({
     setShowPasswordModal(true);
   };
 
-  const handleRechazar = async () => {
-    if (!rejectingId || !rejectComment.trim()) return;
-    try {
-      await api.post(`/solicitudes-pago/${rejectingId}/rechazar`, {
-        comentario: rejectComment,
-      });
-      setShowRejectModal(false);
-      setRejectComment('');
-      setRejectingId(null);
-      setShowDetail(false);
-      await loadSolicitudes();
-      window.dispatchEvent(new Event('solicitud-status-changed'));
-    } catch (err) {
-      console.error('Error rejecting:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al rechazar');
-    }
-  };
+  const handleRechazar = () =>
+    rechazarSolicitud({
+      rejectingId,
+      rejectComment,
+      setShowRejectModal,
+      setRejectComment,
+      setRejectingId,
+      setShowDetail,
+      refreshList: loadSolicitudes,
+    });
 
   const handleRegistrarPago = async (solicitudId: number) => {
     if (
@@ -586,32 +580,14 @@ export default function ProjectSolicitudesPago({
     }
   };
 
-  const handleToggleRevisada = async (solicitudId: number) => {
-    try {
-      setTogglingRevisada(true);
-      if (detailRevisada) {
-        await api.delete(`/solicitudes-pago/${solicitudId}/revisar`);
-        setDetailRevisada(false);
-      } else {
-        await api.post(`/solicitudes-pago/${solicitudId}/revisar`);
-        setDetailRevisada(true);
-      }
-      setSolicitudes((prev) =>
-        prev.map((s) =>
-          s.id === solicitudId ? { ...s, revisada: !detailRevisada } : s,
-        ),
-      );
-    } catch (err) {
-      console.error('Error toggling review:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(
-        apiError.response?.data?.message ||
-          'Error al cambiar estado de revisión',
-      );
-    } finally {
-      setTogglingRevisada(false);
-    }
-  };
+  const handleToggleRevisada = (solicitudId: number) =>
+    toggleRevisadaSolicitud({
+      solicitudId,
+      currentRevisada: detailRevisada,
+      setTogglingRevisada,
+      setDetailRevisada,
+      setSolicitudes,
+    });
 
   // Get IDs of reviewed solicitudes that are my turn to approve
   const reviewedIds = solicitudes
