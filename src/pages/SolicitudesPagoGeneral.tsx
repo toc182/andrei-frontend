@@ -6,26 +6,11 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
-import {
-  Plus,
-  Check,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react';
+import { Plus, Check, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
@@ -42,10 +27,11 @@ import type {
   Aprobacion,
   AprobadorProyecto,
 } from './solicitudes/types';
-import { ESTADO_OPTIONS, ALL_ESTADOS } from './solicitudes/types';
+import { ALL_ESTADOS } from './solicitudes/types';
 import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
 import { EstadoBadge } from './solicitudes/components/EstadoBadge';
 import { SolicitudesTable } from './solicitudes/components/SolicitudesTable';
+import { SolicitudesPagination } from './solicitudes/components/SolicitudesPagination';
 import { DeleteSolicitudDialog } from './solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitudDialog';
 import { BulkApprovalPasswordDialog } from './solicitudes/dialogs/BulkApprovalPasswordDialog';
@@ -83,13 +69,12 @@ export default function SolicitudesPagoGeneral({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [filterEstados, setFilterEstados] = useState<string[]>(ALL_ESTADOS);
+  // Filters — filterEstados is kept as a constant (ALL_ESTADOS) since the
+  // column-header filter in the table is the only estado filter UI.
+  const [filterEstados] = useState<string[]>(ALL_ESTADOS);
   const [filterMyApproval, setFilterMyApproval] = useState(false);
   const [filterPinellasPaga, setFilterPinellasPaga] = useState(false);
-  const [filterProyecto, setFilterProyecto] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false);
 
   // Column sort & filter state
   const [sortState, setSortState] = useState<SortState>({ column: null, direction: null });
@@ -266,7 +251,6 @@ export default function SolicitudesPagoGeneral({
     filterEstados,
     filterMyApproval,
     filterPinellasPaga,
-    filterProyecto,
     searchTerm,
     sortState,
     columnFilters,
@@ -901,78 +885,17 @@ export default function SolicitudesPagoGeneral({
         renderEstadoBadge={getEstadoBadge}
       />
 
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>
-            {totalItems === 0
-              ? 'Sin resultados'
-              : `Mostrando ${showingFrom}–${showingTo} de ${totalItems}`}
-          </span>
-          <Select
-            value={String(pageSize)}
-            onValueChange={(v) => setPageSize(parseInt(v, 10))}
-          >
-            <SelectTrigger className="h-8 w-[80px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="hidden sm:inline">por página</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setCurrentPage(1)}
-            disabled={safePage <= 1}
-            aria-label="Primera página"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={safePage <= 1}
-            aria-label="Página anterior"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm px-2 min-w-[80px] text-center">
-            Página {safePage} de {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={safePage >= totalPages}
-            aria-label="Página siguiente"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={safePage >= totalPages}
-            aria-label="Última página"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
+      <SolicitudesPagination
+        totalItems={totalItems}
+        showingFrom={showingFrom}
+        showingTo={showingTo}
+        currentPage={safePage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+      />
       {/* Bulk Approval Success Banner */}
       {bulkSuccessMessage && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">

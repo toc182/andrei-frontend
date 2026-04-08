@@ -12,18 +12,12 @@ import {
   X,
   Settings,
   AlertCircle,
-  ChevronsUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import api from '../../services/api';
 import { formatMoney } from '../../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../../types/api';
@@ -38,7 +32,7 @@ import type {
   Aprobacion,
   AprobadorProyecto,
 } from '../solicitudes/types';
-import { ESTADO_OPTIONS, ALL_ESTADOS } from '../solicitudes/types';
+import { ALL_ESTADOS } from '../solicitudes/types';
 import { smartDefaultSort } from '../solicitudes/utils/solicitudSort';
 import { EstadoBadge } from '../solicitudes/components/EstadoBadge';
 import { SolicitudesTable } from '../solicitudes/components/SolicitudesTable';
@@ -85,12 +79,13 @@ export default function ProjectSolicitudesPago({
   const [prefijoInput, setPrefijoInput] = useState('');
   const [savingPrefijo, setSavingPrefijo] = useState(false);
 
-  // Filters
-  const [filterEstados, setFilterEstados] = useState<string[]>(ALL_ESTADOS);
+  // Filters — filterEstados is kept as a constant (ALL_ESTADOS) since the
+  // column-header filter in the table is the only estado filter UI.
+  // The popover was removed during the #26 refactor.
+  const [filterEstados] = useState<string[]>(ALL_ESTADOS);
   const [filterMyApproval, setFilterMyApproval] = useState(false);
   const [filterPinellasPaga, setFilterPinellasPaga] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [estadoPopoverOpen, setEstadoPopoverOpen] = useState(false);
 
   // Column sort & filter state
   const [sortState, setSortState] = useState<SortState>({ column: null, direction: null });
@@ -807,50 +802,6 @@ export default function ProjectSolicitudesPago({
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex gap-2 items-center flex-wrap">
-          <Popover open={estadoPopoverOpen} onOpenChange={setEstadoPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[220px] justify-between">
-                {filterEstados.length === ALL_ESTADOS.length
-                  ? 'Todos los estados'
-                  : filterEstados.length === 0
-                    ? 'Ningún estado'
-                    : `${filterEstados.length} estado${filterEstados.length > 1 ? 's' : ''}`}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-2">
-              <div className="space-y-1">
-                <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
-                  <Checkbox
-                    checked={filterEstados.length === ALL_ESTADOS.length}
-                    onCheckedChange={(checked) =>
-                      setFilterEstados(checked ? [...ALL_ESTADOS] : [])
-                    }
-                  />
-                  <span className="text-sm font-medium">Todos</span>
-                </label>
-                <div className="border-t my-1" />
-                {ESTADO_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={filterEstados.includes(opt.value)}
-                      onCheckedChange={(checked) => {
-                        setFilterEstados((prev) =>
-                          checked
-                            ? [...prev, opt.value]
-                            : prev.filter((e) => e !== opt.value),
-                        );
-                      }}
-                    />
-                    <span className="text-sm">{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
           <Input
             placeholder="Buscar por numero, proveedor..."
             value={searchTerm}
