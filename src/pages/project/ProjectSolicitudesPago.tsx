@@ -10,21 +10,10 @@ import {
   Plus,
   Check,
   X,
-  Clock,
-  Pencil,
   Settings,
-  Banknote,
-  Send,
-  CreditCard,
   AlertCircle,
-  Download,
-  Eye,
   CheckCircle2,
-  FileCheck,
-  RefreshCw,
-  Upload,
   ChevronsUpDown,
-  Undo2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,19 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -62,7 +38,6 @@ import api from '../../services/api';
 import { formatMoney } from '../../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../../types/api';
 import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
-import AdjuntosPreview from '../../components/AdjuntosPreview';
 import CorreccionSolicitudModal from '@/components/CorreccionSolicitudModal';
 import { SortableHeader } from '@/components/SortableHeader';
 import { getSortComparator, applyColumnFilters } from '@/components/sortableHeaderUtils';
@@ -87,6 +62,7 @@ import { RegistrarPagoDialog } from '../solicitudes/dialogs/RegistrarPagoDialog'
 import { RegistrarFacturaDialog } from '../solicitudes/dialogs/RegistrarFacturaDialog';
 import { RegistrarReembolsoPinellasDialog } from '../solicitudes/dialogs/RegistrarReembolsoPinellasDialog';
 import { RegistrarDevolucionDialog } from '../solicitudes/dialogs/RegistrarDevolucionDialog';
+import { SolicitudDetailDialog } from '../solicitudes/dialogs/SolicitudDetailDialog';
 
 interface ProjectSolicitudesPagoProps {
   projectId: number;
@@ -1195,807 +1171,83 @@ export default function ProjectSolicitudesPago({
         existingAjustes={editingAjustes}
       />
 
-      {/* Detail Modal */}
-      <Dialog open={showDetail} onOpenChange={setShowDetail}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              Detalle de Solicitud
-              {detailSolicitud && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => handleDownloadPDF(detailSolicitud.id)}
-                >
-                  <Download className="h-3.5 w-3.5 mr-1" />
-                  Descargar PDF
-                </Button>
-              )}
-              {detailSolicitud &&
-                (detailSolicitud.estado === 'pagada' ||
-                  detailSolicitud.estado === 'facturada') &&
-                (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 w-7 p-0">
-                        <Settings className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {user?.rol === 'admin' && (detailSolicitud.estado === 'pagada' || detailSolicitud.estado === 'facturada') && (
-                        <DropdownMenuItem
-                          onClick={() => setShowCorreccionModal(true)}
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Corregir solicitud
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDevolucionFecha('');
-                          setDevolucionMotivo('');
-                          setDevolucionFile(null);
-                          setShowDevolucionModal(true);
-                        }}
-                      >
-                        <Undo2 className="h-4 w-4 mr-2" />
-                        Registrar Devolución
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              {canManage &&
-                detailSolicitud &&
-                detailSolicitud.estado === 'pendiente' &&
-                canManageSolicitud(detailSolicitud) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      const aprobadas = detailAprobaciones.filter(
-                        (a) => a.accion === 'aprobado',
-                      ).length;
-                      if (aprobadas > 0) {
-                        setPendingEditSolicitud(detailSolicitud);
-                        setShowEditConfirm(true);
-                        return;
-                      }
-                      openEditForm(detailSolicitud);
-                    }}
-                  >
-                    <Pencil className="h-3.5 w-3.5 mr-1" />
-                    Editar Solicitud
-                  </Button>
-                )}
-            </DialogTitle>
-            <DialogDescription>{detailSolicitud?.numero}</DialogDescription>
-          </DialogHeader>
-
-          {detailSolicitud?.urgente && (
-            <Badge variant="destructive" className="text-xs w-fit">
-              Urgente
-            </Badge>
-          )}
-
-          {detailSolicitud && (
-            <div className="space-y-4 py-4">
-              {/* Basic info */}
-              <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-3">
-                <div>
-                  <div className="text-muted-foreground">Fecha</div>
-                  <div className="font-medium">
-                    {formatDate(detailSolicitud.fecha)}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-muted-foreground">Preparado por</div>
-                    <div className="font-medium">
-                      {detailSolicitud.preparado_nombre || '-'}
-                    </div>
-                  </div>
-                  {detailSolicitud.solicitado_nombre && (
-                    <div>
-                      <div className="text-muted-foreground">
-                        Solicitado por
-                      </div>
-                      <div className="font-medium">
-                        {detailSolicitud.solicitado_nombre}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-muted-foreground">Proveedor</div>
-                  <div className="font-medium">{detailSolicitud.proveedor}</div>
-                </div>
-                {detailSolicitud.requisicion_numero && (
-                  <div>
-                    <div className="text-muted-foreground">Requisicion</div>
-                    <div className="font-medium">
-                      {detailSolicitud.requisicion_numero}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {detailSolicitud.observaciones && (
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Observaciones
-                  </div>
-                  <div>{detailSolicitud.observaciones}</div>
-                </div>
-              )}
-
-              {/* Items + Totals */}
-              <div className="border rounded-lg overflow-hidden">
-                {detailItems.length > 0 && (
-                  <div className="divide-y">
-                    {detailItems.map((item) => (
-                      <div key={item.id} className="p-3 text-sm">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="font-medium">
-                              {item.descripcion}
-                            </div>
-                            {item.descripcion_detallada && (
-                              <div className="text-muted-foreground text-xs mt-1">
-                                {item.descripcion_detallada}
-                              </div>
-                            )}
-                            <div className="text-muted-foreground">
-                              {item.cantidad} {item.unidad} x{' '}
-                              {formatMoney(item.precio_unitario)}
-                            </div>
-                          </div>
-                          <div className="font-medium">
-                            {formatMoney(item.precio_total)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="p-4 space-y-2 text-sm border-t">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span>{formatMoney(detailSolicitud.subtotal)}</span>
-                  </div>
-                  {detailAjustes.map((ajuste) => (
-                    <div key={ajuste.id} className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        {ajuste.descripcion}:
-                      </span>
-                      <span
-                        className={
-                          ajuste.tipo === 'descuento' ? 'text-red-600' : ''
-                        }
-                      >
-                        {ajuste.tipo === 'descuento' ? '-' : ''}
-                        {formatMoney(ajuste.monto)}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-bold text-lg border-t pt-2">
-                    <span>TOTAL:</span>
-                    <span>{formatMoney(detailSolicitud.monto_total)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bank data */}
-              {(detailSolicitud.beneficiario || detailSolicitud.banco) && (
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Banknote className="h-4 w-4" /> Datos Bancarios
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {detailSolicitud.beneficiario && (
-                      <div>
-                        <div className="text-muted-foreground">
-                          Beneficiario
-                        </div>
-                        <div>{detailSolicitud.beneficiario}</div>
-                      </div>
-                    )}
-                    {detailSolicitud.banco && (
-                      <div>
-                        <div className="text-muted-foreground">Banco</div>
-                        <div>{detailSolicitud.banco}</div>
-                      </div>
-                    )}
-                    {detailSolicitud.tipo_cuenta && (
-                      <div>
-                        <div className="text-muted-foreground">Tipo Cuenta</div>
-                        <div className="capitalize">
-                          {detailSolicitud.tipo_cuenta}
-                        </div>
-                      </div>
-                    )}
-                    {detailSolicitud.numero_cuenta && (
-                      <div>
-                        <div className="text-muted-foreground">
-                          Numero Cuenta
-                        </div>
-                        <div>{detailSolicitud.numero_cuenta}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Adjuntos */}
-              <AdjuntosPreview
-                adjuntos={detailAdjuntos}
-                solicitudPagoId={detailSolicitud.id}
-                onUpload={handleUploadAdjuntos}
-                onDelete={handleDeleteAdjunto}
-                uploading={uploadingFiles}
-              />
-
-              {/* Comprobante de Pago */}
-              {(detailSolicitud.estado === 'pagada' ||
-                detailSolicitud.estado === 'facturada') &&
-                detailComprobante && (
-                  <div className="space-y-3">
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                      <h4 className="font-medium text-blue-900">
-                        Comprobante de Pago
-                      </h4>
-                      <div className="text-sm text-blue-800 space-y-1">
-                        <div>
-                          Fecha de pago:{' '}
-                          {new Date(
-                            detailComprobante.fecha_pago.split('T')[0] + 'T12:00:00',
-                          ).toLocaleDateString('es-PA')}
-                        </div>
-                        <div>
-                          Registrado por:{' '}
-                          {detailComprobante.registrado_por_nombre}
-                        </div>
-                      </div>
-                      {detailComprobante.adjuntos.length > 0 && (
-                        <AdjuntosPreview
-                          adjuntos={detailComprobante.adjuntos}
-                          solicitudPagoId={detailSolicitud.id}
-                          readOnly
-                          title="Comprobantes"
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-              {/* Factura/Recibo */}
-              {detailSolicitud.estado === 'facturada' && detailFactura && (
-                <div className="space-y-3">
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-3">
-                    <h4 className="font-medium text-emerald-900">
-                      {detailFactura.tipo === 'recibo' ? 'Recibo' : 'Factura'}
-                    </h4>
-                    <div className="text-sm text-emerald-800 space-y-1">
-                      <div>
-                        Fecha:{' '}
-                        {new Date(
-                          detailFactura.fecha_factura.split('T')[0] + 'T12:00:00',
-                        ).toLocaleDateString('es-PA')}
-                      </div>
-                      {detailFactura.numero_factura && (
-                        <div>
-                          Número de factura: {detailFactura.numero_factura}
-                        </div>
-                      )}
-                      <div>
-                        Registrado por: {detailFactura.registrado_por_nombre}
-                      </div>
-                    </div>
-                    {detailFactura.adjuntos.length > 0 && (
-                      <AdjuntosPreview
-                        adjuntos={detailFactura.adjuntos}
-                        solicitudPagoId={detailSolicitud.id}
-                        readOnly
-                        title={detailFactura.tipo === 'recibo' ? 'Recibos' : 'Facturas'}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Devolución */}
-              {detailSolicitud.estado === 'devolucion' && detailDevolucion && (
-                <div className="space-y-3">
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
-                    <h4 className="font-medium text-red-900">Devolución</h4>
-                    <div className="text-sm text-red-800 space-y-1">
-                      <div>
-                        Fecha:{' '}
-                        {new Date(
-                          detailDevolucion.fecha_devolucion.split('T')[0] + 'T12:00:00',
-                        ).toLocaleDateString('es-PA')}
-                      </div>
-                      <div>Motivo: {detailDevolucion.motivo}</div>
-                      <div>
-                        Registrado por: {detailDevolucion.registrado_por_nombre}
-                      </div>
-                    </div>
-                    {detailDevolucion.comprobante_url && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            const resp = await api.get(
-                              `/solicitudes-pago/${detailSolicitud.id}/devolucion/comprobante`,
-                            );
-                            if (resp.data.success && resp.data.url) {
-                              window.open(resp.data.url, '_blank');
-                            }
-                          } catch {
-                            alert('Error al descargar comprobante');
-                          }
-                        }}
-                      >
-                        <Download className="h-3.5 w-3.5 mr-1" />
-                        {detailDevolucion.comprobante_nombre}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Historial de Correcciones */}
-              {detailCorrecciones.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-gray-700">Historial de Correcciones</h4>
-                  <div className="space-y-2">
-                    {detailCorrecciones.map((correccion) => {
-                      const cambios = correccion.cambios as { campo: string; anterior?: string; nuevo?: string; cambios?: unknown[]; descripcion?: string }[];
-                      return (
-                        <details key={correccion.id} className="border border-gray-200 rounded-lg">
-                          <summary className="px-4 py-3 bg-gray-50 cursor-pointer flex items-center justify-between rounded-lg hover:bg-gray-100">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">
-                                {new Date(correccion.created_at).toLocaleDateString('es-PA', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
-                              <span className="text-sm text-gray-500">
-                                — {correccion.usuario_nombre}
-                              </span>
-                            </div>
-                            <Badge variant="secondary" className="text-xs">
-                              {cambios.length} cambio{cambios.length !== 1 ? 's' : ''}
-                            </Badge>
-                          </summary>
-                          <div className="px-4 py-3 space-y-3">
-                            <div className="text-sm text-gray-600 italic">
-                              Motivo: {correccion.motivo}
-                            </div>
-                            <table className="w-full text-xs border-collapse">
-                              <thead>
-                                <tr className="text-left text-gray-500">
-                                  <th className="pb-1 pr-3">Campo</th>
-                                  <th className="pb-1 pr-3">Anterior</th>
-                                  <th className="pb-1">Nuevo</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {cambios.map((cambio, idx) => {
-                                  const labelMap: Record<string, string> = {
-                                    proveedor: 'Proveedor', fecha: 'Fecha', observaciones: 'Observaciones',
-                                    beneficiario: 'Beneficiario', banco: 'Banco', tipo_cuenta: 'Tipo de cuenta',
-                                    numero_cuenta: 'Número de cuenta', fecha_pago: 'Fecha de pago',
-                                    fecha_factura: 'Fecha de factura', numero_factura: 'Número de factura',
-                                    tipo: 'Tipo', subtotal: 'Subtotal', monto_total: 'Monto total',
-                                    comprobante: 'Comprobante', factura: 'Factura',
-                                    descripcion: 'Descripción', cantidad: 'Cantidad', unidad: 'Unidad',
-                                    precio_unitario: 'Precio unitario',
-                                  };
-                                  const label = (campo: string) => labelMap[campo] || campo;
-                                  if (cambio.campo === 'item' && 'cambios' in cambio) {
-                                    const itemCambios = cambio.cambios as { campo: string; anterior: string; nuevo: string }[];
-                                    return itemCambios.map((ic, icIdx) => (
-                                      <tr key={`${idx}-${icIdx}`} className="border-t border-gray-100">
-                                        <td className="py-1.5 pr-3 text-gray-700">
-                                          Item &quot;{cambio.descripcion}&quot; — {label(ic.campo)}
-                                        </td>
-                                        <td className="py-1.5 pr-3 text-red-600 line-through">{ic.anterior}</td>
-                                        <td className="py-1.5 text-green-600">{ic.nuevo}</td>
-                                      </tr>
-                                    ));
-                                  }
-                                  if (cambio.campo === 'item_agregado') {
-                                    return (
-                                      <tr key={idx} className="border-t border-gray-100">
-                                        <td className="py-1.5 pr-3 text-gray-700">Item agregado</td>
-                                        <td className="py-1.5 pr-3 text-gray-400">—</td>
-                                        <td className="py-1.5 text-green-600">{cambio.descripcion}</td>
-                                      </tr>
-                                    );
-                                  }
-                                  if (cambio.campo === 'item_eliminado') {
-                                    return (
-                                      <tr key={idx} className="border-t border-gray-100">
-                                        <td className="py-1.5 pr-3 text-gray-700">Item eliminado</td>
-                                        <td className="py-1.5 pr-3 text-red-600 line-through">{cambio.descripcion}</td>
-                                        <td className="py-1.5 text-gray-400">—</td>
-                                      </tr>
-                                    );
-                                  }
-                                  return (
-                                    <tr key={idx} className="border-t border-gray-100">
-                                      <td className="py-1.5 pr-3 text-gray-700">{label(cambio.campo)}</td>
-                                      <td className="py-1.5 pr-3 text-red-600 line-through">
-                                        {typeof cambio.anterior === 'string' ? cambio.anterior : '—'}
-                                      </td>
-                                      <td className="py-1.5 text-green-600">
-                                        {typeof cambio.nuevo === 'string' ? cambio.nuevo : '—'}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </details>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Comprobante de Reembolso */}
-              {detailSolicitud.pinellas_paga &&
-                ['pagada', 'facturada'].includes(detailSolicitud.estado) && (
-                  <div className="space-y-3">
-                    {detailReembolso ? (
-                      <div className="p-4 bg-yellow-50/50 border border-amber-200 rounded-lg space-y-3">
-                        <h4 className="font-medium text-amber-900">
-                          Comprobante de Reembolso
-                        </h4>
-                        <div className="text-sm text-amber-800 space-y-1">
-                          <div>
-                            Fecha de reembolso:{' '}
-                            {new Date(
-                              detailReembolso.fecha_reembolso + 'T12:00:00',
-                            ).toLocaleDateString('es-PA')}
-                          </div>
-                          <div>
-                            Registrado por:{' '}
-                            {detailReembolso.registrado_por_nombre}
-                          </div>
-                          {detailReembolso.comprobante_nombre && (
-                            <div>
-                              Archivo: {detailReembolso.comprobante_nombre}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                        <div className="p-4 bg-yellow-50/50/50 border border-amber-200 border-dashed rounded-lg">
-                          <div className="text-sm text-amber-700 mb-2">
-                            Pinellas paga esta solicitud. Pendiente de registrar
-                            reembolso.
-                          </div>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setReembolsoFecha('');
-                              setReembolsoFile(null);
-                              setShowReembolsoModal(true);
-                            }}
-                            className="w-full border-amber-300 text-amber-700 hover:bg-yellow-50/50"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Registrar Reembolso
-                          </Button>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-
-              {/* Approval section */}
-              <div className="space-y-3">
-                <h4 className="font-medium">Estado y Aprobaciones</h4>
-                <div className="p-4 border rounded-lg space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {getEstadoBadge(detailSolicitud.estado)}
-                    {detailSolicitud.pinellas_paga && !detailReembolso && (
-                      <Badge
-                        variant="outline"
-                        className="bg-yellow-50/50 text-amber-700 border-amber-300"
-                      >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Reembolso pendiente
-                      </Badge>
-                    )}
-                    {detailSolicitud.pinellas_paga && detailReembolso && (
-                      <Badge
-                        variant="outline"
-                        className="bg-green-50 text-green-700 border-green-300"
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Reembolsada
-                      </Badge>
-                    )}
-                  </div>
-
-                  {(isAdminOrCoAdmin || detailSolicitud.preparado_por === user?.id) && (
-                    <div>
-                      <label className={`flex items-center gap-2 text-sm ${
-                        !detailSolicitud.pinellas_paga &&
-                        (detailSolicitud.estado === 'pagada' ||
-                          detailSolicitud.estado === 'facturada')
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'cursor-pointer'
-                      }`}>
-                        <Checkbox
-                          checked={detailSolicitud.pinellas_paga}
-                          disabled={
-                            !detailSolicitud.pinellas_paga &&
-                            (detailSolicitud.estado === 'pagada' ||
-                              detailSolicitud.estado === 'facturada')
-                          }
-                          onCheckedChange={(checked) => {
-                            setPendingPinellasPaga(!!checked);
-                            setShowPinellasPagaConfirm(true);
-                          }}
-                        />
-                        Pinellas paga (reembolso)
-                      </label>
-                      {!detailSolicitud.pinellas_paga &&
-                        (detailSolicitud.estado === 'pagada' ||
-                          detailSolicitud.estado === 'facturada') && (
-                          <p className="text-xs text-muted-foreground ml-6 mt-1">
-                            No disponible después de pagada
-                          </p>
-                        )}
-                    </div>
-                  )}
-
-                  {/* Show approval progress */}
-                  {detailSolicitud.estado === 'pagada' ||
-                  detailSolicitud.estado === 'facturada'
-                    ? detailAprobaciones.length > 0 && (
-                        <div className="space-y-2">
-                          {detailAprobaciones.map((aprobacion, index) => (
-                            <div
-                              key={aprobacion.id}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              {aprobacion.accion === 'aprobado' ? (
-                                <Check className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <X className="h-4 w-4 text-red-600" />
-                              )}
-                              <span className="font-medium">
-                                {index + 1}. {aprobacion.usuario_nombre}
-                              </span>
-                              <span className="text-muted-foreground">
-                                —{' '}
-                                {new Date(aprobacion.fecha).toLocaleDateString(
-                                  'es-PA',
-                                  {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                  },
-                                )}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    : detailAprobadores.length > 0 && (
-                        <div className="space-y-2">
-                          {detailAprobadores.map((aprobador) => {
-                            const aprobacion = detailAprobaciones.find(
-                              (a) => a.user_id === aprobador.user_id,
-                            );
-                            return (
-                              <div
-                                key={aprobador.user_id}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                {aprobacion ? (
-                                  aprobacion.accion === 'aprobado' ? (
-                                    <Check className="h-4 w-4 text-green-600" />
-                                  ) : (
-                                    <X className="h-4 w-4 text-red-600" />
-                                  )
-                                ) : (
-                                  <Clock className="h-4 w-4 text-muted-foreground" />
-                                )}
-                                <span className="font-medium">
-                                  {aprobador.orden}. {aprobador.nombre}
-                                </span>
-                                {aprobacion ? (
-                                  <span className="text-muted-foreground">
-                                    —{' '}
-                                    {new Date(
-                                      aprobacion.fecha,
-                                    ).toLocaleDateString('es-PA', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric',
-                                    })}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">
-                                    (pendiente)
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                  {/* Rejection comment */}
-                  {detailSolicitud.estado === 'rechazada' &&
-                    detailAprobaciones
-                      .filter((a) => a.accion === 'rechazado')
-                      .map((rechazo) => (
-                        <div
-                          key={rechazo.id}
-                          className="p-3 bg-red-50 border border-red-200 rounded text-sm"
-                        >
-                          <div className="font-medium text-red-800">
-                            Rechazada por {rechazo.usuario_nombre}
-                          </div>
-                          <div className="text-red-700 mt-1">
-                            {rechazo.comentario}
-                          </div>
-                        </div>
-                      ))}
-
-                  {/* Action buttons */}
-                  {(() => {
-                    if (!user || !detailSolicitud) return null;
-                    const aprobacionesHechas = detailAprobaciones.filter(
-                      (a) => a.accion === 'aprobado',
-                    ).length;
-                    const siguienteAprobador =
-                      detailAprobadores[aprobacionesHechas];
-                    const esMiTurno =
-                      detailSolicitud.estado === 'pendiente' &&
-                      siguienteAprobador?.user_id === user.id;
-
-                    return (
-                      <>
-                        {esMiTurno && (
-                          <div className="space-y-2 pt-2">
-                            <Button
-                              variant={detailRevisada ? 'secondary' : 'outline'}
-                              onClick={() =>
-                                handleToggleRevisada(detailSolicitud.id)
-                              }
-                              disabled={togglingRevisada}
-                              className="w-full"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              {togglingRevisada
-                                ? 'Procesando...'
-                                : detailRevisada
-                                  ? '✓ Revisada'
-                                  : 'Marcar como Revisada'}
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() =>
-                                  handleAprobar(detailSolicitud.id)
-                                }
-                                className="flex-1"
-                              >
-                                <Check className="h-4 w-4 mr-2" />
-                                Aprobar
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() => {
-                                  setRejectingId(detailSolicitud.id);
-                                  setRejectComment('');
-                                  setShowRejectModal(true);
-                                }}
-                                className="flex-1"
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Rechazar
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {detailSolicitud.estado === 'aprobada' &&
-                          (isAdminOrCoAdmin ||
-                            hasPermission('registrar_pago')) && (
-                            <div className="pt-2">
-                              <Button
-                                onClick={() => {
-                                  setRegistroPagoFecha('');
-                                  setRegistroPagoFiles(null);
-                                  setShowRegistrarPagoModal(true);
-                                }}
-                                className="w-full"
-                              >
-                                <CreditCard className="h-4 w-4 mr-2" />
-                                {detailSolicitud.tipo === 'reembolso' ? 'Registrar Reembolso' : 'Registrar Pago'}
-                              </Button>
-                            </div>
-                          )}
-
-                        {detailSolicitud.estado === 'pagada' &&
-                          (isAdminOrCoAdmin ||
-                            hasPermission('registrar_pago')) && (
-                            <div className="pt-2">
-                              <Button
-                                onClick={() => {
-                                  setRegistroFacturaFecha('');
-                                  setRegistroFacturaNumero('');
-                                  setRegistroFacturaTipo('factura');
-                                  setRegistroFacturaFiles(null);
-                                  setShowRegistrarFacturaModal(true);
-                                }}
-                                className="w-full"
-                              >
-                                <FileCheck className="h-4 w-4 mr-2" />
-                                Registrar Factura o Recibo
-                              </Button>
-                            </div>
-                          )}
-
-                        {detailSolicitud.estado === 'rechazada' &&
-                          canManage && (
-                            <div className="pt-2">
-                              <Button
-                                variant="outline"
-                                onClick={() =>
-                                  handleReenviar(detailSolicitud.id)
-                                }
-                                disabled={resubmitting}
-                                className="w-full"
-                              >
-                                <Send className="h-4 w-4 mr-2" />
-                                {resubmitting
-                                  ? 'Reenviando...'
-                                  : 'Reenviar para Aprobacion'}
-                              </Button>
-                            </div>
-                          )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Delete */}
-              {detailPuedeEliminar && (
-                <div className="pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
-                    onClick={() => {
-                      setDeletingId(detailSolicitud.id);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    Eliminar Solicitud
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Detail Modal — extracted to shared SolicitudDetailDialog */}
+      <SolicitudDetailDialog
+        open={showDetail}
+        onOpenChange={setShowDetail}
+        solicitud={detailSolicitud}
+        items={detailItems}
+        ajustes={detailAjustes}
+        aprobaciones={detailAprobaciones}
+        aprobadores={detailAprobadores}
+        adjuntos={detailAdjuntos}
+        comprobante={detailComprobante}
+        factura={detailFactura}
+        reembolso={detailReembolso}
+        devolucion={detailDevolucion}
+        correcciones={detailCorrecciones}
+        puedeEliminar={detailPuedeEliminar}
+        revisada={detailRevisada}
+        togglingRevisada={togglingRevisada}
+        uploadingFiles={uploadingFiles}
+        resubmitting={resubmitting}
+        showProyectoField={false}
+        currentUserId={user?.id}
+        isAdminOrCoAdmin={isAdminOrCoAdmin}
+        isAdmin={user?.rol === 'admin'}
+        canManage={canManage}
+        canManageSolicitud={canManageSolicitud}
+        hasPermission={hasPermission}
+        renderEstadoBadge={getEstadoBadge}
+        onDownloadPDF={handleDownloadPDF}
+        onOpenCorreccion={() => setShowCorreccionModal(true)}
+        onOpenDevolucionForm={() => {
+          setDevolucionFecha('');
+          setDevolucionMotivo('');
+          setDevolucionFile(null);
+          setShowDevolucionModal(true);
+        }}
+        onEditSolicitud={openEditForm}
+        onRequestEditConfirmation={(sol) => {
+          setPendingEditSolicitud(sol);
+          setShowEditConfirm(true);
+        }}
+        onUploadAdjuntos={handleUploadAdjuntos}
+        onDeleteAdjunto={handleDeleteAdjunto}
+        onPinellasPagaChange={(newValue) => {
+          setPendingPinellasPaga(newValue);
+          setShowPinellasPagaConfirm(true);
+        }}
+        onToggleRevisada={handleToggleRevisada}
+        onAprobar={handleAprobar}
+        onOpenRejectDialog={(id) => {
+          setRejectingId(id);
+          setRejectComment('');
+          setShowRejectModal(true);
+        }}
+        onOpenRegistrarPagoDialog={() => {
+          setRegistroPagoFecha('');
+          setRegistroPagoFiles(null);
+          setShowRegistrarPagoModal(true);
+        }}
+        onOpenRegistrarFacturaDialog={() => {
+          setRegistroFacturaFecha('');
+          setRegistroFacturaNumero('');
+          setRegistroFacturaTipo('factura');
+          setRegistroFacturaFiles(null);
+          setShowRegistrarFacturaModal(true);
+        }}
+        onOpenRegistrarReembolsoPinellasDialog={() => {
+          setReembolsoFecha('');
+          setReembolsoFile(null);
+          setShowReembolsoModal(true);
+        }}
+        onReenviar={handleReenviar}
+        onOpenDeleteDialog={(id) => {
+          setDeletingId(id);
+          setShowDeleteModal(true);
+        }}
+      />
 
       {/* Reject Modal */}
       <RechazarSolicitudDialog
