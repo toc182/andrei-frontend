@@ -49,7 +49,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -58,8 +57,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,6 +90,10 @@ import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitud
 import { BulkApprovalPasswordDialog } from './solicitudes/dialogs/BulkApprovalPasswordDialog';
 import { EditConfirmDialog } from './solicitudes/dialogs/EditConfirmDialog';
 import { PinellasPagaConfirmDialog } from './solicitudes/dialogs/PinellasPagaConfirmDialog';
+import { RegistrarPagoDialog } from './solicitudes/dialogs/RegistrarPagoDialog';
+import { RegistrarFacturaDialog } from './solicitudes/dialogs/RegistrarFacturaDialog';
+import { RegistrarReembolsoPinellasDialog } from './solicitudes/dialogs/RegistrarReembolsoPinellasDialog';
+import { RegistrarDevolucionDialog } from './solicitudes/dialogs/RegistrarDevolucionDialog';
 
 // --- Helpers ---
 
@@ -2062,270 +2063,64 @@ export default function SolicitudesPagoGeneral({
       />
 
       {/* Registrar Pago/Reembolso Modal */}
-      <Dialog
+      <RegistrarPagoDialog
         open={showRegistrarPagoModal}
         onOpenChange={setShowRegistrarPagoModal}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>
-              {detailSolicitud?.tipo === 'reembolso' ? 'Registrar Reembolso' : 'Registrar Pago'}
-            </DialogTitle>
-            <DialogDescription>
-              {detailSolicitud?.tipo === 'reembolso'
-                ? 'Ingresa la fecha del reembolso y adjunta el comprobante.'
-                : 'Ingresa la fecha de pago y adjunta el comprobante.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label>{detailSolicitud?.tipo === 'reembolso' ? 'Fecha de reembolso' : 'Fecha de pago'}</Label>
-              <Input
-                type="date"
-                value={registroPagoFecha}
-                onChange={(e) => setRegistroPagoFecha(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Comprobante(s)</Label>
-              <Input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                multiple
-                onChange={(e) => setRegistroPagoFiles(e.target.files)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowRegistrarPagoModal(false)}
-              disabled={registrandoPago}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() =>
-                detailSolicitud && handleRegistrarPago(detailSolicitud.id)
-              }
-              disabled={
-                !registroPagoFecha ||
-                !registroPagoFiles ||
-                registroPagoFiles.length === 0 ||
-                registrandoPago
-              }
-            >
-              {registrandoPago
-                ? 'Registrando...'
-                : detailSolicitud?.tipo === 'reembolso'
-                  ? 'Confirmar Reembolso'
-                  : 'Confirmar Pago'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        tipo={detailSolicitud?.tipo}
+        fecha={registroPagoFecha}
+        onFechaChange={setRegistroPagoFecha}
+        files={registroPagoFiles}
+        onFilesChange={setRegistroPagoFiles}
+        loading={registrandoPago}
+        onConfirm={() =>
+          detailSolicitud && handleRegistrarPago(detailSolicitud.id)
+        }
+      />
 
-      {/* Registrar Factura/Recibo Modal */}
-      <Dialog
+      <RegistrarFacturaDialog
         open={showRegistrarFacturaModal}
         onOpenChange={setShowRegistrarFacturaModal}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Registrar Factura o Recibo</DialogTitle>
-            <DialogDescription>
-              Ingresa los datos del documento del proveedor.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label>Tipo de documento *</Label>
-              <RadioGroup
-                value={registroFacturaTipo}
-                onValueChange={(v) => setRegistroFacturaTipo(v as 'factura' | 'recibo')}
-                className="flex gap-4 mt-1"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="factura" id="tipo-factura" />
-                  <Label htmlFor="tipo-factura" className="font-normal cursor-pointer">Factura</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="recibo" id="tipo-recibo" />
-                  <Label htmlFor="tipo-recibo" className="font-normal cursor-pointer">Recibo</Label>
-                </div>
-              </RadioGroup>
-            </div>
-            <div>
-              <Label>Fecha *</Label>
-              <Input
-                type="date"
-                value={registroFacturaFecha}
-                onChange={(e) => setRegistroFacturaFecha(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            {registroFacturaTipo === 'factura' && (
-              <div>
-                <Label>Número de factura</Label>
-                <Input
-                  type="text"
-                  value={registroFacturaNumero}
-                  onChange={(e) => setRegistroFacturaNumero(e.target.value)}
-                  placeholder="Opcional"
-                  className="mt-1"
-                />
-              </div>
-            )}
-            <div>
-              <Label>Archivo(s) *</Label>
-              <Input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                multiple
-                onChange={(e) => setRegistroFacturaFiles(e.target.files)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowRegistrarFacturaModal(false)}
-              disabled={registrandoFactura}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() =>
-                detailSolicitud && handleRegistrarFactura(detailSolicitud.id)
-              }
-              disabled={
-                !registroFacturaFecha ||
-                !registroFacturaFiles ||
-                registroFacturaFiles.length === 0 ||
-                registrandoFactura
-              }
-            >
-              {registrandoFactura ? 'Registrando...' : 'Confirmar Factura'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        tipo={registroFacturaTipo}
+        onTipoChange={setRegistroFacturaTipo}
+        fecha={registroFacturaFecha}
+        onFechaChange={setRegistroFacturaFecha}
+        numero={registroFacturaNumero}
+        onNumeroChange={setRegistroFacturaNumero}
+        files={registroFacturaFiles}
+        onFilesChange={setRegistroFacturaFiles}
+        loading={registrandoFactura}
+        onConfirm={() =>
+          detailSolicitud && handleRegistrarFactura(detailSolicitud.id)
+        }
+      />
 
-      {/* Registrar Reembolso Modal */}
-      <Dialog open={showReembolsoModal} onOpenChange={setShowReembolsoModal}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Registrar Reembolso</DialogTitle>
-            <DialogDescription>
-              Registra el comprobante del reembolso a Pinellas.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label>Fecha de reembolso *</Label>
-              <Input
-                type="date"
-                value={reembolsoFecha}
-                onChange={(e) => setReembolsoFecha(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Comprobante *</Label>
-              <Input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setReembolsoFile(e.target.files?.[0] || null)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowReembolsoModal(false)}
-              disabled={registrandoReembolso}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() =>
-                detailSolicitud && handleRegistrarReembolso(detailSolicitud.id)
-              }
-              disabled={!reembolsoFecha || !reembolsoFile || registrandoReembolso}
-            >
-              {registrandoReembolso ? 'Registrando...' : 'Confirmar Reembolso'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RegistrarReembolsoPinellasDialog
+        open={showReembolsoModal}
+        onOpenChange={setShowReembolsoModal}
+        fecha={reembolsoFecha}
+        onFechaChange={setReembolsoFecha}
+        file={reembolsoFile}
+        onFileChange={setReembolsoFile}
+        loading={registrandoReembolso}
+        onConfirm={() =>
+          detailSolicitud && handleRegistrarReembolso(detailSolicitud.id)
+        }
+      />
 
-      {/* Registrar Devolución Modal */}
-      <Dialog open={showDevolucionModal} onOpenChange={setShowDevolucionModal}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Registrar Devolución</DialogTitle>
-            <DialogDescription>
-              Registra la devolución total del proveedor.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label>Fecha de devolución *</Label>
-              <Input
-                type="date"
-                value={devolucionFecha}
-                onChange={(e) => setDevolucionFecha(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Motivo *</Label>
-              <textarea
-                value={devolucionMotivo}
-                onChange={(e) => setDevolucionMotivo(e.target.value)}
-                placeholder="Describe el motivo de la devolución..."
-                className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
-              />
-            </div>
-            <div>
-              <Label>Comprobante de devolución *</Label>
-              <Input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setDevolucionFile(e.target.files?.[0] || null)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowDevolucionModal(false)}
-              disabled={registrandoDevolucion}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() =>
-                detailSolicitud && handleRegistrarDevolucion(detailSolicitud.id)
-              }
-              disabled={
-                !devolucionFecha ||
-                !devolucionMotivo.trim() ||
-                !devolucionFile ||
-                registrandoDevolucion
-              }
-            >
-              {registrandoDevolucion ? 'Registrando...' : 'Confirmar Devolución'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RegistrarDevolucionDialog
+        open={showDevolucionModal}
+        onOpenChange={setShowDevolucionModal}
+        fecha={devolucionFecha}
+        onFechaChange={setDevolucionFecha}
+        motivo={devolucionMotivo}
+        onMotivoChange={setDevolucionMotivo}
+        file={devolucionFile}
+        onFileChange={setDevolucionFile}
+        loading={registrandoDevolucion}
+        onConfirm={() =>
+          detailSolicitud && handleRegistrarDevolucion(detailSolicitud.id)
+        }
+      />
 
       {/* Correction Modal */}
       {detailSolicitud && (
