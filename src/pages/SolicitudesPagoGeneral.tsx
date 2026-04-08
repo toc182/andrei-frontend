@@ -94,6 +94,7 @@ import { RegistrarPagoDialog } from './solicitudes/dialogs/RegistrarPagoDialog';
 import { RegistrarFacturaDialog } from './solicitudes/dialogs/RegistrarFacturaDialog';
 import { RegistrarReembolsoPinellasDialog } from './solicitudes/dialogs/RegistrarReembolsoPinellasDialog';
 import { RegistrarDevolucionDialog } from './solicitudes/dialogs/RegistrarDevolucionDialog';
+import { ProjectSelectorDialog } from './solicitudes/dialogs/ProjectSelectorDialog';
 
 // --- Helpers ---
 
@@ -1154,65 +1155,22 @@ export default function SolicitudesPagoGeneral({
         </div>
       )}
 
-      {/* Project Selector Modal */}
-      <Dialog
+      <ProjectSelectorDialog
         open={showProjectSelector}
         onOpenChange={(open) => {
           setShowProjectSelector(open);
           if (!open) setSelectorNoApprovers(false);
         }}
-      >
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Seleccionar Proyecto</DialogTitle>
-            <DialogDescription>
-              Selecciona el proyecto para la nueva solicitud de pago
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-3">
-            <Select
-              onValueChange={handleProjectSelected}
-              disabled={checkingApprovers}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    checkingApprovers
-                      ? 'Verificando...'
-                      : 'Selecciona un proyecto'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {proyectos.map((p) => (
-                  <SelectItem key={p.id} value={p.id.toString()}>
-                    {p.nombre_corto || p.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectorNoApprovers && selectedProjectId && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs flex items-center gap-2">
-                  Este proyecto no tiene aprobadores configurados. Configure los
-                  aprobadores en la seccion Miembros del proyecto.
-                  <Button
-                    variant="link"
-                    className="h-auto p-0 text-xs"
-                    onClick={() => {
-                      setShowProjectSelector(false);
-                      onNavigate?.(`project-${selectedProjectId}-miembros`);
-                    }}
-                  >
-                    Ir a Miembros
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+        proyectos={proyectos}
+        onProjectSelected={handleProjectSelected}
+        checkingApprovers={checkingApprovers}
+        selectorNoApprovers={selectorNoApprovers}
+        selectedProjectId={selectedProjectId}
+        onNavigateToMiembros={(pid) => {
+          setShowProjectSelector(false);
+          onNavigate?.(`project-${pid}-miembros`);
+        }}
+      />
 
       {/* Form Modal */}
       {selectedProjectId && (
