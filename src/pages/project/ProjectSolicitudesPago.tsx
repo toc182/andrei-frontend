@@ -46,6 +46,7 @@ import { RegistrarFacturaDialog } from '../solicitudes/dialogs/RegistrarFacturaD
 import { RegistrarReembolsoPinellasDialog } from '../solicitudes/dialogs/RegistrarReembolsoPinellasDialog';
 import { RegistrarDevolucionDialog } from '../solicitudes/dialogs/RegistrarDevolucionDialog';
 import { SolicitudDetailDialog } from '../solicitudes/dialogs/SolicitudDetailDialog';
+import { openSolicitudPDF, deleteSolicitud } from '../solicitudes/utils/solicitudActions';
 
 interface ProjectSolicitudesPagoProps {
   projectId: number;
@@ -666,30 +667,14 @@ export default function ProjectSolicitudesPago({
     }
   };
 
-  const handleDownloadPDF = (solicitudId: number) => {
-    const token = localStorage.getItem('token');
-    window.open(
-      `${api.defaults.baseURL}/solicitudes-pago/${solicitudId}/pdf?token=${token}`,
-      '_blank',
-    );
-  };
-
-  const handleDelete = async () => {
-    if (!deletingId) return;
-    try {
-      setDeleteLoading(true);
-      await api.delete(`/solicitudes-pago/${deletingId}`);
-      setShowDeleteModal(false);
-      setShowDetail(false);
-      await loadSolicitudes();
-    } catch (err) {
-      console.error('Error deleting:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al eliminar');
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
+  const handleDelete = () =>
+    deleteSolicitud({
+      deletingId,
+      setDeleteLoading,
+      setShowDeleteModal,
+      setShowDetail,
+      refreshList: loadSolicitudes,
+    });
 
   // Stats
   const stats = {
@@ -956,7 +941,7 @@ export default function ProjectSolicitudesPago({
         canManageSolicitud={canManageSolicitud}
         hasPermission={hasPermission}
         renderEstadoBadge={getEstadoBadge}
-        onDownloadPDF={handleDownloadPDF}
+        onDownloadPDF={openSolicitudPDF}
         onOpenCorreccion={() => setShowCorreccionModal(true)}
         onOpenDevolucionForm={() => {
           setDevolucionFecha('');

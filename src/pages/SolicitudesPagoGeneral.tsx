@@ -32,6 +32,7 @@ import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
 import { EstadoBadge } from './solicitudes/components/EstadoBadge';
 import { SolicitudesTable } from './solicitudes/components/SolicitudesTable';
 import { SolicitudesPagination } from './solicitudes/components/SolicitudesPagination';
+import { openSolicitudPDF, deleteSolicitud } from './solicitudes/utils/solicitudActions';
 import { DeleteSolicitudDialog } from './solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitudDialog';
 import { BulkApprovalPasswordDialog } from './solicitudes/dialogs/BulkApprovalPasswordDialog';
@@ -711,30 +712,14 @@ export default function SolicitudesPagoGeneral({
     }
   };
 
-  const handleDownloadPDF = (solicitudId: number) => {
-    const token = localStorage.getItem('token');
-    window.open(
-      `${api.defaults.baseURL}/solicitudes-pago/${solicitudId}/pdf?token=${token}`,
-      '_blank',
-    );
-  };
-
-  const handleDelete = async () => {
-    if (!deletingId) return;
-    try {
-      setDeleteLoading(true);
-      await api.delete(`/solicitudes-pago/${deletingId}`);
-      setShowDeleteModal(false);
-      setShowDetail(false);
-      await loadData();
-    } catch (err) {
-      console.error('Error deleting:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al eliminar');
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
+  const handleDelete = () =>
+    deleteSolicitud({
+      deletingId,
+      setDeleteLoading,
+      setShowDeleteModal,
+      setShowDetail,
+      refreshList: loadData,
+    });
 
   if (loading) {
     return (
@@ -974,7 +959,7 @@ export default function SolicitudesPagoGeneral({
         canManageSolicitud={canManageSolicitud}
         hasPermission={hasPermission}
         renderEstadoBadge={getEstadoBadge}
-        onDownloadPDF={handleDownloadPDF}
+        onDownloadPDF={openSolicitudPDF}
         onOpenCorreccion={() => setShowCorreccionModal(true)}
         onOpenDevolucionForm={() => {
           setDevolucionFecha('');
