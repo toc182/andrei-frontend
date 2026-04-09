@@ -38,6 +38,8 @@ import {
   reenviarSolicitud,
   rechazarSolicitud,
   toggleRevisadaSolicitud,
+  uploadSolicitudAdjuntos,
+  deleteSolicitudAdjunto,
 } from './solicitudes/utils/solicitudActions';
 import { DeleteSolicitudDialog } from './solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from './solicitudes/dialogs/RechazarSolicitudDialog';
@@ -588,42 +590,18 @@ export default function SolicitudesPagoGeneral({
       refreshList: loadData,
     });
 
-  const handleUploadAdjuntos = async (files: FileList) => {
-    if (!detailSolicitud || files.length === 0) return;
-    try {
-      setUploadingFiles(true);
-      const formData = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        formData.append('archivos', files[i]);
-      }
-      const response = await api.post(
-        `/solicitudes-pago/${detailSolicitud.id}/adjuntos`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        },
-      );
-      if (response.data.success) {
-        setDetailAdjuntos((prev) => [...response.data.adjuntos, ...prev]);
-      }
-    } catch (err) {
-      console.error('Error uploading:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al subir archivos');
-    } finally {
-      setUploadingFiles(false);
-    }
+  const handleUploadAdjuntos = (files: FileList) => {
+    if (!detailSolicitud) return;
+    return uploadSolicitudAdjuntos({
+      solicitudId: detailSolicitud.id,
+      files,
+      setUploadingFiles,
+      setDetailAdjuntos,
+    });
   };
 
-  const handleDeleteAdjunto = async (adjuntoId: number) => {
-    try {
-      await api.delete(`/solicitudes-pago/adjuntos/${adjuntoId}`);
-      setDetailAdjuntos((prev) => prev.filter((a) => a.id !== adjuntoId));
-    } catch (err) {
-      console.error('Error deleting adjunto:', err);
-      alert('Error al eliminar el adjunto');
-    }
-  };
+  const handleDeleteAdjunto = (adjuntoId: number) =>
+    deleteSolicitudAdjunto({ adjuntoId, setDetailAdjuntos });
 
   const handleToggleRevisada = (solicitudId: number) =>
     toggleRevisadaSolicitud({

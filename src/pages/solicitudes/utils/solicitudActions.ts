@@ -8,6 +8,7 @@
 
 import type React from 'react';
 import api from '../../../services/api';
+import type { SolicitudPagoAdjunto } from '../../../types/api';
 import type { SolicitudPago } from '../types';
 
 /**
@@ -117,6 +118,62 @@ export async function toggleRevisadaSolicitud(args: {
     );
   } finally {
     args.setTogglingRevisada(false);
+  }
+}
+
+/**
+ * Uploads one or more attachment files to the solicitud currently open in
+ * the detail dialog. Prepends the newly-uploaded adjuntos to the local list
+ * so they appear at the top of the preview without a full refetch.
+ */
+export async function uploadSolicitudAdjuntos(args: {
+  solicitudId: number;
+  files: FileList;
+  setUploadingFiles: (loading: boolean) => void;
+  setDetailAdjuntos: React.Dispatch<React.SetStateAction<SolicitudPagoAdjunto[]>>;
+}): Promise<void> {
+  if (args.files.length === 0) return;
+  try {
+    args.setUploadingFiles(true);
+    const formData = new FormData();
+    for (let i = 0; i < args.files.length; i++) {
+      formData.append('archivos', args.files[i]);
+    }
+    const response = await api.post(
+      `/solicitudes-pago/${args.solicitudId}/adjuntos`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      },
+    );
+    if (response.data.success) {
+      args.setDetailAdjuntos((prev) => [...response.data.adjuntos, ...prev]);
+    }
+  } catch (err) {
+    console.error('Error uploading:', err);
+    const apiError = err as { response?: { data?: { message?: string } } };
+    alert(apiError.response?.data?.message || 'Error al subir archivos');
+  } finally {
+    args.setUploadingFiles(false);
+  }
+}
+
+/**
+ * Deletes a single adjunto from a solicitud and removes it from the local
+ * detail-view list.
+ */
+export async function deleteSolicitudAdjunto(args: {
+  adjuntoId: number;
+  setDetailAdjuntos: React.Dispatch<React.SetStateAction<SolicitudPagoAdjunto[]>>;
+}): Promise<void> {
+  try {
+    await api.delete(`/solicitudes-pago/adjuntos/${args.adjuntoId}`);
+    args.setDetailAdjuntos((prev) =>
+      prev.filter((a) => a.id !== args.adjuntoId),
+    );
+  } catch (err) {
+    console.error('Error deleting adjunto:', err);
+    alert('Error al eliminar el adjunto');
   }
 }
 
