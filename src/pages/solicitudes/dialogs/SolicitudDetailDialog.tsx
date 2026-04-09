@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Download,
   RefreshCw,
   Check,
   X,
@@ -23,9 +22,7 @@ import {
   CreditCard,
   FileCheck,
   Send,
-  Upload,
 } from 'lucide-react';
-import api from '../../../services/api';
 import AdjuntosPreview from '../../../components/AdjuntosPreview';
 import type { SolicitudPagoAdjunto } from '../../../types/api';
 import type {
@@ -39,6 +36,11 @@ import { SolicitudBankDataCard } from './detail/SolicitudBankDataCard';
 import { SolicitudBasicInfoSection } from './detail/SolicitudBasicInfoSection';
 import { SolicitudItemsAndTotals } from './detail/SolicitudItemsAndTotals';
 import { SolicitudDetailHeader } from './detail/SolicitudDetailHeader';
+import { SolicitudPaymentStatusCards } from './detail/SolicitudPaymentStatusCards';
+import {
+  SolicitudCorreccionesHistory,
+  type Correccion,
+} from './detail/SolicitudCorreccionesHistory';
 
 interface SolicitudDetailDialogProps {
   // Dialog open/close
@@ -79,14 +81,7 @@ interface SolicitudDetailDialogProps {
     comprobante_nombre: string;
     registrado_por_nombre: string;
   } | null;
-  correcciones: {
-    id: number;
-    motivo: string;
-    cambios: unknown[];
-    version_pdf: string | null;
-    created_at: string;
-    usuario_nombre: string;
-  }[];
+  correcciones: Correccion[];
   puedeEliminar: boolean;
   revisada: boolean;
   togglingRevisada: boolean;
@@ -221,328 +216,23 @@ export function SolicitudDetailDialog({
               uploading={uploadingFiles}
             />
 
-            {/* Comprobante de Pago */}
-            {(solicitud.estado === 'pagada' ||
-              solicitud.estado === 'facturada') &&
-              comprobante && (
-                <div className="space-y-3">
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-                    <h4 className="font-medium text-blue-900">
-                      Comprobante de Pago
-                    </h4>
-                    <div className="text-sm text-blue-800 space-y-1">
-                      <div>
-                        Fecha de pago:{' '}
-                        {new Date(
-                          comprobante.fecha_pago.split('T')[0] + 'T12:00:00',
-                        ).toLocaleDateString('es-PA')}
-                      </div>
-                      <div>
-                        Registrado por: {comprobante.registrado_por_nombre}
-                      </div>
-                    </div>
-                    {comprobante.adjuntos.length > 0 && (
-                      <AdjuntosPreview
-                        adjuntos={comprobante.adjuntos}
-                        solicitudPagoId={solicitud.id}
-                        readOnly
-                        title="Comprobantes"
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-            {/* Factura */}
-            {solicitud.estado === 'facturada' && factura && (
-              <div className="space-y-3">
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-3">
-                  <h4 className="font-medium text-emerald-900">
-                    {factura.tipo === 'recibo' ? 'Recibo' : 'Factura'}
-                  </h4>
-                  <div className="text-sm text-emerald-800 space-y-1">
-                    <div>
-                      Fecha:{' '}
-                      {new Date(
-                        factura.fecha_factura.split('T')[0] + 'T12:00:00',
-                      ).toLocaleDateString('es-PA')}
-                    </div>
-                    {factura.numero_factura && (
-                      <div>Número de factura: {factura.numero_factura}</div>
-                    )}
-                    <div>Registrado por: {factura.registrado_por_nombre}</div>
-                  </div>
-                  {factura.adjuntos.length > 0 && (
-                    <AdjuntosPreview
-                      adjuntos={factura.adjuntos}
-                      solicitudPagoId={solicitud.id}
-                      readOnly
-                      title={factura.tipo === 'recibo' ? 'Recibos' : 'Facturas'}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Devolución */}
-            {solicitud.estado === 'devolucion' && devolucion && (
-              <div className="space-y-3">
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
-                  <h4 className="font-medium text-red-900">Devolución</h4>
-                  <div className="text-sm text-red-800 space-y-1">
-                    <div>
-                      Fecha:{' '}
-                      {new Date(
-                        devolucion.fecha_devolucion.split('T')[0] + 'T12:00:00',
-                      ).toLocaleDateString('es-PA')}
-                    </div>
-                    <div>Motivo: {devolucion.motivo}</div>
-                    <div>
-                      Registrado por: {devolucion.registrado_por_nombre}
-                    </div>
-                  </div>
-                  {devolucion.comprobante_url && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const resp = await api.get(
-                            `/solicitudes-pago/${solicitud.id}/devolucion/comprobante`,
-                          );
-                          if (resp.data.success && resp.data.url) {
-                            window.open(resp.data.url, '_blank');
-                          }
-                        } catch {
-                          alert('Error al descargar comprobante');
-                        }
-                      }}
-                    >
-                      <Download className="h-3.5 w-3.5 mr-1" />
-                      {devolucion.comprobante_nombre}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Comprobante de Reembolso (Pinellas paga) */}
-            {solicitud.pinellas_paga &&
-              ['pagada', 'facturada'].includes(solicitud.estado) && (
-                <div className="space-y-3">
-                  {reembolso ? (
-                    <div className="p-4 bg-yellow-50/50 border border-amber-200 rounded-lg space-y-3">
-                      <h4 className="font-medium text-amber-900">
-                        Comprobante de Reembolso
-                      </h4>
-                      <div className="text-sm text-amber-800 space-y-1">
-                        <div>
-                          Fecha de reembolso:{' '}
-                          {new Date(
-                            reembolso.fecha_reembolso + 'T12:00:00',
-                          ).toLocaleDateString('es-PA')}
-                        </div>
-                        <div>
-                          Registrado por: {reembolso.registrado_por_nombre}
-                        </div>
-                        {reembolso.comprobante_nombre && (
-                          <div>Archivo: {reembolso.comprobante_nombre}</div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                      <div className="p-4 bg-yellow-50/50/50 border border-amber-200 border-dashed rounded-lg">
-                        <div className="text-sm text-amber-700 mb-2">
-                          Pinellas paga esta solicitud. Pendiente de registrar
-                          reembolso.
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={onOpenRegistrarReembolsoPinellasDialog}
-                          className="w-full border-amber-300 text-amber-700 hover:bg-yellow-50/50"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Registrar Reembolso
-                        </Button>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
+            {/* Payment status cards — Comprobante de Pago, Factura,
+                Devolución, Comprobante de Reembolso */}
+            <SolicitudPaymentStatusCards
+              solicitud={solicitud}
+              comprobante={comprobante}
+              factura={factura}
+              devolucion={devolucion}
+              reembolso={reembolso}
+              isAdminOrCoAdmin={isAdminOrCoAdmin}
+              hasPermission={hasPermission}
+              onOpenRegistrarReembolsoPinellasDialog={
+                onOpenRegistrarReembolsoPinellasDialog
+              }
+            />
 
             {/* Historial de Correcciones */}
-            {correcciones.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-gray-700">
-                  Historial de Correcciones
-                </h4>
-                <div className="space-y-2">
-                  {correcciones.map((correccion) => {
-                    const cambios = correccion.cambios as {
-                      campo: string;
-                      anterior?: string;
-                      nuevo?: string;
-                      cambios?: unknown[];
-                      descripcion?: string;
-                    }[];
-                    return (
-                      <details
-                        key={correccion.id}
-                        className="border border-gray-200 rounded-lg"
-                      >
-                        <summary className="px-4 py-3 bg-gray-50 cursor-pointer flex items-center justify-between rounded-lg hover:bg-gray-100">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">
-                              {new Date(
-                                correccion.created_at,
-                              ).toLocaleDateString('es-PA', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              — {correccion.usuario_nombre}
-                            </span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {cambios.length} cambio
-                            {cambios.length !== 1 ? 's' : ''}
-                          </Badge>
-                        </summary>
-                        <div className="px-4 py-3 space-y-3">
-                          <div className="text-sm text-gray-600 italic">
-                            Motivo: {correccion.motivo}
-                          </div>
-                          <table className="w-full text-xs border-collapse">
-                            <thead>
-                              <tr className="text-left text-gray-500">
-                                <th className="pb-1 pr-3">Campo</th>
-                                <th className="pb-1 pr-3">Anterior</th>
-                                <th className="pb-1">Nuevo</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {cambios.map((cambio, idx) => {
-                                const labelMap: Record<string, string> = {
-                                  proveedor: 'Proveedor',
-                                  fecha: 'Fecha',
-                                  observaciones: 'Observaciones',
-                                  beneficiario: 'Beneficiario',
-                                  banco: 'Banco',
-                                  tipo_cuenta: 'Tipo de cuenta',
-                                  numero_cuenta: 'Número de cuenta',
-                                  fecha_pago: 'Fecha de pago',
-                                  fecha_factura: 'Fecha de factura',
-                                  numero_factura: 'Número de factura',
-                                  tipo: 'Tipo',
-                                  subtotal: 'Subtotal',
-                                  monto_total: 'Monto total',
-                                  comprobante: 'Comprobante',
-                                  factura: 'Factura',
-                                  descripcion: 'Descripción',
-                                  cantidad: 'Cantidad',
-                                  unidad: 'Unidad',
-                                  precio_unitario: 'Precio unitario',
-                                };
-                                const label = (campo: string) =>
-                                  labelMap[campo] || campo;
-                                if (
-                                  cambio.campo === 'item' &&
-                                  'cambios' in cambio
-                                ) {
-                                  const itemCambios = cambio.cambios as {
-                                    campo: string;
-                                    anterior: string;
-                                    nuevo: string;
-                                  }[];
-                                  return itemCambios.map((ic, icIdx) => (
-                                    <tr
-                                      key={`${idx}-${icIdx}`}
-                                      className="border-t border-gray-100"
-                                    >
-                                      <td className="py-1.5 pr-3 text-gray-700">
-                                        Item &quot;{cambio.descripcion}&quot; —{' '}
-                                        {label(ic.campo)}
-                                      </td>
-                                      <td className="py-1.5 pr-3 text-red-600 line-through">
-                                        {ic.anterior}
-                                      </td>
-                                      <td className="py-1.5 text-green-600">
-                                        {ic.nuevo}
-                                      </td>
-                                    </tr>
-                                  ));
-                                }
-                                if (cambio.campo === 'item_agregado') {
-                                  return (
-                                    <tr
-                                      key={idx}
-                                      className="border-t border-gray-100"
-                                    >
-                                      <td className="py-1.5 pr-3 text-gray-700">
-                                        Item agregado
-                                      </td>
-                                      <td className="py-1.5 pr-3 text-gray-400">
-                                        —
-                                      </td>
-                                      <td className="py-1.5 text-green-600">
-                                        {cambio.descripcion}
-                                      </td>
-                                    </tr>
-                                  );
-                                }
-                                if (cambio.campo === 'item_eliminado') {
-                                  return (
-                                    <tr
-                                      key={idx}
-                                      className="border-t border-gray-100"
-                                    >
-                                      <td className="py-1.5 pr-3 text-gray-700">
-                                        Item eliminado
-                                      </td>
-                                      <td className="py-1.5 pr-3 text-red-600 line-through">
-                                        {cambio.descripcion}
-                                      </td>
-                                      <td className="py-1.5 text-gray-400">
-                                        —
-                                      </td>
-                                    </tr>
-                                  );
-                                }
-                                return (
-                                  <tr
-                                    key={idx}
-                                    className="border-t border-gray-100"
-                                  >
-                                    <td className="py-1.5 pr-3 text-gray-700">
-                                      {label(cambio.campo)}
-                                    </td>
-                                    <td className="py-1.5 pr-3 text-red-600 line-through">
-                                      {typeof cambio.anterior === 'string'
-                                        ? cambio.anterior
-                                        : '—'}
-                                    </td>
-                                    <td className="py-1.5 text-green-600">
-                                      {typeof cambio.nuevo === 'string'
-                                        ? cambio.nuevo
-                                        : '—'}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </details>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <SolicitudCorreccionesHistory correcciones={correcciones} />
 
             {/* Approval section */}
             <div className="space-y-3">
