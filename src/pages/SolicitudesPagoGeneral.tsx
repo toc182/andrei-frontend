@@ -6,7 +6,7 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, AlertCircle } from 'lucide-react';
+import { Plus, Check, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
