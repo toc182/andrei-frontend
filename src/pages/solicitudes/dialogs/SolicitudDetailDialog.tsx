@@ -9,36 +9,12 @@
 // decision about requisicion-solicitud integration.
 
 import { ReactNode } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Download,
-  Pencil,
-  Settings,
-  Undo2,
-  Banknote,
   RefreshCw,
   Check,
   X,
@@ -50,7 +26,6 @@ import {
   Upload,
 } from 'lucide-react';
 import api from '../../../services/api';
-import { formatMoney } from '../../../utils/formatters';
 import AdjuntosPreview from '../../../components/AdjuntosPreview';
 import type { SolicitudPagoAdjunto } from '../../../types/api';
 import type {
@@ -60,16 +35,10 @@ import type {
   Aprobacion,
   AprobadorProyecto,
 } from '../types';
-
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
+import { SolicitudBankDataCard } from './detail/SolicitudBankDataCard';
+import { SolicitudBasicInfoSection } from './detail/SolicitudBasicInfoSection';
+import { SolicitudItemsAndTotals } from './detail/SolicitudItemsAndTotals';
+import { SolicitudDetailHeader } from './detail/SolicitudDetailHeader';
 
 interface SolicitudDetailDialogProps {
   // Dialog open/close
@@ -204,72 +173,20 @@ export function SolicitudDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Detalle de Solicitud
-            {solicitud && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => onDownloadPDF(solicitud.id)}
-              >
-                <Download className="h-3.5 w-3.5 mr-1" />
-                Descargar PDF
-              </Button>
-            )}
-            {solicitud &&
-              (solicitud.estado === 'pagada' ||
-                solicitud.estado === 'facturada') &&
-              (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 w-7 p-0">
-                      <Settings className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {isAdmin &&
-                      (solicitud.estado === 'pagada' ||
-                        solicitud.estado === 'facturada') && (
-                        <DropdownMenuItem onClick={onOpenCorreccion}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Corregir solicitud
-                        </DropdownMenuItem>
-                      )}
-                    <DropdownMenuItem onClick={onOpenDevolucionForm}>
-                      <Undo2 className="h-4 w-4 mr-2" />
-                      Registrar Devolución
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            {canManage &&
-              solicitud &&
-              solicitud.estado === 'pendiente' &&
-              canManageSolicitud(solicitud) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    const aprobadas = aprobaciones.filter(
-                      (a) => a.accion === 'aprobado',
-                    ).length;
-                    if (aprobadas > 0) {
-                      onRequestEditConfirmation(solicitud);
-                      return;
-                    }
-                    onEditSolicitud(solicitud);
-                  }}
-                >
-                  <Pencil className="h-3.5 w-3.5 mr-1" />
-                  Editar Solicitud
-                </Button>
-              )}
-          </DialogTitle>
-          <DialogDescription>{solicitud?.numero}</DialogDescription>
-        </DialogHeader>
+        <SolicitudDetailHeader
+          solicitud={solicitud}
+          aprobaciones={aprobaciones}
+          isAdmin={isAdmin}
+          isAdminOrCoAdmin={isAdminOrCoAdmin}
+          canManage={canManage}
+          canManageSolicitud={canManageSolicitud}
+          hasPermission={hasPermission}
+          onDownloadPDF={onDownloadPDF}
+          onOpenCorreccion={onOpenCorreccion}
+          onOpenDevolucionForm={onOpenDevolucionForm}
+          onEditSolicitud={onEditSolicitud}
+          onRequestEditConfirmation={onRequestEditConfirmation}
+        />
 
         {solicitud?.urgente && (
           <Badge variant="destructive" className="text-xs w-fit">
@@ -280,145 +197,20 @@ export function SolicitudDetailDialog({
         {solicitud && (
           <div className="space-y-4">
             {/* Basic info */}
-            <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-3">
-              <div>
-                <div className="text-muted-foreground">Fecha</div>
-                <div className="font-medium">
-                  {formatDate(solicitud.fecha)}
-                </div>
-              </div>
-              {showProyectoField && (
-                <div>
-                  <div className="text-muted-foreground">Proyecto</div>
-                  <div className="font-medium">
-                    {solicitud.proyecto_nombre || '-'}
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-muted-foreground">Preparado por</div>
-                  <div className="font-medium">
-                    {solicitud.preparado_nombre || '-'}
-                  </div>
-                </div>
-                {solicitud.solicitado_nombre && (
-                  <div>
-                    <div className="text-muted-foreground">Solicitado por</div>
-                    <div className="font-medium">
-                      {solicitud.solicitado_nombre}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="text-muted-foreground">Proveedor</div>
-                <div className="font-medium">{solicitud.proveedor}</div>
-              </div>
-            </div>
-
-            {solicitud.observaciones && (
-              <div className="p-3 bg-muted/50 rounded-lg text-sm">
-                <div className="text-muted-foreground mb-1">Observaciones</div>
-                <div>{solicitud.observaciones}</div>
-              </div>
-            )}
+            <SolicitudBasicInfoSection
+              solicitud={solicitud}
+              showProyectoField={showProyectoField}
+            />
 
             {/* Items + Totals */}
-            <div className="border rounded-lg overflow-hidden">
-              {items.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Detalle</TableHead>
-                      <TableHead className="text-right">Cant.</TableHead>
-                      <TableHead className="text-right">P.Unit</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.descripcion}</TableCell>
-                        <TableCell className="text-right">
-                          {item.cantidad} {item.unidad}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatMoney(item.precio_unitario)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatMoney(item.precio_total)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-              <div className="p-4 space-y-2 text-sm border-t">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span>{formatMoney(solicitud.subtotal)}</span>
-                </div>
-                {ajustes.map((ajuste) => (
-                  <div key={ajuste.id} className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {ajuste.descripcion}:
-                    </span>
-                    <span
-                      className={
-                        ajuste.tipo === 'descuento' ? 'text-red-600' : ''
-                      }
-                    >
-                      {ajuste.tipo === 'descuento' ? '-' : ''}
-                      {formatMoney(ajuste.monto)}
-                    </span>
-                  </div>
-                ))}
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>TOTAL:</span>
-                  <span>{formatMoney(solicitud.monto_total)}</span>
-                </div>
-              </div>
-            </div>
+            <SolicitudItemsAndTotals
+              solicitud={solicitud}
+              items={items}
+              ajustes={ajustes}
+            />
 
             {/* Bank data */}
-            {(solicitud.beneficiario || solicitud.banco) && (
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <Banknote className="h-4 w-4" /> Datos Bancarios
-                </h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {solicitud.beneficiario && (
-                    <div>
-                      <span className="text-muted-foreground">
-                        Beneficiario:
-                      </span>{' '}
-                      {solicitud.beneficiario}
-                    </div>
-                  )}
-                  {solicitud.banco && (
-                    <div>
-                      <span className="text-muted-foreground">Banco:</span>{' '}
-                      {solicitud.banco}
-                    </div>
-                  )}
-                  {solicitud.tipo_cuenta && (
-                    <div>
-                      <span className="text-muted-foreground">Tipo:</span>{' '}
-                      <span className="capitalize">
-                        {solicitud.tipo_cuenta}
-                      </span>
-                    </div>
-                  )}
-                  {solicitud.numero_cuenta && (
-                    <div>
-                      <span className="text-muted-foreground">Cuenta:</span>{' '}
-                      {solicitud.numero_cuenta}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <SolicitudBankDataCard solicitud={solicitud} />
 
             {/* Adjuntos */}
             <AdjuntosPreview
