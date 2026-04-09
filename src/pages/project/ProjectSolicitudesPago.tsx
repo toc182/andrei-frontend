@@ -4,7 +4,7 @@
  * Features: Prefix config, list with filters, create/edit/detail modals, state changes
  */
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   Plus,
@@ -34,7 +34,6 @@ import type {
 } from '../solicitudes/types';
 import { ALL_ESTADOS } from '../solicitudes/types';
 import { smartDefaultSort } from '../solicitudes/utils/solicitudSort';
-import { EstadoBadge } from '../solicitudes/components/EstadoBadge';
 import { SolicitudesTable } from '../solicitudes/components/SolicitudesTable';
 import { DeleteSolicitudDialog } from '../solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from '../solicitudes/dialogs/RechazarSolicitudDialog';
@@ -46,6 +45,7 @@ import { RegistrarFacturaDialog } from '../solicitudes/dialogs/RegistrarFacturaD
 import { RegistrarReembolsoPinellasDialog } from '../solicitudes/dialogs/RegistrarReembolsoPinellasDialog';
 import { RegistrarDevolucionDialog } from '../solicitudes/dialogs/RegistrarDevolucionDialog';
 import { SolicitudDetailDialog } from '../solicitudes/dialogs/SolicitudDetailDialog';
+import type { Correccion } from '../solicitudes/dialogs/detail/SolicitudCorreccionesHistory';
 import {
   openSolicitudPDF,
   deleteSolicitud,
@@ -65,12 +65,6 @@ interface ProjectSolicitudesPagoProps {
   projectId: number;
   onNavigate?: (view: string) => void;
 }
-
-// Backwards-compatible wrapper around <EstadoBadge /> so existing call sites
-// don't change in this phase. Will be inlined in a later phase.
-const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => (
-  <EstadoBadge estado={estado} esMiTurno={esMiTurno} />
-);
 
 export default function ProjectSolicitudesPago({
   projectId,
@@ -93,10 +87,8 @@ export default function ProjectSolicitudesPago({
   const [prefijoInput, setPrefijoInput] = useState('');
   const [savingPrefijo, setSavingPrefijo] = useState(false);
 
-  // Filters — filterEstados is kept as a constant (ALL_ESTADOS) since the
-  // column-header filter in the table is the only estado filter UI.
-  // The popover was removed during the #26 refactor.
-  const [filterEstados] = useState<string[]>(ALL_ESTADOS);
+  // Filters — estado filtering is handled entirely by the column-header
+  // filter in SolicitudesTable, so this page only owns the top-level toggles.
   const [filterMyApproval, setFilterMyApproval] = useState(false);
   const [filterPinellasPaga, setFilterPinellasPaga] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -217,14 +209,9 @@ export default function ProjectSolicitudesPago({
 
   // Corrección (admin)
   const [showCorreccionModal, setShowCorreccionModal] = useState(false);
-  const [detailCorrecciones, setDetailCorrecciones] = useState<{
-    id: number;
-    motivo: string;
-    cambios: unknown[];
-    version_pdf: string | null;
-    created_at: string;
-    usuario_nombre: string;
-  }[]>([]);
+  const [detailCorrecciones, setDetailCorrecciones] = useState<Correccion[]>(
+    [],
+  );
 
   // Edit confirmation (AlertDialog)
   const [showEditConfirm, setShowEditConfirm] = useState(false);
@@ -247,7 +234,7 @@ export default function ProjectSolicitudesPago({
   useEffect(() => {
     loadSolicitudes();
     checkApprovers();
-  }, [projectId, filterEstados, filterMyApproval]);
+  }, [projectId, filterMyApproval]);
 
   const checkApprovers = async () => {
     try {
@@ -265,12 +252,6 @@ export default function ProjectSolicitudesPago({
       setLoading(true);
       setError(null);
       const queryParams: string[] = [];
-      if (
-        filterEstados.length > 0 &&
-        filterEstados.length < ALL_ESTADOS.length
-      ) {
-        queryParams.push(`estado=${filterEstados.join(',')}`);
-      }
       if (filterMyApproval) {
         queryParams.push('pending_my_approval=true');
       }
@@ -301,7 +282,6 @@ export default function ProjectSolicitudesPago({
   // Filter by top-level controls first
   const preFiltered = solicitudes.filter((sol) => {
     if (filterPinellasPaga && !sol.pinellas_paga) return false;
-    if (!filterEstados.includes(sol.estado)) return false;
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       return (
@@ -736,7 +716,6 @@ export default function ProjectSolicitudesPago({
         uniqueProyectos={[]}
         uniqueEstados={uniqueEstados}
         onRowClick={openDetail}
-        renderEstadoBadge={getEstadoBadge}
       />
 
       {/* Bulk Approval Success Banner */}
@@ -796,7 +775,6 @@ export default function ProjectSolicitudesPago({
         canManage={canManage}
         canManageSolicitud={canManageSolicitud}
         hasPermission={hasPermission}
-        renderEstadoBadge={getEstadoBadge}
         onDownloadPDF={openSolicitudPDF}
         onOpenCorreccion={() => setShowCorreccionModal(true)}
         onOpenDevolucionForm={() => {

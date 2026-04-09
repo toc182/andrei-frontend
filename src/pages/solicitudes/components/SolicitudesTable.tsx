@@ -5,7 +5,6 @@
 // The only difference between the two pages is whether the "Proyecto" column
 // is rendered, controlled by the `showProyectoColumn` prop.
 
-import { ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -24,6 +23,7 @@ import type {
   ColumnFilters,
 } from '@/components/sortableHeaderUtils';
 import { AprobadoresAvatars } from './AprobadoresAvatars';
+import { EstadoBadge } from './EstadoBadge';
 import type { SolicitudPago } from '../types';
 import { formatMoney } from '../../../utils/formatters';
 
@@ -48,7 +48,6 @@ interface SolicitudesTableProps {
   uniqueProyectos: string[];
   uniqueEstados: string[];
   onRowClick: (sol: SolicitudPago) => void;
-  renderEstadoBadge: (estado: string, esMiTurno?: boolean) => ReactNode;
 }
 
 export function SolicitudesTable({
@@ -62,7 +61,6 @@ export function SolicitudesTable({
   uniqueProyectos,
   uniqueEstados,
   onRowClick,
-  renderEstadoBadge,
 }: SolicitudesTableProps) {
   return (
     <>
@@ -112,7 +110,7 @@ export function SolicitudesTable({
                           aprobadores={sol.aprobadores_estado}
                         />
                       ) : (
-                        renderEstadoBadge(sol.estado)
+                        <EstadoBadge estado={sol.estado} />
                       )}
                       {sol.pinellas_paga && (
                         <Badge
@@ -249,7 +247,7 @@ export function SolicitudesTable({
                               aprobadores={sol.aprobadores_estado}
                             />
                           ) : (
-                            renderEstadoBadge(sol.estado)
+                            <EstadoBadge estado={sol.estado} />
                           )}
                           {sol.pinellas_paga && (
                             <Badge

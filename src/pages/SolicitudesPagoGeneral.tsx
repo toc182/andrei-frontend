@@ -4,7 +4,7 @@
  * Accesible desde el sidebar principal
  */
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Check, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,6 @@ import type {
 } from './solicitudes/types';
 import { ALL_ESTADOS } from './solicitudes/types';
 import { smartDefaultSort } from './solicitudes/utils/solicitudSort';
-import { EstadoBadge } from './solicitudes/components/EstadoBadge';
 import { SolicitudesTable } from './solicitudes/components/SolicitudesTable';
 import { SolicitudesPagination } from './solicitudes/components/SolicitudesPagination';
 import {
@@ -57,12 +56,7 @@ import { RegistrarReembolsoPinellasDialog } from './solicitudes/dialogs/Registra
 import { RegistrarDevolucionDialog } from './solicitudes/dialogs/RegistrarDevolucionDialog';
 import { ProjectSelectorDialog } from './solicitudes/dialogs/ProjectSelectorDialog';
 import { SolicitudDetailDialog } from './solicitudes/dialogs/SolicitudDetailDialog';
-
-// Backwards-compatible wrapper around <EstadoBadge /> so existing call sites
-// don't change in this phase. Will be inlined in a later phase.
-const getEstadoBadge = (estado: string, esMiTurno?: boolean): ReactNode => (
-  <EstadoBadge estado={estado} esMiTurno={esMiTurno} />
-);
+import type { Correccion } from './solicitudes/dialogs/detail/SolicitudCorreccionesHistory';
 
 interface SolicitudesPagoGeneralProps {
   onNavigate?: (view: string) => void;
@@ -83,9 +77,8 @@ export default function SolicitudesPagoGeneral({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters — filterEstados is kept as a constant (ALL_ESTADOS) since the
-  // column-header filter in the table is the only estado filter UI.
-  const [filterEstados] = useState<string[]>(ALL_ESTADOS);
+  // Filters — estado filtering is handled entirely by the column-header
+  // filter in SolicitudesTable, so this page only owns the top-level toggles.
   const [filterMyApproval, setFilterMyApproval] = useState(false);
   const [filterPinellasPaga, setFilterPinellasPaga] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -218,14 +211,9 @@ export default function SolicitudesPagoGeneral({
   // Correction mode
   const [showCorreccionModal, setShowCorreccionModal] = useState(false);
   const [detailPuedeEliminar, setDetailPuedeEliminar] = useState(false);
-  const [detailCorrecciones, setDetailCorrecciones] = useState<{
-    id: number;
-    motivo: string;
-    cambios: unknown[];
-    version_pdf: string | null;
-    created_at: string;
-    usuario_nombre: string;
-  }[]>([]);
+  const [detailCorrecciones, setDetailCorrecciones] = useState<Correccion[]>(
+    [],
+  );
 
   // Edit confirmation (AlertDialog)
   const [showEditConfirm, setShowEditConfirm] = useState(false);
@@ -256,13 +244,12 @@ export default function SolicitudesPagoGeneral({
 
   useEffect(() => {
     loadData();
-  }, [filterEstados, filterMyApproval]);
+  }, [filterMyApproval]);
 
   // Reset to page 1 whenever filters, search, sort or page size change
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    filterEstados,
     filterMyApproval,
     filterPinellasPaga,
     searchTerm,
@@ -282,12 +269,6 @@ export default function SolicitudesPagoGeneral({
       setError(null);
 
       const queryParams: string[] = [];
-      if (
-        filterEstados.length > 0 &&
-        filterEstados.length < ALL_ESTADOS.length
-      ) {
-        queryParams.push(`estado=${filterEstados.join(',')}`);
-      }
       if (filterMyApproval) {
         queryParams.push('pending_my_approval=true');
       }
@@ -314,7 +295,6 @@ export default function SolicitudesPagoGeneral({
   // Filter by top-level controls first
   const preFiltered = solicitudes.filter((sol) => {
     if (filterPinellasPaga && !sol.pinellas_paga) return false;
-    if (!filterEstados.includes(sol.estado)) return false;
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       return (
@@ -723,7 +703,6 @@ export default function SolicitudesPagoGeneral({
         uniqueProyectos={uniqueProyectos}
         uniqueEstados={uniqueEstados}
         onRowClick={openDetail}
-        renderEstadoBadge={getEstadoBadge}
       />
 
       <SolicitudesPagination
@@ -814,7 +793,6 @@ export default function SolicitudesPagoGeneral({
         canManage={canManage}
         canManageSolicitud={canManageSolicitud}
         hasPermission={hasPermission}
-        renderEstadoBadge={getEstadoBadge}
         onDownloadPDF={openSolicitudPDF}
         onOpenCorreccion={() => setShowCorreccionModal(true)}
         onOpenDevolucionForm={() => {

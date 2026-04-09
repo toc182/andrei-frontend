@@ -8,7 +8,6 @@
 // The Requisición field is NOT rendered — see issue #39 for the cleanup
 // decision about requisicion-solicitud integration.
 
-import { ReactNode } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,9 +88,6 @@ interface SolicitudDetailDialogProps {
   canManageSolicitud: (sol: SolicitudPago) => boolean;
   hasPermission: (key: string) => boolean;
 
-  // Custom rendering hook for the status badge
-  renderEstadoBadge: (estado: string, esMiTurno?: boolean) => ReactNode;
-
   // Actions — all callbacks the dialog fires
   onDownloadPDF: (id: number) => void;
   onOpenCorreccion: () => void;
@@ -137,7 +133,6 @@ export function SolicitudDetailDialog({
   canManage,
   canManageSolicitud,
   hasPermission,
-  renderEstadoBadge,
   onDownloadPDF,
   onOpenCorreccion,
   onOpenDevolucionForm,
@@ -237,7 +232,6 @@ export function SolicitudDetailDialog({
               isAdminOrCoAdmin={isAdminOrCoAdmin}
               canManage={canManage}
               hasPermission={hasPermission}
-              renderEstadoBadge={renderEstadoBadge}
               onPinellasPagaChange={onPinellasPagaChange}
               onToggleRevisada={onToggleRevisada}
               onAprobar={onAprobar}

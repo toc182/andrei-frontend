@@ -12,7 +12,6 @@
 // - The action buttons (Marcar Revisada / Aprobar / Rechazar,
 //   Registrar Pago, Registrar Factura, Reenviar)
 
-import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,6 +30,7 @@ import type {
   Aprobacion,
   AprobadorProyecto,
 } from '../../types';
+import { EstadoBadge } from '../../components/EstadoBadge';
 
 interface SolicitudApprovalSectionProps {
   solicitud: SolicitudPago;
@@ -45,8 +45,6 @@ interface SolicitudApprovalSectionProps {
   isAdminOrCoAdmin: boolean;
   canManage: boolean;
   hasPermission: (key: string) => boolean;
-
-  renderEstadoBadge: (estado: string, esMiTurno?: boolean) => ReactNode;
 
   onPinellasPagaChange: (newValue: boolean) => void;
   onToggleRevisada: (id: number) => void;
@@ -69,7 +67,6 @@ export function SolicitudApprovalSection({
   isAdminOrCoAdmin,
   canManage,
   hasPermission,
-  renderEstadoBadge,
   onPinellasPagaChange,
   onToggleRevisada,
   onAprobar,
@@ -92,7 +89,7 @@ export function SolicitudApprovalSection({
       <h4 className="font-medium">Estado y Aprobaciones</h4>
       <div className="p-4 border rounded-lg space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          {renderEstadoBadge(solicitud.estado)}
+          <EstadoBadge estado={solicitud.estado} />
           {solicitud.pinellas_paga && !reembolso && (
             <Badge
               variant="outline"
