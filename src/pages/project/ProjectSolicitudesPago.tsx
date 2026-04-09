@@ -54,6 +54,11 @@ import {
   toggleRevisadaSolicitud,
   uploadSolicitudAdjuntos,
   deleteSolicitudAdjunto,
+  registrarPagoSolicitud,
+  registrarFacturaSolicitud,
+  registrarReembolsoSolicitud,
+  registrarDevolucionSolicitud,
+  confirmApprovalSolicitud,
 } from '../solicitudes/utils/solicitudActions';
 
 interface ProjectSolicitudesPagoProps {
@@ -418,124 +423,54 @@ export default function ProjectSolicitudesPago({
       refreshList: loadSolicitudes,
     });
 
-  const handleRegistrarPago = async (solicitudId: number) => {
-    if (
-      !registroPagoFecha ||
-      !registroPagoFiles ||
-      registroPagoFiles.length === 0
-    )
-      return;
-    try {
-      setRegistrandoPago(true);
-      const formData = new FormData();
-      formData.append('fecha_pago', registroPagoFecha);
-      for (let i = 0; i < registroPagoFiles.length; i++) {
-        formData.append('archivos', registroPagoFiles[i]);
-      }
-      await api.post(
-        `/solicitudes-pago/${solicitudId}/registrar-pago`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        },
-      );
-      setShowRegistrarPagoModal(false);
-      setShowDetail(false);
-      await loadSolicitudes();
-      window.dispatchEvent(new Event('solicitud-status-changed'));
-    } catch (err) {
-      console.error('Error registering payment:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al registrar pago');
-    } finally {
-      setRegistrandoPago(false);
-    }
-  };
+  const handleRegistrarPago = (solicitudId: number) =>
+    registrarPagoSolicitud({
+      solicitudId,
+      fechaPago: registroPagoFecha,
+      files: registroPagoFiles,
+      setRegistrandoPago,
+      setShowRegistrarPagoModal,
+      setShowDetail,
+      refreshList: loadSolicitudes,
+    });
 
-  const handleRegistrarFactura = async (solicitudId: number) => {
-    if (
-      !registroFacturaFecha ||
-      !registroFacturaFiles ||
-      registroFacturaFiles.length === 0
-    )
-      return;
-    try {
-      setRegistrandoFactura(true);
-      const formData = new FormData();
-      formData.append('fecha_factura', registroFacturaFecha);
-      formData.append('tipo', registroFacturaTipo);
-      if (registroFacturaNumero.trim()) {
-        formData.append('numero_factura', registroFacturaNumero.trim());
-      }
-      for (let i = 0; i < registroFacturaFiles.length; i++) {
-        formData.append('archivos', registroFacturaFiles[i]);
-      }
-      await api.post(
-        `/solicitudes-pago/${solicitudId}/registrar-factura`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        },
-      );
-      setShowRegistrarFacturaModal(false);
-      setShowDetail(false);
-      await loadSolicitudes();
-      window.dispatchEvent(new Event('solicitud-status-changed'));
-    } catch (err) {
-      console.error('Error registering invoice:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al registrar factura');
-    } finally {
-      setRegistrandoFactura(false);
-    }
-  };
+  const handleRegistrarFactura = (solicitudId: number) =>
+    registrarFacturaSolicitud({
+      solicitudId,
+      fechaFactura: registroFacturaFecha,
+      tipo: registroFacturaTipo,
+      numero: registroFacturaNumero,
+      files: registroFacturaFiles,
+      setRegistrandoFactura,
+      setShowRegistrarFacturaModal,
+      setShowDetail,
+      refreshList: loadSolicitudes,
+    });
 
-  const handleRegistrarReembolso = async (solicitudId: number) => {
-    if (!reembolsoFecha || !reembolsoFile) return;
-    try {
-      setRegistrandoReembolso(true);
-      const formData = new FormData();
-      formData.append('fecha_reembolso', reembolsoFecha);
-      formData.append('comprobante', reembolsoFile);
-      await api.post(`/solicitudes-pago/${solicitudId}/reembolso`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setShowReembolsoModal(false);
-      // Reload list and detail to show reembolso data
-      await loadSolicitudes();
-      if (detailSolicitud) await openDetail(detailSolicitud);
-    } catch (err) {
-      console.error('Error registering reembolso:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al registrar reembolso');
-    } finally {
-      setRegistrandoReembolso(false);
-    }
-  };
+  const handleRegistrarReembolso = (solicitudId: number) =>
+    registrarReembolsoSolicitud({
+      solicitudId,
+      fechaReembolso: reembolsoFecha,
+      file: reembolsoFile,
+      setRegistrandoReembolso,
+      setShowReembolsoModal,
+      refreshList: loadSolicitudes,
+      refreshDetail: async () => {
+        if (detailSolicitud) await openDetail(detailSolicitud);
+      },
+    });
 
-  const handleRegistrarDevolucion = async (solicitudId: number) => {
-    if (!devolucionFecha || !devolucionMotivo.trim() || !devolucionFile) return;
-    try {
-      setRegistrandoDevolucion(true);
-      const formData = new FormData();
-      formData.append('fecha_devolucion', devolucionFecha);
-      formData.append('motivo', devolucionMotivo.trim());
-      formData.append('comprobante', devolucionFile);
-      await api.post(`/solicitudes-pago/${solicitudId}/devolucion`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setShowDevolucionModal(false);
-      setShowDetail(false);
-      await loadSolicitudes();
-      window.dispatchEvent(new Event('solicitud-status-changed'));
-    } catch (err) {
-      console.error('Error registering devolucion:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al registrar devolución');
-    } finally {
-      setRegistrandoDevolucion(false);
-    }
-  };
+  const handleRegistrarDevolucion = (solicitudId: number) =>
+    registrarDevolucionSolicitud({
+      solicitudId,
+      fechaDevolucion: devolucionFecha,
+      motivo: devolucionMotivo,
+      file: devolucionFile,
+      setRegistrandoDevolucion,
+      setShowDevolucionModal,
+      setShowDetail,
+      refreshList: loadSolicitudes,
+    });
 
   const handleReenviar = (solicitudId: number) =>
     reenviarSolicitud({
@@ -572,48 +507,21 @@ export default function ProjectSolicitudesPago({
     .filter((s) => s.revisada && s.es_mi_turno)
     .map((s) => s.id);
 
-  const handleConfirmApproval = async () => {
-    if (!bulkPassword.trim()) return;
-    try {
-      setBulkApproving(true);
-      setBulkError(null);
-      if (pendingApprovalId) {
-        // Individual approval
-        await api.post(`/solicitudes-pago/${pendingApprovalId}/aprobar`, {
-          password: bulkPassword,
-        });
-        setShowPasswordModal(false);
-        setBulkPassword('');
-        setPendingApprovalId(null);
-        setShowDetail(false);
-        setSearchTerm('');
-        await loadSolicitudes();
-        window.dispatchEvent(new Event('solicitud-status-changed'));
-      } else if (reviewedIds.length > 0) {
-        // Bulk approval of reviewed solicitudes
-        const response = await api.post('/solicitudes-pago/aprobar-masivo', {
-          ids: reviewedIds,
-          password: bulkPassword,
-        });
-        if (response.data.success) {
-          setShowPasswordModal(false);
-          setBulkPassword('');
-          setBulkSuccessMessage(
-            `${response.data.aprobadas} de ${response.data.total} solicitudes aprobadas`,
-          );
-          setTimeout(() => setBulkSuccessMessage(null), 5000);
-          loadSolicitudes();
-          window.dispatchEvent(new Event('solicitud-status-changed'));
-        }
-      }
-    } catch (err) {
-      console.error('Error approving:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      setBulkError(apiError.response?.data?.message || 'Error al aprobar');
-    } finally {
-      setBulkApproving(false);
-    }
-  };
+  const handleConfirmApproval = () =>
+    confirmApprovalSolicitud({
+      bulkPassword,
+      pendingApprovalId,
+      reviewedIds,
+      setBulkApproving,
+      setBulkError,
+      setShowPasswordModal,
+      setBulkPassword,
+      setPendingApprovalId,
+      setShowDetail,
+      setSearchTerm,
+      setBulkSuccessMessage,
+      refreshList: loadSolicitudes,
+    });
 
   const handleDelete = () =>
     deleteSolicitud({
