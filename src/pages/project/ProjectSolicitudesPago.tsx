@@ -35,6 +35,7 @@ import type {
 import { ALL_ESTADOS } from '../solicitudes/types';
 import { smartDefaultSort } from '../solicitudes/utils/solicitudSort';
 import { SolicitudesTable } from '../solicitudes/components/SolicitudesTable';
+import { SolicitudesPagination } from '../solicitudes/components/SolicitudesPagination';
 import { DeleteSolicitudDialog } from '../solicitudes/dialogs/DeleteSolicitudDialog';
 import { RechazarSolicitudDialog } from '../solicitudes/dialogs/RechazarSolicitudDialog';
 import { BulkApprovalPasswordDialog } from '../solicitudes/dialogs/BulkApprovalPasswordDialog';
@@ -231,10 +232,27 @@ export default function ProjectSolicitudesPago({
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Pagination
+  const PAGE_SIZE_OPTIONS = [25, 50, 100];
+  const [pageSize, setPageSize] = useState<number>(() => {
+    const stored = localStorage.getItem('solicitudes_page_size');
+    const parsed = stored ? parseInt(stored, 10) : NaN;
+    return PAGE_SIZE_OPTIONS.includes(parsed) ? parsed : 25;
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     loadSolicitudes();
     checkApprovers();
   }, [projectId, filterMyApproval]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterMyApproval, filterPinellasPaga, searchTerm, sortState, columnFilters, pageSize]);
+
+  useEffect(() => {
+    localStorage.setItem('solicitudes_page_size', String(pageSize));
+  }, [pageSize]);
 
   const checkApprovers = async () => {
     try {
@@ -311,6 +329,16 @@ export default function ProjectSolicitudesPago({
     if (sortComparator) return sortComparator(a as unknown as Record<string, any>, b as unknown as Record<string, any>);
     return smartDefaultSort(a, b);
   });
+
+  // Pagination calculations
+  const totalItems = filteredSolicitudes.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const paginatedSolicitudes = filteredSolicitudes.slice(startIdx, endIdx);
+  const showingFrom = totalItems === 0 ? 0 : startIdx + 1;
+  const showingTo = Math.min(endIdx, totalItems);
 
   const handleSavePrefijo = async () => {
     if (!prefijoInput.trim()) return;
@@ -706,7 +734,7 @@ export default function ProjectSolicitudesPago({
 
       {/* Table + Mobile cards — extracted to SolicitudesTable */}
       <SolicitudesTable
-        solicitudes={filteredSolicitudes}
+        solicitudes={paginatedSolicitudes}
         showProyectoColumn={false}
         sortState={sortState}
         onSortChange={handleSortChange}
@@ -716,6 +744,17 @@ export default function ProjectSolicitudesPago({
         uniqueProyectos={[]}
         uniqueEstados={uniqueEstados}
         onRowClick={openDetail}
+      />
+      <SolicitudesPagination
+        totalItems={totalItems}
+        showingFrom={showingFrom}
+        showingTo={showingTo}
+        currentPage={safePage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
       />
 
       {/* Bulk Approval Success Banner */}
