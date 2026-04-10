@@ -193,7 +193,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
         );
       };
     }
-  }, [user, currentView]);
+  }, [user]);
 
   // ── Sync switcher when currentView changes to project-{id}-* ──
   useEffect(() => {
@@ -326,7 +326,9 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {projectMenuItems.map((item) => {
+                {projectMenuItems
+                  .filter((item) => item.key !== 'caja-menuda' || hasPermission('caja_menuda'))
+                  .map((item) => {
                   const Icon = item.icon;
                   const view = `project-${selectedProjectId}-${item.key}`;
                   const pendingCount =
@@ -566,12 +568,6 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                 className="w-[--radix-popper-anchor-width]"
                 side="top"
               >
-                <DropdownMenuItem
-                  onClick={() => onNavigate('mi-cuenta')}
-                >
-                  Mi Cuenta
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesion
