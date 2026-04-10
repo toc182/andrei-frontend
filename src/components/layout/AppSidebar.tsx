@@ -47,6 +47,7 @@ import {
   ChevronDown,
   ChevronsUpDown,
   LogOut,
+  User,
   FileText,
   UserCog,
   type LucideIcon,
@@ -258,7 +259,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg">
+                <SidebarMenuButton size="lg" isActive={selectedProjectId !== null} className="focus-visible:ring-0">
                   <span className="flex-1 truncate text-left font-semibold">
                     {selectedProject ? (selectedProject.nombre_corto || selectedProject.nombre) : 'Todos los proyectos'}
                   </span>
@@ -322,9 +323,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
         ) : (
           // Specific project menu
           <SidebarGroup>
-            <SidebarGroupLabel>
-              {selectedProject?.nombre_corto || selectedProject?.nombre || 'Proyecto'}
-            </SidebarGroupLabel>
+            <SidebarGroupLabel>Navegacion</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {projectMenuItems
@@ -559,7 +558,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                       {user?.nombre ?? 'Usuario'}
                     </span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {user?.rol ?? ''}
+                      {user?.email ?? ''}
                     </span>
                   </div>
                   <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
@@ -569,6 +568,11 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                 className="w-[--radix-popper-anchor-width]"
                 side="top"
               >
+                <DropdownMenuItem onClick={() => onNavigate('mi-cuenta')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Mi Cuenta
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesion
