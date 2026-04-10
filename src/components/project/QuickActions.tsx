@@ -14,7 +14,7 @@ import {
   Settings,
   LucideIcon,
 } from 'lucide-react';
-import { useSidebar } from '../layout/AppLayout';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface Action {
   key: string;
@@ -33,7 +33,7 @@ export default function QuickActions({
   projectId,
   onNavigate,
 }: QuickActionsProps) {
-  const { sidebarOpen } = useSidebar();
+  const { open: sidebarOpen } = useSidebar();
   const actions: Action[] = [
     {
       key: 'costos',

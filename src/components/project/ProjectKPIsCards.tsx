@@ -6,7 +6,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useSidebar } from '../layout/AppLayout';
+import { useSidebar } from '@/components/ui/sidebar';
 import type { Project } from '@/types';
 
 const formatCurrency = (amount: number | null | undefined) => {
@@ -46,7 +46,7 @@ interface ProjectKPIsCardsProps {
 }
 
 export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
-  const { sidebarOpen } = useSidebar();
+  const { open: sidebarOpen } = useSidebar();
 
   // Calculate budget metrics
   const presupuesto = project?.monto_total || project?.presupuesto_base || 0;
