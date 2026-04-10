@@ -178,12 +178,30 @@ export function SolicitudPaymentStatusCards({
                   <div>
                     Fecha de reembolso:{' '}
                     {new Date(
-                      reembolso.fecha_reembolso + 'T12:00:00',
+                      reembolso.fecha_reembolso.split('T')[0] + 'T12:00:00',
                     ).toLocaleDateString('es-PA')}
                   </div>
                   <div>Registrado por: {reembolso.registrado_por_nombre}</div>
-                  {reembolso.comprobante_nombre && (
-                    <div>Archivo: {reembolso.comprobante_nombre}</div>
+                  {reembolso.comprobante_url && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const resp = await api.get(
+                            `/solicitudes-pago/${solicitud.id}/reembolso/comprobante`,
+                          );
+                          if (resp.data.success && resp.data.url) {
+                            window.open(resp.data.url, '_blank');
+                          }
+                        } catch {
+                          alert('Error al descargar comprobante');
+                        }
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1" />
+                      {reembolso.comprobante_nombre}
+                    </Button>
                   )}
                 </div>
               </div>
