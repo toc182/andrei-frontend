@@ -59,6 +59,7 @@ import {
 interface Project {
   id: number;
   nombre: string;
+  nombre_corto?: string;
 }
 
 interface AppSidebarProps {
@@ -259,7 +260,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <span className="flex-1 truncate text-left font-semibold">
-                    {selectedProject ? selectedProject.nombre : 'Todos los proyectos'}
+                    {selectedProject ? (selectedProject.nombre_corto || selectedProject.nombre) : 'Todos los proyectos'}
                   </span>
                   <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                 </SidebarMenuButton>
@@ -274,7 +275,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                     key={project.id}
                     onClick={() => handleSelectProject(project.id)}
                   >
-                    {project.nombre}
+                    {project.nombre_corto || project.nombre}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -322,7 +323,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
           // Specific project menu
           <SidebarGroup>
             <SidebarGroupLabel>
-              {selectedProject?.nombre ?? 'Proyecto'}
+              {selectedProject?.nombre_corto || selectedProject?.nombre || 'Proyecto'}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>

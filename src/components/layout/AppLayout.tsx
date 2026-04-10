@@ -7,7 +7,7 @@
 
 import { ReactNode } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import {
   DropdownMenu,
@@ -55,7 +55,7 @@ export function AppLayout({
   return (
     <SidebarProvider>
       <AppSidebar currentView={currentView} onNavigate={onNavigate} />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <SidebarInset>
         {/* Topbar */}
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
           <SidebarTrigger />
@@ -105,10 +105,10 @@ export function AppLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto bg-muted/10 p-6">
+        <div className="flex-1 overflow-auto bg-muted/10 p-6">
           {children}
-        </main>
-      </div>
+        </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 }
