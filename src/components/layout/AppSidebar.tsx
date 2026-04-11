@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 import {
   Home,
+  Building2,
   Banknote,
   ClipboardList,
   Wallet,
@@ -362,6 +363,18 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
           <SidebarGroupLabel>General</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Proyectos */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={currentView === 'projects'}
+                  onClick={() => onNavigate('projects')}
+                  tooltip="Proyectos"
+                >
+                  <Building2 />
+                  <span>Proyectos</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Clientes */}
               <SidebarMenuItem>
                 <SidebarMenuButton
