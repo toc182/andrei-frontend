@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import ProjectInformacion from './ProjectInformacion';
 import ProjectSummary from './ProjectSummary';
 import ProjectCostos from './ProjectCostos';
 import ProjectRequisiciones from './ProjectRequisiciones';
@@ -188,6 +189,20 @@ export default function ProjectDetailLayout({
     if (!project) return null;
 
     switch (subview) {
+      case 'informacion':
+        return (
+          <ProjectInformacion
+            project={project}
+            adendas={projectAdendas}
+            onOpenAdendaForm={() => setShowAdendaForm(true)}
+            onEditAdenda={(adenda) => {
+              setEditingAdenda(adenda);
+              setShowAdendaForm(true);
+            }}
+            onDeleteAdenda={handleDeleteAdenda}
+          />
+        );
+
       case 'resumen':
         return <ProjectSummary project={project} onNavigate={onNavigate} />;
 

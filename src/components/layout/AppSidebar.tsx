@@ -35,6 +35,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Home,
   Building2,
+  Info,
   Banknote,
   ClipboardList,
   Wallet,
@@ -81,6 +82,7 @@ const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
 ];
 
 const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
+  { key: 'informacion', label: 'Información', icon: Info },
   { key: 'resumen', label: 'Resumen', icon: LayoutDashboard },
   { key: 'costos', label: 'Costos', icon: DollarSign },
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
