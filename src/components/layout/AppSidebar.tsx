@@ -82,8 +82,8 @@ const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
 ];
 
 const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
-  { key: 'informacion', label: 'Información', icon: Info },
   { key: 'resumen', label: 'Resumen', icon: LayoutDashboard },
+  { key: 'informacion', label: 'Información', icon: Info },
   { key: 'costos', label: 'Costos', icon: DollarSign },
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
   { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
@@ -360,7 +360,10 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
           </SidebarGroup>
         )}
 
-        {/* ── General Section ── */}
+      </SidebarContent>
+
+      {/* ── General Section (sticky above footer) ── */}
+      <div className="mt-auto border-t">
         <SidebarGroup>
           <SidebarGroupLabel>General</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -512,49 +515,23 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                 </Collapsible>
               )}
 
-              {/* Administracion (collapsible) */}
+              {/* Administracion */}
               {isAdminOrCoAdmin && (
-                <Collapsible
-                  defaultOpen={
-                    currentView === 'usuarios' || currentView === 'permisos'
-                  }
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip="Administracion">
-                        <UserCog />
-                        <span>Administracion</span>
-                        <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'usuarios'}
-                            onClick={() => onNavigate('usuarios')}
-                          >
-                            <span>Usuarios</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'permisos'}
-                            onClick={() => onNavigate('permisos')}
-                          >
-                            <span>Permisos</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={currentView === 'usuarios' || currentView === 'permisos'}
+                    onClick={() => onNavigate('usuarios')}
+                    tooltip="Administracion"
+                  >
+                    <UserCog />
+                    <span>Administracion</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
+      </div>
 
       {/* ── Footer: User Profile ── */}
       <SidebarFooter>

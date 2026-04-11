@@ -25,8 +25,7 @@ import EquiposStatusN from './equipos/EquiposStatusN';
 import AsignacionesEquiposN from './equipos/AsignacionesEquiposN';
 import ProjectDetailLayout from './project/ProjectDetailLayout';
 import RequisicionesGeneral from './RequisicionesGeneral';
-import UsuariosPage from './UsuariosPage';
-import PermisosPage from './PermisosPage';
+import AdministracionPage from './AdministracionPage';
 import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
 import OportunidadesPage from './OportunidadesPage';
 import MiCuentaPage from './MiCuentaPage';
@@ -374,10 +373,10 @@ export default function DashboardNew() {
         return <DocumentFormN documentType="carta-compromiso-verde" />;
 
       case 'usuarios':
-        return isAdminOrCoAdmin ? <UsuariosPage /> : null;
+        return isAdminOrCoAdmin ? <AdministracionPage defaultTab="usuarios" onTabChange={(tab) => setCurrentView(tab === 'permisos' ? 'permisos' : 'usuarios')} /> : null;
 
       case 'permisos':
-        return isAdminOrCoAdmin ? <PermisosPage /> : null;
+        return isAdminOrCoAdmin ? <AdministracionPage defaultTab="permisos" onTabChange={(tab) => setCurrentView(tab === 'permisos' ? 'permisos' : 'usuarios')} /> : null;
 
       case 'mi-cuenta':
         return <MiCuentaPage />;
