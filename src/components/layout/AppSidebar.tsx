@@ -392,127 +392,32 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Equipos (collapsible) */}
+              {/* Equipos */}
               {hasPermission('equipos_ver') && (
-                <Collapsible
-                  defaultOpen={
-                    currentView === 'equipos-informacion' ||
-                    currentView === 'equipos-status' ||
-                    currentView === 'equipos-asignaciones'
-                  }
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip="Equipos">
-                        <Truck />
-                        <span>Equipos</span>
-                        <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'equipos-informacion'}
-                            onClick={() => onNavigate('equipos-informacion')}
-                          >
-                            <span>Informacion de Equipos</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'equipos-status'}
-                            onClick={() => onNavigate('equipos-status')}
-                          >
-                            <span>Status de Equipos</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'equipos-asignaciones'}
-                            onClick={() => onNavigate('equipos-asignaciones')}
-                          >
-                            <span>Asignaciones</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={currentView.startsWith('equipos')}
+                    onClick={() => onNavigate('equipos')}
+                    tooltip="Equipos"
+                  >
+                    <Truck />
+                    <span>Equipos</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               )}
 
-              {/* Documentos (collapsible) */}
+              {/* Documentos */}
               {hasPermission('documentos_acceso') && (
-                <Collapsible
-                  defaultOpen={
-                    currentView === 'documentos' ||
-                    currentView.startsWith('doc-')
-                  }
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip="Documentos">
-                        <FileText />
-                        <span>Documentos</span>
-                        <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'documentos'}
-                            onClick={() => onNavigate('documentos')}
-                          >
-                            <span>Ver Todos</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'doc-acuerdo-consorcio'}
-                            onClick={() => onNavigate('doc-acuerdo-consorcio')}
-                          >
-                            <span>Acuerdo Consorcio</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'doc-carta-adhesion'}
-                            onClick={() => onNavigate('doc-carta-adhesion')}
-                          >
-                            <span>Carta Adhesion</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'doc-medidas-retorsion'}
-                            onClick={() => onNavigate('doc-medidas-retorsion')}
-                          >
-                            <span>Medidas Retorsion</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'doc-no-incapacidad'}
-                            onClick={() => onNavigate('doc-no-incapacidad')}
-                          >
-                            <span>No Incapacidad</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            isActive={currentView === 'doc-pacto-integridad'}
-                            onClick={() => onNavigate('doc-pacto-integridad')}
-                          >
-                            <span>Pacto Integridad</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={currentView === 'documentos' || currentView.startsWith('doc-')}
+                    onClick={() => onNavigate('documentos')}
+                    tooltip="Documentos"
+                  >
+                    <FileText />
+                    <span>Documentos</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               )}
 
               {/* Administracion */}

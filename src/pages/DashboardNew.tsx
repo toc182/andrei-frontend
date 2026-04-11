@@ -18,11 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Building2, Users, Truck, TrendingUp, AlertCircle } from 'lucide-react';
 import ProjectsList from '../components/ProjectsList';
 import ClientesN from './ClientesN';
-import DocumentosHubN from './DocumentosHubN';
-import DocumentFormN from '../components/forms/DocumentFormN';
-import EquiposInformacionN from './equipos/EquiposInformacionN';
-import EquiposStatusN from './equipos/EquiposStatusN';
-import AsignacionesEquiposN from './equipos/AsignacionesEquiposN';
+import DocumentosPage from './DocumentosPage';
+import EquiposPage from './EquiposPage';
 import ProjectDetailLayout from './project/ProjectDetailLayout';
 import RequisicionesGeneral from './RequisicionesGeneral';
 import AdministracionPage from './AdministracionPage';
@@ -341,36 +338,32 @@ export default function DashboardNew() {
 
       case 'equipos':
       case 'equipos-informacion':
-        return <EquiposInformacionN />;
+        return <EquiposPage defaultTab="informacion" onTabChange={(tab) => setCurrentView(`equipos-${tab}`)} />;
 
       case 'equipos-status':
-        return <EquiposStatusN />;
+        return <EquiposPage defaultTab="status" onTabChange={(tab) => setCurrentView(`equipos-${tab}`)} />;
 
       case 'equipos-asignaciones':
-        return <AsignacionesEquiposN />;
+        return <EquiposPage defaultTab="asignaciones" onTabChange={(tab) => setCurrentView(`equipos-${tab}`)} />;
 
       case 'documentos':
-        return (
-          <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
-        );
-
       case 'doc-acuerdo-consorcio':
-        return <DocumentFormN documentType="acuerdo-consorcio" />;
+        return <DocumentosPage defaultTab="acuerdo-consorcio" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'doc-carta-adhesion':
-        return <DocumentFormN documentType="carta-adhesion" />;
+        return <DocumentosPage defaultTab="carta-adhesion" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'doc-medidas-retorsion':
-        return <DocumentFormN documentType="medidas-retorsion" />;
+        return <DocumentosPage defaultTab="medidas-retorsion" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'doc-no-incapacidad':
-        return <DocumentFormN documentType="no-incapacidad" />;
+        return <DocumentosPage defaultTab="no-incapacidad" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'doc-pacto-integridad':
-        return <DocumentFormN documentType="pacto-integridad" />;
+        return <DocumentosPage defaultTab="pacto-integridad" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'doc-carta-compromiso-verde':
-        return <DocumentFormN documentType="carta-compromiso-verde" />;
+        return <DocumentosPage defaultTab="carta-compromiso-verde" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'usuarios':
         return isAdminOrCoAdmin ? <AdministracionPage defaultTab="usuarios" onTabChange={(tab) => setCurrentView(tab === 'permisos' ? 'permisos' : 'usuarios')} /> : null;
