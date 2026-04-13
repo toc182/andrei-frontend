@@ -29,6 +29,29 @@ interface AppLayoutProps {
   pageTitle?: string;
 }
 
+const viewTitles: Record<string, string> = {
+  dashboard: 'Pinellas - Dashboard',
+  projects: 'Pinellas - Proyectos',
+  clientes: 'Pinellas - Clientes',
+  requisiciones: 'Pinellas - Requisiciones',
+  'solicitudes-pago': 'Pinellas - Solicitudes de Pago',
+  'cajas-menudas': 'Pinellas - Cajas Menudas',
+  equipos: 'Pinellas - Equipos',
+  'equipos-informacion': 'Pinellas - Equipos',
+  'equipos-status': 'Pinellas - Equipos',
+  'equipos-asignaciones': 'Pinellas - Equipos',
+  documentos: 'Pinellas - Documentos',
+  usuarios: 'Pinellas - Administración',
+  permisos: 'Pinellas - Administración',
+  'mi-cuenta': 'Pinellas - Mi Cuenta',
+};
+
+function getViewTitle(currentView: string, pageTitle?: string): string {
+  if (pageTitle) return pageTitle;
+  if (currentView.startsWith('doc-')) return 'Pinellas - Documentos';
+  return viewTitles[currentView] || 'Pinellas';
+}
+
 export function AppLayout({
   children,
   currentView,
@@ -46,7 +69,7 @@ export function AppLayout({
           <SidebarTrigger />
           <div className="flex-1">
             <h2 className="text-lg font-semibold truncate">
-              {pageTitle || 'Andrei ERP'}
+              {getViewTitle(currentView, pageTitle)}
             </h2>
           </div>
 
