@@ -17,6 +17,7 @@ export const ESTADO_PRIORITY: Record<string, number> = {
   devolucion: 3,
   facturada: 4,
   reembolsada: 4,
+  transferida: 4,
   rechazada: 5,
 };
 

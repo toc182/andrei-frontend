@@ -41,23 +41,26 @@ export function RegistrarPagoDialog({
   onConfirm,
 }: RegistrarPagoDialogProps) {
   const isReembolso = tipo === 'reembolso';
+  const isApertura = tipo === 'apertura';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>
-            {isReembolso ? 'Registrar Reembolso' : 'Registrar Pago'}
+            {isReembolso ? 'Registrar Reembolso' : isApertura ? 'Registrar Transferencia' : 'Registrar Pago'}
           </DialogTitle>
           <DialogDescription>
             {isReembolso
               ? 'Ingresa la fecha del reembolso y adjunta el comprobante.'
-              : 'Ingresa la fecha de pago y adjunta el comprobante.'}
+              : isApertura
+                ? 'Ingresa la fecha de la transferencia y adjunta el comprobante.'
+                : 'Ingresa la fecha de pago y adjunta el comprobante.'}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4">
           <div>
-            <Label>{isReembolso ? 'Fecha de reembolso' : 'Fecha de pago'}</Label>
+            <Label>{isReembolso ? 'Fecha de reembolso' : isApertura ? 'Fecha de transferencia' : 'Fecha de pago'}</Label>
             <Input
               type="date"
               value={fecha}

@@ -279,12 +279,14 @@ export function SolicitudApprovalSection({
                 <CreditCard className="h-4 w-4 mr-2" />
                 {solicitud.tipo === 'reembolso'
                   ? 'Registrar Reembolso'
-                  : 'Registrar Pago'}
+                  : solicitud.tipo === 'apertura'
+                    ? 'Registrar Transferencia'
+                    : 'Registrar Pago'}
               </Button>
             </div>
           )}
 
-        {solicitud.estado === 'pagada' &&
+        {solicitud.estado === 'pagada' && solicitud.tipo !== 'apertura' &&
           (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
             <div className="pt-2">
               <Button
