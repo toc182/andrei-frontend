@@ -24,7 +24,6 @@ import ProjectDetailLayout from './project/ProjectDetailLayout';
 import RequisicionesGeneral from './RequisicionesGeneral';
 import AdministracionPage from './AdministracionPage';
 import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
-import OportunidadesPage from './OportunidadesPage';
 import MiCuentaPage from './MiCuentaPage';
 import CajasMenudasPage from './CajasMenudasPage';
 import { useAuth } from '../context/AuthContext';
@@ -321,9 +320,6 @@ export default function DashboardNew() {
           <ProjectsList activeTab="proyectos" onNavigate={setCurrentView} />
         );
 
-      case 'oportunidades':
-        return <OportunidadesPage />;
-
       case 'clientes':
         return <ClientesN />;
 
@@ -384,8 +380,6 @@ export default function DashboardNew() {
       currentView={currentView}
       onNavigate={setCurrentView}
       pageTitle={pageTitle ?? undefined}
-      projectContext={projectContext}
-      onShowProjectInfo={() => setShowProjectInfo(true)}
     >
       {renderContent()}
     </AppLayout>
