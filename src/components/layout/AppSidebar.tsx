@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { getInitials } from '../../utils/formatters';
 import logo from '../../assets/logo.png';
 
 import {
@@ -90,14 +91,13 @@ const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getInitials(name?: string): string {
-  if (!name) return 'U';
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+function PendingBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">
+      {count}
+    </span>
+  );
 }
 
 const STORAGE_KEY = 'sidebar_selected_project';
@@ -224,19 +224,10 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
   // Derive active project subview key
   const activeProjectSubview = (() => {
     if (!selectedProjectId || !currentView.startsWith('project-')) return '';
-    const parts = currentView.split('-');
-    return parts.slice(2).join('-');
+    const match = currentView.match(/^project-(\d+)-(.+)$/);
+    if (!match || Number(match[1]) !== selectedProjectId) return '';
+    return match[2];
   })();
-
-  // ── Pending badge helper ──
-  const PendingBadge = ({ count }: { count: number }) => {
-    if (count <= 0) return null;
-    return (
-      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">
-        {count}
-      </span>
-    );
-  };
 
   // ── Determine which "Cajas Menudas" item to show in "Todos" ──
   const showCajasMenudas = hasPermission('caja_menuda');
@@ -415,7 +406,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               {isAdminOrCoAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    isActive={currentView === 'usuarios' || currentView === 'permisos'}
+                    isActive={currentView === 'usuarios' || currentView === 'permisos' || currentView === 'administracion'}
                     onClick={() => onNavigate('usuarios')}
                     tooltip="Administracion"
                   >

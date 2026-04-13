@@ -3,10 +3,21 @@
  * Displays project details and adendas as a full subview page
  */
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
@@ -66,6 +77,8 @@ export default function ProjectInformacion({
   onEditAdenda,
   onDeleteAdenda,
 }: ProjectInformacionProps) {
+  const [deleteAdendaId, setDeleteAdendaId] = useState<number | null>(null);
+
   return (
     <div className="space-y-6">
       {/* Project Details */}
@@ -161,7 +174,7 @@ export default function ProjectInformacion({
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => onDeleteAdenda(adenda.id)}
+                        onClick={() => setDeleteAdendaId(adenda.id)}
                         title="Eliminar adenda"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -209,6 +222,31 @@ export default function ProjectInformacion({
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteAdendaId !== null} onOpenChange={(open) => { if (!open) setDeleteAdendaId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar adenda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La adenda será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteAdendaId !== null) {
+                  onDeleteAdenda(deleteAdendaId);
+                  setDeleteAdendaId(null);
+                }
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

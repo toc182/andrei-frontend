@@ -20,29 +20,14 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
-
-interface ProjectContext {
-  id: number;
-  name: string;
-}
+import { getInitials } from '../../utils/formatters';
 
 interface AppLayoutProps {
   children: ReactNode;
   currentView: string;
   onNavigate: (view: string) => void;
   pageTitle?: string;
-  projectContext?: ProjectContext | null;
 }
-
-const getInitials = (name?: string): string => {
-  if (!name) return 'U';
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-};
 
 export function AppLayout({
   children,

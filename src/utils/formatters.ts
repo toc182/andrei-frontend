@@ -27,3 +27,13 @@ export const formatMoney = (
     minimumFractionDigits: 2,
   }).format(numAmount);
 };
+
+export function getInitials(name?: string): string {
+  if (!name) return 'U';
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
