@@ -710,37 +710,49 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         </Badge>
       </div>
 
-      {/* Missing opening comprobante warning */}
-      {!caja.comprobante_apertura_r2_key && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
-            <span>Esta caja menuda no tiene comprobante de apertura cargado.</span>
-            <div className="flex items-center gap-2">
-              <input
-                ref={aperturaInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={handleUploadApertura}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => aperturaInputRef.current?.click()}
-                disabled={uploadingApertura}
-              >
-                {uploadingApertura ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
-                Subir comprobante
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
+      {/* Apertura solicitud status */}
+      {caja.solicitud_apertura_id ? (
+        caja.solicitud_apertura_estado !== 'transferida' && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Transferencia de apertura pendiente: La solicitud de apertura ({caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.
+            </AlertDescription>
+          </Alert>
+        )
+      ) : (
+        /* Legacy: cajas created before solicitud flow */
+        !caja.comprobante_apertura_r2_key && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
+              <span>Esta caja menuda no tiene comprobante de apertura cargado.</span>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={aperturaInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={handleUploadApertura}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => aperturaInputRef.current?.click()}
+                  disabled={uploadingApertura}
+                >
+                  {uploadingApertura ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  Subir comprobante
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )
       )}
 
       {/* Opening comprobante download button (when present) */}
@@ -843,7 +855,20 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                     <TableCell className="text-right">{formatMonto(h.monto_anterior)}</TableCell>
                     <TableCell className="text-right font-medium">{formatMonto(h.monto_nuevo)}</TableCell>
                     <TableCell>
-                      {h.comprobante_r2_key ? (
+                      {h.solicitud_id ? (
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={
+                              h.solicitud_estado === 'transferida'
+                                ? 'bg-teal-50 text-teal-700 border-teal-300'
+                                : 'bg-yellow-50 text-amber-700 border-amber-300'
+                            }
+                          >
+                            {h.solicitud_numero} — {h.solicitud_estado === 'transferida' ? 'Transferida' : 'Pendiente'}
+                          </Badge>
+                        </div>
+                      ) : h.comprobante_r2_key ? (
                         <Button
                           type="button"
                           variant="outline"

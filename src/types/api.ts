@@ -604,6 +604,9 @@ export interface CajaMenudaDetail extends CajaMenuda {
     created_at: string;
     comprobante_r2_key?: string | null;
     comprobante_nombre?: string | null;
+    solicitud_id?: number | null;
+    solicitud_numero?: string | null;
+    solicitud_estado?: string | null;
   }>;
   reembolsos: Array<{
     id: number;
