@@ -294,7 +294,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
         {selectedProjectId === null ? (
           // "Todos los proyectos" menu
           <SidebarGroup>
-            <SidebarGroupLabel>Navegacion</SidebarGroupLabel>
+
             <SidebarGroupContent>
               <SidebarMenu>
                 {todosMenuItems
@@ -326,7 +326,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
         ) : (
           // Specific project menu
           <SidebarGroup>
-            <SidebarGroupLabel>Navegacion</SidebarGroupLabel>
+
             <SidebarGroupContent>
               <SidebarMenu>
                 {projectMenuItems
@@ -365,7 +365,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
       {/* ── General Section (sticky above footer) ── */}
       <div className="mt-auto border-t">
         <SidebarGroup>
-          <SidebarGroupLabel>General</SidebarGroupLabel>
+          <SidebarGroupLabel>Información de la Empresa</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {/* Proyectos */}
