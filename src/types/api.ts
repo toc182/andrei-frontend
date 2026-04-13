@@ -560,6 +560,10 @@ export interface CajaMenuda {
   comprobante_apertura_nombre?: string | null;
   comprobante_cierre_r2_key?: string | null;
   comprobante_cierre_nombre?: string | null;
+  solicitud_apertura_id?: number | null;
+  solicitud_apertura_estado?: string | null;
+  solicitud_apertura_numero?: string | null;
+  historial_pendiente_transferencia?: boolean;
 }
 
 export interface CajaMenudaGasto {

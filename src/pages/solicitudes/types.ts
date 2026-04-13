@@ -10,9 +10,10 @@ export type EstadoSolicitud =
   | 'pagada'
   | 'facturada'
   | 'devolucion'
-  | 'reembolsada';
+  | 'reembolsada'
+  | 'transferida';
 
-export type TipoSolicitud = 'regular' | 'reembolso';
+export type TipoSolicitud = 'regular' | 'reembolso' | 'apertura';
 
 export interface SolicitudPago {
   id: number;
@@ -98,6 +99,7 @@ export const ESTADO_OPTIONS = [
   { value: 'pagada', label: 'Pagada' },
   { value: 'facturada', label: 'Facturada' },
   { value: 'reembolsada', label: 'Reembolsada' },
+  { value: 'transferida', label: 'Transferida' },
   { value: 'devolucion', label: 'Devolución' },
   { value: 'rechazada', label: 'Rechazada' },
 ];
