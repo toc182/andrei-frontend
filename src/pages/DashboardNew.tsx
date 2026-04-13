@@ -375,9 +375,7 @@ export default function DashboardNew() {
         return <MiCuentaPage />;
 
       default:
-        return (
-          <DocumentosHubN onDocumentClick={(docId) => setCurrentView(docId)} />
-        );
+        return null;
     }
   };
 
