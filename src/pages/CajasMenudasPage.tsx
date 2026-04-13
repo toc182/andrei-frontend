@@ -570,32 +570,38 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 />
               )}
 
-              {/* Comprobante de cierre (required when closing) */}
+              {/* Comprobante de cierre */}
               {editingCaja && watchEstado === 'cerrada' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Comprobante de cierre *</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={comprobanteRef}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="hidden"
-                      onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => comprobanteRef.current?.click()}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
-                    </Button>
+                Number(editingCaja.saldo) === 0 ? (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                    El saldo es cero — se generará automáticamente una constancia de cierre.
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Documento firmado de devolución del saldo
-                  </p>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Comprobante de cierre *</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={comprobanteRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => comprobanteRef.current?.click()}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Documento firmado de devolución del saldo
+                    </p>
+                  </div>
+                )
               )}
 
               <DialogFooter className="gap-2">
