@@ -64,16 +64,26 @@ const estadoBadge = (estado: string) => {
   return <Badge variant="secondary">Cerrada</Badge>;
 };
 
-// Red alert icon shown when a caja is missing its opening comprobante or when
-// one of its historial_monto entries has no comprobante.
 const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
-  const faltaApertura = caja.tiene_comprobante_apertura === false;
+  // For new cajas (with solicitud): check if apertura solicitud is not yet transferred
+  const faltaApertura = caja.solicitud_apertura_id
+    ? caja.solicitud_apertura_estado !== 'transferida'
+    : caja.tiene_comprobante_apertura === false; // Legacy cajas: check comprobante file
   const faltaHistorial = caja.historial_sin_comprobante === true;
-  if (!faltaApertura && !faltaHistorial) return null;
+  const faltaTransferencia = caja.historial_pendiente_transferencia === true;
+
+  if (!faltaApertura && !faltaHistorial && !faltaTransferencia) return null;
 
   const messages: string[] = [];
-  if (faltaApertura) messages.push('No tiene comprobante de apertura cargado.');
+  if (faltaApertura) {
+    messages.push(
+      caja.solicitud_apertura_id
+        ? `Solicitud de apertura ${caja.solicitud_apertura_numero || ''} pendiente de transferencia.`
+        : 'No tiene comprobante de apertura cargado.'
+    );
+  }
   if (faltaHistorial) messages.push('Uno o más cambios de monto no tienen comprobante.');
+  if (faltaTransferencia) messages.push('Uno o más aumentos de monto pendientes de transferencia.');
 
   return (
     <Popover>
@@ -120,8 +130,6 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [selectedCajaId, setSelectedCajaId] = useState<number | null>(null);
   const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
   const comprobanteRef = useRef<HTMLInputElement>(null);
-  const [aperturaFile, setAperturaFile] = useState<File | null>(null);
-  const aperturaRef = useRef<HTMLInputElement>(null);
   const [montoComprobanteFile, setMontoComprobanteFile] = useState<File | null>(null);
   const montoComprobanteRef = useRef<HTMLInputElement>(null);
 
@@ -192,7 +200,6 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       monto_asignado: '',
     });
     setError('');
-    setAperturaFile(null);
     setComprobanteFile(null);
     setMontoComprobanteFile(null);
     setShowFormModal(true);
@@ -209,7 +216,6 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     });
     setError('');
     setComprobanteFile(null);
-    setAperturaFile(null);
     setMontoComprobanteFile(null);
     setShowFormModal(true);
   };
@@ -226,7 +232,6 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         formData.append('responsable_id', data.responsable_id);
         if (data.estado) formData.append('estado', data.estado);
         if (comprobanteFile) formData.append('comprobante_cierre', comprobanteFile);
-        if (aperturaFile) formData.append('comprobante_apertura', aperturaFile);
 
         await api.put(`/cajas-menudas/${editingCaja.id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -245,16 +250,11 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
           });
         }
       } else {
-        // Create with optional opening comprobante → multipart
-        const formData = new FormData();
-        formData.append('proyecto_id', String(Number(data.proyecto_id)));
-        formData.append('responsable_id', String(Number(data.responsable_id)));
-        formData.append('nombre', data.nombre);
-        formData.append('monto_asignado', String(Number(data.monto_asignado)));
-        if (aperturaFile) formData.append('comprobante_apertura', aperturaFile);
-
-        await api.post('/cajas-menudas', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+        await api.post('/cajas-menudas', {
+          proyecto_id: data.proyecto_id,
+          responsable_id: data.responsable_id,
+          nombre: data.nombre,
+          monto_asignado: data.monto_asignado,
         });
       }
 
@@ -508,8 +508,9 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                     </FormControl>
                     {editingCaja && (
                       <p className="text-xs text-muted-foreground">
-                        Si cambias este monto, se registrará en el historial.
-                        Puedes adjuntar un comprobante de la nueva transferencia abajo.
+                        {Number(form.watch('monto_asignado')) > Number(editingCaja.monto_asignado)
+                          ? 'Se creará una solicitud de apertura automática por la diferencia.'
+                          : 'Si cambias este monto, se registrará en el historial.'}
                       </p>
                     )}
                     <FormMessage />
@@ -517,10 +518,11 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 )}
               />
 
-              {/* Comprobante for amount change (only shown when editing AND amount actually changed) */}
-              {editingCaja && form.watch('monto_asignado') !== String(editingCaja.monto_asignado) && (
+              {/* Comprobante for amount change (only shown when editing AND amount decreased) */}
+              {editingCaja && form.watch('monto_asignado') !== String(editingCaja.monto_asignado) &&
+               Number(form.watch('monto_asignado')) < Number(editingCaja.monto_asignado) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Comprobante del nuevo monto</label>
+                  <label className="text-sm font-medium">Comprobante del cambio de monto</label>
                   <div className="flex items-center gap-2">
                     <input
                       ref={montoComprobanteRef}
@@ -539,34 +541,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                       {montoComprobanteFile ? montoComprobanteFile.name : 'Seleccionar archivo'}
                     </Button>
                   </div>
-                </div>
-              )}
-
-              {/* Comprobante de apertura — only when creating, or when editing a caja that doesn't have one yet */}
-              {(!editingCaja || !editingCaja.tiene_comprobante_apertura) && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Comprobante de apertura</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={aperturaRef}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="hidden"
-                      onChange={(e) => setAperturaFile(e.target.files?.[0] || null)}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => aperturaRef.current?.click()}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {aperturaFile ? aperturaFile.name : 'Seleccionar archivo'}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Comprobante de la transferencia inicial de fondos al responsable.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
                 </div>
               )}
 
