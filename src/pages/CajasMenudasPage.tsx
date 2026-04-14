@@ -3,7 +3,7 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
-import { Plus, Pencil, Loader2, Wallet, Upload, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Loader2, Wallet, Upload, AlertCircle, Settings, Minus, Lock } from 'lucide-react';
 import type { CajaMenuda } from '../types/api';
 import CajaMenudaDetail from './CajaMenudaDetail';
 
@@ -29,6 +29,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // --- Zod schema ---
 
@@ -39,7 +46,6 @@ const cajaSchema = z.object({
   monto_asignado: z.string().min(1, 'Monto es obligatorio')
     .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Monto debe ser mayor a 0')
     .refine((v) => { const parts = v.split('.'); return parts.length < 2 || parts[1].length <= 2; }, 'Máximo 2 decimales'),
-  estado: z.enum(['abierta', 'cerrada']).optional(),
 });
 
 type CajaFormData = z.infer<typeof cajaSchema>;
@@ -124,14 +130,26 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
-  const [editingCaja, setEditingCaja] = useState<CajaMenuda | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedCajaId, setSelectedCajaId] = useState<number | null>(null);
+
+  // Action modal states — null means closed, CajaMenuda means open for that caja
+  const [editModalCaja, setEditModalCaja] = useState<CajaMenuda | null>(null);
+  const [subirMontoModalCaja, setSubirMontoModalCaja] = useState<CajaMenuda | null>(null);
+  const [bajarMontoModalCaja, setBajarMontoModalCaja] = useState<CajaMenuda | null>(null);
+  const [cerrarModalCaja, setCerrarModalCaja] = useState<CajaMenuda | null>(null);
+
+  // Edit form
+  const [editNombre, setEditNombre] = useState('');
+  const [editResponsableId, setEditResponsableId] = useState('');
+
+  // Monto form
+  const [nuevoMonto, setNuevoMonto] = useState('');
+
+  // Cerrar/Bajar comprobante
   const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
   const comprobanteRef = useRef<HTMLInputElement>(null);
-  const [montoComprobanteFile, setMontoComprobanteFile] = useState<File | null>(null);
-  const montoComprobanteRef = useRef<HTMLInputElement>(null);
 
   const form: UseFormReturn<CajaFormData> = useForm<CajaFormData>({
     resolver: zodResolver(cajaSchema),
@@ -142,8 +160,6 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       monto_asignado: '',
     },
   });
-
-  const watchEstado = form.watch('estado');
 
   // Load data
   useEffect(() => {
@@ -192,7 +208,6 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
 
   // Handlers
   const handleNew = () => {
-    setEditingCaja(null);
     form.reset({
       proyecto_id: projectId ? String(projectId) : '',
       responsable_id: '',
@@ -200,64 +215,19 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       monto_asignado: '',
     });
     setError('');
-    setComprobanteFile(null);
-    setMontoComprobanteFile(null);
     setShowFormModal(true);
   };
 
-  const handleEdit = (caja: CajaMenuda) => {
-    setEditingCaja(caja);
-    form.reset({
-      proyecto_id: String(caja.proyecto_id),
-      responsable_id: String(caja.responsable_id),
-      nombre: caja.nombre,
-      monto_asignado: String(caja.monto_asignado),
-      estado: caja.estado as 'abierta' | 'cerrada',
-    });
-    setError('');
-    setComprobanteFile(null);
-    setMontoComprobanteFile(null);
-    setShowFormModal(true);
-  };
-
-  const handleSubmit = async (data: CajaFormData) => {
+  const handleCreateSubmit = async (data: CajaFormData) => {
     try {
       setSubmitting(true);
       setError('');
-
-      if (editingCaja) {
-        // Update basic fields + optional comprobantes via PUT /:id
-        const formData = new FormData();
-        formData.append('nombre', data.nombre);
-        formData.append('responsable_id', data.responsable_id);
-        if (data.estado) formData.append('estado', data.estado);
-        if (comprobanteFile) formData.append('comprobante_cierre', comprobanteFile);
-
-        await api.put(`/cajas-menudas/${editingCaja.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-
-        // Separately update monto_asignado if it changed — uses dedicated endpoint
-        // that creates a historial row and accepts an optional comprobante.
-        const montoAntes = Number(editingCaja.monto_asignado);
-        const montoDespues = Number(data.monto_asignado);
-        if (!isNaN(montoDespues) && montoDespues > 0 && montoDespues !== montoAntes) {
-          const montoForm = new FormData();
-          montoForm.append('monto_asignado', String(montoDespues));
-          if (montoComprobanteFile) montoForm.append('comprobante', montoComprobanteFile);
-          await api.put(`/cajas-menudas/${editingCaja.id}/monto`, montoForm, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-        }
-      } else {
-        await api.post('/cajas-menudas', {
-          proyecto_id: data.proyecto_id,
-          responsable_id: data.responsable_id,
-          nombre: data.nombre,
-          monto_asignado: data.monto_asignado,
-        });
-      }
-
+      await api.post('/cajas-menudas', {
+        proyecto_id: data.proyecto_id,
+        responsable_id: data.responsable_id,
+        nombre: data.nombre,
+        monto_asignado: data.monto_asignado,
+      });
       loadCajas(false);
       setShowFormModal(false);
       form.reset();
@@ -269,6 +239,169 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       setSubmitting(false);
     }
   };
+
+  const handleEditSubmit = async () => {
+    if (!editModalCaja) return;
+    try {
+      setSubmitting(true);
+      setError('');
+      const formData = new FormData();
+      formData.append('nombre', editNombre);
+      formData.append('responsable_id', editResponsableId);
+      await api.put(`/cajas-menudas/${editModalCaja.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setEditModalCaja(null);
+      loadCajas();
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setError(apiErr.response?.data?.error || 'Error al actualizar');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubirMontoSubmit = async () => {
+    if (!subirMontoModalCaja) return;
+    const monto = Number(nuevoMonto);
+    if (isNaN(monto) || monto <= Number(subirMontoModalCaja.monto_asignado)) {
+      setError('El monto debe ser mayor al actual');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      setError('');
+      await api.put(`/cajas-menudas/${subirMontoModalCaja.id}/monto`, {
+        monto_asignado: monto,
+      });
+      setSubirMontoModalCaja(null);
+      loadCajas();
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setError(apiErr.response?.data?.error || 'Error al subir monto');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleBajarMontoSubmit = async () => {
+    if (!bajarMontoModalCaja) return;
+    const monto = Number(nuevoMonto);
+    if (isNaN(monto) || monto >= Number(bajarMontoModalCaja.monto_asignado) || monto <= 0) {
+      setError('El monto debe ser menor al actual y mayor que cero');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      setError('');
+      const formData = new FormData();
+      formData.append('monto_asignado', String(monto));
+      if (comprobanteFile) formData.append('comprobante', comprobanteFile);
+      await api.put(`/cajas-menudas/${bajarMontoModalCaja.id}/monto`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setBajarMontoModalCaja(null);
+      setComprobanteFile(null);
+      loadCajas();
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setError(apiErr.response?.data?.error || 'Error al bajar monto');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCerrarSubmit = async () => {
+    if (!cerrarModalCaja) return;
+    const saldo = Number(cerrarModalCaja.saldo);
+    if (saldo > 0 && !comprobanteFile) {
+      setError('Se requiere un comprobante de cierre para cajas con saldo pendiente');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      setError('');
+      const formData = new FormData();
+      formData.append('estado', 'cerrada');
+      if (comprobanteFile) formData.append('comprobante_cierre', comprobanteFile);
+      await api.put(`/cajas-menudas/${cerrarModalCaja.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setCerrarModalCaja(null);
+      setComprobanteFile(null);
+      loadCajas();
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setError(apiErr.response?.data?.error || 'Error al cerrar caja');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Gear dropdown for open cajas
+  const GearDropdown = ({ caja }: { caja: CajaMenuda }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem
+          onClick={() => {
+            setEditNombre(caja.nombre);
+            setEditResponsableId(String(caja.responsable_id));
+            setError('');
+            setEditModalCaja(caja);
+          }}
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          Editar
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-green-600"
+          onClick={() => {
+            setNuevoMonto('');
+            setError('');
+            setSubirMontoModalCaja(caja);
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Subir monto
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-red-600"
+          onClick={() => {
+            setNuevoMonto('');
+            setComprobanteFile(null);
+            setError('');
+            setBajarMontoModalCaja(caja);
+          }}
+        >
+          <Minus className="mr-2 h-4 w-4" />
+          Bajar monto
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={caja.tiene_reembolso_pendiente === true}
+          title={caja.tiene_reembolso_pendiente ? 'Tiene solicitud de reembolso pendiente' : undefined}
+          onClick={() => {
+            setComprobanteFile(null);
+            setError('');
+            setCerrarModalCaja(caja);
+          }}
+        >
+          <Lock className="mr-2 h-4 w-4" />
+          Cerrar caja
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   // Detail view
   if (selectedCajaId) {
@@ -342,7 +475,10 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                       </p>
                       {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
                     </div>
-                    {estadoBadge(caja.estado)}
+                    <div className="flex items-center gap-2">
+                      {estadoBadge(caja.estado)}
+                      {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
+                    </div>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Asignado</span>
@@ -391,16 +527,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                     </TableCell>
                     <TableCell>{estadoBadge(caja.estado)}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(caja);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -410,13 +537,11 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         </>
       )}
 
-      {/* Create/Edit Dialog */}
+      {/* Create Dialog */}
       <Dialog open={showFormModal} onOpenChange={setShowFormModal}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
-              {editingCaja ? 'Editar Caja Menuda' : 'Nueva Caja Menuda'}
-            </DialogTitle>
+            <DialogTitle>Nueva Caja Menuda</DialogTitle>
           </DialogHeader>
 
           {error && (
@@ -426,9 +551,9 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Proyecto (only on create, and only when not inside a project) */}
-              {!editingCaja && !projectId && (
+            <form onSubmit={form.handleSubmit(handleCreateSubmit)} className="space-y-4">
+              {/* Proyecto (only when not inside a project) */}
+              {!projectId && (
                 <FormField
                   control={form.control}
                   name="proyecto_id"
@@ -496,7 +621,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 )}
               />
 
-              {/* Monto asignado — on edit, changing this creates a historial row */}
+              {/* Monto asignado */}
               <FormField
                 control={form.control}
                 name="monto_asignado"
@@ -506,103 +631,10 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                     <FormControl>
                       <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
                     </FormControl>
-                    {editingCaja && (
-                      <p className="text-xs text-muted-foreground">
-                        {Number(form.watch('monto_asignado')) > Number(editingCaja.monto_asignado)
-                          ? 'Se creará una solicitud de apertura automática por la diferencia.'
-                          : 'Si cambias este monto, se registrará en el historial.'}
-                      </p>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* Comprobante for amount change (only shown when editing AND amount decreased) */}
-              {editingCaja && form.watch('monto_asignado') !== String(editingCaja.monto_asignado) &&
-               Number(form.watch('monto_asignado')) < Number(editingCaja.monto_asignado) && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Comprobante del cambio de monto</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={montoComprobanteRef}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="hidden"
-                      onChange={(e) => setMontoComprobanteFile(e.target.files?.[0] || null)}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => montoComprobanteRef.current?.click()}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {montoComprobanteFile ? montoComprobanteFile.name : 'Seleccionar archivo'}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
-                </div>
-              )}
-
-              {/* Estado (only on edit) */}
-              {editingCaja && (
-                <FormField
-                  control={form.control}
-                  name="estado"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="abierta">Abierta</SelectItem>
-                          <SelectItem value="cerrada">Cerrada</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {/* Comprobante de cierre */}
-              {editingCaja && watchEstado === 'cerrada' && (
-                Number(editingCaja.saldo) === 0 ? (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                    El saldo es cero — se generará automáticamente una constancia de cierre.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Comprobante de cierre *</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={comprobanteRef}
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => comprobanteRef.current?.click()}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Documento firmado de devolución del saldo
-                    </p>
-                  </div>
-                )
-              )}
 
               <DialogFooter className="gap-2">
                 <Button
@@ -615,11 +647,254 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 </Button>
                 <Button type="submit" disabled={submitting}>
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingCaja ? 'Actualizar' : 'Crear'}
+                  Crear
                 </Button>
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editModalCaja} onOpenChange={(open) => { if (!open) setEditModalCaja(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Editar Caja Menuda</DialogTitle>
+          </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nombre *</label>
+              <Input
+                value={editNombre}
+                onChange={(e) => setEditNombre(e.target.value)}
+                placeholder="Nombre de la caja"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Responsable *</label>
+              <Select value={editResponsableId} onValueChange={setEditResponsableId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar responsable" />
+                </SelectTrigger>
+                <SelectContent>
+                  {usuarios.map((u) => (
+                    <SelectItem key={u.id} value={String(u.id)}>
+                      {u.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditModalCaja(null)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleEditSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subir Monto Dialog */}
+      <Dialog open={!!subirMontoModalCaja} onOpenChange={(open) => { if (!open) setSubirMontoModalCaja(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Subir Monto Asignado</DialogTitle>
+          </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Monto actual: <span className="font-medium text-foreground">{formatMonto(subirMontoModalCaja?.monto_asignado)}</span>
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nuevo monto *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="0.00"
+                value={nuevoMonto}
+                onChange={(e) => setNuevoMonto(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Debe ser mayor al monto actual. Se creará una solicitud de apertura automática por la diferencia.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSubirMontoModalCaja(null)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSubirMontoSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bajar Monto Dialog */}
+      <Dialog open={!!bajarMontoModalCaja} onOpenChange={(open) => { if (!open) { setBajarMontoModalCaja(null); setComprobanteFile(null); } }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Bajar Monto Asignado</DialogTitle>
+          </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Monto actual: <span className="font-medium text-foreground">{formatMonto(bajarMontoModalCaja?.monto_asignado)}</span>
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nuevo monto *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="0.00"
+                value={nuevoMonto}
+                onChange={(e) => setNuevoMonto(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Debe ser menor al monto actual y mayor que cero.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Comprobante de devolución</label>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={comprobanteRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => comprobanteRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setBajarMontoModalCaja(null); setComprobanteFile(null); }}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleBajarMontoSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cerrar Caja Dialog */}
+      <Dialog open={!!cerrarModalCaja} onOpenChange={(open) => { if (!open) { setCerrarModalCaja(null); setComprobanteFile(null); } }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Cerrar Caja</DialogTitle>
+          </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Caja: <span className="font-medium text-foreground">{cerrarModalCaja?.nombre}</span>
+            </p>
+
+            {Number(cerrarModalCaja?.saldo) === 0 ? (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                El saldo es cero — se generará automáticamente una constancia de cierre.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Saldo pendiente: <span className="font-medium text-foreground">{formatMonto(cerrarModalCaja?.saldo)}</span>
+                </p>
+                <label className="text-sm font-medium">Comprobante de cierre *</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={comprobanteRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => comprobanteRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Documento firmado de devolución del saldo.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setCerrarModalCaja(null); setComprobanteFile(null); }}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleCerrarSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cerrar Caja
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
