@@ -564,6 +564,7 @@ export interface CajaMenuda {
   solicitud_apertura_estado?: string | null;
   solicitud_apertura_numero?: string | null;
   historial_pendiente_transferencia?: boolean;
+  tiene_reembolso_pendiente?: boolean;
 }
 
 export interface CajaMenudaGasto {
