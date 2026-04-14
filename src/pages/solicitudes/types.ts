@@ -99,7 +99,7 @@ export const ESTADO_OPTIONS = [
   { value: 'pagada', label: 'Pagada' },
   { value: 'facturada', label: 'Facturada' },
   { value: 'reembolsada', label: 'Reembolsada' },
-  { value: 'transferida', label: 'Transferida' },
+  { value: 'transferida', label: 'Verificada' },
   { value: 'devolucion', label: 'Devolución' },
   { value: 'rechazada', label: 'Rechazada' },
 ];

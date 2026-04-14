@@ -861,11 +861,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                             variant="outline"
                             className={
                               h.solicitud_estado === 'transferida'
-                                ? 'bg-teal-50 text-teal-700 border-teal-300'
+                                ? 'bg-blue-50 text-blue-700 border-blue-300'
                                 : 'bg-yellow-50 text-amber-700 border-amber-300'
                             }
                           >
-                            {h.solicitud_numero} — {h.solicitud_estado === 'transferida' ? 'Transferida' : 'Pendiente'}
+                            {h.solicitud_numero} — {h.solicitud_estado === 'transferida' ? 'Verificada' : 'Pendiente'}
                           </Badge>
                         </div>
                       ) : h.comprobante_r2_key ? (

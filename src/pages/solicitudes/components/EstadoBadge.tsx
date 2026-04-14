@@ -13,7 +13,6 @@ import {
   CreditCard,
   FileCheck,
   Ban,
-  ArrowRightLeft,
 } from 'lucide-react';
 
 interface BadgeConfig {
@@ -30,7 +29,7 @@ const VARIANTS: Record<string, BadgeConfig> = {
   pagada: { variant: 'default', label: 'Pagada', icon: CreditCard },
   facturada: { variant: 'default', label: 'Facturada', icon: FileCheck },
   reembolsada: { variant: 'default', label: 'Reembolsada', icon: CreditCard },
-  transferida: { variant: 'default', label: 'Transferida', icon: ArrowRightLeft },
+  transferida: { variant: 'default', label: 'Verificada', icon: Check },
   devolucion: { variant: 'outline', label: 'Devolución', icon: Ban },
 };
 
@@ -39,7 +38,7 @@ const COLOR_OVERRIDES: Record<string, string> = {
   pagada: ' bg-green-600 text-white',
   facturada: ' bg-blue-600 text-white',
   reembolsada: ' bg-blue-600 text-white',
-  transferida: ' bg-teal-600 text-white',
+  transferida: ' bg-blue-600 text-white',
   devolucion: ' bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200',
 };
 
