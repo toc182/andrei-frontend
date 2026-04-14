@@ -596,6 +596,7 @@ export interface CajaMenudaAdjunto {
 
 export interface CajaMenudaDetail extends CajaMenuda {
   created_by: number;
+  created_by_nombre?: string;
   total_gastado?: string;
   historial_montos: Array<{
     id: number;

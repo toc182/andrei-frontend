@@ -618,6 +618,22 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     }
   };
 
+  const handleDownloadSolicitudComprobante = async (solicitudId: number) => {
+    try {
+      const response = await api.get(`/solicitudes-pago/${solicitudId}/adjuntos/urls`);
+      if (response.data.success && response.data.adjuntos?.length > 0) {
+        const comprobante = response.data.adjuntos.find(
+          (a: { tipo_adjunto?: string }) => a.tipo_adjunto === 'comprobante'
+        ) || response.data.adjuntos[0];
+        if (comprobante?.url) {
+          window.open(comprobante.url, '_blank');
+        }
+      }
+    } catch (err) {
+      console.error('Error downloading solicitud comprobante:', err);
+    }
+  };
+
   const handleDownload = async (adjunto: CajaMenudaAdjunto) => {
     try {
       const response = await api.get(`/cajas-menudas/${cajaId}/adjuntos/${adjunto.id}/download`);
@@ -833,82 +849,128 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         onChange={handleUploadHistorialComprobante}
       />
 
-      {/* Historial de cambios de monto */}
-      {caja.historial_montos && caja.historial_montos.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Historial de monto asignado</h3>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Cambiado por</TableHead>
-                  <TableHead className="text-right">Monto anterior</TableHead>
-                  <TableHead className="text-right">Monto nuevo</TableHead>
-                  <TableHead>Comprobante</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {caja.historial_montos.map((h) => (
-                  <TableRow key={h.id}>
-                    <TableCell>{formatDate(h.created_at)}</TableCell>
-                    <TableCell>{h.cambiado_por_nombre}</TableCell>
-                    <TableCell className="text-right">{formatMonto(h.monto_anterior)}</TableCell>
-                    <TableCell className="text-right font-medium">{formatMonto(h.monto_nuevo)}</TableCell>
-                    <TableCell>
-                      {h.solicitud_id ? (
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={
-                              h.solicitud_estado === 'transferida'
-                                ? 'bg-blue-50 text-blue-700 border-blue-300'
-                                : 'bg-yellow-50 text-amber-700 border-amber-300'
-                            }
-                          >
-                            {h.solicitud_numero} — {h.solicitud_estado === 'transferida' ? 'Verificada' : 'Pendiente'}
-                          </Badge>
-                        </div>
-                      ) : h.comprobante_r2_key ? (
+      {/* Historial de monto asignado */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Historial de monto asignado</h3>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Cambiado por</TableHead>
+                <TableHead className="text-right">Monto</TableHead>
+                <TableHead>Comprobante</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Synthetic initial row */}
+              <TableRow>
+                <TableCell>{formatDate(caja.created_at)}</TableCell>
+                <TableCell>{caja.created_by_nombre || '—'}</TableCell>
+                <TableCell className="text-right font-medium">
+                  {(() => {
+                    const sorted = [...(caja.historial_montos || [])].sort(
+                      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                    );
+                    const originalMonto = sorted.length > 0 ? sorted[0].monto_anterior : caja.monto_asignado;
+                    return formatMonto(originalMonto);
+                  })()}
+                </TableCell>
+                <TableCell>
+                  {caja.solicitud_apertura_id ? (
+                    caja.solicitud_apertura_estado === 'transferida' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadSolicitudComprobante(caja.solicitud_apertura_id!)}
+                      >
+                        <Download className="mr-2 h-3 w-3" />
+                        Descargar
+                      </Button>
+                    ) : (
+                      <Badge variant="outline" className="bg-yellow-50 text-amber-700 border-amber-300">
+                        {caja.solicitud_apertura_numero} — Pendiente
+                      </Badge>
+                    )
+                  ) : caja.comprobante_apertura_r2_key ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadApertura()}
+                    >
+                      <Download className="mr-2 h-3 w-3" />
+                      Descargar
+                    </Button>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+
+              {/* Historial rows */}
+              {caja.historial_montos?.map((h) => (
+                <TableRow key={h.id}>
+                  <TableCell>{formatDate(h.created_at)}</TableCell>
+                  <TableCell>{h.cambiado_por_nombre}</TableCell>
+                  <TableCell className="text-right font-medium">{formatMonto(h.monto_nuevo)}</TableCell>
+                  <TableCell>
+                    {h.solicitud_id ? (
+                      h.solicitud_estado === 'transferida' ? (
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownloadHistorialComprobante(h.id)}
+                          onClick={() => handleDownloadSolicitudComprobante(h.solicitud_id!)}
                         >
                           <Download className="mr-2 h-3 w-3" />
                           Descargar
                         </Button>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 text-sm text-red-500">
-                            <AlertCircle className="h-3 w-3" />
-                            Sin comprobante
-                          </span>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => triggerHistorialUpload(h.id)}
-                            disabled={uploadingHistorialId === h.id}
-                          >
-                            {uploadingHistorialId === h.id ? (
-                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Upload className="mr-2 h-3 w-3" />
-                            )}
-                            Subir
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                        <Badge variant="outline" className="bg-yellow-50 text-amber-700 border-amber-300">
+                          {h.solicitud_numero} — Pendiente
+                        </Badge>
+                      )
+                    ) : h.comprobante_r2_key ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadHistorialComprobante(h.id)}
+                      >
+                        <Download className="mr-2 h-3 w-3" />
+                        Descargar
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-sm text-red-500">
+                          <AlertCircle className="h-3 w-3" />
+                          Sin comprobante
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => triggerHistorialUpload(h.id)}
+                          disabled={uploadingHistorialId === h.id}
+                        >
+                          {uploadingHistorialId === h.id ? (
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          ) : (
+                            <Upload className="mr-2 h-3 w-3" />
+                          )}
+                          Subir
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
-      )}
+      </div>
 
       {/* Gastos Section */}
       <div className="space-y-4">
