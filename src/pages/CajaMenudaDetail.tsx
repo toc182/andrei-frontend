@@ -5,7 +5,7 @@ import * as z from 'zod';
 import api from '../services/api';
 import type { CajaMenudaDetail as CajaMenudaDetailType, CajaMenudaGasto, CajaMenudaAdjunto } from '../types/api';
 import {
-  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send, AlertCircle,
+  Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send, AlertCircle, FileCheck,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -151,10 +151,6 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       if (response.data.success) {
         const cajaData = response.data.data;
         setCaja(cajaData);
-        // If cerrada, default to latest reembolso instead of "pending"
-        if (cajaData.estado === 'cerrada' && cajaData.reembolsos?.length > 0) {
-          setGastosFilter(String(cajaData.reembolsos[0].id));
-        }
       }
     } catch (err) {
       console.error('Error cargando caja menuda:', err);
@@ -164,9 +160,16 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     }
   };
 
+  useEffect(() => {
+    if (caja?.estado === 'cerrada') {
+      setGastosFilter('cierre');
+    }
+  }, [caja?.estado]);
+
   const loadGastos = async () => {
     try {
-      const filter = gastosFilter === 'pending' ? 'null' : gastosFilter;
+      const filterParam = gastosFilter === 'cierre' ? 'pending' : gastosFilter;
+      const filter = filterParam === 'pending' ? 'null' : filterParam;
       const response = await api.get(`/cajas-menudas/${cajaId}/gastos?solicitud_reembolso_id=${filter}`);
       if (response.data.success) {
         setGastos(response.data.data);
@@ -178,7 +181,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
   const loadAdjuntos = async () => {
     try {
-      const filter = gastosFilter === 'pending' ? 'null' : gastosFilter;
+      const filterParam = gastosFilter === 'cierre' ? 'pending' : gastosFilter;
+      const filter = filterParam === 'pending' ? 'null' : filterParam;
       const response = await api.get(`/cajas-menudas/${cajaId}/adjuntos?solicitud_reembolso_id=${filter}`);
       if (response.data.success) {
         setAdjuntos(response.data.data);
@@ -990,6 +994,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                     Reembolso #{r.numero} — {r.estado}
                   </SelectItem>
                 ))}
+                {caja.estado === 'cerrada' && (
+                  <SelectItem value="cierre">
+                    Cierre — Gastos finales
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -1014,6 +1023,23 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             Solicitud #{selectedReembolso.numero} —
             <Badge variant="outline">{selectedReembolso.estado}</Badge>
             — {formatMonto(selectedReembolso.monto_total)}
+          </div>
+        )}
+
+        {/* Cierre comprobante */}
+        {gastosFilter === 'cierre' && caja.comprobante_cierre_r2_key && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <FileCheck className="h-4 w-4" />
+            <span>Comprobante de cierre:</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadCierre}
+            >
+              <Download className="mr-2 h-3 w-3" />
+              Descargar
+            </Button>
           </div>
         )}
 
