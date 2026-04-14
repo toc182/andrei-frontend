@@ -28,7 +28,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Zod schemas ---
@@ -715,8 +715,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         caja.solicitud_apertura_estado !== 'transferida' && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Transferencia de apertura pendiente</AlertTitle>
             <AlertDescription>
-              Transferencia de apertura pendiente: La solicitud de apertura ({caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.
+              La solicitud de apertura ({caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.
             </AlertDescription>
           </Alert>
         )
