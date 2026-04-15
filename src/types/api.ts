@@ -626,6 +626,12 @@ export type CuentaEstado =
   | 'enviada'
   | 'observaciones'
   | 'aprobada'
+  | 'enviada_institucion'
+  | 'observaciones_institucion'
+  | 'aprobada_institucion'
+  | 'enviada_contraloria'
+  | 'observaciones_contraloria'
+  | 'aprobada_contraloria'
   | 'pagada';
 
 export interface Cuenta {

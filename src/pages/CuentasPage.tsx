@@ -59,19 +59,50 @@ const ESTADO_CONFIG: Record<CuentaEstado, { label: string; className: string }> 
   enviada: { label: 'Enviada', className: 'bg-blue-50 text-blue-700 border-blue-300' },
   observaciones: { label: 'Observaciones', className: 'bg-amber-50 text-amber-700 border-amber-300' },
   aprobada: { label: 'Aprobada', className: 'bg-green-50 text-green-700 border-green-300' },
+  enviada_institucion: { label: 'Enviada a institución', className: 'bg-blue-50 text-blue-700 border-blue-300' },
+  observaciones_institucion: { label: 'Observaciones de institución', className: 'bg-amber-50 text-amber-700 border-amber-300' },
+  aprobada_institucion: { label: 'Aprobada por institución', className: 'bg-teal-50 text-teal-700 border-teal-300' },
+  enviada_contraloria: { label: 'Enviada a Contraloría', className: 'bg-indigo-50 text-indigo-700 border-indigo-300' },
+  observaciones_contraloria: { label: 'Observaciones de Contraloría', className: 'bg-amber-50 text-amber-700 border-amber-300' },
+  aprobada_contraloria: { label: 'Aprobada por Contraloría', className: 'bg-green-50 text-green-700 border-green-300' },
   pagada: { label: 'Pagada', className: 'bg-slate-200 text-slate-800 border-slate-400' },
 };
 
-const TRANSICIONES: Record<CuentaEstado, { to: CuentaEstado; label: string }[]> = {
-  borrador: [{ to: 'enviada', label: 'Enviar al cliente' }],
-  enviada: [
-    { to: 'observaciones', label: 'Registrar observaciones' },
-    { to: 'aprobada', label: 'Marcar aprobada' },
-  ],
-  observaciones: [{ to: 'enviada', label: 'Reenviar al cliente' }],
-  aprobada: [{ to: 'pagada', label: 'Marcar pagada' }],
-  pagada: [],
+type CuentaFlow = 'privado' | 'publico_normal' | 'publico_ipt';
+
+const TRANSICIONES_BY_FLOW: Record<CuentaFlow, Partial<Record<CuentaEstado, { to: CuentaEstado; label: string }[]>>> = {
+  privado: {
+    borrador: [{ to: 'enviada', label: 'Enviar al cliente' }],
+    enviada: [
+      { to: 'observaciones', label: 'Registrar observaciones' },
+      { to: 'aprobada', label: 'Marcar aprobada' },
+    ],
+    observaciones: [{ to: 'enviada', label: 'Reenviar al cliente' }],
+    aprobada: [{ to: 'pagada', label: 'Marcar pagada' }],
+  },
+  publico_normal: {
+    borrador: [{ to: 'enviada_institucion', label: 'Enviar a institución' }],
+    enviada_institucion: [
+      { to: 'observaciones_institucion', label: 'Registrar observaciones de institución' },
+      { to: 'aprobada_institucion', label: 'Marcar aprobada por institución' },
+    ],
+    observaciones_institucion: [{ to: 'enviada_institucion', label: 'Reenviar a institución' }],
+    aprobada_institucion: [{ to: 'enviada_contraloria', label: 'Enviar a Contraloría' }],
+    enviada_contraloria: [
+      { to: 'observaciones_contraloria', label: 'Registrar observaciones de Contraloría' },
+      { to: 'aprobada_contraloria', label: 'Marcar aprobada por Contraloría' },
+    ],
+    observaciones_contraloria: [{ to: 'enviada_contraloria', label: 'Reenviar a Contraloría' }],
+    aprobada_contraloria: [{ to: 'pagada', label: 'Marcar pagada' }],
+  },
+  publico_ipt: {}, // Phase 3
 };
+
+function getFlow(proyectoTipo?: string, tieneIpt?: boolean): CuentaFlow {
+  if (proyectoTipo === 'privado') return 'privado';
+  if (tieneIpt) return 'publico_ipt';
+  return 'publico_normal';
+}
 
 function formatMonto(v: string | number) {
   const n = typeof v === 'string' ? Number(v) : v;
@@ -143,8 +174,9 @@ export default function CuentasPage({ proyectoIdFilter }: CuentasPageProps) {
     load();
   }, [estadoFilter, proyectoFilter, proyectoIdFilter]);
 
+  // Phase 2: privado + publico (non-IPT). IPT comes in Phase 3.
   const filteredProyectos = useMemo(
-    () => proyectos.filter((p) => p.tipo === 'privado'),
+    () => proyectos.filter((p) => p.tipo === 'privado' || (p.tipo === 'publico' && !p.tiene_ipt)),
     [proyectos],
   );
 
@@ -345,7 +377,7 @@ function CreateCuentaDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nueva Cuenta</DialogTitle>
-          <DialogDescription>Solo para proyectos privados en esta versión.</DialogDescription>
+          <DialogDescription>Proyectos privados y públicos sin IPT.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {!defaultProyectoId && (
@@ -510,7 +542,10 @@ function CuentaDetailDialog({
   };
 
   const open = cuentaId !== null;
-  const transitionOptions = cuenta ? TRANSICIONES[cuenta.estado] : [];
+  const flow = cuenta ? getFlow(cuenta.proyecto_tipo, cuenta.proyecto_tiene_ipt) : 'privado';
+  const transitionOptions = cuenta
+    ? TRANSICIONES_BY_FLOW[flow][cuenta.estado] || []
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
