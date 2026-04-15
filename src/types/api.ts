@@ -56,6 +56,7 @@ export interface UserPermissions {
   oportunidades_ver: boolean;
   registrar_pago: boolean;
   caja_menuda: boolean;
+  cuentas: boolean;
 }
 
 export interface User {
@@ -618,4 +619,63 @@ export interface CajaMenudaDetail extends CajaMenuda {
     monto_total: string;
     created_at: string;
   }>;
+}
+
+export type CuentaEstado =
+  | 'borrador'
+  | 'enviada'
+  | 'observaciones'
+  | 'aprobada'
+  | 'pagada';
+
+export interface Cuenta {
+  id: number;
+  proyecto_id: number;
+  proyecto_nombre?: string;
+  proyecto_tipo?: string;
+  proyecto_tiene_ipt?: boolean;
+  numero: number;
+  es_final: boolean;
+  monto_total: string;
+  periodo_inicio: string | null;
+  periodo_fin: string | null;
+  avance_porcentaje: string | null;
+  estado: CuentaEstado;
+  fecha_primera_submision: string | null;
+  fecha_ultima_resubmision: string | null;
+  fecha_pagada: string | null;
+  observaciones_pago: string | null;
+  active: boolean;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CuentaEvento {
+  id: number;
+  cuenta_id: number;
+  tipo: 'transicion' | 'comentario';
+  estado_desde: CuentaEstado | null;
+  estado_hacia: CuentaEstado | null;
+  comentario: string | null;
+  creado_por: number;
+  creado_por_nombre: string;
+  created_at: string;
+}
+
+export interface CuentaAdjunto {
+  id: number;
+  cuenta_id: number;
+  nombre_original: string;
+  r2_key: string;
+  tipo_mime: string;
+  tamano: number;
+  subido_por: number;
+  subido_por_nombre: string;
+  created_at: string;
+}
+
+export interface CuentaDetail extends Cuenta {
+  eventos: CuentaEvento[];
+  adjuntos: CuentaAdjunto[];
 }

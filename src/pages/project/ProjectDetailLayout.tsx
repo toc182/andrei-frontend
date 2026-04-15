@@ -27,6 +27,7 @@ import ProjectBitacora from './ProjectBitacora';
 import ProjectSolicitudesPago from './ProjectSolicitudesPago';
 import ProjectAdendas from './ProjectAdendas';
 import CajasMenudasPage from '../CajasMenudasPage';
+import CuentasPage from '../CuentasPage';
 import AdendaForm from '../../components/forms/AdendaForm';
 import api from '../../services/api';
 import { formatDate } from '../../utils/dateUtils';
@@ -222,6 +223,9 @@ export default function ProjectDetailLayout({
 
       case 'caja-menuda':
         return <CajasMenudasPage key={navKey} projectId={projectId} />;
+
+      case 'cuentas':
+        return <CuentasPage key={navKey} proyectoIdFilter={projectId} />;
 
       case 'tareas':
         return <ProjectTodos projectId={projectId} />;

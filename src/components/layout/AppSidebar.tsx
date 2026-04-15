@@ -43,6 +43,7 @@ import {
   LogOut,
   User,
   FileText,
+  ReceiptText,
   UserCog,
   type LucideIcon,
 } from 'lucide-react';
@@ -71,6 +72,7 @@ const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
   { label: 'Solicitudes de Pago', icon: Banknote, view: 'solicitudes-pago' },
   { label: 'Requisiciones', icon: ClipboardList, view: 'requisiciones' },
   { label: 'Cajas Menudas', icon: Wallet, view: 'cajas-menudas' },
+  { label: 'Cuentas', icon: ReceiptText, view: 'cuentas' },
 ];
 
 const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
@@ -80,6 +82,7 @@ const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
   { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
   { key: 'caja-menuda', label: 'Caja Menuda', icon: Wallet },
+  { key: 'cuentas', label: 'Cuentas', icon: ReceiptText },
   { key: 'tareas', label: 'Tareas', icon: CheckSquare },
   { key: 'bitacora', label: 'Bitacora', icon: BookOpen },
   { key: 'miembros', label: 'Miembros', icon: Users },
@@ -231,6 +234,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
 
   // ── Determine which "Cajas Menudas" item to show in "Todos" ──
   const showCajasMenudas = hasPermission('caja_menuda');
+  const showCuentas = hasPermission('cuentas');
 
   return (
     <Sidebar>
@@ -282,6 +286,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                 {todosMenuItems
                   .filter((item) => {
                     if (item.view === 'cajas-menudas') return showCajasMenudas;
+                    if (item.view === 'cuentas') return showCuentas;
                     return true;
                   })
                   .map((item) => {
@@ -312,7 +317,11 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {projectMenuItems
-                  .filter((item) => item.key !== 'caja-menuda' || hasPermission('caja_menuda'))
+                  .filter((item) => {
+                    if (item.key === 'caja-menuda') return hasPermission('caja_menuda');
+                    if (item.key === 'cuentas') return hasPermission('cuentas');
+                    return true;
+                  })
                   .map((item) => {
                   const Icon = item.icon;
                   const view = `project-${selectedProjectId}-${item.key}`;

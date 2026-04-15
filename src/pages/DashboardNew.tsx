@@ -26,6 +26,7 @@ import AdministracionPage from './AdministracionPage';
 import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
 import MiCuentaPage from './MiCuentaPage';
 import CajasMenudasPage from './CajasMenudasPage';
+import CuentasPage from './CuentasPage';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -331,6 +332,9 @@ export default function DashboardNew() {
 
       case 'cajas-menudas':
         return <CajasMenudasPage key={navKey} />;
+
+      case 'cuentas':
+        return <CuentasPage key={navKey} />;
 
       case 'equipos':
       case 'equipos-informacion':
