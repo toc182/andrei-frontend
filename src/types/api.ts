@@ -681,7 +681,28 @@ export interface CuentaAdjunto {
   created_at: string;
 }
 
+export type IptEstado = 'pendiente' | 'con_observaciones' | 'aprobado';
+
+export interface CuentaIpt {
+  id: number;
+  cuenta_id: number;
+  estado: IptEstado;
+  observaciones_texto: string | null;
+  fecha_firma_ministro: string | null;
+  firma_ministro_por: number | null;
+  firma_ministro_nombre: string | null;
+  fecha_firma_mef: string | null;
+  firma_mef_por: number | null;
+  firma_mef_nombre: string | null;
+  fecha_firma_contralor: string | null;
+  firma_contralor_por: number | null;
+  firma_contralor_nombre: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CuentaDetail extends Cuenta {
   eventos: CuentaEvento[];
   adjuntos: CuentaAdjunto[];
+  ipt: CuentaIpt | null;
 }

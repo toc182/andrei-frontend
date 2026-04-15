@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/services/api';
-import type { Cuenta, CuentaDetail, CuentaEstado } from '@/types/api';
+import type { Cuenta, CuentaDetail, CuentaEstado, CuentaIpt, IptEstado } from '@/types/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -95,11 +95,23 @@ const TRANSICIONES_BY_FLOW: Record<CuentaFlow, Partial<Record<CuentaEstado, { to
     observaciones_contraloria: [{ to: 'enviada_contraloria', label: 'Reenviar a Contraloría' }],
     aprobada_contraloria: [{ to: 'pagada', label: 'Marcar pagada' }],
   },
-  publico_ipt: {}, // Phase 3
+  publico_ipt: {
+    borrador: [{ to: 'enviada_institucion', label: 'Enviar a institución' }],
+    enviada_institucion: [
+      { to: 'observaciones_institucion', label: 'Registrar observaciones de institución' },
+      { to: 'aprobada_institucion', label: 'Marcar aprobada por institución' },
+    ],
+    observaciones_institucion: [{ to: 'enviada_institucion', label: 'Reenviar a institución' }],
+    aprobada_institucion: [
+      { to: 'observaciones_institucion', label: 'Reabrir (observaciones desde IPT)' },
+      { to: 'pagada', label: 'Marcar pagada (requiere IPT aprobado)' },
+    ],
+  },
 };
 
 function getFlow(proyectoTipo?: string, tieneIpt?: boolean): CuentaFlow {
   if (proyectoTipo === 'privado') return 'privado';
+  // 'estado' (government) or legacy 'publico'
   if (tieneIpt) return 'publico_ipt';
   return 'publico_normal';
 }
@@ -151,12 +163,14 @@ export default function CuentasPage({ proyectoIdFilter }: CuentasPageProps) {
   const loadProyectos = async () => {
     try {
       const res = await api.get('/projects');
+      const rows = res.data.proyectos || res.data.data || [];
       setProyectos(
-        (res.data.data || res.data.projects || []).map(
-          (p: { id: number; nombre: string; tipo: string; tiene_ipt?: boolean }) => ({
+        rows.map(
+          (p: { id: number; nombre: string; cliente_tipo?: string; tiene_ipt?: boolean }) => ({
             id: p.id,
             nombre: p.nombre,
-            tipo: p.tipo,
+            // project's "type" derives from its cliente (privado | estado)
+            tipo: p.cliente_tipo || 'privado',
             tiene_ipt: p.tiene_ipt,
           }),
         ),
@@ -174,9 +188,9 @@ export default function CuentasPage({ proyectoIdFilter }: CuentasPageProps) {
     load();
   }, [estadoFilter, proyectoFilter, proyectoIdFilter]);
 
-  // Phase 2: privado + publico (non-IPT). IPT comes in Phase 3.
+  // All supported flows: privado, publico_normal, publico_ipt.
   const filteredProyectos = useMemo(
-    () => proyectos.filter((p) => p.tipo === 'privado' || (p.tipo === 'publico' && !p.tiene_ipt)),
+    () => proyectos.filter((p) => p.tipo === 'privado' || p.tipo === 'estado' || p.tipo === 'publico'),
     [proyectos],
   );
 
@@ -377,7 +391,7 @@ function CreateCuentaDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nueva Cuenta</DialogTitle>
-          <DialogDescription>Proyectos privados y públicos sin IPT.</DialogDescription>
+          <DialogDescription>Para proyectos con IPT se crea automáticamente un registro de IPT asociado.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {!defaultProyectoId && (
@@ -600,6 +614,13 @@ function CuentaDetailDialog({
 
             <Separator />
 
+            {flow === 'publico_ipt' && cuenta.ipt && (
+              <>
+                <IptSection cuentaId={cuenta.id} ipt={cuenta.ipt} onChanged={load} />
+                <Separator />
+              </>
+            )}
+
             {/* Transitions */}
             {transitionOptions.length > 0 && (
               <div className="space-y-2">
@@ -774,5 +795,168 @@ function CuentaDetailDialog({
         </AlertDialog>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// IPT section (inside CuentaDetailDialog for publico_ipt flow)
+// ────────────────────────────────────────────────────────────────────
+
+const IPT_ESTADO_CONFIG: Record<IptEstado, { label: string; className: string }> = {
+  pendiente: { label: 'Pendiente', className: 'bg-slate-100 text-slate-700 border-slate-300' },
+  con_observaciones: { label: 'Con observaciones', className: 'bg-amber-50 text-amber-700 border-amber-300' },
+  aprobado: { label: 'Aprobado', className: 'bg-green-50 text-green-700 border-green-300' },
+};
+
+function IptSection({
+  cuentaId,
+  ipt,
+  onChanged,
+}: {
+  cuentaId: number;
+  ipt: CuentaIpt;
+  onChanged: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [obsText, setObsText] = useState(ipt.observaciones_texto || '');
+
+  const patch = async (payload: Record<string, unknown>) => {
+    setSaving(true);
+    try {
+      await api.patch(`/cuentas/${cuentaId}/ipt`, payload);
+      onChanged();
+    } catch (err) {
+      const e = err as { response?: { data?: { error?: string } } };
+      alert(e.response?.data?.error || 'Error al actualizar IPT');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const allSigned = !!(ipt.fecha_firma_ministro && ipt.fecha_firma_mef && ipt.fecha_firma_contralor);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">IPT</Label>
+        <Badge variant="outline" className={IPT_ESTADO_CONFIG[ipt.estado].className}>
+          {IPT_ESTADO_CONFIG[ipt.estado].label}
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+        <SignatureRow
+          label="Ministro/Director"
+          signed={!!ipt.fecha_firma_ministro}
+          fecha={ipt.fecha_firma_ministro}
+          nombre={ipt.firma_ministro_nombre}
+          onToggle={(v) => patch({ firma_ministro: v })}
+          disabled={saving}
+        />
+        <SignatureRow
+          label="MEF"
+          signed={!!ipt.fecha_firma_mef}
+          fecha={ipt.fecha_firma_mef}
+          nombre={ipt.firma_mef_nombre}
+          onToggle={(v) => patch({ firma_mef: v })}
+          disabled={saving}
+        />
+        <SignatureRow
+          label="Contralor"
+          signed={!!ipt.fecha_firma_contralor}
+          fecha={ipt.fecha_firma_contralor}
+          nombre={ipt.firma_contralor_nombre}
+          onToggle={(v) => patch({ firma_contralor: v })}
+          disabled={saving}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Observaciones</Label>
+        <Textarea
+          rows={2}
+          value={obsText}
+          onChange={(e) => setObsText(e.target.value)}
+          placeholder="Feedback de Contraloría o MEF relayed via institución…"
+        />
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => patch({ observaciones_texto: obsText })}
+            disabled={saving}
+          >
+            Guardar observaciones
+          </Button>
+          {ipt.estado !== 'con_observaciones' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => patch({ estado: 'con_observaciones' })}
+              disabled={saving}
+            >
+              Marcar con observaciones
+            </Button>
+          )}
+          {ipt.estado !== 'pendiente' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => patch({ estado: 'pendiente' })}
+              disabled={saving}
+            >
+              Marcar pendiente
+            </Button>
+          )}
+          {ipt.estado !== 'aprobado' && (
+            <Button
+              size="sm"
+              onClick={() => patch({ estado: 'aprobado' })}
+              disabled={saving || !allSigned}
+              title={allSigned ? '' : 'Requiere las 3 firmas'}
+            >
+              Marcar aprobado
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignatureRow({
+  label,
+  signed,
+  fecha,
+  nombre,
+  onToggle,
+  disabled,
+}: {
+  label: string;
+  signed: boolean;
+  fecha: string | null;
+  nombre: string | null;
+  onToggle: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="border rounded p-2 space-y-1">
+      <div className="font-medium">{label}</div>
+      {signed ? (
+        <>
+          <div className="text-xs text-muted-foreground">
+            {fecha ? new Date(fecha).toLocaleDateString('es-PA') : ''}
+            {nombre ? ` · ${nombre}` : ''}
+          </div>
+          <Button size="sm" variant="outline" onClick={() => onToggle(false)} disabled={disabled}>
+            Quitar firma
+          </Button>
+        </>
+      ) : (
+        <Button size="sm" variant="outline" onClick={() => onToggle(true)} disabled={disabled}>
+          Registrar firma
+        </Button>
+      )}
+    </div>
   );
 }
