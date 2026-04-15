@@ -36,6 +36,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // --- Zod schema ---
 
@@ -387,18 +393,37 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
           Bajar monto
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={caja.tiene_reembolso_pendiente === true}
-          title={caja.tiene_reembolso_pendiente ? 'Tiene solicitud de reembolso pendiente' : undefined}
-          onClick={() => {
-            setComprobanteFile(null);
-            setError('');
-            setCerrarModalCaja(caja);
-          }}
-        >
-          <Lock className="mr-2 h-4 w-4" />
-          Cerrar caja
-        </DropdownMenuItem>
+        {caja.tiene_reembolso_pendiente ? (
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <DropdownMenuItem
+                    disabled
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Lock className="mr-2 h-4 w-4" />
+                    Cerrar caja
+                  </DropdownMenuItem>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                Tiene solicitud de reembolso pendiente
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <DropdownMenuItem
+            onClick={() => {
+              setComprobanteFile(null);
+              setError('');
+              setCerrarModalCaja(caja);
+            }}
+          >
+            <Lock className="mr-2 h-4 w-4" />
+            Cerrar caja
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
