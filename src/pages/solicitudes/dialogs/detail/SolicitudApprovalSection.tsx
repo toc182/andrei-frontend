@@ -299,7 +299,7 @@ export function SolicitudApprovalSection({
             </div>
           )}
 
-        {solicitud.estado === 'rechazada' && canManage && (
+        {solicitud.estado === 'rechazada' && canManage && solicitud.tipo !== 'apertura' && (
           <div className="pt-2">
             <Button
               variant="outline"

@@ -609,6 +609,7 @@ export interface CajaMenudaDetail extends CajaMenuda {
     solicitud_id?: number | null;
     solicitud_numero?: string | null;
     solicitud_estado?: string | null;
+    estado?: 'activa' | 'rechazada';
   }>;
   reembolsos: Array<{
     id: number;

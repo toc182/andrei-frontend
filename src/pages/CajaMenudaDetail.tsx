@@ -732,12 +732,19 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
       {/* Apertura solicitud status */}
       {caja.solicitud_apertura_id ? (
-        caja.solicitud_apertura_estado !== 'transferida' && (
+        caja.solicitud_apertura_estado !== 'transferida' &&
+        !(caja.solicitud_apertura_estado === 'rechazada' && Number(caja.monto_asignado) > 0) && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Transferencia de apertura pendiente</AlertTitle>
+            <AlertTitle>
+              {caja.solicitud_apertura_estado === 'rechazada'
+                ? 'Transferencia de apertura rechazada'
+                : 'Transferencia de apertura pendiente'}
+            </AlertTitle>
             <AlertDescription>
-              La solicitud de apertura ({caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.
+              {caja.solicitud_apertura_estado === 'rechazada'
+                ? `La solicitud de apertura (${caja.solicitud_apertura_numero}) fue rechazada. El monto asignado se ajustó a 0.`
+                : `La solicitud de apertura (${caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.`}
             </AlertDescription>
           </Alert>
         )
@@ -1107,6 +1114,10 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                         <Download className="mr-2 h-3 w-3" />
                         Descargar
                       </Button>
+                    ) : caja.solicitud_apertura_estado === 'rechazada' ? (
+                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                        {caja.solicitud_apertura_numero} — Rechazada
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="bg-yellow-50 text-amber-700 border-amber-300">
                         {caja.solicitud_apertura_numero} — Pendiente
@@ -1146,6 +1157,10 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                           <Download className="mr-2 h-3 w-3" />
                           Descargar
                         </Button>
+                      ) : h.estado === 'rechazada' || h.solicitud_estado === 'rechazada' ? (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                          {h.solicitud_numero} — Rechazada
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-yellow-50 text-amber-700 border-amber-300">
                           {h.solicitud_numero} — Pendiente
