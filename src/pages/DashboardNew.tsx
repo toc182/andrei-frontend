@@ -26,7 +26,7 @@ import AdministracionPage from './AdministracionPage';
 import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
 import MiCuentaPage from './MiCuentaPage';
 import CajasMenudasPage from './CajasMenudasPage';
-import CuentasPage from './CuentasPage';
+import CuentasGeneralPage from './cuentas/CuentasGeneralPage';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -334,7 +334,12 @@ export default function DashboardNew() {
         return <CajasMenudasPage key={navKey} />;
 
       case 'cuentas':
-        return <CuentasPage key={navKey} />;
+        return (
+          <CuentasGeneralPage
+            key={navKey}
+            onNavigateToProject={(projectId) => setCurrentView(`project-${projectId}-cuentas`)}
+          />
+        );
 
       case 'equipos':
       case 'equipos-informacion':

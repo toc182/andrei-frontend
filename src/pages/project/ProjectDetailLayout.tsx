@@ -27,7 +27,8 @@ import ProjectBitacora from './ProjectBitacora';
 import ProjectSolicitudesPago from './ProjectSolicitudesPago';
 import ProjectAdendas from './ProjectAdendas';
 import CajasMenudasPage from '../CajasMenudasPage';
-import CuentasPage from '../CuentasPage';
+import CuentasProjectView from '../cuentas/CuentasProjectView';
+import CuentaDetailPage from '../cuentas/CuentaDetailPage';
 import AdendaForm from '../../components/forms/AdendaForm';
 import api from '../../services/api';
 import { formatDate } from '../../utils/dateUtils';
@@ -189,6 +190,20 @@ export default function ProjectDetailLayout({
   const renderSubview = () => {
     if (!project) return null;
 
+    // Handle cuenta detail: subview = "cuenta-{id}"
+    if (subview.startsWith('cuenta-')) {
+      const cuentaId = parseInt(subview.replace('cuenta-', ''), 10);
+      if (!isNaN(cuentaId)) {
+        return (
+          <CuentaDetailPage
+            cuentaId={cuentaId}
+            projectName={project.nombre}
+            onBack={() => onNavigate(`project-${projectId}-cuentas`)}
+          />
+        );
+      }
+    }
+
     switch (subview) {
       case 'informacion':
         return (
@@ -225,7 +240,13 @@ export default function ProjectDetailLayout({
         return <CajasMenudasPage key={navKey} projectId={projectId} />;
 
       case 'cuentas':
-        return <CuentasPage key={navKey} proyectoIdFilter={projectId} />;
+        return (
+          <CuentasProjectView
+            key={navKey}
+            projectId={projectId}
+            onCuentaClick={(cuentaId) => onNavigate(`project-${projectId}-cuenta-${cuentaId}`)}
+          />
+        );
 
       case 'tareas':
         return <ProjectTodos projectId={projectId} />;
