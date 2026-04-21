@@ -4,6 +4,7 @@ import LoginN from './pages/LoginN';
 import DashboardNew from './pages/DashboardNew';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import VerificacionPublica from './pages/VerificacionPublica';
+import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
 
 // Componente principal que decide qué mostrar
@@ -46,6 +47,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <div className="App">
         <AppContent />
+        <Toaster />
       </div>
     </AuthProvider>
   );

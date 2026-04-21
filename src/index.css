@@ -1,54 +1,111 @@
 /* ===================================================================
    ANDREI PROJECT - TAILWIND 4.x + SHADCN/UI
+   Pinellas ERP Design System — see FRONTEND_CONVENTIONS.md
    ================================================================ */
 
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap');
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
-/* === SHADCN COLOR THEME === */
+/* === BRAND PALETTE + SHADCN THEME === */
 @theme {
-  /* Radius */
   --radius: 0.5rem;
 
-  /* Colors - Light Mode */
-  --color-background: oklch(100% 0 0);
-  --color-foreground: oklch(14.5% 0 0);
+  /* Fonts */
+  --font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-body:    'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-card: oklch(100% 0 0);
-  --color-card-foreground: oklch(14.5% 0 0);
+  /* Brand — named tokens (use these in JSX) */
+  --color-navy:    oklch(33.4% 0.062 254);   /* #1F375F — Pinellas Navy */
+  --color-teal:    oklch(49.1% 0.091 183);   /* #0F766E — Engineering Teal */
+  --color-ink:     oklch(21.3% 0.034 265);   /* #0F172A */
 
-  --color-popover: oklch(100% 0 0);
-  --color-popover-foreground: oklch(14.5% 0 0);
+  /* Slate scale */
+  --color-slate-700: oklch(37.2% 0.031 259); /* #334155 */
+  --color-slate-500: oklch(55.1% 0.031 254); /* #64748B */
+  --color-slate-300: oklch(86.9% 0.019 247); /* #CBD5E1 */
+  --color-slate-100: oklch(95.4% 0.009 247); /* #F1F5F9 */
+  --color-slate-50:  oklch(97.6% 0.006 247); /* #F8FAFC */
 
-  /* Primary - Pinellas Blue #2c3e50 */
-  --color-primary: oklch(31% 0.025 235);
-  --color-primary-foreground: oklch(98.5% 0 0);
+  /* Semantic — named tokens */
+  --color-success: oklch(47.8% 0.130 150);   /* #0F7B3A */
+  --color-warning: oklch(50.1% 0.134 56);    /* #B45309 */
+  --color-error:   oklch(48.5% 0.204 27);    /* #B91C1C */
+  --color-info:    oklch(47.4% 0.132 240);   /* #0369A1 */
 
-  --color-secondary: oklch(97% 0 0);
-  --color-secondary-foreground: oklch(20.5% 0 0);
+  /* shadcn surface tokens — mapped to brand palette */
+  --color-background:       oklch(97.6% 0.006 247);   /* canvas = Slate 50 */
+  --color-foreground:       oklch(21.3% 0.034 265);   /* Ink */
+  --color-card:             oklch(100% 0 0);          /* cards = white */
+  --color-card-foreground:  oklch(21.3% 0.034 265);
+  --color-popover:          oklch(100% 0 0);
+  --color-popover-foreground: oklch(21.3% 0.034 265);
 
-  --color-muted: oklch(97% 0 0);
-  --color-muted-foreground: oklch(55.6% 0 0);
+  --color-primary:          oklch(33.4% 0.062 254);   /* Navy */
+  --color-primary-foreground: oklch(100% 0 0);
+  --color-secondary:        oklch(97.6% 0.006 247);   /* Slate 50 */
+  --color-secondary-foreground: oklch(37.2% 0.031 259);
+  --color-muted:            oklch(97.6% 0.006 247);
+  --color-muted-foreground: oklch(55.1% 0.031 254);   /* Slate 500 */
+  --color-accent:           oklch(49.1% 0.091 183);   /* Teal */
+  --color-accent-foreground: oklch(100% 0 0);
 
-  --color-accent: oklch(97% 0 0);
-  --color-accent-foreground: oklch(20.5% 0 0);
+  --color-destructive:        oklch(48.5% 0.204 27);  /* Error */
+  --color-destructive-foreground: oklch(100% 0 0);
 
-  /* Destructive - Red */
-  --color-destructive: oklch(57.7% 0.245 27.325);
-  --color-destructive-foreground: oklch(98.5% 0 0);
-
-  --color-border: oklch(92.2% 0 0);
-  --color-input: oklch(92.2% 0 0);
-  --color-ring: oklch(70.8% 0 0);
+  --color-border:  oklch(86.9% 0.019 247);            /* Slate 300 */
+  --color-input:   oklch(86.9% 0.019 247);
+  --color-ring:    oklch(33.4% 0.062 254);            /* Navy focus ring */
 }
 
+/* === DARK MODE CONTENT OVERRIDE === */
+.dark {
+  /* Dark canvas: deep blue-black, not pure gray */
+  --color-background:       oklch(16.2% 0.024 258);
+  --color-foreground:       oklch(95.4% 0.009 247);
+  --color-card:             oklch(20.1% 0.026 258);
+  --color-card-foreground:  oklch(95.4% 0.009 247);
+  --color-popover:          oklch(20.1% 0.026 258);
+  --color-popover-foreground: oklch(95.4% 0.009 247);
+
+  /* Brand lifts for legibility on dark */
+  --color-primary:          oklch(64.5% 0.084 254);
+  --color-primary-foreground: oklch(16.2% 0.024 258);
+  --color-secondary:        oklch(26.1% 0.028 258);
+  --color-secondary-foreground: oklch(90.0% 0.015 247);
+  --color-muted:            oklch(26.1% 0.028 258);
+  --color-muted-foreground: oklch(68.5% 0.025 254);
+  --color-accent:           oklch(60.2% 0.104 183);
+  --color-accent-foreground: oklch(100% 0 0);
+  --color-destructive:      oklch(58.0% 0.180 27);
+  --color-destructive-foreground: oklch(100% 0 0);
+
+  --color-border: oklch(30.5% 0.026 258);
+  --color-input:  oklch(30.5% 0.026 258);
+  --color-ring:   oklch(64.5% 0.084 254);
+
+  /* Semantic lifts — used with /10 tints for badge backgrounds */
+  --color-success: oklch(68.0% 0.150 150);
+  --color-warning: oklch(72.0% 0.140 56);
+  --color-error:   oklch(65.0% 0.210 27);
+  --color-info:    oklch(68.0% 0.130 240);
+}
+
+/* === BASE LAYER === */
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body;
+  }
+  h1, h2 {
+    @apply font-heading;
+  }
+  .tabular-nums, td.num, .stat-value {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Hide scrollbar but maintain functionality */
@@ -61,26 +118,27 @@
   }
 }
 
+/* === SIDEBAR THEME (Dark Ink) === */
 :root {
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: oklch(95% 0.01 235);
-  --sidebar-accent-foreground: oklch(25% 0.025 235);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar: oklch(21.3% 0.034 265);                     /* Ink */
+  --sidebar-foreground: oklch(86.9% 0.019 247);          /* Slate 300 */
+  --sidebar-primary: oklch(33.4% 0.062 254);             /* Navy */
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  --sidebar-accent: oklch(25.0% 0.030 265);              /* subtle white overlay */
+  --sidebar-accent-foreground: oklch(100% 0 0);
+  --sidebar-border: oklch(25.0% 0.030 265);
+  --sidebar-ring: oklch(33.4% 0.062 254);
 }
 
 .dark {
-  --sidebar: hsl(240 5.9% 10%);
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar: oklch(16.2% 0.024 258);
+  --sidebar-foreground: oklch(86.9% 0.019 247);
+  --sidebar-primary: oklch(64.5% 0.084 254);
+  --sidebar-primary-foreground: oklch(16.2% 0.024 258);
+  --sidebar-accent: oklch(26.1% 0.028 258);
+  --sidebar-accent-foreground: oklch(90.0% 0.015 247);
+  --sidebar-border: oklch(30.5% 0.026 258);
+  --sidebar-ring: oklch(64.5% 0.084 254);
 }
 
 @theme inline {
