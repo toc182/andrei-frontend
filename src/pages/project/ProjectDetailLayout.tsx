@@ -245,6 +245,7 @@ export default function ProjectDetailLayout({
             key={navKey}
             projectId={projectId}
             onCuentaClick={(cuentaId) => onNavigate(`project-${projectId}-cuenta-${cuentaId}`)}
+            onNavigateToGeneral={() => onNavigate('cuentas')}
           />
         );
 

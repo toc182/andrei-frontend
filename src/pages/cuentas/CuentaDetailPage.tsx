@@ -102,7 +102,7 @@ export default function CuentaDetailPage({ cuentaId, projectName, onBack }: Prop
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Monto</div>
-              <div className="font-mono font-medium">{formatMonto(cuenta.monto_total)}</div>
+              <div className="font-medium">{formatMonto(cuenta.monto_total)}</div>
             </div>
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Periodo inicio</div>

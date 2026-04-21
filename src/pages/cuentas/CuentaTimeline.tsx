@@ -12,6 +12,7 @@ interface Props {
 }
 
 const TYPE_STYLES: Record<string, { dot: string; badge: string; badgeBg: string; label: string }> = {
+  creacion: { dot: 'border-teal-500', badge: 'text-teal-700', badgeBg: 'bg-teal-50', label: 'Inicio' },
   transicion: { dot: 'border-blue-500', badge: 'text-blue-700', badgeBg: 'bg-blue-50', label: 'Estado' },
   comentario: { dot: 'border-gray-400', badge: 'text-slate-600', badgeBg: 'bg-slate-50', label: 'Actualización' },
   edicion: { dot: 'border-amber-500', badge: 'text-amber-700', badgeBg: 'bg-amber-50', label: 'Edición' },
@@ -46,15 +47,17 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
     <div>
       {/* Timeline */}
       <div className="relative pl-6">
-        {/* Vertical line */}
-        <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border" />
-
-        {eventos.map((ev) => {
+        {eventos.map((ev, i) => {
           const style = TYPE_STYLES[ev.tipo] || TYPE_STYLES.comentario;
+          const isLast = i === eventos.length - 1;
           return (
             <div key={ev.id} className="relative pb-5 last:pb-0">
               {/* Dot */}
               <div className={`absolute -left-6 top-1 w-4 h-4 rounded-full border-2 bg-white ${style.dot}`} />
+              {/* Connector line to next event */}
+              {!isLast && (
+                <div className="absolute -left-[17px] top-5 -bottom-1 w-0.5 bg-border" />
+              )}
 
               {/* Meta */}
               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -84,8 +87,7 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
       </div>
 
       {/* Add update */}
-      <div className="relative pl-6 mt-4">
-        <div className="absolute -left-6 top-2 w-4 h-4 rounded-full border-2 border-dashed border-border bg-white" />
+      <div className="mt-4">
         <div className="flex gap-2">
           <Textarea
             value={text}
