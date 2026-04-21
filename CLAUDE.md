@@ -62,8 +62,8 @@ Use --color-primary, --color-muted, --color-border etc. as defined there.
 ## shadcn/ui components
 
 Use existing components from src/components/ui/ — do not reinstall or overwrite.
-Installed: alert-dialog, alert, avatar, badge, button, card, checkbox, command,
-data-table, dialog, dropdown-menu, form, input, label, popover, radio-group,
+Installed: alert-dialog, alert, avatar, badge, button, card, checkbox,
+dialog, dropdown-menu, form, input, label, popover, radio-group,
 scroll-area, select, separator, sheet, skeleton, switch, table, textarea.
 
 Always use AlertDialog (not window.confirm) for destructive action confirmations:
