@@ -2,14 +2,7 @@
 // Lifted out of SolicitudesPagoGeneral.tsx and ProjectSolicitudesPago.tsx
 // during the refactor of issue #26.
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,44 +33,14 @@ export function RegistrarDevolucionDialog({
   onConfirm,
 }: RegistrarDevolucionDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Registrar Devolución</DialogTitle>
-          <DialogDescription>
-            Registra la devolución total del proveedor.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div>
-            <Label>Fecha de devolución *</Label>
-            <Input
-              type="date"
-              value={fecha}
-              onChange={(e) => onFechaChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label>Motivo *</Label>
-            <textarea
-              value={motivo}
-              onChange={(e) => onMotivoChange(e.target.value)}
-              placeholder="Describe el motivo de la devolución..."
-              className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
-            />
-          </div>
-          <div>
-            <Label>Comprobante de devolución *</Label>
-            <Input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-              className="mt-1"
-            />
-          </div>
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="confirm"
+      title="Registrar Devolución"
+      description="Registra la devolución total del proveedor."
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -92,8 +55,38 @@ export function RegistrarDevolucionDialog({
           >
             {loading ? 'Registrando...' : 'Confirmar Devolución'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <Label>Fecha de devolución *</Label>
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => onFechaChange(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>Motivo *</Label>
+          <textarea
+            value={motivo}
+            onChange={(e) => onMotivoChange(e.target.value)}
+            placeholder="Describe el motivo de la devolución..."
+            className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
+          />
+        </div>
+        <div>
+          <Label>Comprobante de devolución *</Label>
+          <Input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+            className="mt-1"
+          />
+        </div>
+      </div>
+    </AppDialog>
   );
 }

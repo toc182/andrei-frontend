@@ -4,15 +4,9 @@
 //
 // Lifted out of SolicitudesPagoGeneral.tsx during the refactor of issue #26.
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert as ShellAlert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -20,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle } from 'lucide-react';
 import type { ProjectOption } from '../types';
 
 interface ProjectSelectorDialogProps {
@@ -45,54 +38,52 @@ export function ProjectSelectorDialog({
   onNavigateToMiembros,
 }: ProjectSelectorDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Seleccionar Proyecto</DialogTitle>
-          <DialogDescription>
-            Selecciona el proyecto para la nueva solicitud de pago
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-3">
-          <Select
-            onValueChange={onProjectSelected}
-            disabled={checkingApprovers}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  checkingApprovers
-                    ? 'Verificando...'
-                    : 'Selecciona un proyecto'
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {proyectos.map((p) => (
-                <SelectItem key={p.id} value={p.id.toString()}>
-                  {p.nombre_corto || p.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectorNoApprovers && selectedProjectId && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs flex items-center gap-2">
-                Este proyecto no tiene aprobadores configurados. Configure los
-                aprobadores en la seccion Miembros del proyecto.
-                <Button
-                  variant="link"
-                  className="h-auto p-0 text-xs"
-                  onClick={() => onNavigateToMiembros(selectedProjectId)}
-                >
-                  Ir a Miembros
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="confirm"
+      title="Seleccionar Proyecto"
+      description="Selecciona el proyecto para la nueva solicitud de pago"
+    >
+      <div className="space-y-3">
+        <Select
+          onValueChange={onProjectSelected}
+          disabled={checkingApprovers}
+        >
+          <SelectTrigger>
+            <SelectValue
+              placeholder={
+                checkingApprovers
+                  ? 'Verificando...'
+                  : 'Selecciona un proyecto'
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {proyectos.map((p) => (
+              <SelectItem key={p.id} value={p.id.toString()}>
+                {p.nombre_corto || p.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectorNoApprovers && selectedProjectId && (
+          <ShellAlert
+            variant="warning"
+            title="Este proyecto no tiene aprobadores configurados."
+            description="Configure los aprobadores en la seccion Miembros del proyecto."
+            actions={
+              <Button
+                variant="link"
+                className="h-auto p-0 text-xs"
+                onClick={() => onNavigateToMiembros(selectedProjectId)}
+              >
+                Ir a Miembros
+              </Button>
+            }
+          />
+        )}
+      </div>
+    </AppDialog>
   );
 }

@@ -4,14 +4,7 @@
 // Lifted out of SolicitudesPagoGeneral.tsx and ProjectSolicitudesPago.tsx
 // during the refactor of issue #26.
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,43 +36,33 @@ export function RegistrarPagoDialog({
   const isReembolso = tipo === 'reembolso';
   const isApertura = tipo === 'apertura';
 
+  const title = isReembolso
+    ? 'Registrar Reembolso'
+    : isApertura
+      ? 'Registrar Transferencia'
+      : 'Registrar Pago';
+
+  const description = isReembolso
+    ? 'Ingresa la fecha del reembolso y adjunta el comprobante.'
+    : isApertura
+      ? 'Ingresa la fecha de la transferencia y adjunta el comprobante.'
+      : 'Ingresa la fecha de pago y adjunta el comprobante.';
+
+  const fechaLabel = isReembolso
+    ? 'Fecha de reembolso'
+    : isApertura
+      ? 'Fecha de transferencia'
+      : 'Fecha de pago';
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isReembolso ? 'Registrar Reembolso' : isApertura ? 'Registrar Transferencia' : 'Registrar Pago'}
-          </DialogTitle>
-          <DialogDescription>
-            {isReembolso
-              ? 'Ingresa la fecha del reembolso y adjunta el comprobante.'
-              : isApertura
-                ? 'Ingresa la fecha de la transferencia y adjunta el comprobante.'
-                : 'Ingresa la fecha de pago y adjunta el comprobante.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div>
-            <Label>{isReembolso ? 'Fecha de reembolso' : isApertura ? 'Fecha de transferencia' : 'Fecha de pago'}</Label>
-            <Input
-              type="date"
-              value={fecha}
-              onChange={(e) => onFechaChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label>Comprobante(s)</Label>
-            <Input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              multiple
-              onChange={(e) => onFilesChange(e.target.files)}
-              className="mt-1"
-            />
-          </div>
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="confirm"
+      title={title}
+      description={description}
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -97,8 +80,30 @@ export function RegistrarPagoDialog({
                 ? 'Confirmar Reembolso'
                 : 'Confirmar Pago'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <Label>{fechaLabel}</Label>
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => onFechaChange(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>Comprobante(s)</Label>
+          <Input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            multiple
+            onChange={(e) => onFilesChange(e.target.files)}
+            className="mt-1"
+          />
+        </div>
+      </div>
+    </AppDialog>
   );
 }

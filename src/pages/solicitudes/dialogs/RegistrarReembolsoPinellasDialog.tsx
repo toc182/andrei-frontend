@@ -3,14 +3,7 @@
 // Lifted out of SolicitudesPagoGeneral.tsx and ProjectSolicitudesPago.tsx
 // during the refactor of issue #26.
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,35 +30,14 @@ export function RegistrarReembolsoPinellasDialog({
   onConfirm,
 }: RegistrarReembolsoPinellasDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Registrar Reembolso</DialogTitle>
-          <DialogDescription>
-            Registra el comprobante del reembolso a Pinellas.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div>
-            <Label>Fecha de reembolso *</Label>
-            <Input
-              type="date"
-              value={fecha}
-              onChange={(e) => onFechaChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label>Comprobante *</Label>
-            <Input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-              className="mt-1"
-            />
-          </div>
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="confirm"
+      title="Registrar Reembolso"
+      description="Registra el comprobante del reembolso a Pinellas."
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -79,8 +51,29 @@ export function RegistrarReembolsoPinellasDialog({
           >
             {loading ? 'Registrando...' : 'Confirmar Reembolso'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <Label>Fecha de reembolso *</Label>
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => onFechaChange(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>Comprobante *</Label>
+          <Input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+            className="mt-1"
+          />
+        </div>
+      </div>
+    </AppDialog>
   );
 }

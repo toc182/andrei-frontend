@@ -8,7 +8,7 @@
 // The Requisición field is NOT rendered — see issue #39 for the cleanup
 // decision about requisicion-solicitud integration.
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AdjuntosPreview from '../../../components/AdjuntosPreview';
@@ -151,111 +151,115 @@ export function SolicitudDetailDialog({
   onOpenDeleteDialog,
 }: SolicitudDetailDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <SolicitudDetailHeader
-          solicitud={solicitud}
-          aprobaciones={aprobaciones}
-          isAdmin={isAdmin}
-          isAdminOrCoAdmin={isAdminOrCoAdmin}
-          canManage={canManage}
-          canManageSolicitud={canManageSolicitud}
-          hasPermission={hasPermission}
-          onDownloadPDF={onDownloadPDF}
-          onOpenCorreccion={onOpenCorreccion}
-          onOpenDevolucionForm={onOpenDevolucionForm}
-          onEditSolicitud={onEditSolicitud}
-          onRequestEditConfirmation={onRequestEditConfirmation}
-        />
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="detail"
+      title="Detalle de Solicitud"
+      description={solicitud?.numero}
+    >
+      <SolicitudDetailHeader
+        solicitud={solicitud}
+        aprobaciones={aprobaciones}
+        isAdmin={isAdmin}
+        isAdminOrCoAdmin={isAdminOrCoAdmin}
+        canManage={canManage}
+        canManageSolicitud={canManageSolicitud}
+        hasPermission={hasPermission}
+        onDownloadPDF={onDownloadPDF}
+        onOpenCorreccion={onOpenCorreccion}
+        onOpenDevolucionForm={onOpenDevolucionForm}
+        onEditSolicitud={onEditSolicitud}
+        onRequestEditConfirmation={onRequestEditConfirmation}
+      />
 
-        {solicitud?.urgente && (
-          <Badge variant="destructive" className="text-xs w-fit">
-            Urgente
-          </Badge>
-        )}
+      {solicitud?.urgente && (
+        <Badge variant="destructive" className="text-xs w-fit mt-2">
+          Urgente
+        </Badge>
+      )}
 
-        {solicitud && (
-          <div className="space-y-4">
-            {/* Basic info */}
-            <SolicitudBasicInfoSection
-              solicitud={solicitud}
-              showProyectoField={showProyectoField}
-            />
+      {solicitud && (
+        <div className="space-y-4 mt-2">
+          {/* Basic info */}
+          <SolicitudBasicInfoSection
+            solicitud={solicitud}
+            showProyectoField={showProyectoField}
+          />
 
-            {/* Items + Totals */}
-            <SolicitudItemsAndTotals
-              solicitud={solicitud}
-              items={items}
-              ajustes={ajustes}
-            />
+          {/* Items + Totals */}
+          <SolicitudItemsAndTotals
+            solicitud={solicitud}
+            items={items}
+            ajustes={ajustes}
+          />
 
-            {/* Bank data */}
-            <SolicitudBankDataCard solicitud={solicitud} />
+          {/* Bank data */}
+          <SolicitudBankDataCard solicitud={solicitud} />
 
-            {/* Adjuntos */}
-            <AdjuntosPreview
-              adjuntos={adjuntos}
-              solicitudPagoId={solicitud.id}
-              onUpload={onUploadAdjuntos}
-              onDelete={onDeleteAdjunto}
-              uploading={uploadingFiles}
-            />
+          {/* Adjuntos */}
+          <AdjuntosPreview
+            adjuntos={adjuntos}
+            solicitudPagoId={solicitud.id}
+            onUpload={onUploadAdjuntos}
+            onDelete={onDeleteAdjunto}
+            uploading={uploadingFiles}
+          />
 
-            {/* Payment status cards — Comprobante de Pago, Factura,
-                Devolución, Comprobante de Reembolso */}
-            <SolicitudPaymentStatusCards
-              solicitud={solicitud}
-              comprobante={comprobante}
-              factura={factura}
-              devolucion={devolucion}
-              reembolso={reembolso}
-              isAdminOrCoAdmin={isAdminOrCoAdmin}
-              hasPermission={hasPermission}
-              onOpenRegistrarReembolsoPinellasDialog={
-                onOpenRegistrarReembolsoPinellasDialog
-              }
-            />
+          {/* Payment status cards — Comprobante de Pago, Factura,
+              Devolución, Comprobante de Reembolso */}
+          <SolicitudPaymentStatusCards
+            solicitud={solicitud}
+            comprobante={comprobante}
+            factura={factura}
+            devolucion={devolucion}
+            reembolso={reembolso}
+            isAdminOrCoAdmin={isAdminOrCoAdmin}
+            hasPermission={hasPermission}
+            onOpenRegistrarReembolsoPinellasDialog={
+              onOpenRegistrarReembolsoPinellasDialog
+            }
+          />
 
-            {/* Historial de Correcciones */}
-            <SolicitudCorreccionesHistory correcciones={correcciones} />
+          {/* Historial de Correcciones */}
+          <SolicitudCorreccionesHistory correcciones={correcciones} />
 
-            {/* Approval section */}
-            <SolicitudApprovalSection
-              solicitud={solicitud}
-              aprobaciones={aprobaciones}
-              aprobadores={aprobadores}
-              reembolso={reembolso}
-              revisada={revisada}
-              togglingRevisada={togglingRevisada}
-              resubmitting={resubmitting}
-              currentUserId={currentUserId}
-              isAdminOrCoAdmin={isAdminOrCoAdmin}
-              canManage={canManage}
-              hasPermission={hasPermission}
-              onPinellasPagaChange={onPinellasPagaChange}
-              onToggleRevisada={onToggleRevisada}
-              onAprobar={onAprobar}
-              onOpenRejectDialog={onOpenRejectDialog}
-              onOpenRegistrarPagoDialog={onOpenRegistrarPagoDialog}
-              onOpenRegistrarFacturaDialog={onOpenRegistrarFacturaDialog}
-              onReenviar={onReenviar}
-            />
+          {/* Approval section */}
+          <SolicitudApprovalSection
+            solicitud={solicitud}
+            aprobaciones={aprobaciones}
+            aprobadores={aprobadores}
+            reembolso={reembolso}
+            revisada={revisada}
+            togglingRevisada={togglingRevisada}
+            resubmitting={resubmitting}
+            currentUserId={currentUserId}
+            isAdminOrCoAdmin={isAdminOrCoAdmin}
+            canManage={canManage}
+            hasPermission={hasPermission}
+            onPinellasPagaChange={onPinellasPagaChange}
+            onToggleRevisada={onToggleRevisada}
+            onAprobar={onAprobar}
+            onOpenRejectDialog={onOpenRejectDialog}
+            onOpenRegistrarPagoDialog={onOpenRegistrarPagoDialog}
+            onOpenRegistrarFacturaDialog={onOpenRegistrarFacturaDialog}
+            onReenviar={onReenviar}
+          />
 
-            {/* Delete */}
-            {puedeEliminar && (
-              <div className="pt-4 border-t">
-                <Button
-                  variant="outline"
-                  className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
-                  onClick={() => onOpenDeleteDialog(solicitud.id)}
-                >
-                  Eliminar Solicitud
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          {/* Delete */}
+          {puedeEliminar && (
+            <div className="pt-4 border-t">
+              <Button
+                variant="outline"
+                className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
+                onClick={() => onOpenDeleteDialog(solicitud.id)}
+              >
+                Eliminar Solicitud
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </AppDialog>
   );
 }

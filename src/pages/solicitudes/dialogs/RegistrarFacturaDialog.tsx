@@ -3,14 +3,7 @@
 // during the refactor of issue #26.
 
 import { useId } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,75 +41,14 @@ export function RegistrarFacturaDialog({
   const idPrefix = useId();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Registrar Factura o Recibo</DialogTitle>
-          <DialogDescription>
-            Ingresa los datos del documento del proveedor.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div>
-            <Label>Tipo de documento *</Label>
-            <RadioGroup
-              value={tipo}
-              onValueChange={(v) => onTipoChange(v as 'factura' | 'recibo')}
-              className="flex gap-4 mt-1"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="factura" id={`${idPrefix}-factura`} />
-                <Label
-                  htmlFor={`${idPrefix}-factura`}
-                  className="font-normal cursor-pointer"
-                >
-                  Factura
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="recibo" id={`${idPrefix}-recibo`} />
-                <Label
-                  htmlFor={`${idPrefix}-recibo`}
-                  className="font-normal cursor-pointer"
-                >
-                  Recibo
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <div>
-            <Label>Fecha *</Label>
-            <Input
-              type="date"
-              value={fecha}
-              onChange={(e) => onFechaChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          {tipo === 'factura' && (
-            <div>
-              <Label>Número de factura</Label>
-              <Input
-                type="text"
-                value={numero}
-                onChange={(e) => onNumeroChange(e.target.value)}
-                placeholder="Opcional"
-                className="mt-1"
-              />
-            </div>
-          )}
-          <div>
-            <Label>Archivo(s) *</Label>
-            <Input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              multiple
-              onChange={(e) => onFilesChange(e.target.files)}
-              className="mt-1"
-            />
-          </div>
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="confirm"
+      title="Registrar Factura o Recibo"
+      description="Ingresa los datos del documento del proveedor."
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -130,8 +62,69 @@ export function RegistrarFacturaDialog({
           >
             {loading ? 'Registrando...' : 'Confirmar Factura'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <Label>Tipo de documento *</Label>
+          <RadioGroup
+            value={tipo}
+            onValueChange={(v) => onTipoChange(v as 'factura' | 'recibo')}
+            className="flex gap-4 mt-1"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="factura" id={`${idPrefix}-factura`} />
+              <Label
+                htmlFor={`${idPrefix}-factura`}
+                className="font-normal cursor-pointer"
+              >
+                Factura
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="recibo" id={`${idPrefix}-recibo`} />
+              <Label
+                htmlFor={`${idPrefix}-recibo`}
+                className="font-normal cursor-pointer"
+              >
+                Recibo
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+        <div>
+          <Label>Fecha *</Label>
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => onFechaChange(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        {tipo === 'factura' && (
+          <div>
+            <Label>Número de factura</Label>
+            <Input
+              type="text"
+              value={numero}
+              onChange={(e) => onNumeroChange(e.target.value)}
+              placeholder="Opcional"
+              className="mt-1"
+            />
+          </div>
+        )}
+        <div>
+          <Label>Archivo(s) *</Label>
+          <Input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            multiple
+            onChange={(e) => onFilesChange(e.target.files)}
+            className="mt-1"
+          />
+        </div>
+      </div>
+    </AppDialog>
   );
 }

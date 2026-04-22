@@ -5,14 +5,7 @@
 // The warning text changes when an admin is deleting a non-pendiente
 // solicitud (admins can delete in any state).
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import type { SolicitudPago } from '../types';
 
@@ -36,18 +29,19 @@ export function DeleteSolicitudDialog({
   const showAdminOverrideWarning =
     isAdmin && solicitud && solicitud.estado !== 'pendiente';
 
+  const description = showAdminOverrideWarning
+    ? `Esta solicitud está marcada como ${solicitud!.estado.toUpperCase()}. ¿Está seguro que desea eliminarla? Esta acción no se puede deshacer.`
+    : '¿Está seguro que desea eliminar esta solicitud? Esta acción no se puede deshacer.';
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>Eliminar Solicitud</DialogTitle>
-          <DialogDescription>
-            {showAdminOverrideWarning
-              ? `Esta solicitud está marcada como ${solicitud!.estado.toUpperCase()}. ¿Está seguro que desea eliminarla? Esta acción no se puede deshacer.`
-              : '¿Está seguro que desea eliminar esta solicitud? Esta acción no se puede deshacer.'}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0">
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="confirm"
+      title="Eliminar Solicitud"
+      description={description}
+      footer={
+        <>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -62,8 +56,8 @@ export function DeleteSolicitudDialog({
           >
             {loading ? 'Eliminando...' : 'Si, Eliminar'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    />
   );
 }

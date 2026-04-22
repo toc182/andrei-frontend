@@ -1,16 +1,12 @@
-// Header row (inside DialogHeader) of SolicitudDetailDialog.
+// Action buttons row for SolicitudDetailDialog.
 // Lifted out of SolicitudDetailDialog.tsx during phase 9 of the issue
 // #26 refactor.
 //
-// Renders the "Detalle de Solicitud" title alongside the contextual
-// action buttons: Download PDF, the Settings dropdown (Corregir /
-// Registrar Devolución), and the Editar Solicitud button.
+// Renders the contextual action buttons: Download PDF, the Settings dropdown
+// (Corregir / Registrar Devolución), and the Editar Solicitud button.
+// The dialog title and solicitud number are provided by AppDialog — this
+// component only handles the button row.
 
-import {
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -50,72 +46,65 @@ export function SolicitudDetailHeader({
   onEditSolicitud,
   onRequestEditConfirmation,
 }: SolicitudDetailHeaderProps) {
+  if (!solicitud) return null;
+
   return (
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2">
-        Detalle de Solicitud
-        {solicitud && (
+    <div className="flex items-center gap-2 flex-wrap">
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 text-xs"
+        onClick={() => onDownloadPDF(solicitud.id)}
+      >
+        <Download className="h-3.5 w-3.5 mr-1" />
+        Descargar PDF
+      </Button>
+      {(solicitud.estado === 'pagada' || solicitud.estado === 'facturada') &&
+        (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isAdmin &&
+                (solicitud.estado === 'pagada' ||
+                  solicitud.estado === 'facturada') && (
+                  <DropdownMenuItem onClick={onOpenCorreccion}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Corregir solicitud
+                  </DropdownMenuItem>
+                )}
+              <DropdownMenuItem onClick={onOpenDevolucionForm}>
+                <Undo2 className="h-4 w-4 mr-2" />
+                Registrar Devolución
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      {canManage &&
+        solicitud.estado === 'pendiente' &&
+        canManageSolicitud(solicitud) && (
           <Button
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => onDownloadPDF(solicitud.id)}
+            onClick={() => {
+              const aprobadas = aprobaciones.filter(
+                (a) => a.accion === 'aprobado',
+              ).length;
+              if (aprobadas > 0) {
+                onRequestEditConfirmation(solicitud);
+                return;
+              }
+              onEditSolicitud(solicitud);
+            }}
           >
-            <Download className="h-3.5 w-3.5 mr-1" />
-            Descargar PDF
+            <Pencil className="h-3.5 w-3.5 mr-1" />
+            Editar Solicitud
           </Button>
         )}
-        {solicitud &&
-          (solicitud.estado === 'pagada' ||
-            solicitud.estado === 'facturada') &&
-          (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 w-7 p-0">
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isAdmin &&
-                  (solicitud.estado === 'pagada' ||
-                    solicitud.estado === 'facturada') && (
-                    <DropdownMenuItem onClick={onOpenCorreccion}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Corregir solicitud
-                    </DropdownMenuItem>
-                  )}
-                <DropdownMenuItem onClick={onOpenDevolucionForm}>
-                  <Undo2 className="h-4 w-4 mr-2" />
-                  Registrar Devolución
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        {canManage &&
-          solicitud &&
-          solicitud.estado === 'pendiente' &&
-          canManageSolicitud(solicitud) && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                const aprobadas = aprobaciones.filter(
-                  (a) => a.accion === 'aprobado',
-                ).length;
-                if (aprobadas > 0) {
-                  onRequestEditConfirmation(solicitud);
-                  return;
-                }
-                onEditSolicitud(solicitud);
-              }}
-            >
-              <Pencil className="h-3.5 w-3.5 mr-1" />
-              Editar Solicitud
-            </Button>
-          )}
-      </DialogTitle>
-      <DialogDescription>{solicitud?.numero}</DialogDescription>
-    </DialogHeader>
+    </div>
   );
 }
