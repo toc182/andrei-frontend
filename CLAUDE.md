@@ -3,6 +3,37 @@
 React 19 + TypeScript + Vite. Port 5173 (dev).
 Deployed to Vercel. Auto-deploy on push to main.
 
+## Design system
+
+Visual and structural conventions for this frontend are defined in
+`FRONTEND_CONVENTIONS.md` at the project root. Every page, component,
+and style decision must follow that file. Specifically:
+
+- Colors come from the named brand tokens (`navy`, `teal`, `success`,
+  `warning`, `error`, `info`) and the shadcn semantic tokens
+  (`primary`, `muted-foreground`, `border`, etc.). Never use arbitrary
+  Tailwind defaults like `blue-600` or `gray-500`.
+- Every list page uses the table-in-card pattern (section 10).
+- Every page uses `<PageHeader>` (section 6) — never a custom heading.
+- Every section H2 uses `<SectionHeader>` with the 2px Navy left border
+  (section 7).
+- Stat grids use `<StatCard>` with 4px accent left-border (section 9).
+- Dialogs use `<AppDialog>` with a width from the documented scale
+  (section 11).
+- Alerts use the Option C left-accent pattern (section 15) via the
+  custom `<Alert>` component. Toasts via Sonner, bottom-right, 4s.
+- Full-page states (404, 403, session expired, app crash) use the
+  shared `<FullPageState>` shell (section 17).
+- Numeric cells always use `tabular-nums`.
+- Inline `style={{}}` is allowed only for dynamic CSS values that
+  cannot be expressed as Tailwind classes (e.g., `width: ${percent}%`
+  on progress bars). All other inline styles are forbidden.
+
+When in doubt, read `FRONTEND_CONVENTIONS.md`. If the conventions file
+disagrees with existing code, the conventions file wins and the code
+gets fixed. When adding a genuinely new pattern, add it to the
+conventions file in the same PR.
+
 ## Structure
 
 src/

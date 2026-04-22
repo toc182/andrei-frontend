@@ -5,6 +5,7 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { AppLayout } from '../components/layout/AppLayout';
+import { AppErrorBoundary } from '@/components/shell/AppErrorBoundary';
 import {
   Card,
   CardContent,
@@ -390,7 +391,9 @@ export default function DashboardNew() {
       onNavigate={setCurrentView}
       pageTitle={pageTitle ?? undefined}
     >
-      {renderContent()}
+      <AppErrorBoundary>
+        {renderContent()}
+      </AppErrorBoundary>
     </AppLayout>
   );
 }

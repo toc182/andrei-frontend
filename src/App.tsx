@@ -5,6 +5,7 @@ import DashboardNew from './pages/DashboardNew';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import VerificacionPublica from './pages/VerificacionPublica';
 import { Toaster } from '@/components/ui/sonner';
+import { AppErrorBoundary } from '@/components/shell/AppErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
 // Componente principal que decide qué mostrar
@@ -44,12 +45,14 @@ const App: React.FC = () => {
   }
 
   return (
-    <AuthProvider>
-      <div className="App">
-        <AppContent />
-        <Toaster />
-      </div>
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <div className="App">
+          <AppContent />
+          <Toaster />
+        </div>
+      </AuthProvider>
+    </AppErrorBoundary>
   );
 };
 

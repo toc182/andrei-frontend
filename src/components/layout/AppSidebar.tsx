@@ -97,7 +97,7 @@ const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
 function PendingBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-none text-white">
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-error px-1.5 text-[10px] font-semibold leading-none text-white">
       {count}
     </span>
   );
