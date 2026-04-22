@@ -8,7 +8,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Alert } from '@/components/shell/Alert';
 import { Card, CardContent } from '@/components/ui/card';
 import api from '../../services/api';
 import CostSummaryCards from '../../components/project/CostSummaryCards';
@@ -42,6 +46,7 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
   const [showExpenseForm, setShowExpenseForm] = useState<boolean>(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showBudgetConfig, setShowBudgetConfig] = useState<boolean>(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     loadDashboard();
@@ -95,17 +100,20 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
     }
   };
 
-  const handleExpenseDelete = async (expenseId: number) => {
-    if (!confirm('¿Está seguro de eliminar este gasto?')) {
-      return;
-    }
+  const handleExpenseDelete = (expenseId: number) => {
+    setExpenseToDelete(expenseId);
+  };
 
+  const confirmExpenseDelete = async () => {
+    if (!expenseToDelete) return;
     try {
-      await api.delete(`/costs/projects/${projectId}/expenses/${expenseId}`);
+      await api.delete(`/costs/projects/${projectId}/expenses/${expenseToDelete}`);
       await loadDashboard();
     } catch (err) {
       console.error('Error deleting expense:', err);
-      alert('Error al eliminar el gasto');
+      setError('Error al eliminar el gasto');
+    } finally {
+      setExpenseToDelete(null);
     }
   };
 
@@ -124,12 +132,8 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
     );
   }
 
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+  if (error && !dashboard) {
+    return <Alert variant="error" title={error} />;
   }
 
   if (!dashboard) {
@@ -213,6 +217,20 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
         onClose={() => setShowBudgetConfig(false)}
         onSave={loadDashboard}
       />
+
+      {/* Delete Expense Confirmation */}
+      <AlertDialog open={expenseToDelete !== null} onOpenChange={(open) => { if (!open) setExpenseToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExpenseDelete}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

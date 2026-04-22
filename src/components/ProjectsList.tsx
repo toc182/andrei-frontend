@@ -28,6 +28,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ProjectsListProps {
   activeTab?: string;
@@ -84,6 +94,8 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   const [projectAdendas, setProjectAdendas] = useState<Adenda[]>([]);
   const [showAdendaForm, setShowAdendaForm] = useState(false);
   const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<number | null>(null);
+  const [adendaToDelete, setAdendaToDelete] = useState<number | null>(null);
 
   // Cargar datos según tab activo
   const loadProjects = async () => {
@@ -201,28 +213,23 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   };
 
   // Manejar eliminación
-  const handleDeleteProject = async (projectId: number) => {
-    if (
-      !window.confirm(
-        '¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer.',
-      )
-    ) {
-      return;
-    }
+  const handleDeleteProject = (projectId: number) => {
+    setProjectToDelete(projectId);
+  };
 
+  const confirmDeleteProject = async () => {
+    if (!projectToDelete) return;
     try {
       const endpoint =
         config.formType === 'licitacion'
-          ? `/licitaciones/${projectId}`
+          ? `/licitaciones/${projectToDelete}`
           : config.formType === 'oportunidad'
-            ? `/oportunidades/${projectId}`
-            : `/projects/${projectId}`;
+            ? `/oportunidades/${projectToDelete}`
+            : `/projects/${projectToDelete}`;
       const response = await api.delete(endpoint);
 
       if (response.data.success) {
-        // Recargar la lista
         loadProjects();
-        // Actualizar estadísticas
         if (onStatsUpdate) {
           onStatsUpdate();
         }
@@ -232,6 +239,8 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
     } catch (err) {
       console.error('Error eliminando proyecto:', err);
       setError('Error de conexión al eliminar el proyecto');
+    } finally {
+      setProjectToDelete(null);
     }
   };
 
@@ -352,14 +361,16 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
     }
   };
 
-  const handleDeleteAdenda = async (adendaId: number) => {
-    if (!confirm('¿Estás seguro de eliminar esta adenda?')) return;
+  const handleDeleteAdenda = (adendaId: number) => {
+    setAdendaToDelete(adendaId);
+  };
 
+  const confirmDeleteAdenda = async () => {
+    if (!adendaToDelete) return;
     try {
       setLoading(true);
-      await api.delete(`/adendas/${adendaId}`);
+      await api.delete(`/adendas/${adendaToDelete}`);
 
-      // Recargar adendas del proyecto
       if (viewingProject) {
         const adendasResponse = await api.get(
           `/adendas/project/${viewingProject.id}`,
@@ -372,6 +383,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
       console.error('Error eliminando adenda:', err);
     } finally {
       setLoading(false);
+      setAdendaToDelete(null);
     }
   };
 
@@ -978,6 +990,34 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete project confirmation */}
+      <AlertDialog open={projectToDelete !== null} onOpenChange={(open) => { if (!open) setProjectToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este registro?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProject}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete adenda confirmation */}
+      <AlertDialog open={adendaToDelete !== null} onOpenChange={(open) => { if (!open) setAdendaToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta adenda?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAdenda}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

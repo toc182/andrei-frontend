@@ -21,7 +21,13 @@ import logo from '../../assets/logo.png';
 import cocpLogo from '../../assets/LogoCOCPfondoblanco.png';
 import type { EquipoExtended, ApiResponse } from '@/types';
 
+// Shell components
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
+import { ErrorState, TableSkeleton } from '@/components/shell/states';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -31,13 +37,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Form,
   FormControl,
@@ -55,7 +63,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Pencil, Loader2 } from 'lucide-react';
 
 // Type definition for form data
@@ -102,17 +109,11 @@ export default function EquiposInformacionN() {
 
   // Estados para modales
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedEquipo, setSelectedEquipo] = useState<EquipoExtended | null>(
-    null,
-  );
+  const [selectedEquipo, setSelectedEquipo] = useState<EquipoExtended | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [editingEquipo, setEditingEquipo] = useState<EquipoExtended | null>(
-    null,
-  );
+  const [editingEquipo, setEditingEquipo] = useState<EquipoExtended | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [equipoToDelete, setEquipoToDelete] = useState<EquipoExtended | null>(
-    null,
-  );
+  const [equipoToDelete, setEquipoToDelete] = useState<EquipoExtended | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form setup
@@ -144,15 +145,8 @@ export default function EquiposInformacionN() {
 
       if (response.data.success && response.data.data) {
         const equipos = response.data.data;
-
-        // Separar equipos por propietario
-        const pinellas = equipos.filter(
-          (equipo) => equipo.owner === 'Pinellas',
-        );
-        const cocp = equipos.filter((equipo) => equipo.owner === 'COCP');
-
-        setEquiposPinellas(pinellas);
-        setEquiposCOCP(cocp);
+        setEquiposPinellas(equipos.filter((e) => e.owner === 'Pinellas'));
+        setEquiposCOCP(equipos.filter((e) => e.owner === 'COCP'));
       } else {
         setError('Error al cargar equipos');
       }
@@ -287,92 +281,83 @@ export default function EquiposInformacionN() {
   };
 
   // Renderizar tabla de equipos
-  const renderTable = (equipos: EquipoExtended[], emptyMessage: string) => (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Código</TableHead>
-            <TableHead>Descripción</TableHead>
-            <TableHead>Marca</TableHead>
-            <TableHead>Modelo</TableHead>
-            <TableHead>Año</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {equipos.length === 0 ? (
+  const renderTable = (equipos: EquipoExtended[]) => (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell
-                colSpan={6}
-                className="text-center text-muted-foreground"
-              >
-                {emptyMessage}
-              </TableCell>
+              <TableHead>Código</TableHead>
+              <TableHead>Descripción</TableHead>
+              <TableHead>Marca</TableHead>
+              <TableHead>Modelo</TableHead>
+              <TableHead>Año</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
+          </TableHeader>
+          {loading ? (
+            <TableSkeleton rows={4} columns={6} />
           ) : (
-            equipos.map((equipo) => (
-              <TableRow
-                key={equipo.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleRowClick(equipo)}
-              >
-                <TableCell className="font-medium">
-                  {equipo.codigo || 'N/A'}
-                </TableCell>
-                <TableCell>{equipo.descripcion}</TableCell>
-                <TableCell>{equipo.marca}</TableCell>
-                <TableCell>{equipo.modelo}</TableCell>
-                <TableCell>{equipo.ano}</TableCell>
-                <TableCell>
-                  {hasPermission('equipos_editar') && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => handleEditEquipo(equipo, e)}
-                      title="Editar equipo"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))
+            <TableBody>
+              {equipos.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    No hay equipos registrados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                equipos.map((equipo) => (
+                  <TableRow
+                    key={equipo.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(equipo)}
+                  >
+                    <TableCell className="font-medium">
+                      {equipo.codigo || 'N/A'}
+                    </TableCell>
+                    <TableCell>{equipo.descripcion}</TableCell>
+                    <TableCell>{equipo.marca}</TableCell>
+                    <TableCell>{equipo.modelo}</TableCell>
+                    <TableCell>{equipo.ano}</TableCell>
+                    <TableCell>
+                      {hasPermission('equipos_editar') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => handleEditEquipo(equipo, e)}
+                          title="Editar equipo"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
           )}
-        </TableBody>
-      </Table>
-    </div>
+        </Table>
+      </CardContent>
+    </Card>
   );
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Cargando equipos...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
+  // Error state (full section)
   if (error && !formOpen) {
     return (
-      <div className="space-y-6">
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <Button onClick={loadEquipos}>Reintentar</Button>
-      </div>
+      <ErrorState
+        title="Error al cargar equipos"
+        description={error}
+        onRetry={loadEquipos}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Add button */}
       {hasPermission('equipos_agregar') && (
         <div className="flex justify-end">
           <Button onClick={handleAddEquipo}>
@@ -382,401 +367,330 @@ export default function EquiposInformacionN() {
         </div>
       )}
 
-      {/* Tabla de Equipos de Pinellas */}
-      <div className="space-y-4">
+      {/* Equipos Pinellas */}
+      <div className="space-y-3">
         <div className="flex justify-center">
           <img src={logo} alt="Pinellas Logo" className="h-8 object-contain" />
         </div>
-        {renderTable(equiposPinellas, 'No hay equipos de Pinellas disponibles')}
+        {renderTable(equiposPinellas)}
       </div>
 
-      {/* Tabla de Equipos de COCP */}
-      <div className="space-y-4 mt-8">
+      {/* Equipos COCP */}
+      <div className="space-y-3 mt-8">
         <div className="flex justify-center">
           <img src={cocpLogo} alt="COCP Logo" className="h-8 object-contain" />
         </div>
-        {renderTable(equiposCOCP, 'No hay equipos de COCP disponibles')}
+        {renderTable(equiposCOCP)}
       </div>
 
       {/* Modal de Detalles */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Detalles del Equipo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Código:</span>
-              <span className="col-span-2">
-                {selectedEquipo?.codigo || 'N/A'}
-              </span>
+      <AppDialog
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        size="simple"
+        title="Detalles del Equipo"
+      >
+        <div className="space-y-3 text-sm">
+          {[
+            ['Código', selectedEquipo?.codigo || 'N/A'],
+            ['Descripción', selectedEquipo?.descripcion],
+            ['Marca', selectedEquipo?.marca],
+            ['Modelo', selectedEquipo?.modelo],
+            ['Año', selectedEquipo?.ano],
+            ['# Motor', selectedEquipo?.motor || 'N/A'],
+            ['# Chasis', selectedEquipo?.chasis || 'N/A'],
+            ['Costo', selectedEquipo ? formatMoney(selectedEquipo.costo) : 'N/A'],
+            ['Valor Actual', selectedEquipo ? formatMoney(selectedEquipo.valor_actual) : 'N/A'],
+            ['Rata/Mes', selectedEquipo ? formatMoney(selectedEquipo.rata_mes) : 'N/A'],
+            ['Propietario', selectedEquipo?.owner],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="grid grid-cols-3 gap-2">
+              <span className="font-medium text-muted-foreground">{label}:</span>
+              <span className="col-span-2">{String(value ?? '')}</span>
             </div>
+          ))}
+          {selectedEquipo?.observaciones && (
             <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Descripción:</span>
-              <span className="col-span-2">{selectedEquipo?.descripcion}</span>
+              <span className="font-medium text-muted-foreground">Observaciones:</span>
+              <span className="col-span-2">{selectedEquipo.observaciones}</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Marca:</span>
-              <span className="col-span-2">{selectedEquipo?.marca}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Modelo:</span>
-              <span className="col-span-2">{selectedEquipo?.modelo}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Año:</span>
-              <span className="col-span-2">{selectedEquipo?.ano}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium"># Motor:</span>
-              <span className="col-span-2">
-                {selectedEquipo?.motor || 'N/A'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium"># Chasis:</span>
-              <span className="col-span-2">
-                {selectedEquipo?.chasis || 'N/A'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Costo:</span>
-              <span className="col-span-2">
-                {selectedEquipo ? formatMoney(selectedEquipo.costo) : 'N/A'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Valor Actual:</span>
-              <span className="col-span-2">
-                {selectedEquipo
-                  ? formatMoney(selectedEquipo.valor_actual)
-                  : 'N/A'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Rata/Mes:</span>
-              <span className="col-span-2">
-                {selectedEquipo ? formatMoney(selectedEquipo.rata_mes) : 'N/A'}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="font-medium">Propietario:</span>
-              <span className="col-span-2">{selectedEquipo?.owner}</span>
-            </div>
-            {selectedEquipo?.observaciones && (
-              <div className="grid grid-cols-3 gap-2">
-                <span className="font-medium">Observaciones:</span>
-                <span className="col-span-2">
-                  {selectedEquipo.observaciones}
-                </span>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
+      </AppDialog>
 
       {/* Formulario Crear/Editar */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingEquipo ? 'Editar Equipo' : 'Agregar Nuevo Equipo'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingEquipo
-                ? 'Modifica la información del equipo'
-                : 'Completa los datos del nuevo equipo'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="space-y-4"
-            >
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <FormField
-                control={form.control}
-                name="owner"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Propietario *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar propietario" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Pinellas">Pinellas</SelectItem>
-                        <SelectItem value="COCP">COCP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="codigo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ej: 01-19" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="descripcion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: Retroexcavadora, Pala 21 Ton"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="marca"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marca *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: John Deere" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="modelo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modelo *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: 310K" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="ano"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Año *</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1900" max="2030" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="motor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel># Motor</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Número de motor" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="chasis"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel># Chasis</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Número de chasis" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="costo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Costo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="valor_actual"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor Actual</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="rata_mes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rata/Mes</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="observaciones"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Observaciones</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Observaciones adicionales..."
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter className="gap-2">
-                {editingEquipo && hasPermission('equipos_eliminar') && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={handleDeleteClick}
-                    disabled={isSubmitting}
-                  >
-                    Eliminar Equipo
-                  </Button>
-                )}
+      <AppDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        size="standard"
+        title={editingEquipo ? 'Editar Equipo' : 'Agregar Nuevo Equipo'}
+        description={
+          editingEquipo
+            ? 'Modifica la información del equipo'
+            : 'Completa los datos del nuevo equipo'
+        }
+        footer={
+          <>
+            <div>
+              {editingEquipo && hasPermission('equipos_eliminar') && (
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => setFormOpen(false)}
+                  variant="destructive"
+                  onClick={handleDeleteClick}
                   disabled={isSubmitting}
                 >
-                  Cancelar
+                  Eliminar Equipo
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    `${editingEquipo ? 'Actualizar' : 'Guardar'} Equipo`
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" form="equipo-form" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  `${editingEquipo ? 'Actualizar' : 'Guardar'} Equipo`
+                )}
+              </Button>
+            </div>
+          </>
+        }
+      >
+        {error && formOpen && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-      {/* Modal de Confirmación de Eliminación */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Confirmar Eliminación</DialogTitle>
-            <DialogDescription>
-              ¿Está seguro de eliminar el equipo "{equipoToDelete?.descripcion}
-              "? Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
+        <Form {...form}>
+          <form
+            id="equipo-form"
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="owner"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Propietario *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar propietario" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Pinellas">Pinellas</SelectItem>
+                      <SelectItem value="COCP">COCP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="codigo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Código</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ej: 01-19" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="descripcion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripción *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ej: Retroexcavadora, Pala 21 Ton" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="marca"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marca *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: John Deere" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="modelo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modelo *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: 310K" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="ano"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Año *</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="1900" max="2030" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="motor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel># Motor</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Número de motor" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="chasis"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel># Chasis</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Número de chasis" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="costo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="valor_actual"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor Actual</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="rata_mes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rata/Mes</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="observaciones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observaciones</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Observaciones adicionales..."
+                      rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </AppDialog>
+
+      {/* Confirmación de eliminación */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente{' '}
+              <strong>{equipoToDelete?.descripcion}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Eliminando...
-                </>
-              ) : (
-                'Eliminar'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

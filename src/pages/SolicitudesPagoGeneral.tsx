@@ -6,12 +6,13 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, AlertCircle, X } from 'lucide-react';
+import { Plus, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PageHeader } from '@/components/shell/PageHeader';
+import { StatCard } from '@/components/shell/StatCard';
+import { Alert } from '@/components/shell/Alert';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../types/api';
@@ -76,6 +77,7 @@ export default function SolicitudesPagoGeneral({
   const [proyectos, setProyectos] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Filters — estado filtering is handled entirely by the column-header
   // filter in SolicitudesTable, so this page only owns the top-level toggles.
@@ -446,6 +448,7 @@ export default function SolicitudesPagoGeneral({
       setRejectingId,
       setShowDetail,
       refreshList: loadData,
+      onError: setActionError,
     });
 
   const handleRegistrarPago = (solicitudId: number) =>
@@ -457,6 +460,7 @@ export default function SolicitudesPagoGeneral({
       setShowRegistrarPagoModal,
       setShowDetail,
       refreshList: loadData,
+      onError: setActionError,
     });
 
   const handleRegistrarFactura = (solicitudId: number) =>
@@ -470,6 +474,7 @@ export default function SolicitudesPagoGeneral({
       setShowRegistrarFacturaModal,
       setShowDetail,
       refreshList: loadData,
+      onError: setActionError,
     });
 
   const handleRegistrarReembolso = (solicitudId: number) =>
@@ -483,6 +488,7 @@ export default function SolicitudesPagoGeneral({
       refreshDetail: async () => {
         if (detailSolicitud) await openDetail(detailSolicitud);
       },
+      onError: setActionError,
     });
 
   const handleRegistrarDevolucion = (solicitudId: number) =>
@@ -495,6 +501,7 @@ export default function SolicitudesPagoGeneral({
       setShowDevolucionModal,
       setShowDetail,
       refreshList: loadData,
+      onError: setActionError,
     });
 
   const handleReenviar = (solicitudId: number) =>
@@ -503,6 +510,7 @@ export default function SolicitudesPagoGeneral({
       setResubmitting,
       setShowDetail,
       refreshList: loadData,
+      onError: setActionError,
     });
 
   const handleUploadAdjuntos = (files: FileList) => {
@@ -512,11 +520,12 @@ export default function SolicitudesPagoGeneral({
       files,
       setUploadingFiles,
       setDetailAdjuntos,
+      onError: setActionError,
     });
   };
 
   const handleDeleteAdjunto = (adjuntoId: number) =>
-    deleteSolicitudAdjunto({ adjuntoId, setDetailAdjuntos });
+    deleteSolicitudAdjunto({ adjuntoId, setDetailAdjuntos, onError: setActionError });
 
   const handleToggleRevisada = (solicitudId: number) =>
     toggleRevisadaSolicitud({
@@ -525,6 +534,7 @@ export default function SolicitudesPagoGeneral({
       setTogglingRevisada,
       setDetailRevisada,
       setSolicitudes,
+      onError: setActionError,
     });
 
   // Get IDs of reviewed solicitudes that are my turn to approve
@@ -555,89 +565,30 @@ export default function SolicitudesPagoGeneral({
       setShowDeleteModal,
       setShowDetail,
       refreshList: loadData,
+      onError: setActionError,
     });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">
-          Cargando solicitudes de pago...
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Solicitudes de Pago</h1>
-          <p className="text-muted-foreground">
-            Vista consolidada de todos los proyectos
-          </p>
-        </div>
+      <PageHeader
+        title="Solicitudes de Pago"
+        subtitle="Vista consolidada de todos los proyectos"
+      >
         <Button onClick={handleNewSolicitud}>
           <Plus className="h-4 w-4 mr-2" />
           Nueva Solicitud
         </Button>
-      </div>
+      </PageHeader>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <Alert variant="error" title={error} />}
+      {actionError && <Alert variant="error" title={actionError} />}
 
       {/* Stats Cards */}
-      <div className="flex flex-wrap gap-4">
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pendientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-yellow-600">
-              {stats.pendientes}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Aprobadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-600">
-              {stats.aprobadas}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Monto Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-base font-bold">
-              {formatMoney(stats.montoTotal)}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total" value={String(stats.total)} accent="navy" />
+        <StatCard label="Pendientes" value={String(stats.pendientes)} accent="warning" />
+        <StatCard label="Aprobadas" value={String(stats.aprobadas)} accent="success" />
+        <StatCard label="Monto Total" value={formatMoney(stats.montoTotal)} accent="teal" />
       </div>
 
       {/* Filters */}
@@ -999,7 +950,7 @@ export default function SolicitudesPagoGeneral({
               const apiError = err as {
                 response?: { data?: { message?: string } };
               };
-              alert(
+              setError(
                 apiError.response?.data?.message ||
                   'Error al cambiar pinellas_paga',
               );

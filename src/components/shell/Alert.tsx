@@ -11,6 +11,7 @@ interface AlertProps {
   actions?: ReactNode;
   dismissible?: boolean;
   onDismiss?: () => void;
+  className?: string;
 }
 
 const variantMap: Record<AlertVariant, { border: string; text: string; Icon: ElementType }> = {
@@ -27,6 +28,7 @@ export function Alert({
   actions,
   dismissible,
   onDismiss,
+  className,
 }: AlertProps) {
   const { border, text, Icon } = variantMap[variant];
 
@@ -34,7 +36,8 @@ export function Alert({
     <div
       className={cn(
         "flex items-start gap-3 rounded-md border border-border border-l-[3px] bg-card px-3.5 py-3",
-        border
+        border,
+        className
       )}
       role={variant === "error" ? "alert" : "status"}
     >

@@ -20,13 +20,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import api from '../../services/api';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -173,6 +176,9 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
   // Image viewer
   const [viewingImage, setViewingImage] = useState<string | null>(null);
 
+  // Delete confirmation
+  const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
+
   useEffect(() => {
     loadEntries();
     loadMembers();
@@ -258,15 +264,20 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
     }
   };
 
-  const handleDelete = async (entryId: number) => {
-    if (!confirm('¿Eliminar esta entrada?')) return;
+  const handleDelete = (entryId: number) => {
+    setEntryToDelete(entryId);
+  };
 
+  const confirmDelete = async () => {
+    if (entryToDelete === null) return;
     try {
-      await api.delete(`/project-bitacora/${entryId}`);
-      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      await api.delete(`/project-bitacora/${entryToDelete}`);
+      setEntries((prev) => prev.filter((e) => e.id !== entryToDelete));
       setSelectedEntry(null);
     } catch (error) {
       console.error('Error deleting entry:', error);
+    } finally {
+      setEntryToDelete(null);
     }
   };
 
@@ -463,88 +474,14 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
       </div>
 
       {/* New Entry Modal */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Nueva Entrada</DialogTitle>
-            <DialogDescription className="sr-only">
-              Crear una nueva entrada en la bitácora del proyecto
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Título (opcional)</Label>
-              <Input
-                value={newEntry.titulo}
-                onChange={(e) =>
-                  setNewEntry((prev) => ({ ...prev, titulo: e.target.value }))
-                }
-                placeholder="Título de la entrada"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Contenido *</Label>
-              <Textarea
-                value={newEntry.contenido}
-                onChange={(e) =>
-                  setNewEntry((prev) => ({
-                    ...prev,
-                    contenido: e.target.value,
-                  }))
-                }
-                placeholder="Escribe aquí... Usa @nombre para mencionar a alguien"
-                className="mt-1 min-h-[120px]"
-              />
-            </div>
-
-            {/* File upload */}
-            <div>
-              <Label>Fotos</Label>
-              <div className="mt-1 space-y-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Agregar fotos
-                </Button>
-
-                {/* Preview selected files */}
-                {selectedFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={file.name}
-                          className="h-16 w-16 object-cover rounded border"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
+      <AppDialog
+        open={showForm}
+        onOpenChange={setShowForm}
+        size="simple"
+        title="Nueva Entrada"
+        description="Crear una nueva entrada en la bitácora del proyecto"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowForm(false)}>
               Cancelar
             </Button>
@@ -554,235 +491,324 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
             >
               {saving ? 'Guardando...' : 'Publicar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Título (opcional)</Label>
+            <Input
+              value={newEntry.titulo}
+              onChange={(e) =>
+                setNewEntry((prev) => ({ ...prev, titulo: e.target.value }))
+              }
+              placeholder="Título de la entrada"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>Contenido *</Label>
+            <Textarea
+              value={newEntry.contenido}
+              onChange={(e) =>
+                setNewEntry((prev) => ({
+                  ...prev,
+                  contenido: e.target.value,
+                }))
+              }
+              placeholder="Escribe aquí... Usa @nombre para mencionar a alguien"
+              className="mt-1 min-h-[120px]"
+            />
+          </div>
+
+          {/* File upload */}
+          <div>
+            <Label>Fotos</Label>
+            <div className="mt-1 space-y-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*"
+                multiple
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Image className="h-4 w-4 mr-2" />
+                Agregar fotos
+              </Button>
+
+              {/* Preview selected files */}
+              {selectedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="h-16 w-16 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </AppDialog>
 
       {/* Entry Detail Modal */}
-      <Dialog
+      <AppDialog
         open={!!selectedEntry}
         onOpenChange={(open) => !open && setSelectedEntry(null)}
+        size="standard"
+        title={selectedEntry?.titulo || 'Entrada'}
+        description="Detalle de la entrada de bitácora"
       >
-        <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{selectedEntry?.titulo || 'Entrada'}</DialogTitle>
-            <DialogDescription className="sr-only">
-              Detalle de la entrada de bitácora
-            </DialogDescription>
-          </DialogHeader>
+        {selectedEntry && (
+          <div className="space-y-4">
+            {/* Entry info */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {selectedEntry.creador_nombre}
+                </span>
+                <span>·</span>
+                <span title={formatDate(selectedEntry.created_at)}>
+                  {formatRelativeTime(selectedEntry.created_at)}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => handleDelete(selectedEntry.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
 
-          {selectedEntry && (
-            <div className="flex-1 overflow-y-auto space-y-4">
-              {/* Entry info */}
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <span className="font-medium text-foreground">
-                    {selectedEntry.creador_nombre}
-                  </span>
-                  <span>·</span>
-                  <span title={formatDate(selectedEntry.created_at)}>
-                    {formatRelativeTime(selectedEntry.created_at)}
-                  </span>
+            {/* Content */}
+            <div className="text-sm whitespace-pre-wrap">
+              {parseMentions(selectedEntry.contenido, members)}
+            </div>
+
+            {/* Photos */}
+            {selectedEntry.attachments &&
+              selectedEntry.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Fotos
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedEntry.attachments.map((att) => (
+                      <button
+                        key={att.id}
+                        onClick={() =>
+                          setViewingImage(
+                            `${API_BASE}/uploads/bitacora/${att.filepath}`,
+                          )
+                        }
+                        className="relative group"
+                      >
+                        <img
+                          src={`${API_BASE}/uploads/bitacora/${att.filepath}`}
+                          alt={att.filename}
+                          className="h-24 w-24 object-cover rounded border hover:opacity-90 transition"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDelete(selectedEntry.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              )}
 
-              {/* Content */}
-              <div className="text-sm whitespace-pre-wrap">
-                {parseMentions(selectedEntry.contenido, members)}
-              </div>
+            {/* Comments section */}
+            <div className="border-t pt-4 space-y-3">
+              <Label className="text-xs text-muted-foreground">
+                Comentarios ({entryComments.length})
+              </Label>
 
-              {/* Photos */}
-              {selectedEntry.attachments &&
-                selectedEntry.attachments.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">
-                      Fotos
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedEntry.attachments.map((att) => (
-                        <button
-                          key={att.id}
-                          onClick={() =>
-                            setViewingImage(
-                              `${API_BASE}/uploads/bitacora/${att.filepath}`,
-                            )
-                          }
-                          className="relative group"
-                        >
-                          <img
-                            src={`${API_BASE}/uploads/bitacora/${att.filepath}`}
-                            alt={att.filename}
-                            className="h-24 w-24 object-cover rounded border hover:opacity-90 transition"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              {/* Comments section */}
-              <div className="border-t pt-4 space-y-3">
-                <Label className="text-xs text-muted-foreground">
-                  Comentarios ({entryComments.length})
-                </Label>
-
-                {loadingComments ? (
-                  <div className="text-sm text-muted-foreground">
-                    Cargando...
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {entryComments.map((comment) => (
-                      <div key={comment.id} className="bg-muted/30 rounded p-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="font-medium">
-                                {comment.creador_nombre}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {formatRelativeTime(comment.created_at)}
-                              </span>
+              {loadingComments ? (
+                <div className="text-sm text-muted-foreground">
+                  Cargando...
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {entryComments.map((comment) => (
+                    <div key={comment.id} className="bg-muted/30 rounded p-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-medium">
+                              {comment.creador_nombre}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {formatRelativeTime(comment.created_at)}
+                            </span>
+                          </div>
+                          {comment.contenido && comment.contenido.trim() && (
+                            <div className="text-sm mt-0.5">
+                              {parseMentions(comment.contenido, members)}
                             </div>
-                            {comment.contenido && comment.contenido.trim() && (
-                              <div className="text-sm mt-0.5">
-                                {parseMentions(comment.contenido, members)}
+                          )}
+                          {/* Comment attachments */}
+                          {comment.attachments &&
+                            comment.attachments.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {comment.attachments.map((att) => (
+                                  <button
+                                    key={att.id}
+                                    onClick={() =>
+                                      setViewingImage(
+                                        `${API_BASE}/uploads/bitacora/${att.filepath}`,
+                                      )
+                                    }
+                                  >
+                                    <img
+                                      src={`${API_BASE}/uploads/bitacora/${att.filepath}`}
+                                      alt={att.filename}
+                                      className="h-16 w-16 object-cover rounded border hover:opacity-90 transition"
+                                    />
+                                  </button>
+                                ))}
                               </div>
                             )}
-                            {/* Comment attachments */}
-                            {comment.attachments &&
-                              comment.attachments.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {comment.attachments.map((att) => (
-                                    <button
-                                      key={att.id}
-                                      onClick={() =>
-                                        setViewingImage(
-                                          `${API_BASE}/uploads/bitacora/${att.filepath}`,
-                                        )
-                                      }
-                                    >
-                                      <img
-                                        src={`${API_BASE}/uploads/bitacora/${att.filepath}`}
-                                        alt={att.filename}
-                                        className="h-16 w-16 object-cover rounded border hover:opacity-90 transition"
-                                      />
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteComment(comment.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteComment(comment.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add comment with photo support */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Escribe un comentario..."
+                    className="flex-1 h-8 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddComment();
+                      }
+                    }}
+                  />
+                  <input
+                    type="file"
+                    ref={commentFileInputRef}
+                    onChange={handleCommentFileSelect}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => commentFileInputRef.current?.click()}
+                    title="Agregar foto"
+                  >
+                    <Paperclip className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleAddComment}
+                    disabled={
+                      (!newComment.trim() && commentFiles.length === 0) ||
+                      sendingComment
+                    }
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                {/* Preview comment files */}
+                {commentFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {commentFiles.map((file, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="h-12 w-12 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCommentFile(index)}
+                          className="absolute -top-1 -right-1 bg-destructive text-white rounded-full p-0.5"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
-
-                {/* Add comment with photo support */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Escribe un comentario..."
-                      className="flex-1 h-8 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAddComment();
-                        }
-                      }}
-                    />
-                    <input
-                      type="file"
-                      ref={commentFileInputRef}
-                      onChange={handleCommentFileSelect}
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => commentFileInputRef.current?.click()}
-                      title="Agregar foto"
-                    >
-                      <Paperclip className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleAddComment}
-                      disabled={
-                        (!newComment.trim() && commentFiles.length === 0) ||
-                        sendingComment
-                      }
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-
-                  {/* Preview comment files */}
-                  {commentFiles.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {commentFiles.map((file, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="h-12 w-12 object-cover rounded border"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeCommentFile(index)}
-                            className="absolute -top-1 -right-1 bg-destructive text-white rounded-full p-0.5"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        )}
+      </AppDialog>
+
+      {/* Delete Entry Confirmation */}
+      <AlertDialog
+        open={entryToDelete !== null}
+        onOpenChange={(open) => !open && setEntryToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta entrada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La entrada y sus adjuntos serán
+              eliminados permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Image Viewer */}
-      <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
-        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Ver imagen</DialogTitle>
-            <DialogDescription>Imagen ampliada</DialogDescription>
-          </DialogHeader>
-          {viewingImage && (
-            <img
-              src={viewingImage}
-              alt="Imagen ampliada"
-              className="w-full h-full object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <AppDialog
+        open={!!viewingImage}
+        onOpenChange={() => setViewingImage(null)}
+        size="complex"
+        title="Ver imagen"
+      >
+        {viewingImage && (
+          <img
+            src={viewingImage}
+            alt="Imagen ampliada"
+            className="w-full h-full object-contain"
+          />
+        )}
+      </AppDialog>
     </div>
   );
 }

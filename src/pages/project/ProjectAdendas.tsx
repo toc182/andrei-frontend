@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
 import type { Adenda } from '@/types';
+import { SectionHeader } from '@/components/shell/SectionHeader';
 
 interface ProjectAdendasProps {
   projectId: number;
@@ -85,21 +86,18 @@ export default function ProjectAdendas({
   return (
     <div className="space-y-6">
       {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Adendas del Proyecto</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {adendas.length}{' '}
-            {adendas.length === 1 ? 'adenda registrada' : 'adendas registradas'}
-          </p>
-        </div>
-        {canManage && (
-          <Button onClick={onOpenForm}>
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Adenda
-          </Button>
-        )}
-      </div>
+      <SectionHeader
+        title="Adendas del Proyecto"
+        count={adendas.length}
+        action={
+          canManage ? (
+            <Button onClick={onOpenForm} size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Adenda
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">

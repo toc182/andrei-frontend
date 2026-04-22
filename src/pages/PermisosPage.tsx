@@ -5,12 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -24,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Settings, Shield } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
 import api from '../services/api';
 import type { UserPermissions } from '@/types/api';
 
@@ -205,18 +200,10 @@ export default function PermisosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Gestión de Permisos
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Configura permisos individuales para cada usuario
-        </p>
-      </div>
-
       {/* Desktop table */}
       <div className="hidden md:block">
         <Card>
+          <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -288,6 +275,7 @@ export default function PermisosPage() {
                 ))}
             </TableBody>
           </Table>
+          </CardContent>
         </Card>
       </div>
 
@@ -336,16 +324,26 @@ export default function PermisosPage() {
       </div>
 
       {/* Dialog de permisos */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Permisos — {selectedUser?.nombre}
-            </DialogTitle>
-          </DialogHeader>
-
-          <ScrollArea className="max-h-[65vh] pr-4">
+      <AppDialog
+        open={showDialog}
+        onOpenChange={setShowDialog}
+        size="simple"
+        title={`Permisos — ${selectedUser?.nombre ?? ''}`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Guardar
+            </Button>
+          </>
+        }
+      >
+        <ScrollArea className="max-h-[65vh] pr-4">
             <div className="space-y-6">
               {/* Acceso Global */}
               <div className="flex items-center justify-between">
@@ -555,20 +553,7 @@ export default function PermisosPage() {
               </div>
             </div>
           </ScrollArea>
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Guardar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      </AppDialog>
     </div>
   );
 }

@@ -34,6 +34,7 @@ export async function deleteSolicitud(args: {
   setShowDeleteModal: (open: boolean) => void;
   setShowDetail: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (!args.deletingId) return;
   try {
@@ -45,7 +46,7 @@ export async function deleteSolicitud(args: {
   } catch (err) {
     console.error('Error deleting:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al eliminar');
+    args.onError?.(apiError.response?.data?.message || 'Error al eliminar');
   } finally {
     args.setDeleteLoading(false);
   }
@@ -64,6 +65,7 @@ export async function rechazarSolicitud(args: {
   setRejectingId: (id: number | null) => void;
   setShowDetail: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (!args.rejectingId || !args.rejectComment.trim()) return;
   try {
@@ -79,7 +81,7 @@ export async function rechazarSolicitud(args: {
   } catch (err) {
     console.error('Error rejecting:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al rechazar');
+    args.onError?.(apiError.response?.data?.message || 'Error al rechazar');
   }
 }
 
@@ -94,6 +96,7 @@ export async function toggleRevisadaSolicitud(args: {
   setTogglingRevisada: (loading: boolean) => void;
   setDetailRevisada: (revisada: boolean) => void;
   setSolicitudes: React.Dispatch<React.SetStateAction<SolicitudPago[]>>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   try {
     args.setTogglingRevisada(true);
@@ -112,7 +115,7 @@ export async function toggleRevisadaSolicitud(args: {
   } catch (err) {
     console.error('Error toggling review:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(
+    args.onError?.(
       apiError.response?.data?.message ||
         'Error al cambiar estado de revisión',
     );
@@ -134,6 +137,7 @@ export async function registrarPagoSolicitud(args: {
   setShowRegistrarPagoModal: (open: boolean) => void;
   setShowDetail: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (!args.fechaPago || !args.files || args.files.length === 0) return;
   try {
@@ -157,7 +161,7 @@ export async function registrarPagoSolicitud(args: {
   } catch (err) {
     console.error('Error registering payment:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al registrar pago');
+    args.onError?.(apiError.response?.data?.message || 'Error al registrar pago');
   } finally {
     args.setRegistrandoPago(false);
   }
@@ -179,6 +183,7 @@ export async function registrarFacturaSolicitud(args: {
   setShowRegistrarFacturaModal: (open: boolean) => void;
   setShowDetail: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (!args.fechaFactura || !args.files || args.files.length === 0) return;
   try {
@@ -206,7 +211,7 @@ export async function registrarFacturaSolicitud(args: {
   } catch (err) {
     console.error('Error registering invoice:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al registrar factura');
+    args.onError?.(apiError.response?.data?.message || 'Error al registrar factura');
   } finally {
     args.setRegistrandoFactura(false);
   }
@@ -227,6 +232,7 @@ export async function registrarReembolsoSolicitud(args: {
   setShowReembolsoModal: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
   refreshDetail: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (!args.fechaReembolso || !args.file) return;
   try {
@@ -248,7 +254,7 @@ export async function registrarReembolsoSolicitud(args: {
   } catch (err) {
     console.error('Error registering reembolso:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al registrar reembolso');
+    args.onError?.(apiError.response?.data?.message || 'Error al registrar reembolso');
   } finally {
     args.setRegistrandoReembolso(false);
   }
@@ -268,6 +274,7 @@ export async function registrarDevolucionSolicitud(args: {
   setShowDevolucionModal: (open: boolean) => void;
   setShowDetail: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (!args.fechaDevolucion || !args.motivo.trim() || !args.file) return;
   try {
@@ -290,7 +297,7 @@ export async function registrarDevolucionSolicitud(args: {
   } catch (err) {
     console.error('Error registering devolucion:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al registrar devolución');
+    args.onError?.(apiError.response?.data?.message || 'Error al registrar devolución');
   } finally {
     args.setRegistrandoDevolucion(false);
   }
@@ -377,6 +384,7 @@ export async function uploadSolicitudAdjuntos(args: {
   files: FileList;
   setUploadingFiles: (loading: boolean) => void;
   setDetailAdjuntos: React.Dispatch<React.SetStateAction<SolicitudPagoAdjunto[]>>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   if (args.files.length === 0) return;
   try {
@@ -398,7 +406,7 @@ export async function uploadSolicitudAdjuntos(args: {
   } catch (err) {
     console.error('Error uploading:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al subir archivos');
+    args.onError?.(apiError.response?.data?.message || 'Error al subir archivos');
   } finally {
     args.setUploadingFiles(false);
   }
@@ -411,6 +419,7 @@ export async function uploadSolicitudAdjuntos(args: {
 export async function deleteSolicitudAdjunto(args: {
   adjuntoId: number;
   setDetailAdjuntos: React.Dispatch<React.SetStateAction<SolicitudPagoAdjunto[]>>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   try {
     await api.delete(`/solicitudes-pago/adjuntos/${args.adjuntoId}`);
@@ -419,7 +428,7 @@ export async function deleteSolicitudAdjunto(args: {
     );
   } catch (err) {
     console.error('Error deleting adjunto:', err);
-    alert('Error al eliminar el adjunto');
+    args.onError?.('Error al eliminar el adjunto');
   }
 }
 
@@ -433,6 +442,7 @@ export async function reenviarSolicitud(args: {
   setResubmitting: (loading: boolean) => void;
   setShowDetail: (open: boolean) => void;
   refreshList: () => void | Promise<void>;
+  onError?: (msg: string) => void;
 }): Promise<void> {
   try {
     args.setResubmitting(true);
@@ -445,7 +455,7 @@ export async function reenviarSolicitud(args: {
   } catch (err) {
     console.error('Error resubmitting:', err);
     const apiError = err as { response?: { data?: { message?: string } } };
-    alert(apiError.response?.data?.message || 'Error al reenviar');
+    args.onError?.(apiError.response?.data?.message || 'Error al reenviar');
   } finally {
     args.setResubmitting(false);
   }

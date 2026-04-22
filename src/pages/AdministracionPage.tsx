@@ -4,6 +4,7 @@
  */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/shell/PageHeader';
 import UsuariosPage from './UsuariosPage';
 import PermisosPage from './PermisosPage';
 
@@ -17,8 +18,8 @@ export default function AdministracionPage({
   onTabChange,
 }: AdministracionPageProps) {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Administración</h1>
+    <div className="space-y-6">
+      <PageHeader title="Administración" />
       <Tabs
         defaultValue={defaultTab}
         onValueChange={(value) => onTabChange?.(value)}

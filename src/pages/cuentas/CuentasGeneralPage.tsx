@@ -9,6 +9,7 @@ import CuentaEstadoBadge from './CuentaEstadoBadge';
 import AvanceBar from './AvanceBar';
 import { formatMonto, formatPeriodo, formatPeriodoParts, formatWait, waitColor, CURRENT_STATUS_CONFIG } from './config';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { PageHeader } from '@/components/shell/PageHeader';
 import { Badge } from '@/components/ui/badge';
 
 interface PendienteCuenta {
@@ -78,10 +79,7 @@ export default function CuentasGeneralPage({ onNavigateToProject }: CuentasGener
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Cuentas</h2>
-        <p className="text-muted-foreground text-sm">Vista general por proyecto</p>
-      </div>
+      <PageHeader title="Cuentas" subtitle="Vista general por proyecto" />
 
       <Tabs defaultValue="resumen">
         <TabsList className="w-full justify-center">

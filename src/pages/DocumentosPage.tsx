@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { PageHeader } from '@/components/shell/PageHeader';
 import {
   Select,
   SelectContent,
@@ -39,11 +40,10 @@ export default function DocumentosPage({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          {documentTypes.find((d) => d.value === selected)?.label ?? 'Documentos'}
-        </h1>
+    <div className="space-y-6">
+      <PageHeader
+        title={documentTypes.find((d) => d.value === selected)?.label ?? 'Documentos'}
+      >
         <Select value={selected} onValueChange={handleChange}>
           <SelectTrigger className="w-64">
             <SelectValue />
@@ -56,7 +56,7 @@ export default function DocumentosPage({
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </PageHeader>
       <DocumentFormN documentType={selected} />
     </div>
   );

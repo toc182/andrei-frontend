@@ -1,13 +1,5 @@
 /**
  * Página de Asignaciones de Equipos - Migrada a Shadcn/ui
- *
- * Gestiona las asignaciones de equipos a proyectos con:
- * - Dos tablas separadas (Alquiler y Propios)
- * - Formulario para crear/editar asignaciones
- * - Formulario para registrar uso (solo para alquiler)
- * - Modal de confirmación para eliminar
- * - Campos condicionales según tipo de uso
- * - Sin FontAwesome, sin CSS custom
  */
 
 import { useState, useEffect } from 'react';
@@ -24,6 +16,10 @@ import type {
   ApiResponse,
 } from '@/types';
 
+// Shell components
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
+
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -34,13 +30,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Form,
   FormControl,
@@ -58,12 +56,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Pencil, Clock, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
-// Type definitions for forms
 interface AsignacionFormData {
   equipo_id: string;
   cliente_id: string;
@@ -90,7 +86,6 @@ interface RegistroUsoFormData {
   observaciones?: string;
 }
 
-// Schema para AsignacionForm
 const asignacionSchema = z.object({
   equipo_id: z.string().min(1, 'Equipo es obligatorio'),
   cliente_id: z.string().min(1, 'Cliente es obligatorio'),
@@ -110,7 +105,6 @@ const asignacionSchema = z.object({
   observaciones: z.string().optional(),
 });
 
-// Schema para RegistroUsoForm
 const registroUsoSchema = z.object({
   fecha_inicio: z.string().min(1, 'Fecha es obligatoria'),
   fecha_fin: z.string().optional(),
@@ -131,24 +125,18 @@ export default function AsignacionesEquiposN() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Estados para modales
   const [formOpen, setFormOpen] = useState(false);
   const [registroUsoOpen, setRegistroUsoOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selectedAsignacion, setSelectedAsignacion] =
-    useState<AsignacionExtended | null>(null);
+  const [selectedAsignacion, setSelectedAsignacion] = useState<AsignacionExtended | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Datos para selects
   const [equipos, setEquipos] = useState<EquipoExtended[]>([]);
-  const [equiposDisponibles, setEquiposDisponibles] = useState<
-    EquipoExtended[]
-  >([]);
+  const [equiposDisponibles, setEquiposDisponibles] = useState<EquipoExtended[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [proyectos, setProyectos] = useState<Project[]>([]);
   const [registrosUso, setRegistrosUso] = useState<RegistroUsoExtended[]>([]);
 
-  // Form setup para asignaciones
   const asignacionForm = useForm<AsignacionFormData>({
     resolver: zodResolver(asignacionSchema) as any,
     defaultValues: {
@@ -171,7 +159,6 @@ export default function AsignacionesEquiposN() {
     },
   });
 
-  // Form setup para registro de uso
   const registroUsoForm = useForm<RegistroUsoFormData>({
     resolver: zodResolver(registroUsoSchema) as any,
     defaultValues: {
@@ -182,24 +169,20 @@ export default function AsignacionesEquiposN() {
     },
   });
 
-  // Watch tipo_uso para mostrar campos condicionales
   const tipoUso = asignacionForm.watch('tipo_uso');
   const incluyeOperador = asignacionForm.watch('incluye_operador');
   const incluyeCombustible = asignacionForm.watch('incluye_combustible');
 
-  // Cargar asignaciones
   const loadAsignaciones = async () => {
     try {
       setLoading(true);
-      const response =
-        await api.get<ApiResponse<AsignacionExtended[]>>('/asignaciones');
+      const response = await api.get<ApiResponse<AsignacionExtended[]>>('/asignaciones');
       if (response.data.success && response.data.data) {
-        const allAsignaciones = response.data.data;
-        const alquiler = allAsignaciones.filter(
-          (a) => a.tipo_uso === 'alquiler',
-        );
-        const propios = allAsignaciones.filter((a) => a.tipo_uso === 'propio');
-        setAsignaciones({ alquiler, propios });
+        const all = response.data.data;
+        setAsignaciones({
+          alquiler: all.filter((a) => a.tipo_uso === 'alquiler'),
+          propios: all.filter((a) => a.tipo_uso === 'propio'),
+        });
       }
     } catch (err) {
       console.error('Error loading asignaciones:', err);
@@ -209,39 +192,27 @@ export default function AsignacionesEquiposN() {
     }
   };
 
-  // Cargar datos iniciales para formularios
-  const loadFormData = async (
-    editingAsignacion: AsignacionExtended | null = null,
-  ) => {
+  const loadFormData = async (editingAsignacion: AsignacionExtended | null = null) => {
     try {
-      const [equiposRes, clientesRes, proyectosRes, asignacionesRes] =
-        await Promise.all([
-          api.get<ApiResponse<EquipoExtended[]>>('/equipos'),
-          api.get<{ success: boolean; data: Cliente[] }>('/clientes'),
-          api.get<{ success: boolean; proyectos: Project[] }>('/projects'),
-          api.get<ApiResponse<AsignacionExtended[]>>('/asignaciones'),
-        ]);
+      const [equiposRes, clientesRes, proyectosRes, asignacionesRes] = await Promise.all([
+        api.get<ApiResponse<EquipoExtended[]>>('/equipos'),
+        api.get<{ success: boolean; data: Cliente[] }>('/clientes'),
+        api.get<{ success: boolean; proyectos: Project[] }>('/projects'),
+        api.get<ApiResponse<AsignacionExtended[]>>('/asignaciones'),
+      ]);
 
       if (equiposRes.data.success && equiposRes.data.data) {
         const todosEquipos = equiposRes.data.data;
         setEquipos(todosEquipos);
-
-        // Filtrar equipos disponibles
         if (asignacionesRes.data.success && asignacionesRes.data.data) {
-          const asignaciones = asignacionesRes.data.data;
-          const equiposAsignadosIds = asignaciones
+          const equiposAsignadosIds = asignacionesRes.data.data
             .filter((a) => !editingAsignacion || a.id !== editingAsignacion.id)
             .map((a) => a.equipo_id);
-
-          const disponibles = todosEquipos.filter(
-            (e) => !equiposAsignadosIds.includes(e.id),
-          );
-          setEquiposDisponibles(disponibles);
+          setEquiposDisponibles(todosEquipos.filter((e) => !equiposAsignadosIds.includes(e.id)));
         } else {
           setEquiposDisponibles(todosEquipos);
         }
       }
-
       if (clientesRes.data.success) setClientes(clientesRes.data.data);
       if (proyectosRes.data.success) setProyectos(proyectosRes.data.proyectos);
     } catch (err) {
@@ -250,7 +221,6 @@ export default function AsignacionesEquiposN() {
     }
   };
 
-  // Cargar registros de uso
   const loadRegistrosUso = async (asignacionId: number) => {
     try {
       const response = await api.get<ApiResponse<RegistroUsoExtended[]>>(
@@ -268,25 +238,14 @@ export default function AsignacionesEquiposN() {
     loadAsignaciones();
   }, []);
 
-  // Handlers
   const handleNewAsignacion = async () => {
     await loadFormData();
     setSelectedAsignacion(null);
     asignacionForm.reset({
-      equipo_id: '',
-      cliente_id: '',
-      proyecto_id: '',
-      responsable_id: '',
-      fecha_inicio: '',
-      fecha_fin: '',
-      tipo_uso: 'propio',
-      tipo_cobro: '',
-      tarifa: '',
-      incluye_operador: false,
-      costo_operador: '',
-      incluye_combustible: false,
-      costo_combustible: '',
-      observaciones: '',
+      equipo_id: '', cliente_id: '', proyecto_id: '', responsable_id: '',
+      fecha_inicio: '', fecha_fin: '', tipo_uso: 'propio', tipo_cobro: '',
+      tarifa: '', incluye_operador: false, costo_operador: '',
+      incluye_combustible: false, costo_combustible: '', observaciones: '',
     });
     setFormOpen(true);
   };
@@ -299,9 +258,7 @@ export default function AsignacionesEquiposN() {
       cliente_id: asignacion.cliente_id?.toString() || '',
       proyecto_id: asignacion.proyecto_id?.toString() || '',
       responsable_id: asignacion.responsable_id || '',
-      fecha_inicio: asignacion.fecha_inicio
-        ? asignacion.fecha_inicio.split('T')[0]
-        : '',
+      fecha_inicio: asignacion.fecha_inicio ? asignacion.fecha_inicio.split('T')[0] : '',
       fecha_fin: asignacion.fecha_fin ? asignacion.fecha_fin.split('T')[0] : '',
       tipo_uso: asignacion.tipo_uso || 'propio',
       tipo_cobro: asignacion.tipo_cobro || '',
@@ -319,9 +276,7 @@ export default function AsignacionesEquiposN() {
     setSelectedAsignacion(asignacion);
     await loadRegistrosUso(asignacion.id);
     registroUsoForm.reset({
-      fecha_inicio: asignacion.fecha_inicio
-        ? asignacion.fecha_inicio.split('T')[0]
-        : '',
+      fecha_inicio: asignacion.fecha_inicio ? asignacion.fecha_inicio.split('T')[0] : '',
       fecha_fin: '',
       cantidad: 0,
       observaciones: '',
@@ -335,16 +290,11 @@ export default function AsignacionesEquiposN() {
       let response;
       if (selectedAsignacion) {
         response = await api.put<ApiResponse<AsignacionExtended>>(
-          `/asignaciones/${selectedAsignacion.id}`,
-          data,
+          `/asignaciones/${selectedAsignacion.id}`, data,
         );
       } else {
-        response = await api.post<ApiResponse<AsignacionExtended>>(
-          '/asignaciones',
-          data,
-        );
+        response = await api.post<ApiResponse<AsignacionExtended>>('/asignaciones', data);
       }
-
       if (response.data.success) {
         await loadAsignaciones();
         setFormOpen(false);
@@ -364,25 +314,16 @@ export default function AsignacionesEquiposN() {
 
   const handleRegistroUsoSubmit = async (data: RegistroUsoFormData) => {
     if (!selectedAsignacion) return;
-
     setIsSubmitting(true);
     try {
       const dataToSend = {
         asignacion_id: selectedAsignacion.id,
         fecha_inicio: data.fecha_inicio,
-        fecha_fin:
-          selectedAsignacion.tipo_cobro === 'hora'
-            ? data.fecha_inicio
-            : data.fecha_fin,
+        fecha_fin: selectedAsignacion.tipo_cobro === 'hora' ? data.fecha_inicio : data.fecha_fin,
         cantidad: data.cantidad,
         observaciones: data.observaciones || null,
       };
-
-      const response = await api.post<ApiResponse<RegistroUsoExtended>>(
-        '/registro-uso',
-        dataToSend,
-      );
-
+      const response = await api.post<ApiResponse<RegistroUsoExtended>>('/registro-uso', dataToSend);
       if (response.data.success) {
         await loadRegistrosUso(selectedAsignacion.id);
         registroUsoForm.reset({
@@ -402,13 +343,8 @@ export default function AsignacionesEquiposN() {
     }
   };
 
-  const handleDeleteClick = () => {
-    setDeleteOpen(true);
-  };
-
   const handleDeleteConfirm = async () => {
     if (!selectedAsignacion) return;
-
     setIsSubmitting(true);
     try {
       const response = await api.delete<ApiResponse<void>>(
@@ -428,7 +364,6 @@ export default function AsignacionesEquiposN() {
     }
   };
 
-  // Renderizar tabla
   const renderTable = (
     asignacionesData: AsignacionExtended[],
     title: string,
@@ -438,94 +373,82 @@ export default function AsignacionesEquiposN() {
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Descripción</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead className="w-[100px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead>Descripción</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                  Cargando...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {asignacionesData.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="text-center text-muted-foreground"
-                  >
-                    No hay asignaciones
+            ) : asignacionesData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                  No hay asignaciones
+                </TableCell>
+              </TableRow>
+            ) : (
+              asignacionesData.map((asignacion) => (
+                <TableRow
+                  key={asignacion.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() =>
+                    showRegistroBtn
+                      ? handleRegistroUso(asignacion)
+                      : handleEditAsignacion(asignacion)
+                  }
+                >
+                  <TableCell className="font-medium">
+                    {asignacion.equipo_descripcion}
                   </TableCell>
-                </TableRow>
-              ) : (
-                asignacionesData.map((asignacion) => (
-                  <TableRow
-                    key={asignacion.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() =>
-                      showRegistroBtn
-                        ? handleRegistroUso(asignacion)
-                        : handleEditAsignacion(asignacion)
-                    }
-                  >
-                    <TableCell className="font-medium">
-                      {asignacion.equipo_descripcion}
-                    </TableCell>
-                    <TableCell>{asignacion.cliente_nombre}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {showRegistroBtn && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRegistroUso(asignacion);
-                            }}
-                            title="Registrar Uso"
-                          >
-                            <Clock className="h-4 w-4" />
-                          </Button>
-                        )}
+                  <TableCell>{asignacion.cliente_nombre}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {showRegistroBtn && (
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditAsignacion(asignacion);
+                            handleRegistroUso(asignacion);
                           }}
-                          title="Editar"
+                          title="Registrar Uso"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Clock className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditAsignacion(asignacion);
+                        }}
+                        title="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Cargando asignaciones...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-end">
         <Button onClick={handleNewAsignacion}>
           <Plus className="mr-2 h-4 w-4" />
@@ -533,550 +456,470 @@ export default function AsignacionesEquiposN() {
         </Button>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {error && !formOpen && !registroUsoOpen && (
+        <Alert variant="error" title={error} />
       )}
 
-      {/* Tablas */}
       {renderTable(asignaciones.alquiler, 'Equipos en Alquiler', true)}
       {renderTable(asignaciones.propios, 'Equipos en Proyectos Propios', false)}
 
       {/* Formulario de Asignación */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedAsignacion
-                ? 'Editar Asignación'
-                : 'Nueva Asignación de Equipo'}
-            </DialogTitle>
-          </DialogHeader>
+      <AppDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        size="standard"
+        title={selectedAsignacion ? 'Editar Asignación' : 'Nueva Asignación de Equipo'}
+        footer={
+          <>
+            <div>
+              {selectedAsignacion && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                  disabled={isSubmitting}
+                >
+                  Eliminar
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" form="asignacion-form" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : selectedAsignacion ? (
+                  'Actualizar'
+                ) : (
+                  'Crear Asignación'
+                )}
+              </Button>
+            </div>
+          </>
+        }
+      >
+        {error && formOpen && <Alert variant="error" title={error} className="mb-4" />}
 
-          <Form {...asignacionForm}>
-            <form
-              onSubmit={asignacionForm.handleSubmit(handleAsignacionSubmit)}
-              className="space-y-4"
-            >
-              {!selectedAsignacion && (
+        <Form {...asignacionForm}>
+          <form
+            id="asignacion-form"
+            onSubmit={asignacionForm.handleSubmit(handleAsignacionSubmit)}
+            className="space-y-4"
+          >
+            {!selectedAsignacion && (
+              <FormField
+                control={asignacionForm.control}
+                name="equipo_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Equipo *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar equipo..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {equiposDisponibles.map((equipo) => (
+                          <SelectItem key={equipo.id} value={equipo.id.toString()}>
+                            {equipo.codigo} - {equipo.descripcion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {selectedAsignacion && (
+              <div className="rounded-md bg-muted p-3 text-sm font-semibold">
+                Equipo:{' '}
+                {equipos.find((e) => e.id === selectedAsignacion.equipo_id)?.codigo} —{' '}
+                {equipos.find((e) => e.id === selectedAsignacion.equipo_id)?.descripcion}
+              </div>
+            )}
+
+            <FormField
+              control={asignacionForm.control}
+              name="cliente_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cliente *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar cliente..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                          {cliente.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={asignacionForm.control}
+              name="proyecto_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Proyecto *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar proyecto..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {proyectos.map((proyecto) => (
+                        <SelectItem key={proyecto.id} value={proyecto.id.toString()}>
+                          {proyecto.nombre_corto}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={asignacionForm.control}
+              name="responsable_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Responsable</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nombre del responsable" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={asignacionForm.control}
+              name="fecha_inicio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fecha de Inicio *</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={asignacionForm.control}
+              name="tipo_uso"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Uso *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="propio">Propio</SelectItem>
+                      <SelectItem value="alquiler">Alquiler</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {tipoUso === 'alquiler' && (
+              <>
                 <FormField
                   control={asignacionForm.control}
-                  name="equipo_id"
+                  name="tipo_cobro"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Equipo *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+                      <FormLabel>Tipo de Cobro</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar equipo..." />
+                            <SelectValue placeholder="Seleccionar..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {equiposDisponibles.map((equipo) => (
-                            <SelectItem
-                              key={equipo.id}
-                              value={equipo.id.toString()}
-                            >
-                              {equipo.codigo} - {equipo.descripcion}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="hora">Por Hora</SelectItem>
+                          <SelectItem value="dia">Por Día</SelectItem>
+                          <SelectItem value="semana">Por Semana</SelectItem>
+                          <SelectItem value="mes">Por Mes</SelectItem>
+                          <SelectItem value="costo_fijo">Costo Fijo</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
 
-              {selectedAsignacion && (
-                <div className="rounded-md bg-muted p-3">
-                  <span className="font-semibold">
-                    Equipo:{' '}
-                    {
-                      equipos.find((e) => e.id === selectedAsignacion.equipo_id)
-                        ?.codigo
-                    }{' '}
-                    -{' '}
-                    {
-                      equipos.find((e) => e.id === selectedAsignacion.equipo_id)
-                        ?.descripcion
-                    }
-                  </span>
-                </div>
-              )}
-
-              <FormField
-                control={asignacionForm.control}
-                name="cliente_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar cliente..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clientes.map((cliente) => (
-                          <SelectItem
-                            key={cliente.id}
-                            value={cliente.id.toString()}
-                          >
-                            {cliente.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={asignacionForm.control}
-                name="proyecto_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Proyecto *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar proyecto..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {proyectos.map((proyecto) => (
-                          <SelectItem
-                            key={proyecto.id}
-                            value={proyecto.id.toString()}
-                          >
-                            {proyecto.nombre_corto}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={asignacionForm.control}
-                name="responsable_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsable</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nombre del responsable" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={asignacionForm.control}
-                name="fecha_inicio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha de Inicio *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={asignacionForm.control}
-                name="tipo_uso"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Uso *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="propio">Propio</SelectItem>
-                        <SelectItem value="alquiler">Alquiler</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {tipoUso === 'alquiler' && (
-                <>
-                  <FormField
-                    control={asignacionForm.control}
-                    name="tipo_cobro"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Cobro</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="hora">Por Hora</SelectItem>
-                            <SelectItem value="dia">Por Día</SelectItem>
-                            <SelectItem value="semana">Por Semana</SelectItem>
-                            <SelectItem value="mes">Por Mes</SelectItem>
-                            <SelectItem value="costo_fijo">
-                              Costo Fijo
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={asignacionForm.control}
-                    name="tarifa"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tarifa</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="Ej: 100.00"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-
-              <FormField
-                control={asignacionForm.control}
-                name="incluye_operador"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Incluye Operador</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {incluyeOperador && (
                 <FormField
                   control={asignacionForm.control}
-                  name="costo_operador"
+                  name="tarifa"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Costo Operador</FormLabel>
+                      <FormLabel>Tarifa</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Ej: 50.00"
-                          {...field}
-                        />
+                        <Input type="number" step="0.01" placeholder="Ej: 100.00" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
+              </>
+            )}
 
+            <FormField
+              control={asignacionForm.control}
+              name="incluye_operador"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Incluye Operador</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {incluyeOperador && (
               <FormField
                 control={asignacionForm.control}
-                name="incluye_combustible"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Incluye Combustible</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {incluyeCombustible && (
-                <FormField
-                  control={asignacionForm.control}
-                  name="costo_combustible"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Costo Combustible</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Ej: 25.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <FormField
-                control={asignacionForm.control}
-                name="observaciones"
+                name="costo_operador"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Observaciones</FormLabel>
+                    <FormLabel>Costo Operador</FormLabel>
                     <FormControl>
-                      <Textarea
-                        rows={3}
-                        placeholder="Comentarios adicionales"
-                        {...field}
-                      />
+                      <Input type="number" step="0.01" placeholder="Ej: 50.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
 
-              <DialogFooter className="gap-2">
-                {selectedAsignacion && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={handleDeleteClick}
-                    disabled={isSubmitting}
-                  >
-                    Eliminar
-                  </Button>
+            <FormField
+              control={asignacionForm.control}
+              name="incluye_combustible"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Incluye Combustible</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {incluyeCombustible && (
+              <FormField
+                control={asignacionForm.control}
+                name="costo_combustible"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costo Combustible</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" placeholder="Ej: 25.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setFormOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : selectedAsignacion ? (
-                    'Actualizar'
-                  ) : (
-                    'Crear Asignación'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+              />
+            )}
+
+            <FormField
+              control={asignacionForm.control}
+              name="observaciones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observaciones</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} placeholder="Comentarios adicionales" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </AppDialog>
 
       {/* Formulario de Registro de Uso */}
-      <Dialog open={registroUsoOpen} onOpenChange={setRegistroUsoOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Registrar Uso del Equipo</DialogTitle>
-            <DialogDescription>
-              {selectedAsignacion?.equipo_descripcion} -{' '}
-              {selectedAsignacion?.cliente_nombre}
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...registroUsoForm}>
-            <form
-              onSubmit={registroUsoForm.handleSubmit(handleRegistroUsoSubmit)}
-              className="space-y-4"
-            >
-              <FormField
-                control={registroUsoForm.control}
-                name="fecha_inicio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {selectedAsignacion?.tipo_cobro !== 'hora' && (
-                <FormField
-                  control={registroUsoForm.control}
-                  name="fecha_fin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha Fin</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <FormField
-                control={registroUsoForm.control}
-                name="cantidad"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Cantidad ({selectedAsignacion?.tipo_cobro || 'horas'}) *
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={registroUsoForm.control}
-                name="observaciones"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Observaciones</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        rows={3}
-                        placeholder="Comentarios..."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Tabla de registros anteriores */}
-              {registrosUso.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Registros Anteriores</h4>
-                  <div className="rounded-md border max-h-40 overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead>Cantidad</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {registrosUso.map((registro) => (
-                          <TableRow key={registro.id}>
-                            <TableCell className="text-sm">
-                              {new Date(
-                                registro.fecha_inicio,
-                              ).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {registro.cantidad}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setRegistroUsoOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Cerrar
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    'Registrar'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Confirmación de Eliminación */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Confirmar Eliminación</DialogTitle>
-            <DialogDescription>
-              ¿Está seguro de que desea eliminar esta asignación? Esta acción no
-              se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+      <AppDialog
+        open={registroUsoOpen}
+        onOpenChange={setRegistroUsoOpen}
+        size="simple"
+        title="Registrar Uso del Equipo"
+        description={`${selectedAsignacion?.equipo_descripcion} — ${selectedAsignacion?.cliente_nombre}`}
+        footer={
+          <>
             <Button
+              type="button"
               variant="outline"
-              onClick={() => setDeleteOpen(false)}
+              onClick={() => setRegistroUsoOpen(false)}
               disabled={isSubmitting}
             >
-              Cancelar
+              Cerrar
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-              disabled={isSubmitting}
-            >
+            <Button type="submit" form="registro-uso-form" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Eliminando...
+                  Guardando...
                 </>
               ) : (
-                'Eliminar'
+                'Registrar'
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <Form {...registroUsoForm}>
+          <form
+            id="registro-uso-form"
+            onSubmit={registroUsoForm.handleSubmit(handleRegistroUsoSubmit)}
+            className="space-y-4"
+          >
+            <FormField
+              control={registroUsoForm.control}
+              name="fecha_inicio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fecha *</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {selectedAsignacion?.tipo_cobro !== 'hora' && (
+              <FormField
+                control={registroUsoForm.control}
+                name="fecha_fin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha Fin</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField
+              control={registroUsoForm.control}
+              name="cantidad"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Cantidad ({selectedAsignacion?.tipo_cobro || 'horas'}) *
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" placeholder="0" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={registroUsoForm.control}
+              name="observaciones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observaciones</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} placeholder="Comentarios..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {registrosUso.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Registros Anteriores</h4>
+                <div className="rounded-md border max-h-40 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Cantidad</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {registrosUso.map((registro) => (
+                        <TableRow key={registro.id}>
+                          <TableCell className="text-sm">
+                            {new Date(registro.fecha_inicio).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-sm">{registro.cantidad}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </form>
+        </Form>
+      </AppDialog>
+
+      {/* Confirmación de eliminación */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar asignación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert as ShellAlert } from '@/components/shell/Alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import api from '../../services/api';
@@ -83,6 +84,7 @@ export default function ProjectSolicitudesPago({
   const [spPrefijo, setSpPrefijo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   // Prefix config
   const [prefijoInput, setPrefijoInput] = useState('');
@@ -352,7 +354,7 @@ export default function ProjectSolicitudesPago({
     } catch (err) {
       console.error('Error saving prefijo:', err);
       const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al guardar el prefijo');
+      setActionError(apiError.response?.data?.message || 'Error al guardar el prefijo');
     } finally {
       setSavingPrefijo(false);
     }
@@ -394,7 +396,7 @@ export default function ProjectSolicitudesPago({
       }
     } catch (err) {
       console.error('Error loading detail:', err);
-      alert('Error al cargar el detalle');
+      setActionError('Error al cargar el detalle');
     }
   };
 
@@ -429,6 +431,7 @@ export default function ProjectSolicitudesPago({
       setRejectingId,
       setShowDetail,
       refreshList: loadSolicitudes,
+      onError: setActionError,
     });
 
   const handleRegistrarPago = (solicitudId: number) =>
@@ -440,6 +443,7 @@ export default function ProjectSolicitudesPago({
       setShowRegistrarPagoModal,
       setShowDetail,
       refreshList: loadSolicitudes,
+      onError: setActionError,
     });
 
   const handleRegistrarFactura = (solicitudId: number) =>
@@ -453,6 +457,7 @@ export default function ProjectSolicitudesPago({
       setShowRegistrarFacturaModal,
       setShowDetail,
       refreshList: loadSolicitudes,
+      onError: setActionError,
     });
 
   const handleRegistrarReembolso = (solicitudId: number) =>
@@ -466,6 +471,7 @@ export default function ProjectSolicitudesPago({
       refreshDetail: async () => {
         if (detailSolicitud) await openDetail(detailSolicitud);
       },
+      onError: setActionError,
     });
 
   const handleRegistrarDevolucion = (solicitudId: number) =>
@@ -478,6 +484,7 @@ export default function ProjectSolicitudesPago({
       setShowDevolucionModal,
       setShowDetail,
       refreshList: loadSolicitudes,
+      onError: setActionError,
     });
 
   const handleReenviar = (solicitudId: number) =>
@@ -486,6 +493,7 @@ export default function ProjectSolicitudesPago({
       setResubmitting,
       setShowDetail,
       refreshList: loadSolicitudes,
+      onError: setActionError,
     });
 
   const handleUploadAdjuntos = (files: FileList) => {
@@ -495,11 +503,12 @@ export default function ProjectSolicitudesPago({
       files,
       setUploadingFiles,
       setDetailAdjuntos,
+      onError: setActionError,
     });
   };
 
   const handleDeleteAdjunto = (adjuntoId: number) =>
-    deleteSolicitudAdjunto({ adjuntoId, setDetailAdjuntos });
+    deleteSolicitudAdjunto({ adjuntoId, setDetailAdjuntos, onError: setActionError });
 
   const handleToggleRevisada = (solicitudId: number) =>
     toggleRevisadaSolicitud({
@@ -508,6 +517,7 @@ export default function ProjectSolicitudesPago({
       setTogglingRevisada,
       setDetailRevisada,
       setSolicitudes,
+      onError: setActionError,
     });
 
   // Get IDs of reviewed solicitudes that are my turn to approve
@@ -538,6 +548,7 @@ export default function ProjectSolicitudesPago({
       setShowDeleteModal,
       setShowDetail,
       refreshList: loadSolicitudes,
+      onError: setActionError,
     });
 
   // Stats
@@ -612,6 +623,8 @@ export default function ProjectSolicitudesPago({
 
   return (
     <div className="space-y-6">
+      {actionError && <ShellAlert variant="error" title={actionError} />}
+
       {/* Summary Cards */}
       <div className="flex flex-wrap gap-4">
         <Card className="flex-1 min-w-[140px]">
@@ -1024,7 +1037,7 @@ export default function ProjectSolicitudesPago({
               const apiError = err as {
                 response?: { data?: { message?: string } };
               };
-              alert(
+              setActionError(
                 apiError.response?.data?.message ||
                   'Error al cambiar pinellas_paga',
               );

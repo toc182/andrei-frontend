@@ -28,8 +28,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Shell Components
+import { PageHeader } from '@/components/shell/PageHeader';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
 
 // --- Zod schemas ---
 
@@ -703,9 +707,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   if (!caja) {
     return (
       <div className="space-y-4">
-        <Alert variant="destructive">
-          <AlertDescription>Caja menuda no encontrada</AlertDescription>
-        </Alert>
+        <Alert variant="error" title="Caja menuda no encontrada" />
       </div>
     );
   }
@@ -717,45 +719,42 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">{caja.nombre}</h2>
-          <p className="text-muted-foreground text-sm">{caja.proyecto_nombre}</p>
-        </div>
+      <PageHeader title={caja.nombre} subtitle={caja.proyecto_nombre}>
         <Badge
           variant={caja.estado === 'abierta' ? 'outline' : 'secondary'}
           className={caja.estado === 'abierta' ? 'bg-green-50 text-green-700 border-green-300' : ''}
         >
           {caja.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
         </Badge>
-      </div>
+      </PageHeader>
 
       {/* Apertura solicitud status */}
       {caja.solicitud_apertura_id ? (
         caja.solicitud_apertura_estado !== 'transferida' &&
         !(caja.solicitud_apertura_estado === 'rechazada' && Number(caja.monto_asignado) > 0) && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>
-              {caja.solicitud_apertura_estado === 'rechazada'
+          <Alert
+            variant="error"
+            title={
+              caja.solicitud_apertura_estado === 'rechazada'
                 ? 'Transferencia de apertura rechazada'
-                : 'Transferencia de apertura pendiente'}
-            </AlertTitle>
-            <AlertDescription>
-              {caja.solicitud_apertura_estado === 'rechazada'
+                : 'Transferencia de apertura pendiente'
+            }
+            description={
+              caja.solicitud_apertura_estado === 'rechazada'
                 ? `La solicitud de apertura (${caja.solicitud_apertura_numero}) fue rechazada. El monto asignado se ajustó a 0.`
-                : `La solicitud de apertura (${caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.`}
-            </AlertDescription>
-          </Alert>
+                : `La solicitud de apertura (${caja.solicitud_apertura_numero}) aún no tiene transferencia registrada.`
+            }
+          />
         )
       ) : (
         /* Legacy: cajas created before solicitud flow */
         !caja.comprobante_apertura_r2_key && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
-              <span>Esta caja menuda no tiene comprobante de apertura cargado.</span>
-              <div className="flex items-center gap-2">
+          <Alert
+            variant="error"
+            title="Sin comprobante de apertura"
+            description="Esta caja menuda no tiene comprobante de apertura cargado."
+            actions={
+              <>
                 <input
                   ref={aperturaInputRef}
                   type="file"
@@ -777,9 +776,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                   )}
                   Subir comprobante
                 </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
+              </>
+            }
+          />
         )
       )}
 
@@ -815,11 +814,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         </div>
       )}
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <Alert variant="error" title={error} />}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -966,44 +961,48 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             </div>
 
             {/* Desktop: Table */}
-            <div className="hidden md:block rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Proveedor</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                    <TableHead className="text-right">ITBMS</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    {isPending && <TableHead className="w-[80px]"></TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {gastos.map((gasto) => (
-                    <TableRow key={gasto.id}>
-                      <TableCell>{formatDate(gasto.fecha)}</TableCell>
-                      <TableCell>{gasto.proveedor}</TableCell>
-                      <TableCell>{gasto.descripcion}</TableCell>
-                      <TableCell className="text-right">{formatMonto(gasto.monto)}</TableCell>
-                      <TableCell className="text-right">{formatMonto(gasto.itbms)}</TableCell>
-                      <TableCell className="text-right font-medium">{formatMonto(gasto.monto_total)}</TableCell>
-                      {isPending && (
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleEditGasto(gasto)}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
-                              <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="hidden md:block">
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Proveedor</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                        <TableHead className="text-right">ITBMS</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        {isPending && <TableHead className="w-[80px]"></TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {gastos.map((gasto) => (
+                        <TableRow key={gasto.id}>
+                          <TableCell>{formatDate(gasto.fecha)}</TableCell>
+                          <TableCell>{gasto.proveedor}</TableCell>
+                          <TableCell>{gasto.descripcion}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatMonto(gasto.monto)}</TableCell>
+                          <TableCell className="text-right tabular-nums">{formatMonto(gasto.itbms)}</TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">{formatMonto(gasto.monto_total)}</TableCell>
+                          {isPending && (
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleEditGasto(gasto)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
+                                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Footer total */}
@@ -1078,7 +1077,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       {/* Historial de monto asignado */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Historial de monto asignado</h3>
-        <div className="rounded-md border">
+        <Card>
+          <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1203,32 +1203,85 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
               ))}
             </TableBody>
           </Table>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Gasto Form Dialog */}
-      <Dialog open={showGastoModal} onOpenChange={setShowGastoModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Editar Gasto</DialogTitle>
-          </DialogHeader>
+      <AppDialog
+        open={showGastoModal}
+        onOpenChange={setShowGastoModal}
+        size="simple"
+        title="Editar Gasto"
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setShowGastoModal(false)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="edit-gasto-form" disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Actualizar
+            </Button>
+          </>
+        }
+      >
+        {error && showGastoModal && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+        <Form {...gastoForm}>
+          <form id="edit-gasto-form" onSubmit={gastoForm.handleSubmit(handleSubmitGasto)} className="space-y-4">
+            <FormField
+              control={gastoForm.control}
+              name="fecha"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fecha *</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Form {...gastoForm}>
-            <form onSubmit={gastoForm.handleSubmit(handleSubmitGasto)} className="space-y-4">
+            <FormField
+              control={gastoForm.control}
+              name="proveedor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Proveedor *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nombre del proveedor" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={gastoForm.control}
+              name="descripcion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripción *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Descripción del gasto" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-3 gap-3">
               <FormField
                 control={gastoForm.control}
-                name="fecha"
+                name="monto"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha *</FormLabel>
+                    <FormLabel>Monto *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1237,12 +1290,12 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
               <FormField
                 control={gastoForm.control}
-                name="proveedor"
+                name="itbms"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Proveedor *</FormLabel>
+                    <FormLabel>ITBMS</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nombre del proveedor" {...field} />
+                      <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1251,75 +1304,21 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
               <FormField
                 control={gastoForm.control}
-                name="descripcion"
+                name="monto_total"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descripción *</FormLabel>
+                    <FormLabel>Total *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Descripción del gasto" {...field} />
+                      <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} readOnly className="bg-muted" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              <div className="grid grid-cols-3 gap-3">
-                <FormField
-                  control={gastoForm.control}
-                  name="monto"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Monto *</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={gastoForm.control}
-                  name="itbms"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ITBMS</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={gastoForm.control}
-                  name="monto_total"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total *</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} readOnly className="bg-muted" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowGastoModal(false)} disabled={submitting}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Actualizar
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+            </div>
+          </form>
+        </Form>
+      </AppDialog>
 
       {/* Batch Gastos Modal */}
       <Dialog open={showBatchModal} onOpenChange={(open) => { if (!open) setShowBatchModal(false); }}>
@@ -1330,9 +1329,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
           {error && (
             <div className="px-4">
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <Alert variant="error" title={error} />
             </div>
           )}
 

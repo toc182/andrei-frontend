@@ -6,6 +6,9 @@
 import { useState, useEffect, ReactNode } from 'react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { AppErrorBoundary } from '@/components/shell/AppErrorBoundary';
+import { PageHeader } from '@/components/shell/PageHeader';
+import { StatCard } from '@/components/shell/StatCard';
+import { Alert } from '@/components/shell/Alert';
 import {
   Card,
   CardContent,
@@ -14,9 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Building2, Users, Truck, TrendingUp, AlertCircle } from 'lucide-react';
+import { Building2, Users, Truck, TrendingUp } from 'lucide-react';
 import ProjectsList from '../components/ProjectsList';
 import ClientesN from './ClientesN';
 import DocumentosPage from './DocumentosPage';
@@ -151,124 +152,44 @@ export default function DashboardNew() {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Panel de Control
-              </h1>
-              <p className="text-muted-foreground">
-                Bienvenido al sistema Andrei - Gestión de Proyectos
-              </p>
-            </div>
+            <PageHeader
+              title="Panel de Control"
+              subtitle="Bienvenido al sistema Andrei - Gestión de Proyectos"
+            />
 
             {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <Alert variant="error" title={error} />
             )}
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Proyectos Activos
-                  </CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <>
-                      <Skeleton className="h-8 w-16 mb-1" />
-                      <Skeleton className="h-4 w-20" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {stats.proyectos?.proyectos_activos || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        En ejecución
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    En Planificación
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <>
-                      <Skeleton className="h-8 w-16 mb-1" />
-                      <Skeleton className="h-4 w-20" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {stats.proyectos?.proyectos_planificacion || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Por iniciar
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Clientes
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <>
-                      <Skeleton className="h-8 w-16 mb-1" />
-                      <Skeleton className="h-4 w-20" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {stats.clientes?.total_clientes || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Registrados
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Equipos</CardTitle>
-                  <Truck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <>
-                      <Skeleton className="h-8 w-16 mb-1" />
-                      <Skeleton className="h-4 w-20" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {stats.equipos?.total || 0}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Disponibles
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <StatCard
+                label="Proyectos Activos"
+                value={loading ? '—' : String(stats.proyectos?.proyectos_activos || 0)}
+                icon={Building2}
+                accent="navy"
+                onClick={() => setCurrentView('projects')}
+              />
+              <StatCard
+                label="En Planificación"
+                value={loading ? '—' : String(stats.proyectos?.proyectos_planificacion || 0)}
+                icon={TrendingUp}
+                accent="teal"
+                onClick={() => setCurrentView('projects')}
+              />
+              <StatCard
+                label="Total Clientes"
+                value={loading ? '—' : String(stats.clientes?.total_clientes || 0)}
+                icon={Users}
+                accent="info"
+                onClick={() => setCurrentView('clientes')}
+              />
+              <StatCard
+                label="Equipos"
+                value={loading ? '—' : String(stats.equipos?.total || 0)}
+                icon={Truck}
+                accent="warning"
+                onClick={() => setCurrentView('equipos')}
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

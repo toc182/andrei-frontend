@@ -4,6 +4,7 @@
  */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/shell/PageHeader';
 import EquiposInformacionN from './equipos/EquiposInformacionN';
 import EquiposStatusN from './equipos/EquiposStatusN';
 import AsignacionesEquiposN from './equipos/AsignacionesEquiposN';
@@ -18,8 +19,11 @@ export default function EquiposPage({
   onTabChange,
 }: EquiposPageProps) {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Equipos</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title="Equipos"
+        subtitle="Administra equipos y asignaciones"
+      />
       <Tabs
         defaultValue={defaultTab}
         onValueChange={(value) => onTabChange?.(value)}

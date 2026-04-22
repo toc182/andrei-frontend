@@ -9,14 +9,12 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
 import ProjectInformacion from './ProjectInformacion';
 import ProjectSummary from './ProjectSummary';
 import ProjectCostos from './ProjectCostos';
@@ -75,6 +73,7 @@ export default function ProjectDetailLayout({
   const [error, setError] = useState<string | null>(null);
   const [showAdendaForm, setShowAdendaForm] = useState<boolean>(false);
   const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null);
+  const [adendaToDelete, setAdendaToDelete] = useState<number | null>(null);
 
   // Load project data
   useEffect(() => {
@@ -171,19 +170,24 @@ export default function ProjectDetailLayout({
     }
   };
 
-  // Handle adenda delete
-  const handleDeleteAdenda = async (adendaId: number) => {
-    if (!confirm('¿Estás seguro de eliminar esta adenda?')) return;
-
+  // Handle adenda delete — called after confirmation
+  const confirmDeleteAdenda = async () => {
+    if (!adendaToDelete) return;
     try {
       setLoading(true);
-      await api.delete(`/adendas/${adendaId}`);
+      await api.delete(`/adendas/${adendaToDelete}`);
       await reloadAdendas();
     } catch (error) {
       console.error('Error eliminando adenda:', error);
     } finally {
       setLoading(false);
+      setAdendaToDelete(null);
     }
+  };
+
+  // Request delete confirmation
+  const handleDeleteAdenda = (adendaId: number) => {
+    setAdendaToDelete(adendaId);
   };
 
   // Render subview content
@@ -310,14 +314,10 @@ export default function ProjectDetailLayout({
 
   if (error) {
     return (
-      <div>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      <div className="space-y-4">
+        <Alert variant="error" title={error} />
         <Button
           variant="outline"
-          className="mt-4"
           onClick={() => onNavigate('projects')}
         >
           Volver a Proyectos
@@ -328,13 +328,10 @@ export default function ProjectDetailLayout({
 
   if (!project) {
     return (
-      <div>
-        <Alert>
-          <AlertDescription>Proyecto no encontrado</AlertDescription>
-        </Alert>
+      <div className="space-y-4">
+        <Alert variant="error" title="Proyecto no encontrado" />
         <Button
           variant="outline"
-          className="mt-4"
           onClick={() => onNavigate('projects')}
         >
           Volver a Proyectos
@@ -349,17 +346,14 @@ export default function ProjectDetailLayout({
       {renderSubview()}
 
       {/* Info Modal — triggered from sidebar (i) button */}
-      <Dialog
+      <AppDialog
         open={showInfo}
         onOpenChange={(open) => {
           if (!open) onCloseInfo?.();
         }}
+        size="standard"
+        title="Información del Proyecto"
       >
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-          <DialogHeader>
-            <DialogTitle>Información del Proyecto</DialogTitle>
-          </DialogHeader>
-
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
               <label className="font-medium text-sm text-muted-foreground">
@@ -648,8 +642,21 @@ export default function ProjectDetailLayout({
               })}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </AppDialog>
+
+      {/* Delete Adenda Confirmation */}
+      <AlertDialog open={adendaToDelete !== null} onOpenChange={(open) => { if (!open) setAdendaToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta adenda?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAdenda}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Adenda Form Modal */}
       <AdendaForm

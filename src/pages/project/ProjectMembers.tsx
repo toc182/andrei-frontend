@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   UserCircle,
-  AlertCircle,
   Settings,
   ArrowUp,
   ArrowDown,
@@ -26,14 +25,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,7 +35,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert } from '@/components/shell/Alert';
+import { AppDialog } from '@/components/shell/AppDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -144,6 +136,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
   const [selectedApproverUserId, setSelectedApproverUserId] = useState('');
   const [savingApprovers, setSavingApprovers] = useState(false);
   const [showApproverConfirm, setShowApproverConfirm] = useState(false);
+
+  // Remove member confirm state
+  const [toDelete, setToDelete] = useState<number | null>(null);
 
   // Load members
   const loadMembers = async () => {
@@ -337,10 +332,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     }
   };
 
-  // Remove member
+  // Remove member — confirmed via AlertDialog
   const handleRemoveMember = async (memberId: number) => {
-    if (!confirm('¿Estás seguro de remover esta persona del proyecto?')) return;
-
     try {
       await api.delete(`/project-members/${memberId}`);
       await loadMembers();
@@ -413,10 +406,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
   return (
     <div className="space-y-4 overflow-x-hidden">
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="error" title={error} />
       )}
 
       {/* Actions */}
@@ -501,7 +491,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleRemoveMember(member.id);
+                          setToDelete(member.id);
                         }}
                         className="text-destructive hover:text-destructive"
                       >
@@ -565,7 +555,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleRemoveMember(member.id);
+                      setToDelete(member.id);
                     }}
                     className="text-destructive hover:text-destructive"
                   >
@@ -611,100 +601,14 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
       </div>
 
       {/* Approvers Config Modal */}
-      <Dialog open={showApproversModal} onOpenChange={setShowApproversModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Configurar Aprobadores</DialogTitle>
-            <DialogDescription>
-              Los aprobadores revisan las solicitudes de pago en el orden
-              configurado
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Add approver */}
-            <div className="flex gap-2">
-              <Select
-                value={selectedApproverUserId}
-                onValueChange={setSelectedApproverUserId}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Seleccionar usuario..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableApproverUsers.length === 0 ? (
-                    <SelectItem value="-" disabled>
-                      No hay usuarios disponibles
-                    </SelectItem>
-                  ) : (
-                    availableApproverUsers.map((user) => (
-                      <SelectItem key={user.id} value={user.id.toString()}>
-                        {user.nombre}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={addApproverToList}
-                disabled={!selectedApproverUserId}
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Ordered list */}
-            {editApprovers.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Agregue al menos un aprobador
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {editApprovers.map((approver, index) => (
-                  <div
-                    key={approver.user_id}
-                    className="flex items-center gap-2 p-2 border rounded"
-                  >
-                    <span className="font-medium text-muted-foreground w-6 text-sm">
-                      {index + 1}.
-                    </span>
-                    <span className="flex-1 text-sm">{approver.nombre}</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => moveApprover(index, 'up')}
-                        disabled={index === 0}
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        onClick={() => moveApprover(index, 'down')}
-                        disabled={index === editApprovers.length - 1}
-                      >
-                        <ArrowDown className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        onClick={() => removeApproverFromList(approver.user_id)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
+      <AppDialog
+        open={showApproversModal}
+        onOpenChange={setShowApproversModal}
+        size="simple"
+        title="Configurar Aprobadores"
+        description="Los aprobadores revisan las solicitudes de pago en el orden configurado"
+        footer={
+          <>
             <Button
               variant="outline"
               onClick={() => setShowApproversModal(false)}
@@ -717,9 +621,92 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             >
               {savingApprovers ? 'Guardando...' : 'Guardar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Add approver */}
+          <div className="flex gap-2">
+            <Select
+              value={selectedApproverUserId}
+              onValueChange={setSelectedApproverUserId}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Seleccionar usuario..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableApproverUsers.length === 0 ? (
+                  <SelectItem value="-" disabled>
+                    No hay usuarios disponibles
+                  </SelectItem>
+                ) : (
+                  availableApproverUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.nombre}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={addApproverToList}
+              disabled={!selectedApproverUserId}
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Ordered list */}
+          {editApprovers.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Agregue al menos un aprobador
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {editApprovers.map((approver, index) => (
+                <div
+                  key={approver.user_id}
+                  className="flex items-center gap-2 p-2 border rounded"
+                >
+                  <span className="font-medium text-muted-foreground w-6 text-sm">
+                    {index + 1}.
+                  </span>
+                  <span className="flex-1 text-sm">{approver.nombre}</span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => moveApprover(index, 'up')}
+                      disabled={index === 0}
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => moveApprover(index, 'down')}
+                      disabled={index === editApprovers.length - 1}
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={() => removeApproverFromList(approver.user_id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </AppDialog>
 
       {/* Confirm approver changes */}
       <AlertDialog
@@ -744,125 +731,48 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Confirm remove member */}
+      <AlertDialog
+        open={toDelete !== null}
+        onOpenChange={(open) => { if (!open) setToDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover persona del proyecto</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de remover esta persona del proyecto?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (toDelete !== null) {
+                  handleRemoveMember(toDelete);
+                  setToDelete(null);
+                }
+              }}
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Add Member Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Agregar Personal</DialogTitle>
-            <DialogDescription className="sr-only">
-              Agregar un usuario o contacto externo al proyecto
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Radio buttons for type */}
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <RadioGroup
-                value={memberType}
-                onValueChange={(v) => {
-                  setMemberType(v as 'usuario' | 'externo');
-                  setSelectedUserId('');
-                  setSelectedExternalId('');
-                }}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="usuario" id="tipo-usuario" />
-                  <Label
-                    htmlFor="tipo-usuario"
-                    className="font-normal cursor-pointer"
-                  >
-                    Usuario del sistema
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="externo" id="tipo-externo" />
-                  <Label
-                    htmlFor="tipo-externo"
-                    className="font-normal cursor-pointer"
-                  >
-                    Contacto externo
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Dropdown based on type */}
-            {memberType === 'usuario' ? (
-              <div className="space-y-2">
-                <Label>Usuario</Label>
-                <Select
-                  value={selectedUserId}
-                  onValueChange={setSelectedUserId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar usuario..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers.length === 0 ? (
-                      <SelectItem value="-" disabled>
-                        No hay usuarios disponibles
-                      </SelectItem>
-                    ) : (
-                      availableUsers.map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.nombre}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label>Contacto Externo</Label>
-                <Select
-                  value={selectedExternalId}
-                  onValueChange={setSelectedExternalId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar contacto..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableExternals.length === 0 ? (
-                      <SelectItem value="-" disabled>
-                        No hay contactos disponibles
-                      </SelectItem>
-                    ) : (
-                      availableExternals.map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.nombre}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Rol en el Proyecto</Label>
-              <Select value={selectedRol} onValueChange={setSelectedRol}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES_PROYECTO.map((rol) => (
-                    <SelectItem key={rol.value} value={rol.value}>
-                      {rol.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
+      <AppDialog
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        size="simple"
+        title="Agregar Personal"
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowAddModal(false)}>
               Cancelar
             </Button>
             <Button
-              onClick={handleAddMember}
+              form="add-member-form"
+              type="submit"
               disabled={
                 (memberType === 'usuario'
                   ? !selectedUserId
@@ -871,60 +781,252 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             >
               {saving ? 'Agregando...' : 'Agregar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <form
+          id="add-member-form"
+          onSubmit={(e) => { e.preventDefault(); handleAddMember(); }}
+          className="space-y-4"
+        >
+          {/* Radio buttons for type */}
+          <div className="space-y-2">
+            <Label>Tipo</Label>
+            <RadioGroup
+              value={memberType}
+              onValueChange={(v) => {
+                setMemberType(v as 'usuario' | 'externo');
+                setSelectedUserId('');
+                setSelectedExternalId('');
+              }}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="usuario" id="tipo-usuario" />
+                <Label
+                  htmlFor="tipo-usuario"
+                  className="font-normal cursor-pointer"
+                >
+                  Usuario del sistema
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="externo" id="tipo-externo" />
+                <Label
+                  htmlFor="tipo-externo"
+                  className="font-normal cursor-pointer"
+                >
+                  Contacto externo
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Dropdown based on type */}
+          {memberType === 'usuario' ? (
+            <div className="space-y-2">
+              <Label>Usuario</Label>
+              <Select
+                value={selectedUserId}
+                onValueChange={setSelectedUserId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar usuario..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.length === 0 ? (
+                    <SelectItem value="-" disabled>
+                      No hay usuarios disponibles
+                    </SelectItem>
+                  ) : (
+                    availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        {user.nombre}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Contacto Externo</Label>
+              <Select
+                value={selectedExternalId}
+                onValueChange={setSelectedExternalId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar contacto..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableExternals.length === 0 ? (
+                    <SelectItem value="-" disabled>
+                      No hay contactos disponibles
+                    </SelectItem>
+                  ) : (
+                    availableExternals.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        {user.nombre}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label>Rol en el Proyecto</Label>
+            <Select value={selectedRol} onValueChange={setSelectedRol}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLES_PROYECTO.map((rol) => (
+                  <SelectItem key={rol.value} value={rol.value}>
+                    {rol.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </form>
+      </AppDialog>
 
       {/* Create External Modal */}
-      <Dialog
+      <AppDialog
         open={showCreateExternalModal}
         onOpenChange={setShowCreateExternalModal}
+        size="simple"
+        title="Crear Nuevo Contacto Externo"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateExternalModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              form="create-external-form"
+              type="submit"
+              disabled={!newExternal.nombre.trim() || saving}
+            >
+              {saving ? 'Creando...' : 'Crear y Agregar'}
+            </Button>
+          </>
+        }
       >
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Crear Nuevo Contacto Externo</DialogTitle>
-            <DialogDescription className="sr-only">
-              Crear un nuevo contacto externo y agregarlo al proyecto
-            </DialogDescription>
-          </DialogHeader>
+        <form
+          id="create-external-form"
+          onSubmit={(e) => { e.preventDefault(); handleCreateExternal(); }}
+          className="space-y-4"
+        >
+          <div className="space-y-2">
+            <Label>Nombre *</Label>
+            <Input
+              value={newExternal.nombre}
+              onChange={(e) =>
+                setNewExternal({ ...newExternal, nombre: e.target.value })
+              }
+              placeholder="Nombre completo"
+            />
+          </div>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Nombre *</Label>
-              <Input
-                value={newExternal.nombre}
-                onChange={(e) =>
-                  setNewExternal({ ...newExternal, nombre: e.target.value })
-                }
-                placeholder="Nombre completo"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label>Cargo</Label>
+            <Input
+              value={newExternal.cargo}
+              onChange={(e) =>
+                setNewExternal({ ...newExternal, cargo: e.target.value })
+              }
+              placeholder="Ej: Supervisor de Campo"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label>Cargo</Label>
-              <Input
-                value={newExternal.cargo}
-                onChange={(e) =>
-                  setNewExternal({ ...newExternal, cargo: e.target.value })
-                }
-                placeholder="Ej: Supervisor de Campo"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label>Telefono</Label>
+            <Input
+              value={newExternal.telefono}
+              onChange={(e) =>
+                setNewExternal({ ...newExternal, telefono: e.target.value })
+              }
+              placeholder="Ej: 6000-0000"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label>Telefono</Label>
-              <Input
-                value={newExternal.telefono}
-                onChange={(e) =>
-                  setNewExternal({ ...newExternal, telefono: e.target.value })
+          <div className="space-y-2">
+            <Label>Rol en el Proyecto</Label>
+            <Select value={selectedRol} onValueChange={setSelectedRol}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLES_PROYECTO.map((rol) => (
+                  <SelectItem key={rol.value} value={rol.value}>
+                    {rol.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </form>
+      </AppDialog>
+
+      {/* Edit Role Modal */}
+      <AppDialog
+        open={showEditRoleModal}
+        onOpenChange={setShowEditRoleModal}
+        size="simple"
+        title="Editar Rol"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditRoleModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              form="edit-role-form"
+              type="submit"
+              disabled={saving || editRol === editingMember?.rol_proyecto}
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </>
+        }
+      >
+        {editingMember && (
+          <form
+            id="edit-role-form"
+            onSubmit={(e) => { e.preventDefault(); handleUpdateRole(); }}
+            className="space-y-4"
+          >
+            <div className="space-y-1">
+              <Label className="text-muted-foreground">Persona</Label>
+              <div className="font-medium">
+                {editingMember.nombre_display}
+              </div>
+              <Badge
+                variant={
+                  editingMember.tipo_miembro === 'usuario'
+                    ? 'default'
+                    : 'secondary'
                 }
-                placeholder="Ej: 6000-0000"
-              />
+                className="text-xs"
+              >
+                {editingMember.tipo_miembro === 'usuario'
+                  ? 'Usuario'
+                  : 'Externo'}
+              </Badge>
             </div>
 
             <div className="space-y-2">
               <Label>Rol en el Proyecto</Label>
-              <Select value={selectedRol} onValueChange={setSelectedRol}>
+              <Select
+                value={editRol === 'miembro' ? 'colaborador' : editRol}
+                onValueChange={setEditRol}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -937,93 +1039,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowCreateExternalModal(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleCreateExternal}
-              disabled={!newExternal.nombre.trim() || saving}
-            >
-              {saving ? 'Creando...' : 'Crear y Agregar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Role Modal */}
-      <Dialog open={showEditRoleModal} onOpenChange={setShowEditRoleModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Editar Rol</DialogTitle>
-            <DialogDescription className="sr-only">
-              Cambiar el rol de un miembro del proyecto
-            </DialogDescription>
-          </DialogHeader>
-
-          {editingMember && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-1">
-                <Label className="text-muted-foreground">Persona</Label>
-                <div className="font-medium">
-                  {editingMember.nombre_display}
-                </div>
-                <Badge
-                  variant={
-                    editingMember.tipo_miembro === 'usuario'
-                      ? 'default'
-                      : 'secondary'
-                  }
-                  className="text-xs"
-                >
-                  {editingMember.tipo_miembro === 'usuario'
-                    ? 'Usuario'
-                    : 'Externo'}
-                </Badge>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Rol en el Proyecto</Label>
-                <Select
-                  value={editRol === 'miembro' ? 'colaborador' : editRol}
-                  onValueChange={setEditRol}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLES_PROYECTO.map((rol) => (
-                      <SelectItem key={rol.value} value={rol.value}>
-                        {rol.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowEditRoleModal(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleUpdateRole}
-              disabled={saving || editRol === editingMember?.rol_proyecto}
-            >
-              {saving ? 'Guardando...' : 'Guardar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </form>
+        )}
+      </AppDialog>
     </div>
   );
 }

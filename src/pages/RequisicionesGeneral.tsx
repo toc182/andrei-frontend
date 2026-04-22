@@ -12,15 +12,13 @@ import {
   X,
   Clock,
   Search,
-  AlertCircle,
   Settings,
   Archive,
   LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -31,13 +29,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -47,6 +47,14 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+
+// Shell components
+import { PageHeader } from '@/components/shell/PageHeader';
+import { StatCard } from '@/components/shell/StatCard';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
+import { EmptyState, TableSkeleton } from '@/components/shell/states';
+
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
@@ -91,26 +99,17 @@ const formatDate = (dateString: string | null | undefined): string => {
   });
 };
 
-// Badge variants for each status
 const getEstadoBadge = (estado: string): ReactNode => {
   const variants: Record<string, BadgeConfig> = {
     pendiente: { variant: 'secondary', label: 'Pendiente', icon: Clock },
     en_cotizacion: { variant: 'outline', label: 'En Cotizacion', icon: Search },
-    por_aprobar: {
-      variant: 'outline',
-      label: 'Por Aprobar',
-      icon: AlertCircle,
-    },
+    por_aprobar: { variant: 'outline', label: 'Por Aprobar', icon: FileText },
     aprobada: { variant: 'default', label: 'Aprobada', icon: Check },
     pagada: { variant: 'default', label: 'Pagada', icon: Check },
     rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
   };
 
-  const config = variants[estado] || {
-    variant: 'secondary' as const,
-    label: estado,
-    icon: Clock,
-  };
+  const config = variants[estado] || { variant: 'secondary' as const, label: estado, icon: Clock };
   const Icon = config.icon;
 
   return (
@@ -121,7 +120,6 @@ const getEstadoBadge = (estado: string): ReactNode => {
   );
 };
 
-// Valid state transitions
 const getValidTransitions = (currentState: string): string[] => {
   const transitions: Record<string, string[]> = {
     pendiente: ['en_cotizacion', 'por_aprobar', 'rechazada'],
@@ -149,45 +147,36 @@ export default function RequisicionesGeneral() {
     isAdminOrCoAdmin ||
     hasPermission('requisiciones_editar_todas') ||
     req.solicitante_id === user?.id;
+
   const [requisiciones, setRequisiciones] = useState<Requisicion[]>([]);
   const [proyectos, setProyectos] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
   const [filterEstado, setFilterEstado] = useState('all');
   const [filterProyecto, setFilterProyecto] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Modals
   const [showForm, setShowForm] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
-    null,
-  );
-  const [editingRequisicion, setEditingRequisicion] =
-    useState<Requisicion | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [editingRequisicion, setEditingRequisicion] = useState<Requisicion | null>(null);
   const [existingItems, setExistingItems] = useState<RequisicionItem[]>([]);
 
-  // Estado change modal
   const [showEstadoModal, setShowEstadoModal] = useState(false);
-  const [estadoRequisicion, setEstadoRequisicion] =
-    useState<Requisicion | null>(null);
+  const [estadoRequisicion, setEstadoRequisicion] = useState<Requisicion | null>(null);
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [comentarioEstado, setComentarioEstado] = useState('');
   const [changingEstado, setChangingEstado] = useState(false);
 
-  // History modal
   const [showHistorial, setShowHistorial] = useState(false);
-  const [historialRequisicion, setHistorialRequisicion] =
-    useState<Requisicion | null>(null);
+  const [historialRequisicion, setHistorialRequisicion] = useState<Requisicion | null>(null);
   const [historialData, setHistorialData] = useState<HistorialData>({
     requisicion: null,
     items: [],
     historial: [],
   });
 
-  // Archivar modal
   const [showArchivarModal, setShowArchivarModal] = useState(false);
   const [archivarLoading, setArchivarLoading] = useState(false);
 
@@ -199,20 +188,13 @@ export default function RequisicionesGeneral() {
     try {
       setLoading(true);
       setError(null);
-
-      // Si el filtro es "archivadas", pedir las archivadas al backend
       const params = filterEstado === 'archivadas' ? '?archivadas=true' : '';
       const [reqRes, projRes] = await Promise.all([
         api.get(`/requisiciones${params}`),
         api.get('/projects'),
       ]);
-
-      if (reqRes.data.success) {
-        setRequisiciones(reqRes.data.requisiciones);
-      }
-      if (projRes.data.success) {
-        setProyectos(projRes.data.proyectos || projRes.data.data || []);
-      }
+      if (reqRes.data.success) setRequisiciones(reqRes.data.requisiciones);
+      if (projRes.data.success) setProyectos(projRes.data.proyectos || projRes.data.data || []);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Error al cargar las requisiciones');
@@ -221,15 +203,10 @@ export default function RequisicionesGeneral() {
     }
   };
 
-  // Filter requisiciones
   const filteredRequisiciones = requisiciones.filter((req) => {
-    // Si es archivadas, no filtrar por estado (ya viene del backend)
-    if (filterEstado === 'archivadas') {
-      // Solo filtrar por proyecto y búsqueda
-    } else if (filterEstado !== 'all' && req.estado !== filterEstado)
+    if (filterEstado !== 'archivadas' && filterEstado !== 'all' && req.estado !== filterEstado)
       return false;
-    if (filterProyecto !== 'all' && req.project_id !== parseInt(filterProyecto))
-      return false;
+    if (filterProyecto !== 'all' && req.project_id !== parseInt(filterProyecto)) return false;
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       return (
@@ -242,21 +219,14 @@ export default function RequisicionesGeneral() {
     return true;
   });
 
-  // Stats
   const stats = {
     total: requisiciones.length,
     porAprobar: requisiciones.filter((r) => r.estado === 'por_aprobar').length,
     pagadas: requisiciones.filter((r) => r.estado === 'pagada').length,
-    montoTotal: requisiciones.reduce(
-      (sum, r) => sum + (parseFloat(String(r.monto_total)) || 0),
-      0,
-    ),
+    montoTotal: requisiciones.reduce((sum, r) => sum + (parseFloat(String(r.monto_total)) || 0), 0),
   };
 
-  // Handle new requisition - first select project
-  const handleNewRequisicion = () => {
-    setShowProjectSelector(true);
-  };
+  const handleNewRequisicion = () => setShowProjectSelector(true);
 
   const handleProjectSelected = (projectId: string) => {
     setSelectedProjectId(parseInt(projectId));
@@ -294,7 +264,6 @@ export default function RequisicionesGeneral() {
 
   const handleArchivar = async () => {
     if (!historialRequisicion) return;
-
     try {
       setArchivarLoading(true);
       await api.patch(`/requisiciones/${historialRequisicion.id}/archivar`);
@@ -306,15 +275,12 @@ export default function RequisicionesGeneral() {
     } catch (err: unknown) {
       console.error('Error archivando requisicion:', err);
       const apiError = err as { response?: { data?: { message?: string } } };
-      alert(
-        apiError.response?.data?.message || 'Error al archivar la requisicion',
-      );
+      setError(apiError.response?.data?.message || 'Error al archivar la requisicion');
     } finally {
       setArchivarLoading(false);
     }
   };
 
-  // Estado change handlers
   const handleOpenEstadoModal = (requisicion: Requisicion) => {
     setEstadoRequisicion(requisicion);
     setNuevoEstado('');
@@ -324,7 +290,6 @@ export default function RequisicionesGeneral() {
 
   const handleChangeEstado = async () => {
     if (!nuevoEstado || !estadoRequisicion) return;
-
     try {
       setChangingEstado(true);
       await api.patch(`/requisiciones/${estadoRequisicion.id}/estado`, {
@@ -342,7 +307,6 @@ export default function RequisicionesGeneral() {
     }
   };
 
-  // History handlers
   const handleShowHistorial = async (requisicion: Requisicion) => {
     try {
       const response = await api.get(`/requisiciones/${requisicion.id}`);
@@ -360,85 +324,42 @@ export default function RequisicionesGeneral() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Cargando requisiciones...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Requisiciones</h1>
-          <p className="text-muted-foreground">
-            Vista consolidada de todos los proyectos
-          </p>
-        </div>
+      <PageHeader
+        title="Requisiciones"
+        subtitle="Vista consolidada de todos los proyectos"
+      >
         <Button onClick={handleNewRequisicion}>
           <Plus className="h-4 w-4 mr-2" />
           Nueva Requisicion
         </Button>
-      </div>
+      </PageHeader>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <Alert variant="error" title={error} />}
 
-      {/* Stats Cards */}
-      <div className="flex flex-wrap gap-4">
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Por Aprobar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-yellow-600">
-              {stats.porAprobar}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pagadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-600">
-              {stats.pagadas}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Monto Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold whitespace-nowrap">
-              {formatMoney(stats.montoTotal)}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stat Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Total"
+          value={String(stats.total)}
+          accent="navy"
+        />
+        <StatCard
+          label="Por Aprobar"
+          value={String(stats.porAprobar)}
+          accent="warning"
+        />
+        <StatCard
+          label="Pagadas"
+          value={String(stats.pagadas)}
+          accent="success"
+        />
+        <StatCard
+          label="Monto Total"
+          value={formatMoney(stats.montoTotal)}
+          accent="teal"
+        />
       </div>
 
       {/* Filters */}
@@ -448,7 +369,6 @@ export default function RequisicionesGeneral() {
             placeholder="Buscar por numero, proveedor, proyecto..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
           />
         </div>
         <Select value={filterProyecto} onValueChange={setFilterProyecto}>
@@ -481,87 +401,89 @@ export default function RequisicionesGeneral() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Numero</TableHead>
-              <TableHead>Proyecto</TableHead>
-              <TableHead className="hidden sm:table-cell">Proveedor</TableHead>
-              <TableHead className="text-right w-[100px]">Total</TableHead>
-              <TableHead className="w-[120px]">Estado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRequisiciones.length === 0 ? (
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No se encontraron requisiciones
-                </TableCell>
+                <TableHead className="w-[100px]">Numero</TableHead>
+                <TableHead>Proyecto</TableHead>
+                <TableHead className="hidden sm:table-cell">Proveedor</TableHead>
+                <TableHead className="text-right w-[100px]">Total</TableHead>
+                <TableHead className="w-[120px]">Estado</TableHead>
               </TableRow>
-            ) : (
-              filteredRequisiciones.map((req) => (
-                <TableRow
-                  key={req.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleShowHistorial(req)}
-                >
-                  <TableCell className="font-medium">
-                    <div>{req.numero_requisicion}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatDate(req.fecha_solicitud)}
-                    </div>
+            </TableHeader>
+            {loading ? (
+              <TableSkeleton rows={6} columns={5} />
+            ) : filteredRequisiciones.length === 0 ? (
+              <TableBody>
+                <TableRow>
+                  <TableCell colSpan={5} className="p-0">
+                    <EmptyState
+                      title="No se encontraron requisiciones"
+                      description="Intenta ajustar los filtros o crea una nueva requisicion"
+                    />
                   </TableCell>
-                  <TableCell>
-                    <div className="text-xs bg-muted px-2 py-1 rounded w-fit">
-                      {req.proyecto_nombre}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1 sm:hidden">
-                      {req.proveedor}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {req.proveedor}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatMoney(req.monto_total)}
-                  </TableCell>
-                  <TableCell>{getEstadoBadge(req.estado)}</TableCell>
                 </TableRow>
-              ))
+              </TableBody>
+            ) : (
+              <TableBody>
+                {filteredRequisiciones.map((req) => (
+                  <TableRow
+                    key={req.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleShowHistorial(req)}
+                  >
+                    <TableCell className="font-medium">
+                      <div>{req.numero_requisicion}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(req.fecha_solicitud)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs bg-muted px-2 py-1 rounded w-fit">
+                        {req.proyecto_nombre}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 sm:hidden">
+                        {req.proveedor}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {req.proveedor}
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {formatMoney(req.monto_total)}
+                    </TableCell>
+                    <TableCell>{getEstadoBadge(req.estado)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Project Selector Modal */}
-      <Dialog open={showProjectSelector} onOpenChange={setShowProjectSelector}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Seleccionar Proyecto</DialogTitle>
-            <DialogDescription>
-              Selecciona el proyecto para la nueva requisicion
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Select onValueChange={handleProjectSelected}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un proyecto" />
-              </SelectTrigger>
-              <SelectContent>
-                {proyectos.map((p) => (
-                  <SelectItem key={p.id} value={p.id.toString()}>
-                    {p.nombre_corto || p.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AppDialog
+        open={showProjectSelector}
+        onOpenChange={setShowProjectSelector}
+        size="confirm"
+        title="Seleccionar Proyecto"
+        description="Selecciona el proyecto para la nueva requisicion"
+      >
+        <Select onValueChange={handleProjectSelected}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecciona un proyecto" />
+          </SelectTrigger>
+          <SelectContent>
+            {proyectos.map((p) => (
+              <SelectItem key={p.id} value={p.id.toString()}>
+                {p.nombre_corto || p.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </AppDialog>
 
       {/* Requisicion Form Modal */}
       {showForm && selectedProjectId && (
@@ -580,50 +502,14 @@ export default function RequisicionesGeneral() {
       )}
 
       {/* Estado Change Modal */}
-      <Dialog open={showEstadoModal} onOpenChange={setShowEstadoModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cambiar Estado</DialogTitle>
-            <DialogDescription>
-              Requisicion: {estadoRequisicion?.numero_requisicion}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Estado actual</Label>
-              <div className="mt-1">
-                {estadoRequisicion && getEstadoBadge(estadoRequisicion.estado)}
-              </div>
-            </div>
-            <div>
-              <Label>Nuevo estado</Label>
-              <Select value={nuevoEstado} onValueChange={setNuevoEstado}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Seleccionar estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {estadoRequisicion &&
-                    getValidTransitions(estadoRequisicion.estado).map(
-                      (estado) => (
-                        <SelectItem key={estado} value={estado}>
-                          {estadoLabels[estado]}
-                        </SelectItem>
-                      ),
-                    )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Comentario (opcional)</Label>
-              <Textarea
-                value={comentarioEstado}
-                onChange={(e) => setComentarioEstado(e.target.value)}
-                placeholder="Agregar un comentario..."
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
+      <AppDialog
+        open={showEstadoModal}
+        onOpenChange={setShowEstadoModal}
+        size="simple"
+        title="Cambiar Estado"
+        description={`Requisicion: ${estadoRequisicion?.numero_requisicion}`}
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowEstadoModal(false)}>
               Cancelar
             </Button>
@@ -633,219 +519,211 @@ export default function RequisicionesGeneral() {
             >
               {changingEstado ? 'Guardando...' : 'Guardar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Estado actual</Label>
+            <div className="mt-1">
+              {estadoRequisicion && getEstadoBadge(estadoRequisicion.estado)}
+            </div>
+          </div>
+          <div>
+            <Label>Nuevo estado</Label>
+            <Select value={nuevoEstado} onValueChange={setNuevoEstado}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Seleccionar estado" />
+              </SelectTrigger>
+              <SelectContent>
+                {estadoRequisicion &&
+                  getValidTransitions(estadoRequisicion.estado).map((estado) => (
+                    <SelectItem key={estado} value={estado}>
+                      {estadoLabels[estado]}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Comentario (opcional)</Label>
+            <Textarea
+              value={comentarioEstado}
+              onChange={(e) => setComentarioEstado(e.target.value)}
+              placeholder="Agregar un comentario..."
+              className="mt-1"
+            />
+          </div>
+        </div>
+      </AppDialog>
 
       {/* History Modal */}
-      <Dialog open={showHistorial} onOpenChange={setShowHistorial}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              Detalle de Requisicion
-              {historialRequisicion &&
-                ['pendiente', 'en_cotizacion'].includes(
-                  historialRequisicion.estado,
-                ) &&
-                canManageRequisicion(historialRequisicion) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
-                    onClick={() => {
-                      setShowHistorial(false);
-                      handleEditRequisicion(historialRequisicion);
-                    }}
-                    title="Editar requisición"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
-            </DialogTitle>
-            <DialogDescription>
-              {historialRequisicion?.numero_requisicion} -{' '}
-              {historialRequisicion?.proveedor}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Descripción */}
-            {historialRequisicion?.descripcion && (
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">
-                  Descripción
-                </div>
-                <div className="font-medium">
-                  {historialRequisicion.descripcion}
-                </div>
-              </div>
-            )}
-
-            {/* Items */}
-            {historialData.items.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">
-                  Detalle ({historialData.items.length} items)
-                </h4>
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Detalle</TableHead>
-                        <TableHead className="text-right">Cant.</TableHead>
-                        <TableHead className="text-right">P.Unit</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {historialData.items.map((item, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>{item.descripcion}</TableCell>
-                          <TableCell className="text-right">
-                            {item.cantidad} {item.unidad}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatMoney(item.precio_unitario_estimado)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatMoney(
-                              (item.cantidad || 0) *
-                                (item.precio_unitario_estimado || 0),
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-
-            {/* Estado Section */}
-            {historialRequisicion && (
-              <div className="space-y-3">
-                <h4 className="font-medium">Estado</h4>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getEstadoBadge(historialRequisicion.estado)}
-                  </div>
-                  {getValidTransitions(historialRequisicion.estado).length >
-                    0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowHistorial(false);
-                        handleOpenEstadoModal(historialRequisicion);
-                      }}
-                    >
-                      Cambiar Estado
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Historial */}
-            {historialData.historial.length > 0 && (
-              <div>
-                <h4 className="font-medium mb-2">Historial de cambios</h4>
-                <div className="space-y-2">
-                  {historialData.historial.map((h, idx) => (
-                    <div key={idx} className="border rounded p-3 text-sm">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          {h.estado_anterior && (
-                            <span className="text-muted-foreground">
-                              {estadoLabels[h.estado_anterior]} →{' '}
-                            </span>
-                          )}
-                          <span className="font-medium">
-                            {estadoLabels[h.estado_nuevo]}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(h.created_at)}
-                        </span>
-                      </div>
-                      {h.comentario && (
-                        <p className="text-muted-foreground mt-1">
-                          {h.comentario}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Por: {h.usuario_nombre}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Archivar Section */}
-            {historialRequisicion && (
-              <div className="pt-4 border-t">
+      <AppDialog
+        open={showHistorial}
+        onOpenChange={setShowHistorial}
+        size="standard"
+        title="Detalle de Requisicion"
+        description={`${historialRequisicion?.numero_requisicion} — ${historialRequisicion?.proveedor}`}
+      >
+        <div className="space-y-4">
+          {/* Edit button in title area — rendered as top action */}
+          {historialRequisicion &&
+            ['pendiente', 'en_cotizacion'].includes(historialRequisicion.estado) &&
+            canManageRequisicion(historialRequisicion) && (
+              <div className="flex justify-end">
                 <Button
                   variant="outline"
-                  className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
-                  onClick={() => setShowArchivarModal(true)}
+                  size="sm"
+                  onClick={() => {
+                    setShowHistorial(false);
+                    handleEditRequisicion(historialRequisicion);
+                  }}
                 >
-                  <Archive className="h-4 w-4 mr-2" />
-                  Archivar Requisicion
+                  <Settings className="h-4 w-4 mr-2" />
+                  Editar
                 </Button>
               </div>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Modal de Confirmacion para Archivar */}
-      <Dialog open={showArchivarModal} onOpenChange={setShowArchivarModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Archive className="h-5 w-5 text-muted-foreground" />
-              Archivar Requisicion
-            </DialogTitle>
-            <DialogDescription>
-              Esta accion archivara la requisicion. Podra ser restaurada mas
-              adelante si es necesario.
-            </DialogDescription>
-          </DialogHeader>
+          {historialRequisicion?.descripcion && (
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Descripción</div>
+              <div className="font-medium">{historialRequisicion.descripcion}</div>
+            </div>
+          )}
 
-          {historialRequisicion && (
-            <div className="py-4">
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <div className="font-medium">
-                  {historialRequisicion.numero_requisicion}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {historialRequisicion.proveedor}
-                </div>
-                <div className="text-sm">
-                  {formatMoney(historialRequisicion.monto_total)}
-                </div>
+          {historialData.items.length > 0 && (
+            <div>
+              <h4 className="font-medium mb-2">
+                Detalle ({historialData.items.length} items)
+              </h4>
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Detalle</TableHead>
+                      <TableHead className="text-right">Cant.</TableHead>
+                      <TableHead className="text-right">P.Unit</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {historialData.items.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{item.descripcion}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {item.cantidad} {item.unidad}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatMoney(item.precio_unitario_estimado)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatMoney(
+                            (item.cantidad || 0) * (item.precio_unitario_estimado || 0),
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowArchivarModal(false)}
-              disabled={archivarLoading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
+          {historialRequisicion && (
+            <div className="space-y-3">
+              <h4 className="font-medium">Estado</h4>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>{getEstadoBadge(historialRequisicion.estado)}</div>
+                {getValidTransitions(historialRequisicion.estado).length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowHistorial(false);
+                      handleOpenEstadoModal(historialRequisicion);
+                    }}
+                  >
+                    Cambiar Estado
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {historialData.historial.length > 0 && (
+            <div>
+              <h4 className="font-medium mb-2">Historial de cambios</h4>
+              <div className="space-y-2">
+                {historialData.historial.map((h, idx) => (
+                  <div key={idx} className="border rounded p-3 text-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        {h.estado_anterior && (
+                          <span className="text-muted-foreground">
+                            {estadoLabels[h.estado_anterior]} →{' '}
+                          </span>
+                        )}
+                        <span className="font-medium">{estadoLabels[h.estado_nuevo]}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(h.created_at)}
+                      </span>
+                    </div>
+                    {h.comentario && (
+                      <p className="text-muted-foreground mt-1">{h.comentario}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Por: {h.usuario_nombre}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {historialRequisicion && (
+            <div className="pt-4 border-t">
+              <Button
+                variant="outline"
+                className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
+                onClick={() => setShowArchivarModal(true)}
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                Archivar Requisicion
+              </Button>
+            </div>
+          )}
+        </div>
+      </AppDialog>
+
+      {/* Confirmacion Archivar */}
+      <AlertDialog open={showArchivarModal} onOpenChange={setShowArchivarModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Archivar requisicion?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {historialRequisicion && (
+                <>
+                  Se archivará <strong>{historialRequisicion.numero_requisicion}</strong>{' '}
+                  ({historialRequisicion.proveedor} — {formatMoney(historialRequisicion.monto_total)}).
+                  Podrá ser restaurada más adelante si es necesario.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archivarLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleArchivar}
               disabled={archivarLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {archivarLoading ? 'Archivando...' : 'Si, Archivar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

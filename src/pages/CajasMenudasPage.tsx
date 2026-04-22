@@ -15,17 +15,12 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/components/ui/form';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from '@/components/ui/popover';
@@ -42,6 +37,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+
+// Shell Components
+import { PageHeader } from '@/components/shell/PageHeader';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
+import { EmptyState, TableSkeleton } from '@/components/shell/states';
 
 // --- Zod schema ---
 
@@ -77,10 +78,9 @@ const estadoBadge = (estado: string) => {
 };
 
 const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
-  // For new cajas (with solicitud): check if apertura solicitud is not yet transferred
   const faltaApertura = caja.solicitud_apertura_id
     ? caja.solicitud_apertura_estado !== 'transferida'
-    : caja.tiene_comprobante_apertura === false; // Legacy cajas: check comprobante file
+    : caja.tiene_comprobante_apertura === false;
   const faltaHistorial = caja.historial_sin_comprobante === true;
   const faltaTransferencia = caja.historial_pendiente_transferencia === true;
 
@@ -441,88 +441,26 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     );
   }
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-40" />
-        </div>
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Cajas Menudas</h2>
-          <p className="text-muted-foreground text-sm">
-            Gestión de fondos de caja menuda por proyecto
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Cajas Menudas"
+        subtitle="Gestión de fondos de caja menuda por proyecto"
+      >
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Caja Menuda
         </Button>
-      </div>
+      </PageHeader>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {error && !showFormModal && !editModalCaja && !subirMontoModalCaja && !bajarMontoModalCaja && !cerrarModalCaja && (
+        <Alert variant="error" title={error} />
       )}
 
-      {cajas.length === 0 ? (
+      {/* Desktop: Table */}
+      <div className="hidden md:block">
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No hay cajas menudas registradas</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile: Cards */}
-          <div className="md:hidden space-y-3">
-            {cajas.map((caja) => (
-              <Card key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium flex items-center gap-2">
-                        {caja.nombre}
-                        <ComprobanteAlertIcon caja={caja} />
-                      </p>
-                      {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {estadoBadge(caja.estado)}
-                      {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Asignado</span>
-                    <span className="font-medium">{formatMonto(caja.monto_asignado)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Saldo</span>
-                    <span className={`font-medium ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Responsable: {caja.responsable_nombre}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Desktop: Table */}
-          <div className="hidden md:block rounded-md border">
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -535,108 +473,154 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {cajas.map((caja) => (
-                  <TableRow key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {caja.nombre}
-                        <ComprobanteAlertIcon caja={caja} />
-                      </div>
-                    </TableCell>
-                    {!projectId && <TableCell>{caja.proyecto_nombre}</TableCell>}
-                    <TableCell>{caja.responsable_nombre}</TableCell>
-                    <TableCell className="text-right">{formatMonto(caja.monto_asignado)}</TableCell>
-                    <TableCell className={`text-right font-medium ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
-                    </TableCell>
-                    <TableCell>{estadoBadge(caja.estado)}</TableCell>
-                    <TableCell>
-                      {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+              {loading ? (
+                <TableSkeleton cols={projectId ? 5 : 6} rows={4} />
+              ) : (
+                <TableBody>
+                  {cajas.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={projectId ? 6 : 7}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        No hay cajas menudas registradas
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    cajas.map((caja) => (
+                      <TableRow key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {caja.nombre}
+                            <ComprobanteAlertIcon caja={caja} />
+                          </div>
+                        </TableCell>
+                        {!projectId && <TableCell>{caja.proyecto_nombre}</TableCell>}
+                        <TableCell>{caja.responsable_nombre}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatMonto(caja.monto_asignado)}</TableCell>
+                        <TableCell className={`text-right font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
+                        </TableCell>
+                        <TableCell>{estadoBadge(caja.estado)}</TableCell>
+                        <TableCell>
+                          {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              )}
             </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile: Cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-2">
+                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </>
-      )}
+        ) : cajas.length === 0 ? (
+          <EmptyState
+            icon={Wallet}
+            title="No hay cajas menudas"
+            description="Registra la primera caja menuda de un proyecto"
+            action={
+              <Button onClick={handleNew}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva Caja Menuda
+              </Button>
+            }
+          />
+        ) : (
+          cajas.map((caja) => (
+            <Card key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium flex items-center gap-2">
+                      {caja.nombre}
+                      <ComprobanteAlertIcon caja={caja} />
+                    </p>
+                    {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {estadoBadge(caja.estado)}
+                    {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
+                  </div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Asignado</span>
+                  <span className="font-medium tabular-nums">{formatMonto(caja.monto_asignado)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Saldo</span>
+                  <span className={`font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">Responsable: {caja.responsable_nombre}</p>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Create Dialog */}
-      <Dialog open={showFormModal} onOpenChange={setShowFormModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Nueva Caja Menuda</DialogTitle>
-          </DialogHeader>
+      <AppDialog
+        open={showFormModal}
+        onOpenChange={setShowFormModal}
+        size="simple"
+        title="Nueva Caja Menuda"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowFormModal(false)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" form="create-caja-form" disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Crear
+            </Button>
+          </>
+        }
+      >
+        {error && showFormModal && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleCreateSubmit)} className="space-y-4">
-              {/* Proyecto (only when not inside a project) */}
-              {!projectId && (
-                <FormField
-                  control={form.control}
-                  name="proyecto_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Proyecto *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar proyecto" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {proyectos.map((p) => (
-                            <SelectItem key={p.id} value={String(p.id)}>
-                              {p.nombre_corto || p.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {/* Nombre */}
+        <Form {...form}>
+          <form id="create-caja-form" onSubmit={form.handleSubmit(handleCreateSubmit)} className="space-y-4">
+            {/* Proyecto (only when not inside a project) */}
+            {!projectId && (
               <FormField
                 control={form.control}
-                name="nombre"
+                name="proyecto_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ej: Caja Menuda #1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Responsable */}
-              <FormField
-                control={form.control}
-                name="responsable_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsable *</FormLabel>
+                    <FormLabel>Proyecto *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar responsable" />
+                          <SelectValue placeholder="Seleccionar proyecto" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {usuarios.map((u) => (
-                          <SelectItem key={u.id} value={String(u.id)}>
-                            {u.nombre}
+                        {proyectos.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.nombre_corto || p.nombre}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -645,82 +629,75 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                   </FormItem>
                 )}
               />
+            )}
 
-              {/* Monto asignado */}
-              <FormField
-                control={form.control}
-                name="monto_asignado"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monto Asignado *</FormLabel>
+            {/* Nombre */}
+            <FormField
+              control={form.control}
+              name="nombre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ej: Caja Menuda #1" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Responsable */}
+            <FormField
+              control={form.control}
+              name="responsable_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Responsable *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar responsable" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    <SelectContent>
+                      {usuarios.map((u) => (
+                        <SelectItem key={u.id} value={String(u.id)}>
+                          {u.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <DialogFooter className="gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowFormModal(false)}
-                  disabled={submitting}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Crear
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+            {/* Monto asignado */}
+            <FormField
+              control={form.control}
+              name="monto_asignado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monto Asignado *</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" min="0.01" placeholder="0.00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+      </AppDialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editModalCaja} onOpenChange={(open) => { if (!open) setEditModalCaja(null); }}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Editar Caja Menuda</DialogTitle>
-          </DialogHeader>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nombre *</label>
-              <Input
-                value={editNombre}
-                onChange={(e) => setEditNombre(e.target.value)}
-                placeholder="Nombre de la caja"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Responsable *</label>
-              <Select value={editResponsableId} onValueChange={setEditResponsableId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar responsable" />
-                </SelectTrigger>
-                <SelectContent>
-                  {usuarios.map((u) => (
-                    <SelectItem key={u.id} value={String(u.id)}>
-                      {u.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
+      <AppDialog
+        open={!!editModalCaja}
+        onOpenChange={(open) => { if (!open) setEditModalCaja(null); }}
+        size="simple"
+        title="Editar Caja Menuda"
+        footer={
+          <>
             <Button
               variant="outline"
               onClick={() => setEditModalCaja(null)}
@@ -732,44 +709,49 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Guardar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {error && !!editModalCaja && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-      {/* Subir Monto Dialog */}
-      <Dialog open={!!subirMontoModalCaja} onOpenChange={(open) => { if (!open) setSubirMontoModalCaja(null); }}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Subir Monto Asignado</DialogTitle>
-          </DialogHeader>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Monto actual: <span className="font-medium text-foreground">{formatMonto(subirMontoModalCaja?.monto_asignado)}</span>
-            </p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nuevo monto *</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
-                value={nuevoMonto}
-                onChange={(e) => setNuevoMonto(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Debe ser mayor al monto actual. Se creará una solicitud de apertura automática por la diferencia.
-              </p>
-            </div>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nombre *</label>
+            <Input
+              value={editNombre}
+              onChange={(e) => setEditNombre(e.target.value)}
+              placeholder="Nombre de la caja"
+            />
           </div>
 
-          <DialogFooter className="gap-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Responsable *</label>
+            <Select value={editResponsableId} onValueChange={setEditResponsableId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar responsable" />
+              </SelectTrigger>
+              <SelectContent>
+                {usuarios.map((u) => (
+                  <SelectItem key={u.id} value={String(u.id)}>
+                    {u.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </AppDialog>
+
+      {/* Subir Monto Dialog */}
+      <AppDialog
+        open={!!subirMontoModalCaja}
+        onOpenChange={(open) => { if (!open) setSubirMontoModalCaja(null); }}
+        size="simple"
+        title="Subir Monto Asignado"
+        footer={
+          <>
             <Button
               variant="outline"
               onClick={() => setSubirMontoModalCaja(null)}
@@ -781,41 +763,144 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirmar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {error && !!subirMontoModalCaja && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
+
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Monto actual: <span className="font-medium text-foreground tabular-nums">{formatMonto(subirMontoModalCaja?.monto_asignado)}</span>
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nuevo monto *</label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              value={nuevoMonto}
+              onChange={(e) => setNuevoMonto(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Debe ser mayor al monto actual. Se creará una solicitud de apertura automática por la diferencia.
+            </p>
+          </div>
+        </div>
+      </AppDialog>
 
       {/* Bajar Monto Dialog */}
-      <Dialog open={!!bajarMontoModalCaja} onOpenChange={(open) => { if (!open) { setBajarMontoModalCaja(null); setComprobanteFile(null); } }}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Bajar Monto Asignado</DialogTitle>
-          </DialogHeader>
+      <AppDialog
+        open={!!bajarMontoModalCaja}
+        onOpenChange={(open) => { if (!open) { setBajarMontoModalCaja(null); setComprobanteFile(null); } }}
+        size="simple"
+        title="Bajar Monto Asignado"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => { setBajarMontoModalCaja(null); setComprobanteFile(null); }}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleBajarMontoSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar
+            </Button>
+          </>
+        }
+      >
+        {error && !!bajarMontoModalCaja && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Monto actual: <span className="font-medium text-foreground">{formatMonto(bajarMontoModalCaja?.monto_asignado)}</span>
-            </p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nuevo monto *</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
-                value={nuevoMonto}
-                onChange={(e) => setNuevoMonto(e.target.value)}
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Monto actual: <span className="font-medium text-foreground tabular-nums">{formatMonto(bajarMontoModalCaja?.monto_asignado)}</span>
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nuevo monto *</label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              value={nuevoMonto}
+              onChange={(e) => setNuevoMonto(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Debe ser menor al monto actual y mayor que cero.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Comprobante de devolución</label>
+            <div className="flex items-center gap-2">
+              <input
+                ref={comprobanteRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
               />
-              <p className="text-xs text-muted-foreground">Debe ser menor al monto actual y mayor que cero.</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => comprobanteRef.current?.click()}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
+          </div>
+        </div>
+      </AppDialog>
+
+      {/* Cerrar Caja Dialog */}
+      <AppDialog
+        open={!!cerrarModalCaja}
+        onOpenChange={(open) => { if (!open) { setCerrarModalCaja(null); setComprobanteFile(null); } }}
+        size="confirm"
+        title="Cerrar Caja"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => { setCerrarModalCaja(null); setComprobanteFile(null); }}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleCerrarSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cerrar Caja
+            </Button>
+          </>
+        }
+      >
+        {error && !!cerrarModalCaja && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
+
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Caja: <span className="font-medium text-foreground">{cerrarModalCaja?.nombre}</span>
+          </p>
+
+          {Number(cerrarModalCaja?.saldo) === 0 ? (
+            <Alert
+              variant="info"
+              title="El saldo es cero"
+              description="Se generará automáticamente una constancia de cierre."
+            />
+          ) : (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Comprobante de devolución</label>
+              <p className="text-sm text-muted-foreground">
+                Saldo pendiente: <span className="font-medium text-foreground tabular-nums">{formatMonto(cerrarModalCaja?.saldo)}</span>
+              </p>
+              <label className="text-sm font-medium">Comprobante de cierre *</label>
               <div className="flex items-center gap-2">
                 <input
                   ref={comprobanteRef}
@@ -834,94 +919,13 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                   {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
+              <p className="text-xs text-muted-foreground">
+                Documento firmado de devolución del saldo.
+              </p>
             </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { setBajarMontoModalCaja(null); setComprobanteFile(null); }}
-              disabled={submitting}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleBajarMontoSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Cerrar Caja Dialog */}
-      <Dialog open={!!cerrarModalCaja} onOpenChange={(open) => { if (!open) { setCerrarModalCaja(null); setComprobanteFile(null); } }}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Cerrar Caja</DialogTitle>
-          </DialogHeader>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
           )}
-
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Caja: <span className="font-medium text-foreground">{cerrarModalCaja?.nombre}</span>
-            </p>
-
-            {Number(cerrarModalCaja?.saldo) === 0 ? (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                El saldo es cero — se generará automáticamente una constancia de cierre.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Saldo pendiente: <span className="font-medium text-foreground">{formatMonto(cerrarModalCaja?.saldo)}</span>
-                </p>
-                <label className="text-sm font-medium">Comprobante de cierre *</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={comprobanteRef}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className="hidden"
-                    onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => comprobanteRef.current?.click()}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Documento firmado de devolución del saldo.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { setCerrarModalCaja(null); setComprobanteFile(null); }}
-              disabled={submitting}
-            >
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleCerrarSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Cerrar Caja
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </AppDialog>
     </div>
   );
 };

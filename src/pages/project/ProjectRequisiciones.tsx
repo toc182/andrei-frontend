@@ -17,7 +17,8 @@ import {
   Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert } from '@/components/shell/Alert';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -28,14 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -258,7 +251,7 @@ export default function ProjectRequisiciones({
     } catch (err) {
       console.error('Error archivando requisicion:', err);
       const apiError = err as { response?: { data?: { message?: string } } };
-      alert(
+      setError(
         apiError.response?.data?.message || 'Error al archivar la requisicion',
       );
     } finally {
@@ -288,7 +281,7 @@ export default function ProjectRequisiciones({
     } catch (err) {
       console.error('Error changing status:', err);
       const apiError = err as { response?: { data?: { message?: string } } };
-      alert(apiError.response?.data?.message || 'Error al cambiar el estado');
+      setError(apiError.response?.data?.message || 'Error al cambiar el estado');
     } finally {
       setStatusLoading(false);
     }
@@ -307,7 +300,7 @@ export default function ProjectRequisiciones({
       }
     } catch (err) {
       console.error('Error loading history:', err);
-      alert('Error al cargar el historial');
+      setError('Error al cargar el historial');
     }
   };
 
@@ -321,7 +314,7 @@ export default function ProjectRequisiciones({
       }
     } catch (err) {
       console.error('Error loading requisicion:', err);
-      alert('Error al cargar la requisicion');
+      setError('Error al cargar la requisicion');
     }
   };
 
@@ -366,11 +359,7 @@ export default function ProjectRequisiciones({
   }
 
   if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+    return <Alert variant="error" title={error} />;
   }
 
   return (
@@ -587,359 +576,328 @@ export default function ProjectRequisiciones({
       />
 
       {/* Status Change Modal */}
-      <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Cambiar Estado de Requisicion</DialogTitle>
-            <DialogDescription>
-              {selectedRequisicion && (
-                <>
-                  Requisicion: <strong>{selectedRequisicion.numero}</strong>
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Estado Actual</Label>
-              <div>
-                {selectedRequisicion &&
-                  getEstadoBadge(selectedRequisicion.estado)}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newStatus">Nuevo Estado</Label>
-              <Select
-                value={newStatus}
-                onValueChange={(v) => setNewStatus(v as EstadoRequisicion)}
-              >
-                <SelectTrigger id="newStatus">
-                  <SelectValue placeholder="Seleccione nuevo estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectedRequisicion &&
-                    getValidTransitions(selectedRequisicion.estado).map(
-                      (estado) => (
-                        <SelectItem key={estado} value={estado}>
-                          {estadoLabels[estado]}
-                        </SelectItem>
-                      ),
-                    )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="statusComment">Comentario (opcional)</Label>
-              <Textarea
-                id="statusComment"
-                placeholder="Agregar un comentario sobre este cambio..."
-                rows={3}
-                value={statusComment}
-                onChange={(e) => setStatusComment(e.target.value)}
-              />
-            </div>
-
-            {newStatus === 'pagada' && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Al marcar como pagada, se registrara automaticamente como
-                  gasto del proyecto.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          <DialogFooter className="flex gap-2 flex-col sm:flex-row">
+      <AppDialog
+        open={showStatusModal}
+        onOpenChange={setShowStatusModal}
+        size="simple"
+        title="Cambiar Estado de Requisicion"
+        description={
+          selectedRequisicion
+            ? `Requisicion: ${selectedRequisicion.numero}`
+            : undefined
+        }
+        footer={
+          <>
             <Button
               variant="outline"
               onClick={() => setShowStatusModal(false)}
               disabled={statusLoading}
-              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleStatusChange}
               disabled={!newStatus || statusLoading}
-              className="w-full sm:w-auto"
             >
               {statusLoading ? 'Guardando...' : 'Confirmar Cambio'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Estado Actual</Label>
+            <div>
+              {selectedRequisicion &&
+                getEstadoBadge(selectedRequisicion.estado)}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="newStatus">Nuevo Estado</Label>
+            <Select
+              value={newStatus}
+              onValueChange={(v) => setNewStatus(v as EstadoRequisicion)}
+            >
+              <SelectTrigger id="newStatus">
+                <SelectValue placeholder="Seleccione nuevo estado" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectedRequisicion &&
+                  getValidTransitions(selectedRequisicion.estado).map(
+                    (estado) => (
+                      <SelectItem key={estado} value={estado}>
+                        {estadoLabels[estado]}
+                      </SelectItem>
+                    ),
+                  )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="statusComment">Comentario (opcional)</Label>
+            <Textarea
+              id="statusComment"
+              placeholder="Agregar un comentario sobre este cambio..."
+              rows={3}
+              value={statusComment}
+              onChange={(e) => setStatusComment(e.target.value)}
+            />
+          </div>
+
+          {newStatus === 'pagada' && (
+            <Alert
+              variant="info"
+              title="Al marcar como pagada, se registrara automaticamente como gasto del proyecto."
+            />
+          )}
+        </div>
+      </AppDialog>
 
       {/* History Modal */}
-      <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              Detalle de Requisicion
-              {canManage &&
-                historyData.requisicion &&
-                ['pendiente', 'en_cotizacion'].includes(
-                  historyData.requisicion.estado,
-                ) &&
-                canManageRequisicion(historyData.requisicion) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
-                    onClick={() => {
-                      setShowHistoryModal(false);
-                      openEditForm(historyData.requisicion!);
-                    }}
-                    title="Editar requisición"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
-            </DialogTitle>
-            <DialogDescription>
-              {historyData.requisicion && (
-                <>
-                  <strong>{historyData.requisicion.numero}</strong> -{' '}
-                  {historyData.requisicion.proveedor}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Requisicion Details */}
-            {historyData.requisicion && (
-              <div className="space-y-4">
-                {/* Descripción */}
-                {historyData.requisicion.concepto && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Descripción
-                    </div>
-                    <div className="font-medium">
-                      {historyData.requisicion.concepto}
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      Subtotal
-                    </div>
-                    <div className="font-medium">
-                      {formatMoney(historyData.requisicion.subtotal)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">
-                      ITBMS (7%)
-                    </div>
-                    <div className="font-medium">
-                      {formatMoney(historyData.requisicion.itbms)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Total</div>
-                    <div className="font-medium text-lg">
-                      {formatMoney(historyData.requisicion.monto_total)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Fecha</div>
-                    <div className="font-medium">
-                      {formatDate(historyData.requisicion.fecha)}
-                    </div>
-                  </div>
-                  {historyData.requisicion.categoria_nombre && (
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Categoria
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              historyData.requisicion.categoria_color,
-                          }}
-                        />
-                        <span>{historyData.requisicion.categoria_nombre}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Items List */}
-                {historyData.items && historyData.items.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">
-                      Detalle ({historyData.items.length} items)
-                    </h4>
-                    <div className="space-y-2">
-                      {historyData.items.map((item, index) => (
-                        <div
-                          key={item.id || index}
-                          className="p-3 border rounded-lg text-sm"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="font-medium">
-                                {item.descripcion}
-                              </div>
-                              <div className="text-muted-foreground">
-                                {item.cantidad} {item.unidad} x{' '}
-                                {formatMoney(item.precio_unitario)}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div>{formatMoney(item.subtotal)}</div>
-                              {item.aplica_itbms && (
-                                <div className="text-xs text-muted-foreground">
-                                  +ITBMS: {formatMoney(item.itbms)}
-                                </div>
-                              )}
-                              <div className="font-medium">
-                                {formatMoney(item.total)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+      <AppDialog
+        open={showHistoryModal}
+        onOpenChange={setShowHistoryModal}
+        size="standard"
+        title="Detalle de Requisicion"
+        description={
+          historyData.requisicion
+            ? `${historyData.requisicion.numero} - ${historyData.requisicion.proveedor}`
+            : undefined
+        }
+      >
+        <div className="space-y-4 py-2">
+          {/* Edit button when applicable */}
+          {canManage &&
+            historyData.requisicion &&
+            ['pendiente', 'en_cotizacion'].includes(
+              historyData.requisicion.estado,
+            ) &&
+            canManageRequisicion(historyData.requisicion) && (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-0 hover:bg-muted"
+                  onClick={() => {
+                    setShowHistoryModal(false);
+                    openEditForm(historyData.requisicion!);
+                  }}
+                  title="Editar requisición"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
             )}
 
-            {/* Estado Section */}
-            {historyData.requisicion && (
-              <div className="space-y-3">
-                <h4 className="font-medium">Estado</h4>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getEstadoBadge(historyData.requisicion.estado)}
-                  </div>
-                  {canManage &&
-                    getValidTransitions(historyData.requisicion.estado).length >
-                      0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setShowHistoryModal(false);
-                          openStatusModal(historyData.requisicion!);
-                        }}
-                      >
-                        Cambiar Estado
-                      </Button>
-                    )}
-                </div>
-              </div>
-            )}
-
-            {/* History Timeline */}
+          {/* Requisicion Details */}
+          {historyData.requisicion && (
             <div className="space-y-4">
-              <h4 className="font-medium">Historial de Cambios</h4>
-              {historyData.historial.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  No hay historial de cambios
+              {/* Descripción */}
+              {historyData.requisicion.concepto && (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="text-sm text-muted-foreground mb-1">
+                    Descripción
+                  </div>
+                  <div className="font-medium">
+                    {historyData.requisicion.concepto}
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {historyData.historial.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex gap-3 p-3 border rounded-lg"
-                    >
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {item.estado_anterior && (
-                            <>
-                              <Badge variant="outline">
-                                {estadoLabels[item.estado_anterior]}
-                              </Badge>
-                              <span className="text-muted-foreground">→</span>
-                            </>
-                          )}
-                          <Badge variant="default">
-                            {estadoLabels[item.estado_nuevo]}
-                          </Badge>
-                        </div>
-                        {item.comentario && (
-                          <div className="text-sm text-muted-foreground">
-                            {item.comentario}
-                          </div>
-                        )}
-                        <div className="text-xs text-muted-foreground">
-                          {item.usuario_nombre && (
-                            <span>{item.usuario_nombre} - </span>
-                          )}
-                          {formatDate(item.created_at)}
-                        </div>
-                      </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <div className="text-sm text-muted-foreground">
+                    Subtotal
+                  </div>
+                  <div className="font-medium">
+                    {formatMoney(historyData.requisicion.subtotal)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">
+                    ITBMS (7%)
+                  </div>
+                  <div className="font-medium">
+                    {formatMoney(historyData.requisicion.itbms)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Total</div>
+                  <div className="font-medium text-lg">
+                    {formatMoney(historyData.requisicion.monto_total)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Fecha</div>
+                  <div className="font-medium">
+                    {formatDate(historyData.requisicion.fecha)}
+                  </div>
+                </div>
+                {historyData.requisicion.categoria_nombre && (
+                  <div>
+                    <div className="text-sm text-muted-foreground">
+                      Categoria
                     </div>
-                  ))}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full"
+                        style={{
+                          backgroundColor:
+                            historyData.requisicion.categoria_color,
+                        }}
+                      />
+                      <span>{historyData.requisicion.categoria_nombre}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Items List */}
+              {historyData.items && historyData.items.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">
+                    Detalle ({historyData.items.length} items)
+                  </h4>
+                  <div className="space-y-2">
+                    {historyData.items.map((item, index) => (
+                      <div
+                        key={item.id || index}
+                        className="p-3 border rounded-lg text-sm"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium">
+                              {item.descripcion}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {item.cantidad} {item.unidad} x{' '}
+                              {formatMoney(item.precio_unitario)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div>{formatMoney(item.subtotal)}</div>
+                            {item.aplica_itbms && (
+                              <div className="text-xs text-muted-foreground">
+                                +ITBMS: {formatMoney(item.itbms)}
+                              </div>
+                            )}
+                            <div className="font-medium">
+                              {formatMoney(item.total)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Archivar Section */}
-            {canManage &&
-              historyData.requisicion &&
-              canManageRequisicion(historyData.requisicion) && (
-                <div className="pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
-                    onClick={() => setShowArchivarModal(true)}
-                  >
-                    <Archive className="h-4 w-4 mr-2" />
-                    Archivar Requisicion
-                  </Button>
-                </div>
-              )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Confirmacion para Archivar */}
-      <Dialog open={showArchivarModal} onOpenChange={setShowArchivarModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Archive className="h-5 w-5 text-muted-foreground" />
-              Archivar Requisicion
-            </DialogTitle>
-            <DialogDescription>
-              Esta accion archivara la requisicion. Podra ser restaurada mas
-              adelante si es necesario.
-            </DialogDescription>
-          </DialogHeader>
-
+          {/* Estado Section */}
           {historyData.requisicion && (
-            <div className="py-4">
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <div className="font-medium">
-                  {historyData.requisicion.numero}
+            <div className="space-y-3">
+              <h4 className="font-medium">Estado</h4>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  {getEstadoBadge(historyData.requisicion.estado)}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {historyData.requisicion.proveedor}
-                </div>
-                <div className="text-sm">
-                  {formatMoney(historyData.requisicion.monto_total)}
-                </div>
+                {canManage &&
+                  getValidTransitions(historyData.requisicion.estado).length >
+                    0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowHistoryModal(false);
+                        openStatusModal(historyData.requisicion!);
+                      }}
+                    >
+                      Cambiar Estado
+                    </Button>
+                  )}
               </div>
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          {/* History Timeline */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Historial de Cambios</h4>
+            {historyData.historial.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No hay historial de cambios
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {historyData.historial.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex gap-3 p-3 border rounded-lg"
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {item.estado_anterior && (
+                          <>
+                            <Badge variant="outline">
+                              {estadoLabels[item.estado_anterior]}
+                            </Badge>
+                            <span className="text-muted-foreground">→</span>
+                          </>
+                        )}
+                        <Badge variant="default">
+                          {estadoLabels[item.estado_nuevo]}
+                        </Badge>
+                      </div>
+                      {item.comentario && (
+                        <div className="text-sm text-muted-foreground">
+                          {item.comentario}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {item.usuario_nombre && (
+                          <span>{item.usuario_nombre} - </span>
+                        )}
+                        {formatDate(item.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Archivar Section */}
+          {canManage &&
+            historyData.requisicion &&
+            canManageRequisicion(historyData.requisicion) && (
+              <div className="pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
+                  onClick={() => setShowArchivarModal(true)}
+                >
+                  <Archive className="h-4 w-4 mr-2" />
+                  Archivar Requisicion
+                </Button>
+              </div>
+            )}
+        </div>
+      </AppDialog>
+
+      {/* Modal de Confirmacion para Archivar */}
+      <AppDialog
+        open={showArchivarModal}
+        onOpenChange={setShowArchivarModal}
+        size="confirm"
+        title="Archivar Requisicion"
+        description="Esta accion archivara la requisicion. Podra ser restaurada mas adelante si es necesario."
+        footer={
+          <>
             <Button
               variant="outline"
               onClick={() => setShowArchivarModal(false)}
@@ -954,9 +912,25 @@ export default function ProjectRequisiciones({
             >
               {archivarLoading ? 'Archivando...' : 'Si, Archivar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {historyData.requisicion && (
+          <div className="py-2">
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <div className="font-medium">
+                {historyData.requisicion.numero}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {historyData.requisicion.proveedor}
+              </div>
+              <div className="text-sm">
+                {formatMoney(historyData.requisicion.monto_total)}
+              </div>
+            </div>
+          </div>
+        )}
+      </AppDialog>
     </div>
   );
 }

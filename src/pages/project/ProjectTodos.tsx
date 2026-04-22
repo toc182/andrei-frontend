@@ -31,13 +31,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -45,6 +47,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
 import api from '../../services/api';
 
 type Prioridad = 'alta' | 'media' | 'baja';
@@ -162,6 +166,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
     alta_prioridad: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filters
   const [filterEstado, setFilterEstado] = useState('all');
@@ -177,6 +182,9 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
+
+  // Delete confirmation
+  const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -327,10 +335,9 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
   };
 
   const handleDelete = async (todo: Todo) => {
-    if (!confirm('¿Eliminar esta tarea?')) return;
-
     try {
       await api.delete(`/project-todos/${todo.id}`);
+      setTodoToDelete(null);
       loadData();
     } catch (error) {
       console.error('Error deleting todo:', error);
@@ -346,7 +353,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
         cat.nombre.toLowerCase() === newCategoryName.trim().toLowerCase(),
     );
     if (exists) {
-      alert(`La categoría "${newCategoryName}" ya existe`);
+      setError(`La categoría "${newCategoryName}" ya existe`);
       return;
     }
 
@@ -365,13 +372,13 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
         setUseCustomColor(false);
         loadData();
       } else {
-        alert(response.data.message || 'Error al crear categoría');
+        setError(response.data.message || 'Error al crear categoría');
       }
     } catch (error) {
       const apiError = error as { response?: { data?: { message?: string } } };
       const message =
         apiError.response?.data?.message || 'Error al crear categoría';
-      alert(message);
+      setError(message);
       console.error('Error adding category:', error);
     }
   };
@@ -487,6 +494,16 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
 
   return (
     <div className="space-y-6">
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          variant="error"
+          title={error}
+          dismissible
+          onDismiss={() => setError(null)}
+        />
+      )}
+
       {/* Stats Cards */}
       <div className="flex flex-wrap gap-4">
         <Card className="flex-1 min-w-[120px]">
@@ -579,739 +596,759 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
       </div>
 
       {/* Todos Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead>Tarea</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[140px]">Asignado</TableHead>
-              <TableHead className="w-[100px]">Vence</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTodos.length === 0 ? (
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  No hay tareas{' '}
-                  {filterEstado !== 'all' || filterPrioridad !== 'all'
-                    ? 'con estos filtros'
-                    : ''}
-                </TableCell>
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead>Tarea</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[140px]">Asignado</TableHead>
+                <TableHead className="w-[100px]">Vence</TableHead>
               </TableRow>
-            ) : (
-              filteredTodos.map((todo) => {
-                const prioridadConfig = getPrioridadConfig(todo.prioridad);
-                const isCompleted = todo.estado === 'completado';
-                const isOverdue =
-                  todo.fecha_limite &&
-                  !isCompleted &&
-                  new Date(todo.fecha_limite) < new Date();
-
-                return (
-                  <TableRow
-                    key={todo.id}
-                    className={`cursor-pointer hover:bg-muted/50 ${isCompleted ? 'opacity-60 bg-muted/30' : ''}`}
-                    onClick={() => handleOpenDetail(todo)}
+            </TableHeader>
+            <TableBody>
+              {filteredTodos.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
                   >
-                    {/* Toggle Button */}
-                    <TableCell
-                      className="text-center"
-                      onClick={(e) => e.stopPropagation()}
+                    No hay tareas{' '}
+                    {filterEstado !== 'all' || filterPrioridad !== 'all'
+                      ? 'con estos filtros'
+                      : ''}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTodos.map((todo) => {
+                  const prioridadConfig = getPrioridadConfig(todo.prioridad);
+                  const isCompleted = todo.estado === 'completado';
+                  const isOverdue =
+                    todo.fecha_limite &&
+                    !isCompleted &&
+                    new Date(todo.fecha_limite) < new Date();
+
+                  return (
+                    <TableRow
+                      key={todo.id}
+                      className={`cursor-pointer hover:bg-muted/50 ${isCompleted ? 'opacity-60 bg-muted/30' : ''}`}
+                      onClick={() => handleOpenDetail(todo)}
                     >
-                      <button
-                        onClick={() => handleToggle(todo)}
-                        className={`
-                          transition-all duration-200 hover:scale-110
-                          ${
+                      {/* Toggle Button */}
+                      <TableCell
+                        className="text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => handleToggle(todo)}
+                          className={`
+                            transition-all duration-200 hover:scale-110
+                            ${
+                              isCompleted
+                                ? 'text-green-600 hover:text-green-700'
+                                : 'text-gray-400 hover:text-green-500'
+                            }
+                          `}
+                          title={
                             isCompleted
-                              ? 'text-green-600 hover:text-green-700'
-                              : 'text-gray-400 hover:text-green-500'
+                              ? 'Marcar como pendiente'
+                              : 'Marcar como completado'
                           }
-                        `}
-                        title={
-                          isCompleted
-                            ? 'Marcar como pendiente'
-                            : 'Marcar como completado'
-                        }
-                      >
-                        {isCompleted ? (
-                          <CheckCircle2 className="h-6 w-6" />
-                        ) : (
-                          <Circle className="h-6 w-6" />
-                        )}
-                      </button>
-                    </TableCell>
-
-                    {/* Tarea */}
-                    <TableCell>
-                      <span
-                        className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
-                      >
-                        {todo.titulo}
-                      </span>
-                    </TableCell>
-
-                    {/* Prioridad - Círculo con ! */}
-                    <TableCell className="text-center">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center mx-auto"
-                        style={{ backgroundColor: prioridadConfig.color }}
-                        title={`Prioridad ${prioridadConfig.label}`}
-                      >
-                        <span className="text-white text-xs font-bold">!</span>
-                      </div>
-                    </TableCell>
-
-                    {/* Asignado */}
-                    <TableCell>
-                      {todo.asignado_nombre ? (
-                        <div className="flex items-center gap-1.5">
-                          <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="text-sm truncate">
-                            {todo.asignado_nombre}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-
-                    {/* Fecha Límite */}
-                    <TableCell>
-                      {todo.fecha_limite ? (
-                        <div
-                          className={`flex items-center gap-1.5 text-sm ${isOverdue ? 'text-red-600 font-medium' : ''}`}
                         >
-                          <Calendar
-                            className={`h-4 w-4 ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}
-                          />
-                          {formatShortDate(todo.fecha_limite)}
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-6 w-6" />
+                          ) : (
+                            <Circle className="h-6 w-6" />
+                          )}
+                        </button>
+                      </TableCell>
+
+                      {/* Tarea */}
+                      <TableCell>
+                        <span
+                          className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
+                        >
+                          {todo.titulo}
+                        </span>
+                      </TableCell>
+
+                      {/* Prioridad - Círculo con ! */}
+                      <TableCell className="text-center">
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center mx-auto"
+                          style={{ backgroundColor: prioridadConfig.color }}
+                          title={`Prioridad ${prioridadConfig.label}`}
+                        >
+                          <span className="text-white text-xs font-bold">!</span>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                      </TableCell>
+
+                      {/* Asignado */}
+                      <TableCell>
+                        {todo.asignado_nombre ? (
+                          <div className="flex items-center gap-1.5">
+                            <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span className="text-sm truncate">
+                              {todo.asignado_nombre}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+
+                      {/* Fecha Límite */}
+                      <TableCell>
+                        {todo.fecha_limite ? (
+                          <div
+                            className={`flex items-center gap-1.5 text-sm ${isOverdue ? 'text-red-600 font-medium' : ''}`}
+                          >
+                            <Calendar
+                              className={`h-4 w-4 ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}
+                            />
+                            {formatShortDate(todo.fecha_limite)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={todoToDelete !== null}
+        onOpenChange={(open) => { if (!open) setTodoToDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta tarea?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (todoToDelete) handleDelete(todoToDelete); }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Todo Form Modal */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingTodo ? 'Editar Tarea' : 'Nueva Tarea'}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              {editingTodo
-                ? 'Modifica los detalles de la tarea'
-                : 'Crea una nueva tarea para el proyecto'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Título *</Label>
-              <Input
-                value={formData.titulo}
-                onChange={(e) =>
-                  setFormData({ ...formData, titulo: e.target.value })
-                }
-                placeholder="¿Qué necesitas hacer?"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label>Descripción</Label>
-              <Textarea
-                value={formData.descripcion}
-                onChange={(e) =>
-                  setFormData({ ...formData, descripcion: e.target.value })
-                }
-                placeholder="Detalles adicionales..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Prioridad</Label>
-                <Select
-                  value={formData.prioridad}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, prioridad: v as Prioridad })
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="baja">Baja</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Fecha Límite</Label>
-                <Input
-                  type="date"
-                  value={formData.fecha_limite}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fecha_limite: e.target.value })
-                  }
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Categoría</Label>
-                <Select
-                  value={formData.category_id}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, category_id: v })
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Sin categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin categoría</SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: cat.color }}
-                          />
-                          {cat.nombre}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Asignar a</Label>
-                <Select
-                  value={formData.asignado_a}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, asignado_a: v })
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Sin asignar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin asignar</SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.id} value={m.id.toString()}>
-                        {m.nombre_display || m.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
+      <AppDialog
+        open={showForm}
+        onOpenChange={setShowForm}
+        size="simple"
+        title={editingTodo ? 'Editar Tarea' : 'Nueva Tarea'}
+        footer={
+          <>
             <Button variant="outline" onClick={() => setShowForm(false)}>
               Cancelar
             </Button>
             <Button
-              onClick={handleSave}
+              form="todo-form"
+              type="submit"
               disabled={!formData.titulo.trim() || saving}
             >
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <form
+          id="todo-form"
+          onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+          className="space-y-4 py-2"
+        >
+          <div>
+            <Label>Título *</Label>
+            <Input
+              value={formData.titulo}
+              onChange={(e) =>
+                setFormData({ ...formData, titulo: e.target.value })
+              }
+              placeholder="¿Qué necesitas hacer?"
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label>Descripción</Label>
+            <Textarea
+              value={formData.descripcion}
+              onChange={(e) =>
+                setFormData({ ...formData, descripcion: e.target.value })
+              }
+              placeholder="Detalles adicionales..."
+              className="mt-1"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Prioridad</Label>
+              <Select
+                value={formData.prioridad}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, prioridad: v as Prioridad })
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="media">Media</SelectItem>
+                  <SelectItem value="baja">Baja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Fecha Límite</Label>
+              <Input
+                type="date"
+                value={formData.fecha_limite}
+                onChange={(e) =>
+                  setFormData({ ...formData, fecha_limite: e.target.value })
+                }
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Categoría</Label>
+              <Select
+                value={formData.category_id}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, category_id: v })
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Sin categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin categoría</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.nombre}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Asignar a</Label>
+              <Select
+                value={formData.asignado_a}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, asignado_a: v })
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Sin asignar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin asignar</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m.id} value={m.id.toString()}>
+                      {m.nombre_display || m.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </form>
+      </AppDialog>
 
       {/* Category Manager Modal */}
-      <Dialog
+      <AppDialog
         open={showCategoryManager}
         onOpenChange={(open) => {
           setShowCategoryManager(open);
           if (!open) resetCategoryForm();
         }}
+        size="simple"
+        title="Administrar Categorías"
       >
-        <DialogContent className="sm:max-w-[450px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Administrar Categorías</DialogTitle>
-            <DialogDescription className="sr-only">
-              Gestiona las categorías de tareas del proyecto
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {/* Existing categories list */}
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">
-                Categorías del proyecto
-              </Label>
-              <div className="mt-2 space-y-2">
-                {categories.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-6 border rounded-lg border-dashed">
-                    No hay categorías creadas
-                  </div>
-                ) : (
-                  categories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      className="flex items-center justify-between px-2.5 py-1.5 border rounded bg-muted/30"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full ring-1 ring-black/10"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <span className="text-sm">{cat.nombre}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Add category section */}
-            {!showAddCategory ? (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowAddCategory(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Categoría
-              </Button>
-            ) : (
-              <div className="border rounded-lg p-4 space-y-4 bg-muted/20">
-                <div className="flex items-center justify-between">
-                  <Label className="font-medium">Nueva categoría</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={resetCategoryForm}
+        <div className="space-y-4 py-2">
+          {/* Existing categories list */}
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">
+              Categorías del proyecto
+            </Label>
+            <div className="mt-2 space-y-2">
+              {categories.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-6 border rounded-lg border-dashed">
+                  No hay categorías creadas
+                </div>
+              ) : (
+                categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="flex items-center justify-between px-2.5 py-1.5 border rounded bg-muted/30"
                   >
-                    Cancelar
-                  </Button>
-                </div>
-
-                <Input
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Nombre de la categoría"
-                  autoFocus
-                />
-
-                {/* Color selection */}
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Color</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {presetColors.map((preset) => (
-                      <button
-                        key={preset.color}
-                        type="button"
-                        className={`w-8 h-8 rounded-full ring-offset-2 transition-all hover:scale-110 ${
-                          newCategoryColor === preset.color && !useCustomColor
-                            ? 'ring-2 ring-primary'
-                            : 'ring-1 ring-black/10'
-                        }`}
-                        style={{ backgroundColor: preset.color }}
-                        onClick={() => {
-                          setNewCategoryColor(preset.color);
-                          setUseCustomColor(false);
-                        }}
-                        title={preset.name}
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full ring-1 ring-black/10"
+                        style={{ backgroundColor: cat.color }}
                       />
-                    ))}
-                    {/* Custom color button */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        className={`w-8 h-8 rounded-full ring-offset-2 transition-all hover:scale-110 flex items-center justify-center border-2 border-dashed ${
-                          useCustomColor
-                            ? 'ring-2 ring-primary border-primary'
-                            : 'border-gray-300'
-                        }`}
-                        style={{
-                          backgroundColor: useCustomColor
-                            ? newCategoryColor
-                            : 'white',
-                        }}
-                        onClick={() => setUseCustomColor(true)}
-                        title="Color personalizado"
-                      >
-                        {!useCustomColor && (
-                          <Plus className="h-3 w-3 text-gray-400" />
-                        )}
-                      </button>
+                      <span className="text-sm">{cat.nombre}</span>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeleteCategory(cat.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
+                ))
+              )}
+            </div>
+          </div>
 
-                  {/* Custom color picker */}
-                  {useCustomColor && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Input
-                        type="color"
-                        value={newCategoryColor}
-                        onChange={(e) => setNewCategoryColor(e.target.value)}
-                        className="w-12 h-10 p-1 cursor-pointer"
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {newCategoryColor}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
+          {/* Add category section */}
+          {!showAddCategory ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowAddCategory(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Categoría
+            </Button>
+          ) : (
+            <div className="border rounded-lg p-4 space-y-4 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label className="font-medium">Nueva categoría</Label>
                 <Button
-                  className="w-full"
-                  onClick={handleAddCategory}
-                  disabled={!newCategoryName.trim()}
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={resetCategoryForm}
                 >
-                  Crear Categoría
+                  Cancelar
                 </Button>
               </div>
-            )}
 
-            {/* Preset categories section */}
-            {(() => {
-              const existingNames = new Set(
-                categories.map((cat) => cat.nombre.toLowerCase().trim()),
-              );
-              const availablePresets = presetCategories.filter(
-                (preset) =>
-                  !existingNames.has(preset.nombre.toLowerCase().trim()),
-              );
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Nombre de la categoría"
+                autoFocus
+              />
 
-              return (
-                <div className="pt-2 border-t">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Categorías sugeridas
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Haz clic para agregar rápidamente
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {availablePresets.length > 0 ? (
-                      availablePresets.map((preset) => (
-                        <button
-                          key={preset.nombre}
-                          type="button"
-                          disabled={addingPreset !== null}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                            addingPreset === preset.nombre
-                              ? 'opacity-50 cursor-wait'
-                              : addingPreset
-                                ? 'opacity-50 cursor-not-allowed'
-                                : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => handleAddPresetCategory(preset)}
-                        >
-                          <div
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: preset.color }}
-                          />
-                          {addingPreset === preset.nombre
-                            ? 'Agregando...'
-                            : preset.nombre}
-                        </button>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground italic">
-                        Todas las categorías sugeridas ya fueron agregadas
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Todo Detail Modal */}
-      <Dialog open={showDetail} onOpenChange={setShowDetail}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="pr-8">Detalles de la Tarea</DialogTitle>
-            <DialogDescription className="sr-only">
-              Ver todos los detalles de la tarea seleccionada
-            </DialogDescription>
-          </DialogHeader>
-          {selectedTodo &&
-            (() => {
-              const prioridadConfig = getPrioridadConfig(
-                selectedTodo.prioridad,
-              );
-              const isCompleted = selectedTodo.estado === 'completado';
-              const isOverdue =
-                selectedTodo.fecha_limite &&
-                !isCompleted &&
-                new Date(selectedTodo.fecha_limite) < new Date();
-
-              return (
-                <div className="space-y-3">
-                  {/* Título y Estado */}
-                  <div className="flex items-start gap-2">
+              {/* Color selection */}
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Color</Label>
+                <div className="flex flex-wrap gap-2">
+                  {presetColors.map((preset) => (
                     <button
-                      onClick={() => {
-                        handleToggle(selectedTodo);
-                        setShowDetail(false);
-                      }}
-                      className={`mt-0.5 transition-all duration-200 hover:scale-110 ${
-                        isCompleted
-                          ? 'text-green-600 hover:text-green-700'
-                          : 'text-gray-400 hover:text-green-500'
+                      key={preset.color}
+                      type="button"
+                      className={`w-8 h-8 rounded-full ring-offset-2 transition-all hover:scale-110 ${
+                        newCategoryColor === preset.color && !useCustomColor
+                          ? 'ring-2 ring-primary'
+                          : 'ring-1 ring-black/10'
                       }`}
+                      style={{ backgroundColor: preset.color }}
+                      onClick={() => {
+                        setNewCategoryColor(preset.color);
+                        setUseCustomColor(false);
+                      }}
+                      title={preset.name}
+                    />
+                  ))}
+                  {/* Custom color button */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className={`w-8 h-8 rounded-full ring-offset-2 transition-all hover:scale-110 flex items-center justify-center border-2 border-dashed ${
+                        useCustomColor
+                          ? 'ring-2 ring-primary border-primary'
+                          : 'border-gray-300'
+                      }`}
+                      style={{
+                        backgroundColor: useCustomColor
+                          ? newCategoryColor
+                          : 'white',
+                      }}
+                      onClick={() => setUseCustomColor(true)}
+                      title="Color personalizado"
                     >
-                      {isCompleted ? (
-                        <CheckCircle2 className="h-5 w-5" />
-                      ) : (
-                        <Circle className="h-5 w-5" />
+                      {!useCustomColor && (
+                        <Plus className="h-3 w-3 text-gray-400" />
                       )}
                     </button>
-                    <div className="flex-1">
-                      <h3
-                        className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
-                      >
-                        {selectedTodo.titulo}
-                      </h3>
-                      {selectedTodo.descripcion && (
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                          {selectedTodo.descripcion}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Info Grid */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-2 border-t text-sm">
-                    {/* Prioridad */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Prioridad:</span>
-                      <div className="flex items-center gap-1.5">
-                        <div
-                          className="w-4 h-4 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: prioridadConfig.color }}
-                        >
-                          <span className="text-white text-[9px] font-bold">
-                            !
-                          </span>
-                        </div>
-                        <span>{prioridadConfig.label}</span>
-                      </div>
-                    </div>
-
-                    {/* Estado */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Estado:</span>
-                      <Badge
-                        variant={isCompleted ? 'default' : 'secondary'}
-                        className={`text-xs ${isCompleted ? 'bg-green-600' : ''}`}
-                      >
-                        {isCompleted ? 'Completado' : 'Pendiente'}
-                      </Badge>
-                    </div>
-
-                    {/* Categoría */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Categoría:</span>
-                      {selectedTodo.categoria_nombre ? (
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{
-                              backgroundColor: selectedTodo.categoria_color,
-                            }}
-                          />
-                          <span>{selectedTodo.categoria_nombre}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </div>
-
-                    {/* Asignado */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Asignado:</span>
-                      {selectedTodo.asignado_nombre ? (
-                        <span>
-                          {selectedTodo.asignado_nombre}
-                          {selectedTodo.asignado_tipo === 'externo' && ' (Ext)'}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </div>
-
-                    {/* Fecha Límite */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Vence:</span>
-                      {selectedTodo.fecha_limite ? (
-                        <span
-                          className={
-                            isOverdue ? 'text-red-600 font-medium' : ''
-                          }
-                        >
-                          {formatShortDate(selectedTodo.fecha_limite)}
-                          {isOverdue && ' (Vencido)'}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </div>
-
-                    {/* Creado */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Creado:</span>
-                      <span>{formatShortDate(selectedTodo.created_at)}</span>
-                    </div>
-                  </div>
-
-                  {/* Completado info */}
-                  {isCompleted && selectedTodo.completado_at && (
-                    <div className="text-sm text-green-600 pt-1">
-                      Completado {formatShortDate(selectedTodo.completado_at)}
-                      {selectedTodo.completado_por_nombre &&
-                        ` por ${selectedTodo.completado_por_nombre}`}
-                    </div>
-                  )}
-
-                  {/* Comments Section */}
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm font-medium">Comentarios</span>
-                      {comments.length > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          ({comments.length})
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Comments list */}
-                    <div className="space-y-2 max-h-[150px] overflow-y-auto mb-2">
-                      {loadingComments ? (
-                        <div className="text-xs text-muted-foreground text-center py-2">
-                          Cargando...
-                        </div>
-                      ) : comments.length === 0 ? (
-                        <div className="text-xs text-muted-foreground text-center py-2">
-                          No hay comentarios
-                        </div>
-                      ) : (
-                        comments.map((comment) => (
-                          <div
-                            key={comment.id}
-                            className="bg-muted/30 rounded px-2.5 py-2"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="font-medium">
-                                    {comment.usuario_nombre}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {formatShortDate(comment.created_at)}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-0.5 whitespace-pre-wrap break-words">
-                                  {comment.contenido}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDeleteComment(comment.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Add comment input */}
-                    <div className="flex gap-2 items-end">
-                      <Textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Escribe un comentario..."
-                        className="flex-1 text-sm resize-none"
-                        rows={3}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddComment();
-                          }
-                        }}
-                      />
-                      <Button
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleAddComment}
-                        disabled={!newComment.trim() || sendingComment}
-                      >
-                        <Send className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
                   </div>
                 </div>
-              );
-            })()}
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+
+                {/* Custom color picker */}
+                {useCustomColor && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Input
+                      type="color"
+                      value={newCategoryColor}
+                      onChange={(e) => setNewCategoryColor(e.target.value)}
+                      className="w-12 h-10 p-1 cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {newCategoryColor}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={handleAddCategory}
+                disabled={!newCategoryName.trim()}
+              >
+                Crear Categoría
+              </Button>
+            </div>
+          )}
+
+          {/* Preset categories section */}
+          {(() => {
+            const existingNames = new Set(
+              categories.map((cat) => cat.nombre.toLowerCase().trim()),
+            );
+            const availablePresets = presetCategories.filter(
+              (preset) =>
+                !existingNames.has(preset.nombre.toLowerCase().trim()),
+            );
+
+            return (
+              <div className="pt-2 border-t">
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Categorías sugeridas
+                </Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Haz clic para agregar rápidamente
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {availablePresets.length > 0 ? (
+                    availablePresets.map((preset) => (
+                      <button
+                        key={preset.nombre}
+                        type="button"
+                        disabled={addingPreset !== null}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                          addingPreset === preset.nombre
+                            ? 'opacity-50 cursor-wait'
+                            : addingPreset
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => handleAddPresetCategory(preset)}
+                      >
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: preset.color }}
+                        />
+                        {addingPreset === preset.nombre
+                          ? 'Agregando...'
+                          : preset.nombre}
+                      </button>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground italic">
+                      Todas las categorías sugeridas ya fueron agregadas
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </AppDialog>
+
+      {/* Todo Detail Modal */}
+      <AppDialog
+        open={showDetail}
+        onOpenChange={setShowDetail}
+        size="simple"
+        title="Detalles de la Tarea"
+        footer={
+          <>
             <Button
               variant="destructive"
-              className="sm:mr-auto"
               onClick={() => {
                 setShowDetail(false);
-                if (selectedTodo) handleDelete(selectedTodo);
+                if (selectedTodo) setTodoToDelete(selectedTodo);
               }}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Eliminar
             </Button>
-            <Button variant="outline" onClick={() => setShowDetail(false)}>
-              Cerrar
-            </Button>
-            <Button
-              onClick={() => {
-                setShowDetail(false);
-                handleOpenForm(selectedTodo);
-              }}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowDetail(false)}>
+                Cerrar
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowDetail(false);
+                  handleOpenForm(selectedTodo);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            </div>
+          </>
+        }
+      >
+        {selectedTodo &&
+          (() => {
+            const prioridadConfig = getPrioridadConfig(
+              selectedTodo.prioridad,
+            );
+            const isCompleted = selectedTodo.estado === 'completado';
+            const isOverdue =
+              selectedTodo.fecha_limite &&
+              !isCompleted &&
+              new Date(selectedTodo.fecha_limite) < new Date();
+
+            return (
+              <div className="space-y-3">
+                {/* Título y Estado */}
+                <div className="flex items-start gap-2">
+                  <button
+                    onClick={() => {
+                      handleToggle(selectedTodo);
+                      setShowDetail(false);
+                    }}
+                    className={`mt-0.5 transition-all duration-200 hover:scale-110 ${
+                      isCompleted
+                        ? 'text-green-600 hover:text-green-700'
+                        : 'text-gray-400 hover:text-green-500'
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="h-5 w-5" />
+                    ) : (
+                      <Circle className="h-5 w-5" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <h3
+                      className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
+                    >
+                      {selectedTodo.titulo}
+                    </h3>
+                    {selectedTodo.descripcion && (
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                        {selectedTodo.descripcion}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-2 border-t text-sm">
+                  {/* Prioridad */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Prioridad:</span>
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="w-4 h-4 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: prioridadConfig.color }}
+                      >
+                        <span className="text-white text-[9px] font-bold">
+                          !
+                        </span>
+                      </div>
+                      <span>{prioridadConfig.label}</span>
+                    </div>
+                  </div>
+
+                  {/* Estado */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Estado:</span>
+                    <Badge
+                      variant={isCompleted ? 'default' : 'secondary'}
+                      className={`text-xs ${isCompleted ? 'bg-green-600' : ''}`}
+                    >
+                      {isCompleted ? 'Completado' : 'Pendiente'}
+                    </Badge>
+                  </div>
+
+                  {/* Categoría */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Categoría:</span>
+                    {selectedTodo.categoria_nombre ? (
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{
+                            backgroundColor: selectedTodo.categoria_color,
+                          }}
+                        />
+                        <span>{selectedTodo.categoria_nombre}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+
+                  {/* Asignado */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Asignado:</span>
+                    {selectedTodo.asignado_nombre ? (
+                      <span>
+                        {selectedTodo.asignado_nombre}
+                        {selectedTodo.asignado_tipo === 'externo' && ' (Ext)'}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+
+                  {/* Fecha Límite */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Vence:</span>
+                    {selectedTodo.fecha_limite ? (
+                      <span
+                        className={
+                          isOverdue ? 'text-red-600 font-medium' : ''
+                        }
+                      >
+                        {formatShortDate(selectedTodo.fecha_limite)}
+                        {isOverdue && ' (Vencido)'}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+
+                  {/* Creado */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Creado:</span>
+                    <span>{formatShortDate(selectedTodo.created_at)}</span>
+                  </div>
+                </div>
+
+                {/* Completado info */}
+                {isCompleted && selectedTodo.completado_at && (
+                  <div className="text-sm text-green-600 pt-1">
+                    Completado {formatShortDate(selectedTodo.completado_at)}
+                    {selectedTodo.completado_por_nombre &&
+                      ` por ${selectedTodo.completado_por_nombre}`}
+                  </div>
+                )}
+
+                {/* Comments Section */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-sm font-medium">Comentarios</span>
+                    {comments.length > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({comments.length})
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Comments list */}
+                  <div className="space-y-2 max-h-[150px] overflow-y-auto mb-2">
+                    {loadingComments ? (
+                      <div className="text-xs text-muted-foreground text-center py-2">
+                        Cargando...
+                      </div>
+                    ) : comments.length === 0 ? (
+                      <div className="text-xs text-muted-foreground text-center py-2">
+                        No hay comentarios
+                      </div>
+                    ) : (
+                      comments.map((comment) => (
+                        <div
+                          key={comment.id}
+                          className="bg-muted/30 rounded px-2.5 py-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="font-medium">
+                                  {comment.usuario_nombre}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {formatShortDate(comment.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-sm mt-0.5 whitespace-pre-wrap break-words">
+                                {comment.contenido}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteComment(comment.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add comment input */}
+                  <div className="flex gap-2 items-end">
+                    <Textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Escribe un comentario..."
+                      className="flex-1 text-sm resize-none"
+                      rows={3}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddComment();
+                        }
+                      }}
+                    />
+                    <Button
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || sendingComment}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+      </AppDialog>
     </div>
   );
 }

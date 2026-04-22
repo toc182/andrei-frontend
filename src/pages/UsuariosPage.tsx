@@ -19,14 +19,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Form,
   FormControl,
   FormField,
@@ -42,7 +34,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
+// Shell Components
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
 
 interface Usuario {
   id: number;
@@ -302,95 +297,97 @@ const UsuariosPage = () => {
 
       {/* Error global */}
       {error && !showCreateModal && !showEditModal && !showToggleConfirm && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="error" title={error} />
       )}
 
       {/* Tabla desktop */}
-      <div className="hidden md:block rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="text-center">Rol</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredUsuarios.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No hay usuarios registrados
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredUsuarios.map((usuario) => (
-                <TableRow key={usuario.id}>
-                  <TableCell className="font-medium">
-                    {usuario.nombre}
-                    {usuario.tipo_usuario === 'externo' && (
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        Externo
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {usuario.email || '—'}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {usuario.tipo_usuario === 'externo' ? (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    ) : (
-                      getRolBadge(usuario.rol)
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getEstadoBadge(usuario.activo)}
-                  </TableCell>
-                  <TableCell>
-                    {canManageUser(usuario) && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(usuario)}
-                          title="Editar usuario"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        {usuario.tipo_usuario === 'interno' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleConfirm(usuario)}
-                            title={usuario.activo ? 'Desactivar' : 'Activar'}
-                            className={
-                              usuario.activo
-                                ? 'text-destructive hover:text-destructive'
-                                : 'text-green-600 hover:text-green-600'
-                            }
-                          >
-                            {usuario.activo ? (
-                              <UserX className="h-4 w-4" />
-                            ) : (
-                              <UserCheck className="h-4 w-4" />
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
+      <div className="hidden md:block">
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-center">Rol</TableHead>
+                  <TableHead className="text-center">Estado</TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsuarios.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No hay usuarios registrados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsuarios.map((usuario) => (
+                    <TableRow key={usuario.id}>
+                      <TableCell className="font-medium">
+                        {usuario.nombre}
+                        {usuario.tipo_usuario === 'externo' && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Externo
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {usuario.email || '—'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {usuario.tipo_usuario === 'externo' ? (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        ) : (
+                          getRolBadge(usuario.rol)
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {getEstadoBadge(usuario.activo)}
+                      </TableCell>
+                      <TableCell>
+                        {canManageUser(usuario) && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(usuario)}
+                              title="Editar usuario"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {usuario.tipo_usuario === 'interno' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleToggleConfirm(usuario)}
+                                title={usuario.activo ? 'Desactivar' : 'Activar'}
+                                className={
+                                  usuario.activo
+                                    ? 'text-destructive hover:text-destructive'
+                                    : 'text-green-600 hover:text-green-600'
+                                }
+                              >
+                                {usuario.activo ? (
+                                  <UserX className="h-4 w-4" />
+                                ) : (
+                                  <UserCheck className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Cards mobile */}
@@ -461,313 +458,288 @@ const UsuariosPage = () => {
       </div>
 
       {/* Modal crear usuario */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Nuevo Usuario</DialogTitle>
-            <DialogDescription>
-              Crea una nueva cuenta de usuario para el sistema
-            </DialogDescription>
-          </DialogHeader>
-
-          {error && showCreateModal && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <Form {...createForm}>
-            <form
-              onSubmit={
-                createTipo === 'externo'
-                  ? async (e) => {
-                      e.preventDefault();
-                      const nombre = createForm.getValues('nombre');
-                      if (!nombre || nombre.length < 2) {
-                        createForm.setError('nombre', {
-                          message: 'Nombre debe tener al menos 2 caracteres',
-                        });
-                        return;
-                      }
-                      handleCreate({ nombre } as CreateInternoData);
-                    }
-                  : createForm.handleSubmit(handleCreate)
-              }
-              className="space-y-4"
+      <AppDialog
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        size="simple"
+        title="Nuevo Usuario"
+        description="Crea una nueva cuenta de usuario para el sistema"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowCreateModal(false)}
+              disabled={submitting}
             >
-              <div>
-                <FormLabel>Tipo de usuario</FormLabel>
-                <Select
-                  value={createTipo}
-                  onValueChange={(v) =>
-                    setCreateTipo(v as 'interno' | 'externo')
-                  }
-                  disabled={submitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="interno">Usuario del sistema</SelectItem>
-                    <SelectItem value="externo">
-                      Externo (solo referencia)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <FormField
-                control={createForm.control}
-                name="nombre"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Nombre completo"
-                        disabled={submitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {createTipo === 'interno' && (
-                <>
-                  <FormField
-                    control={createForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email *</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="correo@ejemplo.com"
-                            disabled={submitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={createForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contraseña *</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Mínimo 6 caracteres"
-                            disabled={submitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={createForm.control}
-                    name="rol"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Rol *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          disabled={submitting}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar rol" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="usuario">Usuario</SelectItem>
-                            <SelectItem value="co-admin">Co-Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
+              Cancelar
+            </Button>
+            <Button type="submit" form="create-usuario-form" disabled={submitting}>
+              {submitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
+              {submitting
+                ? 'Creando...'
+                : createTipo === 'externo'
+                  ? 'Crear Externo'
+                  : 'Crear Usuario'}
+            </Button>
+          </>
+        }
+      >
+        {error && showCreateModal && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-              <DialogFooter className="gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCreateModal(false)}
-                  disabled={submitting}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Form {...createForm}>
+          <form
+            id="create-usuario-form"
+            onSubmit={
+              createTipo === 'externo'
+                ? async (e) => {
+                    e.preventDefault();
+                    const nombre = createForm.getValues('nombre');
+                    if (!nombre || nombre.length < 2) {
+                      createForm.setError('nombre', {
+                        message: 'Nombre debe tener al menos 2 caracteres',
+                      });
+                      return;
+                    }
+                    handleCreate({ nombre } as CreateInternoData);
+                  }
+                : createForm.handleSubmit(handleCreate)
+            }
+            className="space-y-4"
+          >
+            <div>
+              <FormLabel>Tipo de usuario</FormLabel>
+              <Select
+                value={createTipo}
+                onValueChange={(v) =>
+                  setCreateTipo(v as 'interno' | 'externo')
+                }
+                disabled={submitting}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interno">Usuario del sistema</SelectItem>
+                  <SelectItem value="externo">
+                    Externo (solo referencia)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <FormField
+              control={createForm.control}
+              name="nombre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Nombre completo"
+                      disabled={submitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {createTipo === 'interno' && (
+              <>
+                <FormField
+                  control={createForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          disabled={submitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  {submitting
-                    ? 'Creando...'
-                    : createTipo === 'externo'
-                      ? 'Crear Externo'
-                      : 'Crear Usuario'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+                />
+
+                <FormField
+                  control={createForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Mínimo 6 caracteres"
+                          disabled={submitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={createForm.control}
+                  name="rol"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rol *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={submitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar rol" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="usuario">Usuario</SelectItem>
+                          <SelectItem value="co-admin">Co-Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+          </form>
+        </Form>
+      </AppDialog>
 
       {/* Modal editar usuario */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Editar Usuario</DialogTitle>
-            <DialogDescription>
-              Modifica los datos del usuario
-            </DialogDescription>
-          </DialogHeader>
-
-          {error && showEditModal && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <Form {...editForm}>
-            <form
-              onSubmit={editForm.handleSubmit(handleUpdate)}
-              className="space-y-4"
+      <AppDialog
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        size="simple"
+        title="Editar Usuario"
+        description="Modifica los datos del usuario"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowEditModal(false)}
+              disabled={submitting}
             >
-              <FormField
-                control={editForm.control}
-                name="nombre"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Nombre completo"
-                        disabled={submitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {editingUsuario?.tipo_usuario === 'interno' && (
-                <>
-                  <FormField
-                    control={editForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email *</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="correo@ejemplo.com"
-                            disabled={submitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={editForm.control}
-                    name="rol"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Rol *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={submitting}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar rol" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="usuario">Usuario</SelectItem>
-                            <SelectItem value="co-admin">Co-Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
+              Cancelar
+            </Button>
+            <Button type="submit" form="edit-usuario-form" disabled={submitting}>
+              {submitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
+              {submitting ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </>
+        }
+      >
+        {error && showEditModal && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
 
-              <DialogFooter className="gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowEditModal(false)}
-                  disabled={submitting}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Form {...editForm}>
+          <form
+            id="edit-usuario-form"
+            onSubmit={editForm.handleSubmit(handleUpdate)}
+            className="space-y-4"
+          >
+            <FormField
+              control={editForm.control}
+              name="nombre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Nombre completo"
+                      disabled={submitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {editingUsuario?.tipo_usuario === 'interno' && (
+              <>
+                <FormField
+                  control={editForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          disabled={submitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  {submitting ? 'Guardando...' : 'Guardar Cambios'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="rol"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rol *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={submitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar rol" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="usuario">Usuario</SelectItem>
+                          <SelectItem value="co-admin">Co-Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+          </form>
+        </Form>
+      </AppDialog>
 
       {/* Modal confirmar activar/desactivar */}
-      <Dialog open={showToggleConfirm} onOpenChange={setShowToggleConfirm}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>
-              {togglingUsuario?.activo
-                ? 'Desactivar Usuario'
-                : 'Activar Usuario'}
-            </DialogTitle>
-            <DialogDescription>
-              {togglingUsuario?.activo
-                ? 'El usuario no podrá acceder al sistema'
-                : 'El usuario podrá volver a acceder al sistema'}
-            </DialogDescription>
-          </DialogHeader>
-
-          {error && showToggleConfirm && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {togglingUsuario && (
-            <Alert>
-              <AlertDescription>
-                <strong>{togglingUsuario.nombre}</strong>
-                {togglingUsuario.email ? ` (${togglingUsuario.email})` : ''}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <DialogFooter className="gap-2">
+      <AppDialog
+        open={showToggleConfirm}
+        onOpenChange={setShowToggleConfirm}
+        size="confirm"
+        title={togglingUsuario?.activo ? 'Desactivar Usuario' : 'Activar Usuario'}
+        description={
+          togglingUsuario?.activo
+            ? 'El usuario no podrá acceder al sistema'
+            : 'El usuario podrá volver a acceder al sistema'
+        }
+        footer={
+          <>
             <Button
               type="button"
               variant="outline"
@@ -785,9 +757,21 @@ const UsuariosPage = () => {
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {togglingUsuario?.activo ? 'Desactivar' : 'Activar'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {error && showToggleConfirm && (
+          <Alert variant="error" title={error} className="mb-4" />
+        )}
+
+        {togglingUsuario && (
+          <Alert
+            variant="info"
+            title={togglingUsuario.nombre}
+            description={togglingUsuario.email ?? undefined}
+          />
+        )}
+      </AppDialog>
     </div>
   );
 };

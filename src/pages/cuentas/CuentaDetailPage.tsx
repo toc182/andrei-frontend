@@ -4,13 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Settings, Upload, Download, Trash2, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type { CuentaDetail, CuentaEstado } from '@/types/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
@@ -70,7 +69,7 @@ export default function CuentaDetailPage({ cuentaId, projectName, onBack }: Prop
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <h2 className="text-2xl font-bold tracking-tight">Cuenta {cuenta.numero}</h2>
+        <PageHeader title={`Cuenta ${cuenta.numero}`} />
         <CuentaEstadoBadge estado={cuenta.estado} />
       </div>
 
@@ -251,26 +250,30 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved }: {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Editar cuenta</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div><Label>Monto (B/.)</Label><Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Periodo inicio</Label><Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></div>
-            <div><Label>Periodo fin</Label><Input type="date" value={fin} onChange={(e) => setFin(e.target.value)} /></div>
-          </div>
-          <div><Label>Avance (%)</Label><Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} /></div>
-        </div>
-        <DialogFooter>
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="simple"
+      title="Editar cuenta"
+      footer={
+        <>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={save} disabled={saving}>
+          <Button form="edit-cuenta-form" type="submit" disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
+        <div><Label>Monto (B/.)</Label><Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Periodo inicio</Label><Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></div>
+          <div><Label>Periodo fin</Label><Input type="date" value={fin} onChange={(e) => setFin(e.target.value)} /></div>
+        </div>
+        <div><Label>Avance (%)</Label><Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} /></div>
+      </form>
+    </AppDialog>
   );
 }
 
@@ -286,8 +289,9 @@ function TransitionDialog({ open, onOpenChange, cuentaId, transitions, onDone }:
   const [selected, setSelected] = useState<CuentaEstado | ''>('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => { if (open) { setSelected(''); setComment(''); } }, [open]);
+  useEffect(() => { if (open) { setSelected(''); setComment(''); setError(''); } }, [open]);
 
   const save = async () => {
     if (!selected) return;
@@ -300,38 +304,43 @@ function TransitionDialog({ open, onOpenChange, cuentaId, transitions, onDone }:
       onDone();
     } catch (err) {
       const e = err as { response?: { data?: { error?: string } } };
-      alert(e.response?.data?.error || 'Error al cambiar estado');
+      setError(e.response?.data?.error || 'Error al cambiar estado');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Cambiar estado</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-2">
-            {transitions.map((t) => (
-              <label key={t.to} className={`flex items-center gap-3 border rounded-md p-3 cursor-pointer transition-colors ${selected === t.to ? 'border-foreground bg-muted/50' : 'hover:border-border'}`}>
-                <input type="radio" name="estado" checked={selected === t.to} onChange={() => setSelected(t.to)} className="accent-current" />
-                <span className="text-sm">{t.label}</span>
-              </label>
-            ))}
-          </div>
-          <div>
-            <Label>Comentario (opcional)</Label>
-            <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
-          </div>
-        </div>
-        <DialogFooter>
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="simple"
+      title="Cambiar estado"
+      footer={
+        <>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={save} disabled={!selected || saving}>
+          <Button form="transition-cuenta-form" type="submit" disabled={!selected || saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Confirmar
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <form id="transition-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
+        <div className="space-y-2">
+          {transitions.map((t) => (
+            <label key={t.to} className={`flex items-center gap-3 border rounded-md p-3 cursor-pointer transition-colors ${selected === t.to ? 'border-foreground bg-muted/50' : 'hover:border-border'}`}>
+              <input type="radio" name="estado" checked={selected === t.to} onChange={() => setSelected(t.to)} className="accent-current" />
+              <span className="text-sm">{t.label}</span>
+            </label>
+          ))}
+        </div>
+        <div>
+          <Label>Comentario (opcional)</Label>
+          <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </form>
+    </AppDialog>
   );
 }

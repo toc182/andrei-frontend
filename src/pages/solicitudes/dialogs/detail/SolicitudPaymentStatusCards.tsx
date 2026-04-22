@@ -14,7 +14,9 @@
 // attachments preview or download button) and are always rendered
 // in the same vertical sequence.
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/shell/Alert';
 import { Download, Upload } from 'lucide-react';
 import api from '../../../../services/api';
 import AdjuntosPreview from '../../../../components/AdjuntosPreview';
@@ -65,6 +67,8 @@ export function SolicitudPaymentStatusCards({
   hasPermission,
   onOpenRegistrarReembolsoPinellasDialog,
 }: SolicitudPaymentStatusCardsProps) {
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   return (
     <>
       {/* Comprobante de Pago */}
@@ -155,7 +159,7 @@ export function SolicitudPaymentStatusCards({
                       window.open(resp.data.url, '_blank');
                     }
                   } catch {
-                    alert('Error al descargar comprobante');
+                    setDownloadError('Error al descargar comprobante');
                   }
                 }}
               >
@@ -197,7 +201,7 @@ export function SolicitudPaymentStatusCards({
                             window.open(resp.data.url, '_blank');
                           }
                         } catch {
-                          alert('Error al descargar comprobante');
+                          setDownloadError('Error al descargar comprobante');
                         }
                       }}
                     >
@@ -227,6 +231,10 @@ export function SolicitudPaymentStatusCards({
             )}
           </div>
         )}
+
+      {downloadError && (
+        <Alert variant="error" title={downloadError} />
+      )}
     </>
   );
 }

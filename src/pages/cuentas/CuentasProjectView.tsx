@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowRight, ExternalLink, AlertTriangle } from 'lucide-react';
+import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
@@ -77,9 +78,9 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Cuentas</h2>
+          <PageHeader title="Cuentas" />
           {onNavigateToGeneral && (
             <button onClick={onNavigateToGeneral} className="text-sm text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1 mt-0.5">
               <ExternalLink className="h-3 w-3" />

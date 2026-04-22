@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Key } from 'lucide-react';
 import { ChangePasswordModal } from '@/components/ChangePasswordModal';
+import { PageHeader } from '@/components/shell/PageHeader';
 
 const rolLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -17,10 +18,7 @@ export default function MiCuentaPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mi Cuenta</h1>
-        <p className="text-muted-foreground">Información de tu cuenta</p>
-      </div>
+      <PageHeader title="Mi Cuenta" subtitle="Información de tu cuenta" />
 
       <Card className="max-w-lg">
         <CardHeader>

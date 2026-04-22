@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,45 +56,47 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nueva Cuenta</DialogTitle>
-          <DialogDescription>La cuenta se creará como borrador.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label>Monto total (B/.)</Label>
-            <Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Periodo inicio</Label>
-              <Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
-            </div>
-            <div>
-              <Label>Periodo fin</Label>
-              <Input type="date" value={periodoFin} onChange={(e) => setPeriodoFin(e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <Label>Avance (%)</Label>
-            <Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} />
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={esFinal} onChange={(e) => setEsFinal(e.target.checked)} />
-            Cuenta Final
-          </label>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-        </div>
-        <DialogFooter>
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="simple"
+      title="Nueva Cuenta"
+      description="La cuenta se creará como borrador."
+      footer={
+        <>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={submit} disabled={saving}>
+          <Button form="create-cuenta-form" type="submit" disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Crear
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <form id="create-cuenta-form" onSubmit={(e) => { e.preventDefault(); submit(); }} className="space-y-3">
+        <div>
+          <Label>Monto total (B/.)</Label>
+          <Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label>Periodo inicio</Label>
+            <Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
+          </div>
+          <div>
+            <Label>Periodo fin</Label>
+            <Input type="date" value={periodoFin} onChange={(e) => setPeriodoFin(e.target.value)} />
+          </div>
+        </div>
+        <div>
+          <Label>Avance (%)</Label>
+          <Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} />
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={esFinal} onChange={(e) => setEsFinal(e.target.checked)} />
+          Cuenta Final
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </form>
+    </AppDialog>
   );
 }
