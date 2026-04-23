@@ -55,7 +55,7 @@ export function SolicitudCorreccionesHistory({
 
   return (
     <div className="space-y-3">
-      <h4 className="font-medium text-gray-700">Historial de Correcciones</h4>
+      <h4 className="font-medium text-slate-700">Historial de Correcciones</h4>
       <div className="space-y-2">
         {correcciones.map((correccion) => {
           const cambios = correccion.cambios as {
@@ -68,9 +68,9 @@ export function SolicitudCorreccionesHistory({
           return (
             <details
               key={correccion.id}
-              className="border border-gray-200 rounded-lg"
+              className="border border-border rounded-lg"
             >
-              <summary className="px-4 py-3 bg-gray-50 cursor-pointer flex items-center justify-between rounded-lg hover:bg-gray-100">
+              <summary className="px-4 py-3 bg-slate-50 cursor-pointer flex items-center justify-between rounded-lg hover:bg-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">
                     {new Date(correccion.created_at).toLocaleDateString(
@@ -84,7 +84,7 @@ export function SolicitudCorreccionesHistory({
                       },
                     )}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     — {correccion.usuario_nombre}
                   </span>
                 </div>
@@ -93,12 +93,12 @@ export function SolicitudCorreccionesHistory({
                 </Badge>
               </summary>
               <div className="px-4 py-3 space-y-3">
-                <div className="text-sm text-gray-600 italic">
+                <div className="text-sm text-muted-foreground italic">
                   Motivo: {correccion.motivo}
                 </div>
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="text-left text-gray-500">
+                    <tr className="text-left text-muted-foreground">
                       <th className="pb-1 pr-3">Campo</th>
                       <th className="pb-1 pr-3">Anterior</th>
                       <th className="pb-1">Nuevo</th>
@@ -115,16 +115,16 @@ export function SolicitudCorreccionesHistory({
                         return itemCambios.map((ic, icIdx) => (
                           <tr
                             key={`${idx}-${icIdx}`}
-                            className="border-t border-gray-100"
+                            className="border-t border-slate-100"
                           >
-                            <td className="py-1.5 pr-3 text-gray-700">
+                            <td className="py-1.5 pr-3 text-slate-700">
                               Item &quot;{cambio.descripcion}&quot; —{' '}
                               {labelOf(ic.campo)}
                             </td>
-                            <td className="py-1.5 pr-3 text-red-600 line-through">
+                            <td className="py-1.5 pr-3 text-error line-through">
                               {ic.anterior}
                             </td>
-                            <td className="py-1.5 text-green-600">
+                            <td className="py-1.5 text-success">
                               {ic.nuevo}
                             </td>
                           </tr>
@@ -134,13 +134,13 @@ export function SolicitudCorreccionesHistory({
                         return (
                           <tr
                             key={idx}
-                            className="border-t border-gray-100"
+                            className="border-t border-slate-100"
                           >
-                            <td className="py-1.5 pr-3 text-gray-700">
+                            <td className="py-1.5 pr-3 text-slate-700">
                               Item agregado
                             </td>
-                            <td className="py-1.5 pr-3 text-gray-400">—</td>
-                            <td className="py-1.5 text-green-600">
+                            <td className="py-1.5 pr-3 text-muted-foreground">—</td>
+                            <td className="py-1.5 text-success">
                               {cambio.descripcion}
                             </td>
                           </tr>
@@ -150,32 +150,32 @@ export function SolicitudCorreccionesHistory({
                         return (
                           <tr
                             key={idx}
-                            className="border-t border-gray-100"
+                            className="border-t border-slate-100"
                           >
-                            <td className="py-1.5 pr-3 text-gray-700">
+                            <td className="py-1.5 pr-3 text-slate-700">
                               Item eliminado
                             </td>
-                            <td className="py-1.5 pr-3 text-red-600 line-through">
+                            <td className="py-1.5 pr-3 text-error line-through">
                               {cambio.descripcion}
                             </td>
-                            <td className="py-1.5 text-gray-400">—</td>
+                            <td className="py-1.5 text-muted-foreground">—</td>
                           </tr>
                         );
                       }
                       return (
                         <tr
                           key={idx}
-                          className="border-t border-gray-100"
+                          className="border-t border-slate-100"
                         >
-                          <td className="py-1.5 pr-3 text-gray-700">
+                          <td className="py-1.5 pr-3 text-slate-700">
                             {labelOf(cambio.campo)}
                           </td>
-                          <td className="py-1.5 pr-3 text-red-600 line-through">
+                          <td className="py-1.5 pr-3 text-error line-through">
                             {typeof cambio.anterior === 'string'
                               ? cambio.anterior
                               : '—'}
                           </td>
-                          <td className="py-1.5 text-green-600">
+                          <td className="py-1.5 text-success">
                             {typeof cambio.nuevo === 'string'
                               ? cambio.nuevo
                               : '—'}

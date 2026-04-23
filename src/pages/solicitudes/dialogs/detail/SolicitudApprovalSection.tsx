@@ -89,21 +89,17 @@ export function SolicitudApprovalSection({
       <h4 className="font-medium">Estado y Aprobaciones</h4>
       <div className="p-4 border rounded-lg space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <EstadoBadge estado={solicitud.estado} />
+          {solicitud.estado !== 'pendiente' && (
+            <EstadoBadge estado={solicitud.estado} />
+          )}
           {solicitud.pinellas_paga && !reembolso && (
-            <Badge
-              variant="outline"
-              className="bg-yellow-50/50 text-amber-700 border-amber-300"
-            >
+            <Badge className="bg-warning/10 text-warning border-warning/30 border">
               <RefreshCw className="h-3 w-3 mr-1" />
               Reembolso pendiente
             </Badge>
           )}
           {solicitud.pinellas_paga && reembolso && (
-            <Badge
-              variant="outline"
-              className="bg-green-50 text-green-700 border-green-300"
-            >
+            <Badge className="bg-success/10 text-success border-success/30 border">
               <Check className="h-3 w-3 mr-1" />
               Reembolsada
             </Badge>
@@ -154,9 +150,9 @@ export function SolicitudApprovalSection({
                     className="flex items-center gap-2 text-sm"
                   >
                     {aprobacion.accion === 'aprobado' ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-success" />
                     ) : (
-                      <X className="h-4 w-4 text-red-600" />
+                      <X className="h-4 w-4 text-error" />
                     )}
                     <span className="font-medium">
                       {index + 1}. {aprobacion.usuario_nombre}
@@ -186,9 +182,9 @@ export function SolicitudApprovalSection({
                     >
                       {aprobacion ? (
                         aprobacion.accion === 'aprobado' ? (
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check className="h-4 w-4 text-success" />
                         ) : (
-                          <X className="h-4 w-4 text-red-600" />
+                          <X className="h-4 w-4 text-error" />
                         )
                       ) : (
                         <Clock className="h-4 w-4 text-muted-foreground" />
@@ -225,12 +221,12 @@ export function SolicitudApprovalSection({
             .map((rechazo) => (
               <div
                 key={rechazo.id}
-                className="p-3 bg-red-50 border border-red-200 rounded text-sm"
+                className="p-3 bg-error/[0.06] border border-error/20 rounded text-sm"
               >
-                <div className="font-medium text-red-800">
+                <div className="font-medium text-foreground">
                   Rechazada por {rechazo.usuario_nombre}
                 </div>
-                <div className="text-red-700 mt-1">{rechazo.comentario}</div>
+                <div className="text-slate-700 mt-1">{rechazo.comentario}</div>
               </div>
             ))}
 

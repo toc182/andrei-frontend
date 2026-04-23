@@ -68,9 +68,9 @@ export function SortableHeader({
   const SortArrow = () => {
     if (!isActive || direction === null) return null;
     return direction === 'asc' ? (
-      <ArrowUp className="h-3.5 w-3.5 text-blue-600" />
+      <ArrowUp className="h-3.5 w-3.5 text-primary" />
     ) : (
-      <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
+      <ArrowDown className="h-3.5 w-3.5 text-primary" />
     );
   };
 
@@ -78,7 +78,7 @@ export function SortableHeader({
   if (type === 'numeric') {
     return (
       <TableHead
-        className={`cursor-pointer select-none group ${isActive ? 'bg-blue-50/50' : ''} ${className}`}
+        className={`cursor-pointer select-none group ${isActive ? 'bg-primary/[0.04]' : ''} ${className}`}
         onClick={cycleSort}
       >
         <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
@@ -97,7 +97,7 @@ export function SortableHeader({
 
   // Discrete columns: popover with sort + filter
   return (
-    <TableHead className={`p-0 ${isActive ? 'bg-blue-50/50' : ''} ${className}`}>
+    <TableHead className={`p-0 ${isActive ? 'bg-primary/[0.04]' : ''} ${className}`}>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <div
@@ -112,7 +112,7 @@ export function SortableHeader({
               )}
             </span>
             {hasActiveFilter && (
-              <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+              <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
             )}
           </div>
         </PopoverTrigger>

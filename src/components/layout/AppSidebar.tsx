@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { getInitials } from '../../utils/formatters';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/LogoInvertido.png';
 
 import {
   Sidebar,
@@ -461,7 +461,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   Mi Cuenta
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-red-600">
+                <DropdownMenuItem onClick={logout} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesion
                 </DropdownMenuItem>

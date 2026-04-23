@@ -21,24 +21,18 @@ const formatCurrency = (amount: number | null | undefined) => {
 };
 
 const getEstadoBadge = (estado: string | undefined) => {
-  const variants: Record<
-    string,
-    {
-      variant: 'default' | 'secondary' | 'outline' | 'destructive';
-      label: string;
-    }
-  > = {
-    planificacion: { variant: 'secondary', label: 'Planificación' },
-    en_curso: { variant: 'default', label: 'En Curso' },
-    pausado: { variant: 'outline', label: 'Pausado' },
-    completado: { variant: 'default', label: 'Completado' },
-    cancelado: { variant: 'destructive', label: 'Cancelado' },
+  const variants: Record<string, { className: string; label: string }> = {
+    planificacion: { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: 'Planificación' },
+    en_curso: { className: 'bg-info/10 text-info border-info/30 border', label: 'En Curso' },
+    pausado: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Pausado' },
+    completado: { className: 'bg-success/10 text-success border-success/30 border', label: 'Completado' },
+    cancelado: { className: 'bg-error/10 text-error border-error/30 border', label: 'Cancelado' },
   };
 
   const config = estado
-    ? variants[estado] || { variant: 'secondary' as const, label: estado }
-    : { variant: 'secondary' as const, label: 'N/A' };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+    ? variants[estado] || { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: estado }
+    : { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: 'N/A' };
+  return <Badge className={config.className}>{config.label}</Badge>;
 };
 
 interface ProjectKPIsCardsProps {
@@ -121,7 +115,7 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
                 porcentajeGastado > 90
                   ? 'bg-destructive'
                   : porcentajeGastado > 75
-                    ? 'bg-yellow-500'
+                    ? 'bg-warning'
                     : 'bg-primary'
               }`}
               style={{ width: `${Math.min(porcentajeGastado, 100)}%` }}
@@ -145,7 +139,7 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
           </p>
           <div className="w-full bg-secondary rounded-full h-2 mt-2">
             <div
-              className="bg-green-500 h-2 rounded-full"
+              className="bg-success h-2 rounded-full"
               style={{ width: `${Math.min(porcentajeAvance, 100)}%` }}
             />
           </div>
@@ -169,8 +163,8 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
             <div
               className={`h-2 rounded-full ${
                 porcentajeTiempo > porcentajeAvance
-                  ? 'bg-yellow-500'
-                  : 'bg-blue-500'
+                  ? 'bg-warning'
+                  : 'bg-info'
               }`}
               style={{ width: `${Math.min(porcentajeTiempo, 100)}%` }}
             />

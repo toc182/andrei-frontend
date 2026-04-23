@@ -95,7 +95,7 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
           <input type="checkbox" checked={esFinal} onChange={(e) => setEsFinal(e.target.checked)} />
           Cuenta Final
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-error">{error}</p>}
       </form>
     </AppDialog>
   );

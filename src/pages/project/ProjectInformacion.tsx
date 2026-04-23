@@ -32,24 +32,27 @@ interface ProjectInformacionProps {
 }
 
 const getEstadoBadge = (estado: string) => {
-  const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-    planificacion: { label: 'Planificación', variant: 'secondary' },
-    en_progreso: { label: 'En Progreso', variant: 'default' },
-    completado: { label: 'Completado', variant: 'outline' },
-    suspendido: { label: 'Suspendido', variant: 'destructive' },
+  const config: Record<string, { label: string; className: string }> = {
+    planificacion: { label: 'Planificación', className: 'bg-slate-100 text-slate-600 border-slate-200 border' },
+    en_progreso: { label: 'En Progreso', className: 'bg-info/10 text-info border-info/30 border' },
+    en_curso: { label: 'En Curso', className: 'bg-info/10 text-info border-info/30 border' },
+    completado: { label: 'Completado', className: 'bg-success/10 text-success border-success/30 border' },
+    suspendido: { label: 'Suspendido', className: 'bg-error/10 text-error border-error/30 border' },
+    pausado: { label: 'Pausado', className: 'bg-warning/10 text-warning border-warning/30 border' },
+    cancelado: { label: 'Cancelado', className: 'bg-error/10 text-error border-error/30 border' },
   };
-  const c = config[estado] || { label: estado, variant: 'secondary' as const };
-  return <Badge variant={c.variant}>{c.label}</Badge>;
+  const c = config[estado] || { label: estado, className: 'bg-slate-100 text-slate-600 border-slate-200 border' };
+  return <Badge className={c.className}>{c.label}</Badge>;
 };
 
 const getAdendaStatusBadge = (estado: string) => {
-  const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-    en_proceso: { label: 'En Proceso', variant: 'secondary' },
-    aprobada: { label: 'Aprobada', variant: 'default' },
-    rechazada: { label: 'Rechazada', variant: 'destructive' },
+  const config: Record<string, { label: string; className: string }> = {
+    en_proceso: { label: 'En Proceso', className: 'bg-info/10 text-info border-info/30 border' },
+    aprobada: { label: 'Aprobada', className: 'bg-success/10 text-success border-success/30 border' },
+    rechazada: { label: 'Rechazada', className: 'bg-error/10 text-error border-error/30 border' },
   };
-  const c = config[estado] || { label: estado, variant: 'secondary' as const };
-  return <Badge variant={c.variant}>{c.label}</Badge>;
+  const c = config[estado] || { label: estado, className: 'bg-slate-100 text-slate-600 border-slate-200 border' };
+  return <Badge className={c.className}>{c.label}</Badge>;
 };
 
 const getAdendaTypeText = (tipo: string) => {

@@ -25,15 +25,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Alert } from '@/components/shell/Alert';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Download, Eye, Loader2 } from 'lucide-react';
 
 type DocumentType =
@@ -147,11 +141,7 @@ const DocumentFormN = ({ documentType }: DocumentFormNProps) => {
   if (!config) {
     return (
       <div className="space-y-6">
-        <Alert variant="destructive">
-          <AlertDescription>
-            Tipo de documento no encontrado: {documentType}
-          </AlertDescription>
-        </Alert>
+        <Alert variant="error" title="Tipo de documento no encontrado" description={documentType} />
       </div>
     );
   }
@@ -426,9 +416,7 @@ const DocumentFormN = ({ documentType }: DocumentFormNProps) => {
 
             {/* Error Message */}
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <Alert variant="error" title={error} />
             )}
 
             {/* Action Buttons */}
@@ -470,22 +458,22 @@ const DocumentFormN = ({ documentType }: DocumentFormNProps) => {
       </Card>
 
       {/* Preview Modal */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Vista Previa - {config.title}</DialogTitle>
-          </DialogHeader>
-          <div
-            className="preview-content p-4 bg-white text-black"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowPreview(false)}>
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AppDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        size="complex"
+        title={`Vista Previa - ${config.title}`}
+        footer={
+          <Button variant="outline" onClick={() => setShowPreview(false)}>
+            Cerrar
+          </Button>
+        }
+      >
+        <div
+          className="preview-content p-4 bg-white text-black"
+          dangerouslySetInnerHTML={{ __html: previewHtml }}
+        />
+      </AppDialog>
     </div>
   );
 };

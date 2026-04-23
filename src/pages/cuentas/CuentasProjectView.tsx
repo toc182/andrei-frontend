@@ -101,7 +101,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
           {/* Cuenta actual */}
           <Card>
             <CardContent className="px-5 py-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wide mb-3 text-teal-600">Cuenta actual</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide mb-3 text-teal">Cuenta actual</div>
               {currentCuenta ? (
                 <CuentaSubCard
                   cuenta={currentCuenta}
@@ -121,7 +121,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
             <Card>
               <CardContent className="px-5 py-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-warning">
                     Pendientes
                   </div>
                   <span className="text-sm font-semibold text-muted-foreground">
@@ -211,7 +211,7 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
     <div
       className={`border rounded-md px-4 py-3 cursor-pointer transition-colors ${
         obs
-          ? 'bg-red-50/50 border-l-4 border-l-red-500 hover:bg-red-100/50'
+          ? 'bg-error/[0.04] border-l-4 border-l-error hover:bg-error/[0.06]'
           : isPagada
             ? 'bg-muted/20 hover:bg-muted/40'
             : 'bg-muted/40 hover:bg-muted/60'
@@ -221,7 +221,7 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
       {/* Row 1: Cuenta + badge + monto */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {obs && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+          {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0" />}
           <span className="font-semibold text-sm">Cuenta {c.numero}</span>
           {statusBadge}
         </div>
@@ -239,7 +239,7 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="flex-1 rounded-full bg-secondary overflow-hidden h-1.5 flex">
             {prev > 0 && <div className="h-full bg-primary" style={{ width: `${prev}%` }} />}
-            {curr > 0 && <div className="h-full bg-blue-400" style={{ width: `${curr}%` }} />}
+            {curr > 0 && <div className="h-full bg-info" style={{ width: `${curr}%` }} />}
           </div>
           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{curr}%</span>
         </div>

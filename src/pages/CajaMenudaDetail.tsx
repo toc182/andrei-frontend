@@ -14,9 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+// Dialog removed — using AppDialog from shell instead
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -721,8 +719,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       {/* Header */}
       <PageHeader title={caja.nombre} subtitle={caja.proyecto_nombre}>
         <Badge
-          variant={caja.estado === 'abierta' ? 'outline' : 'secondary'}
-          className={caja.estado === 'abierta' ? 'bg-green-50 text-green-700 border-green-300' : ''}
+          className={caja.estado === 'abierta' ? 'bg-success/10 text-success border-success/30 border' : 'bg-slate-100 text-slate-600 border-slate-200 border'}
         >
           {caja.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
         </Badge>
@@ -827,7 +824,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Saldo Disponible</p>
-            <p className={`text-xl font-bold ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`text-xl font-bold ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
               {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
             </p>
           </CardContent>
@@ -946,7 +943,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
-                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                            <Trash2 className="h-3.5 w-3.5 text-error" />
                           </Button>
                         </div>
                       )}
@@ -992,7 +989,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={() => setDeleteGastoId(gasto.id)}>
-                                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                  <Trash2 className="h-3.5 w-3.5 text-error" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -1064,7 +1061,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                   </Button>
                   {isPending && (
                     <Button variant="ghost" size="sm" onClick={() => setDeleteAdjuntoId(adj.id)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4 text-error" />
                     </Button>
                   )}
                 </div>
@@ -1093,7 +1090,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
               <TableRow>
                 <TableCell>{formatDate(caja.created_at)}</TableCell>
                 <TableCell>{caja.created_by_nombre || '—'}</TableCell>
-                <TableCell className="text-right font-medium">
+                <TableCell className="text-right font-medium tabular-nums">
                   {(() => {
                     const sorted = [...(caja.historial_montos || [])].sort(
                       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -1115,11 +1112,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                         Descargar
                       </Button>
                     ) : caja.solicitud_apertura_estado === 'rechazada' ? (
-                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                      <Badge className="bg-error/10 text-error border-error/30 border">
                         {caja.solicitud_apertura_numero} — Rechazada
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-yellow-50 text-amber-700 border-amber-300">
+                      <Badge className="bg-warning/10 text-warning border-warning/30 border">
                         {caja.solicitud_apertura_numero} — Pendiente
                       </Badge>
                     )
@@ -1144,7 +1141,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 <TableRow key={h.id}>
                   <TableCell>{formatDate(h.created_at)}</TableCell>
                   <TableCell>{h.cambiado_por_nombre}</TableCell>
-                  <TableCell className="text-right font-medium">{formatMonto(h.monto_nuevo)}</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{formatMonto(h.monto_nuevo)}</TableCell>
                   <TableCell>
                     {h.solicitud_id ? (
                       h.solicitud_estado === 'transferida' ? (
@@ -1158,11 +1155,11 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                           Descargar
                         </Button>
                       ) : h.estado === 'rechazada' || h.solicitud_estado === 'rechazada' ? (
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                        <Badge className="bg-error/10 text-error border-error/30 border">
                           {h.solicitud_numero} — Rechazada
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-yellow-50 text-amber-700 border-amber-300">
+                        <Badge className="bg-warning/10 text-warning border-warning/30 border">
                           {h.solicitud_numero} — Pendiente
                         </Badge>
                       )
@@ -1178,7 +1175,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                       </Button>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-sm text-red-500">
+                        <span className="inline-flex items-center gap-1 text-sm text-error">
                           <AlertCircle className="h-3 w-3" />
                           Sin comprobante
                         </span>
@@ -1321,23 +1318,38 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       </AppDialog>
 
       {/* Batch Gastos Modal */}
-      <Dialog open={showBatchModal} onOpenChange={(open) => { if (!open) setShowBatchModal(false); }}>
-        <DialogContent className="sm:max-w-[800px] p-0">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle>Registrar Gastos</DialogTitle>
-          </DialogHeader>
-
-          {error && (
-            <div className="px-4">
-              <Alert variant="error" title={error} />
+      <AppDialog
+        open={showBatchModal}
+        onOpenChange={(open) => { if (!open) setShowBatchModal(false); }}
+        size="complex"
+        title="Registrar Gastos"
+        footer={
+          <>
+            <span className="text-sm text-muted-foreground">
+              Total: <strong className="text-foreground">{formatMonto(batchTotal)}</strong>
+              {batchValidCount > 0 && ` (${batchValidCount} gasto${batchValidCount !== 1 ? 's' : ''})`}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowBatchModal(false)} disabled={batchSubmitting}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmitBatch} disabled={batchSubmitting}>
+                {batchSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Todo
+              </Button>
             </div>
+          </>
+        }
+      >
+          {error && (
+            <Alert variant="error" title={error} className="mb-2" />
           )}
 
-          <div className="px-4 pb-2 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mb-2">
             Tip: puedes copiar varias celdas desde Excel y pegarlas aquí. Usa fechas en formato <strong>DD/MM/AAAA</strong> o <strong>1-mar-26</strong>.
-          </div>
+          </p>
 
-          <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[60vh] -mx-2">
             {/* Header */}
             <div className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] bg-muted border-y px-1 sticky top-0 z-10">
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Fecha</span>
@@ -1354,20 +1366,20 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
               <div key={index} className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] border-b last:border-b-0 px-1">
                 <input
                   type="date"
-                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"
                   value={row.fecha}
                   onChange={(e) => handleBatchRowChange(index, 'fecha', e.target.value)}
                   onPaste={(e) => handleBatchPaste(e, index, 'fecha')}
                 />
                 <input
-                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"
                   placeholder="Proveedor"
                   value={row.proveedor}
                   onChange={(e) => handleBatchRowChange(index, 'proveedor', e.target.value)}
                   onPaste={(e) => handleBatchPaste(e, index, 'proveedor')}
                 />
                 <input
-                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"
                   placeholder="Descripción"
                   value={row.descripcion}
                   onChange={(e) => handleBatchRowChange(index, 'descripcion', e.target.value)}
@@ -1376,7 +1388,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 <input
                   type="number"
                   step="0.01"
-                  className="px-2 py-2 text-sm text-right border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  className="px-2 py-2 text-sm text-right border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"
                   placeholder="0.00"
                   value={row.monto}
                   onChange={(e) => handleBatchRowChange(index, 'monto', e.target.value)}
@@ -1385,7 +1397,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 <input
                   type="number"
                   step="0.01"
-                  className="px-2 py-2 text-sm text-right border-r border-border/50 bg-transparent outline-none focus:bg-blue-50/50"
+                  className="px-2 py-2 text-sm text-right border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"
                   placeholder="0.00"
                   value={row.itbms}
                   onChange={(e) => handleBatchRowChange(index, 'itbms', e.target.value)}
@@ -1400,7 +1412,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                 <div className="flex items-center justify-center">
                   {batchRows.length > 1 && (
                     <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRemoveBatchRow(index)}>
-                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                     </Button>
                   )}
                 </div>
@@ -1410,30 +1422,13 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             {/* Add row */}
             <button
               type="button"
-              className="w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50/50 text-left border-t"
+              className="w-full px-3 py-2 text-sm text-primary hover:bg-slate-50 text-left border-t"
               onClick={handleAddBatchRow}
             >
               ＋ Agregar fila
             </button>
           </div>
-
-          <DialogFooter className="p-4 pt-0 flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">
-              Total: <strong className="text-foreground">{formatMonto(batchTotal)}</strong>
-              {batchValidCount > 0 && ` (${batchValidCount} gasto${batchValidCount !== 1 ? 's' : ''})`}
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowBatchModal(false)} disabled={batchSubmitting}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmitBatch} disabled={batchSubmitting}>
-                {batchSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar Todo
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </AppDialog>
 
       {/* Delete Gasto Confirmation */}
       <AlertDialog open={deleteGastoId !== null} onOpenChange={(open) => !open && setDeleteGastoId(null)}>

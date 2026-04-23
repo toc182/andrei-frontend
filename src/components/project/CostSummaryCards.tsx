@@ -30,14 +30,14 @@ export default function CostSummaryCards({
   // Get status color based on percentage used
   const getStatusColor = (percent: number) => {
     if (percent >= 90) return 'text-destructive';
-    if (percent >= 75) return 'text-yellow-600';
-    return 'text-blue-600';
+    if (percent >= 75) return 'text-warning';
+    return 'text-info';
   };
 
   const getProgressColor = (percent: number) => {
     if (percent >= 90) return 'bg-destructive';
-    if (percent >= 75) return 'bg-yellow-500';
-    return 'bg-blue-500';
+    if (percent >= 75) return 'bg-warning';
+    return 'bg-info';
   };
 
   // El presupuesto total viene de presupuesto_aprobado (suma de categorías o monto contrato)

@@ -24,38 +24,38 @@ const estadoLabels: Record<
 > = {
   pendiente: {
     label: 'Pendiente',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50 border-amber-200',
+    color: 'text-warning',
+    bg: 'bg-warning/10 border-warning/30',
   },
   aprobada: {
     label: 'Aprobada',
-    color: 'text-emerald-700',
-    bg: 'bg-emerald-50 border-emerald-200',
+    color: 'text-success',
+    bg: 'bg-success/10 border-success/30',
   },
   rechazada: {
     label: 'Rechazada',
-    color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
+    color: 'text-error',
+    bg: 'bg-error/10 border-error/30',
   },
   pagada: {
     label: 'Pagada',
-    color: 'text-blue-700',
-    bg: 'bg-blue-50 border-blue-200',
+    color: 'text-info',
+    bg: 'bg-info/10 border-info/30',
   },
   facturada: {
     label: 'Facturada',
-    color: 'text-violet-700',
-    bg: 'bg-violet-50 border-violet-200',
+    color: 'text-info',
+    bg: 'bg-info/10 border-info/30',
   },
   borrador: {
     label: 'Borrador',
-    color: 'text-gray-700',
-    bg: 'bg-gray-50 border-gray-200',
+    color: 'text-slate-600',
+    bg: 'bg-slate-50 border-slate-200',
   },
   devolucion: {
     label: 'Devolución',
-    color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
+    color: 'text-error',
+    bg: 'bg-error/10 border-error/30',
   },
 };
 
@@ -134,9 +134,9 @@ const VerificacionPublica: React.FC = () => {
 
           {error && (
             <div className="p-8 text-center">
-              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <div className="h-12 w-12 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="h-6 w-6 text-red-500"
+                  className="h-6 w-6 text-error"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -149,7 +149,7 @@ const VerificacionPublica: React.FC = () => {
                   />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-red-700 mb-2">
+              <h2 className="text-lg font-semibold text-error mb-2">
                 No verificado
               </h2>
               <p className="text-sm text-slate-600">{error}</p>
@@ -159,10 +159,10 @@ const VerificacionPublica: React.FC = () => {
           {data && (
             <>
               {/* Verified badge */}
-              <div className="bg-emerald-50 border-b border-emerald-200 p-4 text-center">
-                <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2">
+              <div className="bg-success/[0.06] border-b border-success/20 p-4 text-center">
+                <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-2">
                   <svg
-                    className="h-5 w-5 text-emerald-600"
+                    className="h-5 w-5 text-success"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -175,10 +175,10 @@ const VerificacionPublica: React.FC = () => {
                     />
                   </svg>
                 </div>
-                <p className="text-sm font-semibold text-emerald-700">
+                <p className="text-sm font-semibold text-success">
                   Documento verificado
                 </p>
-                <p className="text-xs text-emerald-600 mt-0.5">
+                <p className="text-xs text-success mt-0.5">
                   Este documento es auténtico y fue emitido por Pinellas, S.A.
                 </p>
               </div>
@@ -195,8 +195,8 @@ const VerificacionPublica: React.FC = () => {
                   {(() => {
                     const est = estadoLabels[data.estado] || {
                       label: data.estado,
-                      color: 'text-gray-700',
-                      bg: 'bg-gray-50 border-gray-200',
+                      color: 'text-slate-600',
+                      bg: 'bg-slate-50 border-slate-200',
                     };
                     return (
                       <span
@@ -256,7 +256,7 @@ const VerificacionPublica: React.FC = () => {
                       {data.aprobaciones.map((ap, i) => (
                         <div
                           key={i}
-                          className="flex items-center gap-2 text-emerald-700"
+                          className="flex items-center gap-2 text-success"
                         >
                           <svg
                             className="h-3.5 w-3.5 shrink-0"

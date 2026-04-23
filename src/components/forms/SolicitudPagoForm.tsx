@@ -609,7 +609,7 @@ export default function SolicitudPagoForm({
                   type="checkbox"
                   checked={urgente}
                   onChange={(e) => setUrgente(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-border"
                 />
                 <span className="text-sm text-muted-foreground">
                   Marcar como urgente
@@ -620,7 +620,7 @@ export default function SolicitudPagoForm({
                   type="checkbox"
                   checked={pinellasPaga}
                   onChange={(e) => setPinellasPaga(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-border"
                 />
                 <span className="text-sm text-muted-foreground">
                   Pinellas paga — pendiente de reembolso
@@ -907,12 +907,12 @@ export default function SolicitudPagoForm({
                 <div className="text-sm text-muted-foreground text-right flex items-center justify-end gap-1">
                   {itbmsActivo ? (
                     <MinusCircle
-                      className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                      className="h-4 w-4 text-error cursor-pointer shrink-0"
                       onClick={() => setItbmsActivo(false)}
                     />
                   ) : (
                     <PlusCircle
-                      className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                      className="h-4 w-4 text-success cursor-pointer shrink-0"
                       onClick={() => setItbmsActivo(true)}
                     />
                   )}
@@ -962,12 +962,12 @@ export default function SolicitudPagoForm({
                 <span className="flex items-center gap-1 text-muted-foreground">
                   {itbmsActivo ? (
                     <MinusCircle
-                      className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                      className="h-4 w-4 text-error cursor-pointer shrink-0"
                       onClick={() => setItbmsActivo(false)}
                     />
                   ) : (
                     <PlusCircle
-                      className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                      className="h-4 w-4 text-success cursor-pointer shrink-0"
                       onClick={() => setItbmsActivo(true)}
                     />
                   )}
@@ -1018,7 +1018,7 @@ export default function SolicitudPagoForm({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`}
+                      className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-success border-success/30' : 'text-error border-error/30'}`}
                       onClick={() => toggleAjusteTipo(index)}
                       title={
                         ajuste.tipo === 'aumento'

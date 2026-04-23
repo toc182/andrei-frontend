@@ -148,9 +148,9 @@ const formatShortDate = (dateString: string | null | undefined): string => {
 
 const getPrioridadConfig = (prioridad: Prioridad): PrioridadConfig => {
   const config: Record<Prioridad, PrioridadConfig> = {
-    alta: { label: 'Alta', color: '#ef4444', bgColor: 'bg-red-500' },
-    media: { label: 'Media', color: '#eab308', bgColor: 'bg-yellow-500' },
-    baja: { label: 'Baja', color: '#15803d', bgColor: 'bg-green-700' },
+    alta: { label: 'Alta', color: 'oklch(48.5% 0.204 27)', bgColor: 'bg-error' },
+    media: { label: 'Media', color: 'oklch(50.1% 0.134 56)', bgColor: 'bg-warning' },
+    baja: { label: 'Baja', color: 'oklch(47.8% 0.130 150)', bgColor: 'bg-success' },
   };
   return config[prioridad] || config['media'];
 };
@@ -514,7 +514,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
         </Card>
         <Card className="flex-1 min-w-[120px]">
           <CardContent className="pt-4">
-            <div className="text-xl font-bold text-yellow-600">
+            <div className="text-xl font-bold text-warning">
               {stats.pendientes}
             </div>
             <div className="text-sm text-muted-foreground">Pendientes</div>
@@ -522,7 +522,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
         </Card>
         <Card className="flex-1 min-w-[120px]">
           <CardContent className="pt-4">
-            <div className="text-xl font-bold text-green-600">
+            <div className="text-xl font-bold text-success">
               {stats.completados}
             </div>
             <div className="text-sm text-muted-foreground">Completados</div>
@@ -530,7 +530,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
         </Card>
         <Card className="flex-1 min-w-[120px]">
           <CardContent className="pt-4">
-            <div className="text-xl font-bold text-red-600">
+            <div className="text-xl font-bold text-error">
               {stats.alta_prioridad}
             </div>
             <div className="text-sm text-muted-foreground">Alta Prioridad</div>
@@ -647,8 +647,8 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                             transition-all duration-200 hover:scale-110
                             ${
                               isCompleted
-                                ? 'text-green-600 hover:text-green-700'
-                                : 'text-gray-400 hover:text-green-500'
+                                ? 'text-success hover:text-success'
+                                : 'text-muted-foreground hover:text-success'
                             }
                           `}
                           title={
@@ -703,10 +703,10 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                       <TableCell>
                         {todo.fecha_limite ? (
                           <div
-                            className={`flex items-center gap-1.5 text-sm ${isOverdue ? 'text-red-600 font-medium' : ''}`}
+                            className={`flex items-center gap-1.5 text-sm ${isOverdue ? 'text-error font-medium' : ''}`}
                           >
                             <Calendar
-                              className={`h-4 w-4 ${isOverdue ? 'text-red-600' : 'text-muted-foreground'}`}
+                              className={`h-4 w-4 ${isOverdue ? 'text-error' : 'text-muted-foreground'}`}
                             />
                             {formatShortDate(todo.fecha_limite)}
                           </div>
@@ -992,7 +992,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                       className={`w-8 h-8 rounded-full ring-offset-2 transition-all hover:scale-110 flex items-center justify-center border-2 border-dashed ${
                         useCustomColor
                           ? 'ring-2 ring-primary border-primary'
-                          : 'border-gray-300'
+                          : 'border-slate-300'
                       }`}
                       style={{
                         backgroundColor: useCustomColor
@@ -1003,7 +1003,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                       title="Color personalizado"
                     >
                       {!useCustomColor && (
-                        <Plus className="h-3 w-3 text-gray-400" />
+                        <Plus className="h-3 w-3 text-muted-foreground" />
                       )}
                     </button>
                   </div>
@@ -1147,8 +1147,8 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                     }}
                     className={`mt-0.5 transition-all duration-200 hover:scale-110 ${
                       isCompleted
-                        ? 'text-green-600 hover:text-green-700'
-                        : 'text-gray-400 hover:text-green-500'
+                        ? 'text-success hover:text-success'
+                        : 'text-muted-foreground hover:text-success'
                     }`}
                   >
                     {isCompleted ? (
@@ -1194,7 +1194,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                     <span className="text-muted-foreground">Estado:</span>
                     <Badge
                       variant={isCompleted ? 'default' : 'secondary'}
-                      className={`text-xs ${isCompleted ? 'bg-green-600' : ''}`}
+                      className={`text-xs ${isCompleted ? 'bg-success text-white' : ''}`}
                     >
                       {isCompleted ? 'Completado' : 'Pendiente'}
                     </Badge>
@@ -1237,7 +1237,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
                     {selectedTodo.fecha_limite ? (
                       <span
                         className={
-                          isOverdue ? 'text-red-600 font-medium' : ''
+                          isOverdue ? 'text-error font-medium' : ''
                         }
                       >
                         {formatShortDate(selectedTodo.fecha_limite)}
@@ -1257,7 +1257,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
 
                 {/* Completado info */}
                 {isCompleted && selectedTodo.completado_at && (
-                  <div className="text-sm text-green-600 pt-1">
+                  <div className="text-sm text-success pt-1">
                     Completado {formatShortDate(selectedTodo.completado_at)}
                     {selectedTodo.completado_por_nombre &&
                       ` por ${selectedTodo.completado_por_nombre}`}

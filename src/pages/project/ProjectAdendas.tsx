@@ -32,13 +32,13 @@ export default function ProjectAdendas({
   const { user } = useAuth();
   const canManage = !!user;
 
-  const getAdendaStatusBadgeVariant = (estado: string): string => {
+  const getAdendaStatusClassName = (estado: string): string => {
     const variants: Record<string, string> = {
-      en_proceso: 'secondary',
-      aprobada: 'default',
-      rechazada: 'destructive',
+      en_proceso: 'bg-info/10 text-info border-info/30 border',
+      aprobada: 'bg-success/10 text-success border-success/30 border',
+      rechazada: 'bg-error/10 text-error border-error/30 border',
     };
-    return variants[estado] || 'secondary';
+    return variants[estado] || 'bg-slate-100 text-slate-600 border-slate-200 border';
   };
 
   const getAdendaStatusText = (estado: string): string => {
@@ -114,9 +114,7 @@ export default function ProjectAdendas({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge
-                    variant={getAdendaStatusBadgeVariant(adenda.estado) as any}
-                  >
+                  <Badge className={getAdendaStatusClassName(adenda.estado)}>
                     {getAdendaStatusText(adenda.estado)}
                   </Badge>
                   {canManage && (

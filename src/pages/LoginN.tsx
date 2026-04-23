@@ -21,7 +21,7 @@ import logo from '../assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert } from '@/components/shell/Alert';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2, LogIn } from 'lucide-react';
 
@@ -109,9 +109,7 @@ const LoginN = () => {
 
             {/* Error Message */}
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <Alert variant="error" title={error} />
             )}
 
             {/* Submit Button */}

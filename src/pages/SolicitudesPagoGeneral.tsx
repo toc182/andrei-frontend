@@ -5,8 +5,9 @@
  */
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -134,8 +135,14 @@ export default function SolicitudesPagoGeneral({
   const [detailRevisada, setDetailRevisada] = useState(false);
   const [togglingRevisada, setTogglingRevisada] = useState(false);
 
-  // Bulk approval success banner
+  // Bulk approval success → Sonner toast
   const [bulkSuccessMessage, setBulkSuccessMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (bulkSuccessMessage) {
+      toast.success(bulkSuccessMessage);
+      setBulkSuccessMessage(null);
+    }
+  }, [bulkSuccessMessage]);
 
   // Bulk approval
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -667,19 +674,7 @@ export default function SolicitudesPagoGeneral({
         onPageChange={setCurrentPage}
         onPageSizeChange={setPageSize}
       />
-      {/* Bulk Approval Success Banner */}
-      {bulkSuccessMessage && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          <span className="text-sm font-medium">{bulkSuccessMessage}</span>
-          <button
-            onClick={() => setBulkSuccessMessage(null)}
-            className="ml-2 hover:opacity-80"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      {/* Bulk approval success → toast (triggered via useEffect) */}
 
       <ProjectSelectorDialog
         open={showProjectSelector}

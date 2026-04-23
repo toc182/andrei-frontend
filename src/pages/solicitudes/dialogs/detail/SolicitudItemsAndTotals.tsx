@@ -45,13 +45,13 @@ export function SolicitudItemsAndTotals({
             {items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{item.descripcion}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right tabular-nums">
                   {item.cantidad} {item.unidad}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right tabular-nums">
                   {formatMoney(item.precio_unitario)}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right tabular-nums">
                   {formatMoney(item.precio_total)}
                 </TableCell>
               </TableRow>
@@ -68,7 +68,7 @@ export function SolicitudItemsAndTotals({
           <div key={ajuste.id} className="flex justify-between">
             <span className="text-muted-foreground">{ajuste.descripcion}:</span>
             <span
-              className={ajuste.tipo === 'descuento' ? 'text-red-600' : ''}
+              className={ajuste.tipo === 'descuento' ? 'text-error' : ''}
             >
               {ajuste.tipo === 'descuento' ? '-' : ''}
               {formatMoney(ajuste.monto)}

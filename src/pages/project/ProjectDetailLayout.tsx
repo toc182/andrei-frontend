@@ -45,16 +45,16 @@ interface ProjectDetailLayoutProps {
 }
 
 const getEstadoBadge = (estado: string) => {
-  const variants: Record<string, { variant: string; label: string }> = {
-    planificacion: { variant: 'secondary', label: 'Planificación' },
-    en_curso: { variant: 'default', label: 'En Curso' },
-    pausado: { variant: 'outline', label: 'Pausado' },
-    completado: { variant: 'success', label: 'Completado' },
-    cancelado: { variant: 'destructive', label: 'Cancelado' },
+  const variants: Record<string, { className: string; label: string }> = {
+    planificacion: { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: 'Planificación' },
+    en_curso: { className: 'bg-info/10 text-info border-info/30 border', label: 'En Curso' },
+    pausado: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Pausado' },
+    completado: { className: 'bg-success/10 text-success border-success/30 border', label: 'Completado' },
+    cancelado: { className: 'bg-error/10 text-error border-error/30 border', label: 'Cancelado' },
   };
 
-  const config = variants[estado] || { variant: 'secondary', label: estado };
-  return <Badge variant={config.variant as any}>{config.label}</Badge>;
+  const config = variants[estado] || { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: estado };
+  return <Badge className={config.className}>{config.label}</Badge>;
 };
 
 export default function ProjectDetailLayout({
@@ -495,13 +495,13 @@ export default function ProjectDetailLayout({
                 </Button>
               </div>
               {projectAdendas.map((adenda) => {
-                const getAdendaStatusBadgeVariant = (estado: string) => {
+                const getAdendaStatusClassName = (estado: string) => {
                   const variants: Record<string, string> = {
-                    en_proceso: 'secondary',
-                    aprobada: 'default',
-                    rechazada: 'destructive',
+                    en_proceso: 'bg-info/10 text-info border-info/30 border',
+                    aprobada: 'bg-success/10 text-success border-success/30 border',
+                    rechazada: 'bg-error/10 text-error border-error/30 border',
                   };
-                  return variants[estado] || 'secondary';
+                  return variants[estado] || 'bg-slate-100 text-slate-600 border-slate-200 border';
                 };
 
                 const getAdendaStatusText = (estado: string) => {
@@ -532,11 +532,7 @@ export default function ProjectDetailLayout({
                         <label className="font-medium text-sm">
                           Adenda #{adenda.numero_adenda}
                         </label>
-                        <Badge
-                          variant={
-                            getAdendaStatusBadgeVariant(adenda.estado) as any
-                          }
-                        >
+                        <Badge className={getAdendaStatusClassName(adenda.estado)}>
                           {getAdendaStatusText(adenda.estado)}
                         </Badge>
                       </div>

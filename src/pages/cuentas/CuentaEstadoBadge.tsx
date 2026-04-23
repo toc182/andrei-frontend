@@ -10,10 +10,10 @@ interface Props {
 export default function CuentaEstadoBadge({ estado, className = '' }: Props) {
   const cfg = ESTADO_CONFIG[estado as CuentaEstado];
   if (!cfg) {
-    return <Badge variant="outline" className={className}>{estado}</Badge>;
+    return <Badge className={`bg-slate-100 text-slate-600 border-slate-200 border ${className}`}>{estado}</Badge>;
   }
   return (
-    <Badge variant={cfg.variant} className={`${cfg.className} ${className}`}>
+    <Badge className={`${cfg.className} ${className}`}>
       {cfg.label}
     </Badge>
   );

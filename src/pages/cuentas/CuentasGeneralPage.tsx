@@ -121,7 +121,7 @@ function ResumenCard({ project: p, onClick }: { project: ProjectResumen; onClick
         <ProjectHeader project={p} />
         {p.all_paid ? (
           <div className="grid grid-cols-2 gap-6 mt-4">
-            <p className="text-sm text-green-600 font-medium">&#10003; Todas las cuentas pagadas</p>
+            <p className="text-sm text-success font-medium">&#10003; Todas las cuentas pagadas</p>
             <div>
               <SectionLabel color="amber">Cuentas pendientes</SectionLabel>
               <p className="text-sm text-muted-foreground italic">Sin pendientes</p>
@@ -242,7 +242,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                   <TableHead className="min-w-[180px]">Proyecto</TableHead>
                   <TableHead className="w-[90px]">Estado</TableHead>
                   <TableHead
-                    className={`min-w-[200px] cursor-pointer select-none ${sortKey === 'avance' ? 'text-blue-600' : ''}`}
+                    className={`min-w-[200px] cursor-pointer select-none ${sortKey === 'avance' ? 'text-info' : ''}`}
                     onClick={() => toggleSort('avance')}
                   >
                     <span className="flex items-center gap-1">
@@ -251,7 +251,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                     </span>
                   </TableHead>
                   <TableHead
-                    className={`w-[70px] text-right cursor-pointer select-none ${sortKey === 'dias' ? 'text-blue-600' : ''}`}
+                    className={`w-[70px] text-right cursor-pointer select-none ${sortKey === 'dias' ? 'text-info' : ''}`}
                     onClick={() => toggleSort('dias')}
                   >
                     <span className="flex items-center justify-end gap-1">
@@ -260,7 +260,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                     </span>
                   </TableHead>
                   <TableHead
-                    className={`w-[120px] text-right cursor-pointer select-none ${sortKey === 'monto' ? 'text-blue-600' : ''}`}
+                    className={`w-[120px] text-right cursor-pointer select-none ${sortKey === 'monto' ? 'text-info' : ''}`}
                     onClick={() => toggleSort('monto')}
                   >
                     <span className="flex items-center justify-end gap-1">
@@ -283,7 +283,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                   return (
                     <TableRow
                       key={p.proyecto_id}
-                      className={`cursor-pointer transition-colors ${isRed ? 'bg-red-50/30' : isAmber ? 'bg-amber-50/30' : ''}`}
+                      className={`cursor-pointer transition-colors ${isRed ? 'bg-error/[0.04]' : isAmber ? 'bg-warning/[0.04]' : ''}`}
                       onClick={() => onProjectClick(p.proyecto_id)}
                     >
                       <TableCell className="font-medium">
@@ -299,18 +299,18 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                         <div className="flex items-center gap-2">
                           <div className="flex-1 rounded-full bg-secondary overflow-hidden h-2 flex">
                             {prev > 0 && <div className="h-full bg-primary" style={{ width: `${prev}%` }} />}
-                            {curr > 0 && <div className="h-full bg-blue-400" style={{ width: `${curr}%` }} />}
+                            {curr > 0 && <div className="h-full bg-info" style={{ width: `${curr}%` }} />}
                           </div>
                           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{total.toFixed(0)}%</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right tabular-nums">
                         {dias != null ? (
                           <span className="flex items-center justify-end gap-1">
                             {(isRed || isAmber) && (
-                              <AlertTriangle className={`h-3.5 w-3.5 ${isRed ? 'text-red-500' : 'text-amber-500'}`} />
+                              <AlertTriangle className={`h-3.5 w-3.5 ${isRed ? 'text-error' : 'text-warning'}`} />
                             )}
-                            <span className={`font-semibold ${isRed ? 'text-red-600' : isAmber ? 'text-amber-600' : ''}`}>
+                            <span className={`font-semibold ${isRed ? 'text-error' : isAmber ? 'text-warning' : ''}`}>
                               {dias}
                             </span>
                           </span>
@@ -318,7 +318,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-right font-medium tabular-nums">
                         {ca ? formatMonto(ca.monto_total) : '—'}
                       </TableCell>
                     </TableRow>
@@ -344,7 +344,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
           return (
             <Card
               key={p.proyecto_id}
-              className={`cursor-pointer transition-colors ${isRed ? 'border-l-4 border-l-red-500' : ''}`}
+              className={`cursor-pointer transition-colors ${isRed ? 'border-l-4 border-l-error' : ''}`}
               onClick={() => onProjectClick(p.proyecto_id)}
             >
               <CardContent className="p-3 space-y-2">
@@ -360,7 +360,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                 <div className="flex items-center gap-2">
                   <div className="flex-1 rounded-full bg-secondary overflow-hidden h-2 flex">
                     {prev > 0 && <div className="h-full bg-primary" style={{ width: `${prev}%` }} />}
-                    {curr > 0 && <div className="h-full bg-blue-400" style={{ width: `${curr}%` }} />}
+                    {curr > 0 && <div className="h-full bg-info" style={{ width: `${curr}%` }} />}
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">{total.toFixed(0)}%</span>
                 </div>
@@ -368,9 +368,9 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                   {dias != null ? (
                     <span className="flex items-center gap-1">
                       {(isRed || isAmber) && (
-                        <AlertTriangle className={`h-3.5 w-3.5 ${isRed ? 'text-red-500' : 'text-amber-500'}`} />
+                        <AlertTriangle className={`h-3.5 w-3.5 ${isRed ? 'text-error' : 'text-warning'}`} />
                       )}
-                      <span className={`font-semibold ${isRed ? 'text-red-600' : isAmber ? 'text-amber-600' : ''}`}>
+                      <span className={`font-semibold ${isRed ? 'text-error' : isAmber ? 'text-warning' : ''}`}>
                         {dias} días
                       </span>
                     </span>
@@ -481,9 +481,9 @@ function PendientesTab({ data, loading, onProjectClick }: {
               variant="outline"
               className={`cursor-pointer text-xs leading-5 ${
                 activeFilter === g.key
-                  ? g.key === 'observaciones' ? 'bg-red-50 text-red-700 border-red-300' : 'bg-foreground text-background'
+                  ? g.key === 'observaciones' ? 'bg-error/10 text-error border-error/30' : 'bg-foreground text-background'
                   : activeFilter ? 'opacity-40' : ''
-              } ${!activeFilter && g.key === 'observaciones' ? 'text-red-600 font-semibold' : ''}`}
+              } ${!activeFilter && g.key === 'observaciones' ? 'text-error font-semibold' : ''}`}
               onClick={() => setActiveFilter(activeFilter === g.key ? null : g.key)}
             >
               {g.label} ({g.count})
@@ -549,7 +549,7 @@ function PendientesTab({ data, loading, onProjectClick }: {
                       key={c.id}
                       className={`border rounded-md px-4 py-3 cursor-pointer transition-colors ${
                         obs
-                          ? 'bg-red-50/50 border-l-4 border-l-red-500 hover:bg-red-100/50'
+                          ? 'bg-error/[0.04] border-l-4 border-l-error hover:bg-error/[0.06]'
                           : 'bg-muted/40 hover:bg-muted/60'
                       }`}
                       onClick={() => onProjectClick(p.proyecto_id)}
@@ -557,7 +557,7 @@ function PendientesTab({ data, loading, onProjectClick }: {
                       {/* Row 1: Cuenta + badge + monto */}
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          {obs && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                          {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0" />}
                           <span className="font-semibold text-sm">Cuenta {c.numero}</span>
                           <CuentaEstadoBadge estado={c.estado} />
                         </div>
@@ -575,7 +575,7 @@ function PendientesTab({ data, loading, onProjectClick }: {
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <div className="flex-1 rounded-full bg-secondary overflow-hidden h-1.5 flex">
                             {prev > 0 && <div className="h-full bg-primary" style={{ width: `${prev}%` }} />}
-                            {curr > 0 && <div className="h-full bg-blue-400" style={{ width: `${curr}%` }} />}
+                            {curr > 0 && <div className="h-full bg-info" style={{ width: `${curr}%` }} />}
                           </div>
                           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{curr}%</span>
                         </div>
@@ -620,7 +620,7 @@ function ProjectHeader({ project: p }: { project: ProjectResumen }) {
 }
 
 function SectionLabel({ color, children }: { color: 'teal' | 'amber'; children: React.ReactNode }) {
-  const colorClass = color === 'teal' ? 'text-teal-600' : 'text-amber-600';
+  const colorClass = color === 'teal' ? 'text-teal' : 'text-warning';
   return <div className={`text-[10px] font-semibold uppercase tracking-wide mb-2 ${colorClass}`}>{children}</div>;
 }
 

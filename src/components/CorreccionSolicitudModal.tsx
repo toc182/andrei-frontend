@@ -426,7 +426,7 @@ export default function CorreccionSolicitudModal({
         {/* ---- Motivo ---- */}
         <div className="space-y-2">
           <Label htmlFor="correccion-motivo" className="flex items-center gap-1">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className="h-4 w-4 text-warning" />
             Motivo de la corrección *
           </Label>
           <Textarea
@@ -728,12 +728,12 @@ export default function CorreccionSolicitudModal({
               <div className="text-sm text-muted-foreground text-right flex items-center justify-end gap-1">
                 {itbmsActivo ? (
                   <MinusCircle
-                    className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                    className="h-4 w-4 text-error cursor-pointer shrink-0"
                     onClick={() => setItbmsActivo(false)}
                   />
                 ) : (
                   <PlusCircle
-                    className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                    className="h-4 w-4 text-success cursor-pointer shrink-0"
                     onClick={() => setItbmsActivo(true)}
                   />
                 )}
@@ -773,12 +773,12 @@ export default function CorreccionSolicitudModal({
               <span className="flex items-center gap-1 text-muted-foreground">
                 {itbmsActivo ? (
                   <MinusCircle
-                    className="h-4 w-4 text-red-400 cursor-pointer shrink-0"
+                    className="h-4 w-4 text-error cursor-pointer shrink-0"
                     onClick={() => setItbmsActivo(false)}
                   />
                 ) : (
                   <PlusCircle
-                    className="h-4 w-4 text-green-600 cursor-pointer shrink-0"
+                    className="h-4 w-4 text-success cursor-pointer shrink-0"
                     onClick={() => setItbmsActivo(true)}
                   />
                 )}
@@ -826,7 +826,7 @@ export default function CorreccionSolicitudModal({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`}
+                    className={`h-8 w-8 p-0 shrink-0 font-bold text-base ${ajuste.tipo === 'aumento' ? 'text-success border-success/30' : 'text-error border-error/30'}`}
                     onClick={() => toggleAjusteTipo(index)}
                     title={
                       ajuste.tipo === 'aumento'
@@ -988,7 +988,7 @@ export default function CorreccionSolicitudModal({
 
         {/* ---- Error ---- */}
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
+          <p className="text-sm text-error bg-error/[0.06] p-2 rounded">{error}</p>
         )}
 
         {/* ---- Actions ---- */}

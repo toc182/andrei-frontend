@@ -339,7 +339,7 @@ function TransitionDialog({ open, onOpenChange, cuentaId, transitions, onDone }:
           <Label>Comentario (opcional)</Label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-error">{error}</p>}
       </form>
     </AppDialog>
   );

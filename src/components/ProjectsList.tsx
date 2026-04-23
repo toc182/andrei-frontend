@@ -245,34 +245,29 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   };
 
   // Obtener variante de badge para estado (Shadcn)
-  const getStatusBadgeVariant = (
-    estado: string,
-  ): 'default' | 'secondary' | 'outline' | 'destructive' => {
-    const variants: Record<
-      string,
-      'default' | 'secondary' | 'outline' | 'destructive'
-    > = {
+  const getStatusBadgeClassName = (estado: string): string => {
+    const variants: Record<string, string> = {
       // Proyectos
-      planificacion: 'secondary',
-      en_curso: 'default',
-      pausado: 'outline',
-      completado: 'secondary',
-      cancelado: 'destructive',
+      planificacion: 'bg-slate-100 text-slate-600 border-slate-200 border',
+      en_curso: 'bg-info/10 text-info border-info/30 border',
+      pausado: 'bg-warning/10 text-warning border-warning/30 border',
+      completado: 'bg-success/10 text-success border-success/30 border',
+      cancelado: 'bg-error/10 text-error border-error/30 border',
       // Licitaciones
-      activa: 'default',
-      presentada: 'secondary',
-      ganada: 'default',
-      perdida: 'destructive',
-      sin_interes: 'outline',
-      cancelada: 'destructive',
+      activa: 'bg-info/10 text-info border-info/30 border',
+      presentada: 'bg-slate-100 text-slate-600 border-slate-200 border',
+      ganada: 'bg-success/10 text-success border-success/30 border',
+      perdida: 'bg-error/10 text-error border-error/30 border',
+      sin_interes: 'bg-slate-100 text-slate-600 border-slate-200 border',
+      cancelada: 'bg-error/10 text-error border-error/30 border',
       // Oportunidades
-      prospecto: 'secondary',
-      calificada: 'default',
-      propuesta: 'secondary',
-      negociacion: 'default',
-      cerrada: 'default',
+      prospecto: 'bg-slate-100 text-slate-600 border-slate-200 border',
+      calificada: 'bg-info/10 text-info border-info/30 border',
+      propuesta: 'bg-warning/10 text-warning border-warning/30 border',
+      negociacion: 'bg-info/10 text-info border-info/30 border',
+      cerrada: 'bg-success/10 text-success border-success/30 border',
     };
-    return variants[estado] || 'secondary';
+    return variants[estado] || 'bg-slate-100 text-slate-600 border-slate-200 border';
   };
 
   // Obtener texto del estado
@@ -302,15 +297,13 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   };
 
   // Funciones para adendas
-  const getAdendaStatusBadgeVariant = (
-    estado: string,
-  ): 'default' | 'secondary' | 'destructive' => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      en_proceso: 'secondary',
-      aprobada: 'default',
-      rechazada: 'destructive',
+  const getAdendaStatusClassName = (estado: string): string => {
+    const variants: Record<string, string> = {
+      en_proceso: 'bg-info/10 text-info border-info/30 border',
+      aprobada: 'bg-success/10 text-success border-success/30 border',
+      rechazada: 'bg-error/10 text-error border-error/30 border',
     };
-    return variants[estado] || 'secondary';
+    return variants[estado] || 'bg-slate-100 text-slate-600 border-slate-200 border';
   };
 
   const getAdendaStatusText = (estado: string) => {
@@ -509,7 +502,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                   Estado:
                 </label>
                 <div>
-                  <Badge variant={getStatusBadgeVariant(viewingProject.estado)}>
+                  <Badge className={getStatusBadgeClassName(viewingProject.estado)}>
                     {getStatusText(viewingProject.estado)}
                   </Badge>
                 </div>
@@ -712,7 +705,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                         </label>
                         <div className="flex items-center gap-3">
                           <Badge
-                            variant={getAdendaStatusBadgeVariant(adenda.estado)}
+                            className={getAdendaStatusClassName(adenda.estado)}
                           >
                             {getAdendaStatusText(adenda.estado)}
                           </Badge>
@@ -895,7 +888,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Estado:</span>
-                  <Badge variant={getStatusBadgeVariant(project.estado)}>
+                  <Badge className={getStatusBadgeClassName(project.estado)}>
                     {getStatusText(project.estado)}
                   </Badge>
                 </div>
@@ -958,11 +951,11 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                   </TableCell>
                   <TableCell>{project.cliente_abreviatura}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(project.estado)}>
+                    <Badge className={getStatusBadgeClassName(project.estado)}>
                       {getStatusText(project.estado)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatMoney(
                       project.monto_total ||
                         project.monto_contrato_original ||

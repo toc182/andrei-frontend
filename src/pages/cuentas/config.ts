@@ -4,25 +4,25 @@ import type { CuentaEstado } from '@/types/api';
 
 export const ESTADO_CONFIG: Record<
   CuentaEstado,
-  { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; className: string }
+  { label: string; className: string }
 > = {
-  borrador: { label: 'Borrador', variant: 'outline', className: 'bg-slate-50 text-slate-600 border-slate-200' },
-  enviada: { label: 'Enviada', variant: 'outline', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  observaciones: { label: 'Observaciones', variant: 'outline', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  aprobada: { label: 'Aprobada', variant: 'outline', className: 'bg-green-50 text-green-700 border-green-200' },
-  enviada_institucion: { label: 'Enviada a inst.', variant: 'outline', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  observaciones_institucion: { label: 'Obs. institución', variant: 'outline', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  aprobada_institucion: { label: 'Aprobada inst.', variant: 'outline', className: 'bg-teal-50 text-teal-700 border-teal-200' },
-  enviada_contraloria: { label: 'En Contraloría', variant: 'outline', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  observaciones_contraloria: { label: 'Obs. Contraloría', variant: 'outline', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  aprobada_contraloria: { label: 'Aprobada Contraloría', variant: 'outline', className: 'bg-green-50 text-green-700 border-green-200' },
-  pagada: { label: 'Pagada', variant: 'outline', className: 'bg-slate-100 text-slate-500 border-slate-200' },
+  borrador: { label: 'Borrador', className: 'bg-slate-100 text-slate-600 border-slate-200 border' },
+  enviada: { label: 'Enviada', className: 'bg-info/10 text-info border-info/30 border' },
+  observaciones: { label: 'Observaciones', className: 'bg-warning/10 text-warning border-warning/30 border' },
+  aprobada: { label: 'Aprobada', className: 'bg-success/10 text-success border-success/30 border' },
+  enviada_institucion: { label: 'Enviada a inst.', className: 'bg-info/10 text-info border-info/30 border' },
+  observaciones_institucion: { label: 'Obs. institución', className: 'bg-warning/10 text-warning border-warning/30 border' },
+  aprobada_institucion: { label: 'Aprobada inst.', className: 'bg-teal/10 text-teal border-teal/30 border' },
+  enviada_contraloria: { label: 'En Contraloría', className: 'bg-navy/10 text-navy border-navy/30 border' },
+  observaciones_contraloria: { label: 'Obs. Contraloría', className: 'bg-warning/10 text-warning border-warning/30 border' },
+  aprobada_contraloria: { label: 'Aprobada Contraloría', className: 'bg-success/10 text-success border-success/30 border' },
+  pagada: { label: 'Pagada', className: 'bg-slate-100 text-slate-600 border-slate-200 border' },
 };
 
 // Status for "current cuenta" (not yet in the system or borrador)
 export const CURRENT_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  no_iniciada: { label: 'No iniciada', className: 'bg-gray-50 text-gray-400 border-gray-200' },
-  borrador: { label: 'Borrador', className: 'bg-slate-50 text-slate-600 border-slate-200' },
+  no_iniciada: { label: 'No iniciada', className: 'bg-slate-50 text-muted-foreground border-slate-200' },
+  borrador: { label: 'Borrador', className: 'bg-slate-100 text-slate-600 border-slate-200 border' },
 };
 
 // ── Transitions per flow ───────────────────────────────────────────────
@@ -114,9 +114,9 @@ export function formatPeriodo(inicio: string | null, fin: string | null): string
 }
 
 export function waitColor(days: number): string {
-  if (days >= 30) return 'text-red-600 font-semibold';
-  if (days >= 14) return 'text-orange-500 font-medium';
-  if (days >= 7) return 'text-amber-600';
+  if (days >= 30) return 'text-error font-semibold';
+  if (days >= 14) return 'text-warning font-medium';
+  if (days >= 7) return 'text-warning';
   return 'text-muted-foreground';
 }
 

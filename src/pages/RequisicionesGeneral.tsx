@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -84,7 +84,7 @@ interface HistorialData {
 }
 
 interface BadgeConfig {
-  variant: 'default' | 'secondary' | 'outline' | 'destructive';
+  className: string;
   label: string;
   icon: LucideIcon;
 }
@@ -101,19 +101,19 @@ const formatDate = (dateString: string | null | undefined): string => {
 
 const getEstadoBadge = (estado: string): ReactNode => {
   const variants: Record<string, BadgeConfig> = {
-    pendiente: { variant: 'secondary', label: 'Pendiente', icon: Clock },
-    en_cotizacion: { variant: 'outline', label: 'En Cotizacion', icon: Search },
-    por_aprobar: { variant: 'outline', label: 'Por Aprobar', icon: FileText },
-    aprobada: { variant: 'default', label: 'Aprobada', icon: Check },
-    pagada: { variant: 'default', label: 'Pagada', icon: Check },
-    rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
+    pendiente: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Pendiente', icon: Clock },
+    en_cotizacion: { className: 'bg-info/10 text-info border-info/30 border', label: 'En Cotizacion', icon: Search },
+    por_aprobar: { className: 'bg-info/10 text-info border-info/30 border', label: 'Por Aprobar', icon: FileText },
+    aprobada: { className: 'bg-success/10 text-success border-success/30 border', label: 'Aprobada', icon: Check },
+    pagada: { className: 'bg-success/10 text-success border-success/30 border', label: 'Pagada', icon: Check },
+    rechazada: { className: 'bg-error/10 text-error border-error/30 border', label: 'Rechazada', icon: X },
   };
 
-  const config = variants[estado] || { variant: 'secondary' as const, label: estado, icon: Clock };
+  const config = variants[estado] || { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: estado, icon: Clock };
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
+    <Badge className={`flex items-center gap-1 w-fit ${config.className}`}>
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
@@ -401,16 +401,15 @@ export default function RequisicionesGeneral() {
       </div>
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
+      <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Numero</TableHead>
-                <TableHead>Proyecto</TableHead>
-                <TableHead className="hidden sm:table-cell">Proveedor</TableHead>
-                <TableHead className="text-right w-[100px]">Total</TableHead>
-                <TableHead className="w-[120px]">Estado</TableHead>
+              <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Numero</TableHead>
+                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>
+                <TableHead className="hidden sm:table-cell px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proveedor</TableHead>
+                <TableHead className="text-right w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Total</TableHead>
+                <TableHead className="w-[120px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
               </TableRow>
             </TableHeader>
             {loading ? (
@@ -431,16 +430,16 @@ export default function RequisicionesGeneral() {
                 {filteredRequisiciones.map((req) => (
                   <TableRow
                     key={req.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
                     onClick={() => handleShowHistorial(req)}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                       <div>{req.numero_requisicion}</div>
                       <div className="text-xs text-muted-foreground">
                         {formatDate(req.fecha_solicitud)}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="text-xs bg-muted px-2 py-1 rounded w-fit">
                         {req.proyecto_nombre}
                       </div>
@@ -448,19 +447,18 @@ export default function RequisicionesGeneral() {
                         {req.proveedor}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
+                    <TableCell className="hidden sm:table-cell px-4 py-3 text-sm text-slate-700">
                       {req.proveedor}
                     </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">
+                    <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
                       {formatMoney(req.monto_total)}
                     </TableCell>
-                    <TableCell>{getEstadoBadge(req.estado)}</TableCell>
+                    <TableCell className="px-4 py-3">{getEstadoBadge(req.estado)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             )}
           </Table>
-        </CardContent>
       </Card>
 
       {/* Project Selector Modal */}

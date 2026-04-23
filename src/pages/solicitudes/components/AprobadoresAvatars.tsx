@@ -9,9 +9,9 @@ function getInitials(nombre: string): string {
 }
 
 const COLOR_MAP: Record<string, string> = {
-  aprobado: 'bg-green-500 text-white',
-  pendiente: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-  rechazado: 'bg-red-500 text-white',
+  aprobado: 'bg-success text-white',
+  pendiente: 'bg-warning/12 text-warning border border-warning/30',
+  rechazado: 'bg-error text-white',
 };
 
 interface AprobadoresAvatarsProps {

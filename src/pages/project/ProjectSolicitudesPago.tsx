@@ -5,18 +5,17 @@
  */
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import {
   Plus,
-  Check,
-  X,
   Settings,
   AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Alert as ShellAlert } from '@/components/shell/Alert';
+import { Alert } from '@/components/shell/Alert';
+import { StatCard } from '@/components/shell/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import api from '../../services/api';
@@ -132,8 +131,14 @@ export default function ProjectSolicitudesPago({
   const [detailRevisada, setDetailRevisada] = useState(false);
   const [togglingRevisada, setTogglingRevisada] = useState(false);
 
-  // Bulk approval success banner
+  // Bulk approval success → Sonner toast
   const [bulkSuccessMessage, setBulkSuccessMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (bulkSuccessMessage) {
+      toast.success(bulkSuccessMessage);
+      setBulkSuccessMessage(null);
+    }
+  }, [bulkSuccessMessage]);
 
   // Bulk approval
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -562,25 +567,8 @@ export default function ProjectSolicitudesPago({
     ),
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="text-lg font-semibold">Cargando solicitudes...</div>
-          <div className="text-sm text-muted-foreground mt-2">
-            Por favor espere
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+  if (error && !loading) {
+    return <Alert variant="error" title={error} />;
   }
 
   // If no prefix configured, show setup prompt
@@ -623,42 +611,14 @@ export default function ProjectSolicitudesPago({
 
   return (
     <div className="space-y-6">
-      {actionError && <ShellAlert variant="error" title={actionError} />}
+      {actionError && <Alert variant="error" title={actionError} />}
 
       {/* Summary Cards */}
-      <div className="flex flex-wrap gap-4">
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">
-              Total Solicitudes
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold text-yellow-600">
-              {stats.pendientes}
-            </div>
-            <div className="text-sm text-muted-foreground">Pendientes</div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold text-green-600">
-              {stats.aprobadas}
-            </div>
-            <div className="text-sm text-muted-foreground">Aprobadas</div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold whitespace-nowrap">
-              {formatMoney(stats.montoTotal)}
-            </div>
-            <div className="text-sm text-muted-foreground">Monto Total</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total Solicitudes" value={String(stats.total)} accent="navy" />
+        <StatCard label="Pendientes" value={String(stats.pendientes)} accent="warning" />
+        <StatCard label="Aprobadas" value={String(stats.aprobadas)} accent="success" />
+        <StatCard label="Monto Total" value={formatMoney(stats.montoTotal)} accent="teal" />
       </div>
 
       {/* Actions Bar */}
@@ -677,11 +637,11 @@ export default function ProjectSolicitudesPago({
         </div>
 
         {canManage && hasApprovers === false && (
-          <Alert className="flex-1 sm:flex-none">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs flex items-center gap-2">
-              Para crear solicitudes de pago, primero configure los aprobadores
-              del proyecto.
+          <Alert
+            variant="warning"
+            title="Aprobadores no configurados"
+            description="Para crear solicitudes de pago, primero configure los aprobadores del proyecto."
+            actions={
               <Button
                 variant="link"
                 className="h-auto p-0 text-xs"
@@ -689,8 +649,8 @@ export default function ProjectSolicitudesPago({
               >
                 Ir a Miembros
               </Button>
-            </AlertDescription>
-          </Alert>
+            }
+          />
         )}
         {canManage && hasApprovers && (
           <Button
@@ -770,19 +730,7 @@ export default function ProjectSolicitudesPago({
         onPageSizeChange={setPageSize}
       />
 
-      {/* Bulk Approval Success Banner */}
-      {bulkSuccessMessage && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          <span className="text-sm font-medium">{bulkSuccessMessage}</span>
-          <button
-            onClick={() => setBulkSuccessMessage(null)}
-            className="ml-2 hover:opacity-80"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      {/* Bulk approval success → toast */}
 
       {/* Form Modal */}
       <SolicitudPagoForm

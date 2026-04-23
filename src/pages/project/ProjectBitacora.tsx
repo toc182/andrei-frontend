@@ -123,7 +123,7 @@ const parseMentions = (text: string, members: ProjectMember[] = []) => {
     parts.push(
       <span
         key={match.index}
-        className={isMember ? 'bg-blue-100 text-blue-700 px-1 rounded' : ''}
+        className={isMember ? 'bg-info/10 text-info px-1 rounded' : ''}
       >
         @{memberName}
       </span>,

@@ -19,6 +19,8 @@ import type {
 // Shell components
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
+import { SectionHeader } from '@/components/shell/SectionHeader';
+import { EmptyState, TableSkeleton } from '@/components/shell/states';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -369,48 +371,47 @@ export default function AsignacionesEquiposN() {
     title: string,
     showRegistroBtn = false,
   ) => (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
+    <>
+      <SectionHeader title={title} count={asignacionesData.length} />
+      <Card className="overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
+              <TableHead className="w-[100px] px-4 py-2.5"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {loading ? (
+          {loading ? (
+            <TableSkeleton rows={3} columns={3} />
+          ) : asignacionesData.length === 0 ? (
+            <TableBody>
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                  Cargando...
+                <TableCell colSpan={3} className="p-0">
+                  <EmptyState
+                    title="No hay asignaciones"
+                    description="Crea una asignación para comenzar"
+                  />
                 </TableCell>
               </TableRow>
-            ) : asignacionesData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                  No hay asignaciones
-                </TableCell>
-              </TableRow>
-            ) : (
-              asignacionesData.map((asignacion) => (
+            </TableBody>
+          ) : (
+            <TableBody>
+              {asignacionesData.map((asignacion) => (
                 <TableRow
                   key={asignacion.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
                   onClick={() =>
                     showRegistroBtn
                       ? handleRegistroUso(asignacion)
                       : handleEditAsignacion(asignacion)
                   }
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                     {asignacion.equipo_descripcion}
                   </TableCell>
-                  <TableCell>{asignacion.cliente_nombre}</TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-slate-700">{asignacion.cliente_nombre}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex gap-1">
                       {showRegistroBtn && (
                         <Button
@@ -439,12 +440,12 @@ export default function AsignacionesEquiposN() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
+              ))}
+            </TableBody>
+          )}
         </Table>
-      </CardContent>
-    </Card>
+      </Card>
+    </>
   );
 
   return (

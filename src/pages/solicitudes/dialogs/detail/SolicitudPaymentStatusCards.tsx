@@ -75,11 +75,11 @@ export function SolicitudPaymentStatusCards({
       {(solicitud.estado === 'pagada' || solicitud.estado === 'facturada' || solicitud.estado === 'transferida') &&
         comprobante && (
           <div className="space-y-3">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
-              <h4 className="font-medium text-blue-900">
+            <div className="p-4 bg-info/[0.06] border border-info/20 rounded-lg space-y-3">
+              <h4 className="font-medium text-foreground">
                 {solicitud.tipo === 'apertura' ? 'Comprobante de Transferencia' : 'Comprobante de Pago'}
               </h4>
-              <div className="text-sm text-blue-800 space-y-1">
+              <div className="text-sm text-slate-700 space-y-1">
                 <div>
                   {solicitud.tipo === 'apertura' ? 'Fecha de transferencia' : 'Fecha de pago'}:{' '}
                   {new Date(
@@ -103,11 +103,11 @@ export function SolicitudPaymentStatusCards({
       {/* Factura */}
       {solicitud.estado === 'facturada' && factura && (
         <div className="space-y-3">
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-3">
-            <h4 className="font-medium text-emerald-900">
+          <div className="p-4 bg-success/[0.06] border border-success/20 rounded-lg space-y-3">
+            <h4 className="font-medium text-foreground">
               {factura.tipo === 'recibo' ? 'Recibo' : 'Factura'}
             </h4>
-            <div className="text-sm text-emerald-800 space-y-1">
+            <div className="text-sm text-slate-700 space-y-1">
               <div>
                 Fecha:{' '}
                 {new Date(
@@ -134,9 +134,9 @@ export function SolicitudPaymentStatusCards({
       {/* Devolución */}
       {solicitud.estado === 'devolucion' && devolucion && (
         <div className="space-y-3">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
-            <h4 className="font-medium text-red-900">Devolución</h4>
-            <div className="text-sm text-red-800 space-y-1">
+          <div className="p-4 bg-error/[0.06] border border-error/20 rounded-lg space-y-3">
+            <h4 className="font-medium text-foreground">Devolución</h4>
+            <div className="text-sm text-slate-700 space-y-1">
               <div>
                 Fecha:{' '}
                 {new Date(
@@ -176,11 +176,11 @@ export function SolicitudPaymentStatusCards({
         ['pagada', 'facturada'].includes(solicitud.estado) && (
           <div className="space-y-3">
             {reembolso ? (
-              <div className="p-4 bg-yellow-50/50 border border-amber-200 rounded-lg space-y-3">
-                <h4 className="font-medium text-amber-900">
+              <div className="p-4 bg-warning/[0.06] border border-warning/20 rounded-lg space-y-3">
+                <h4 className="font-medium text-foreground">
                   Comprobante de Reembolso
                 </h4>
-                <div className="text-sm text-amber-800 space-y-1">
+                <div className="text-sm text-slate-700 space-y-1">
                   <div>
                     Fecha de reembolso:{' '}
                     {new Date(
@@ -213,15 +213,15 @@ export function SolicitudPaymentStatusCards({
               </div>
             ) : (
               (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-                <div className="p-4 bg-yellow-50/50/50 border border-amber-200 border-dashed rounded-lg">
-                  <div className="text-sm text-amber-700 mb-2">
+                <div className="p-4 bg-warning/[0.04] border border-warning/20 border-dashed rounded-lg">
+                  <div className="text-sm text-warning mb-2">
                     Pinellas paga esta solicitud. Pendiente de registrar
                     reembolso.
                   </div>
                   <Button
                     variant="outline"
                     onClick={onOpenRegistrarReembolsoPinellasDialog}
-                    className="w-full border-amber-300 text-amber-700 hover:bg-yellow-50/50"
+                    className="w-full border-warning/30 text-warning hover:bg-warning/[0.06]"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Registrar Reembolso

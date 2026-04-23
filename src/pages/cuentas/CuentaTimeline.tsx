@@ -12,10 +12,10 @@ interface Props {
 }
 
 const TYPE_STYLES: Record<string, { dot: string; badge: string; badgeBg: string; label: string }> = {
-  creacion: { dot: 'border-teal-500', badge: 'text-teal-700', badgeBg: 'bg-teal-50', label: 'Inicio' },
-  transicion: { dot: 'border-blue-500', badge: 'text-blue-700', badgeBg: 'bg-blue-50', label: 'Estado' },
-  comentario: { dot: 'border-gray-400', badge: 'text-slate-600', badgeBg: 'bg-slate-50', label: 'Actualización' },
-  edicion: { dot: 'border-amber-500', badge: 'text-amber-700', badgeBg: 'bg-amber-50', label: 'Edición' },
+  creacion: { dot: 'border-teal', badge: 'text-teal', badgeBg: 'bg-teal/10', label: 'Inicio' },
+  transicion: { dot: 'border-info', badge: 'text-info', badgeBg: 'bg-info/10', label: 'Estado' },
+  comentario: { dot: 'border-slate-300', badge: 'text-slate-600', badgeBg: 'bg-slate-50', label: 'Actualización' },
+  edicion: { dot: 'border-warning', badge: 'text-warning', badgeBg: 'bg-warning/10', label: 'Edición' },
 };
 
 function formatTimestamp(s: string): string {

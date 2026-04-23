@@ -17,17 +17,16 @@ import * as z from 'zod';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { formatMoney } from '../../utils/formatters';
-import logo from '../../assets/logo.png';
-import cocpLogo from '../../assets/LogoCOCPfondoblanco.png';
 import type { EquipoExtended, ApiResponse } from '@/types';
 
 // Shell components
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
-import { ErrorState, TableSkeleton } from '@/components/shell/states';
+import { SectionHeader } from '@/components/shell/SectionHeader';
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/shell/states';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -282,65 +281,63 @@ export default function EquiposInformacionN() {
 
   // Renderizar tabla de equipos
   const renderTable = (equipos: EquipoExtended[]) => (
-    <Card>
-      <CardContent className="p-0">
+    <Card className="overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Código</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Marca</TableHead>
-              <TableHead>Modelo</TableHead>
-              <TableHead>Año</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Marca</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Modelo</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Año</TableHead>
+              <TableHead className="w-[50px] px-4 py-2.5"></TableHead>
             </TableRow>
           </TableHeader>
           {loading ? (
             <TableSkeleton rows={4} columns={6} />
+          ) : equipos.length === 0 ? (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={6} className="p-0">
+                  <EmptyState
+                    title="No hay equipos registrados"
+                    description="Agrega un equipo para comenzar"
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
           ) : (
             <TableBody>
-              {equipos.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-muted-foreground py-8"
-                  >
-                    No hay equipos registrados
+              {equipos.map((equipo) => (
+                <TableRow
+                  key={equipo.id}
+                  className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
+                  onClick={() => handleRowClick(equipo)}
+                >
+                  <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
+                    {equipo.codigo || 'N/A'}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-slate-700">{equipo.descripcion}</TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-slate-700">{equipo.marca}</TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-slate-700">{equipo.modelo}</TableCell>
+                  <TableCell className="px-4 py-3 text-sm text-slate-700">{equipo.ano}</TableCell>
+                  <TableCell className="px-4 py-3">
+                    {hasPermission('equipos_editar') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => handleEditEquipo(equipo, e)}
+                        title="Editar equipo"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
-              ) : (
-                equipos.map((equipo) => (
-                  <TableRow
-                    key={equipo.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleRowClick(equipo)}
-                  >
-                    <TableCell className="font-medium">
-                      {equipo.codigo || 'N/A'}
-                    </TableCell>
-                    <TableCell>{equipo.descripcion}</TableCell>
-                    <TableCell>{equipo.marca}</TableCell>
-                    <TableCell>{equipo.modelo}</TableCell>
-                    <TableCell>{equipo.ano}</TableCell>
-                    <TableCell>
-                      {hasPermission('equipos_editar') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => handleEditEquipo(equipo, e)}
-                          title="Editar equipo"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           )}
         </Table>
-      </CardContent>
     </Card>
   );
 
@@ -369,17 +366,13 @@ export default function EquiposInformacionN() {
 
       {/* Equipos Pinellas */}
       <div className="space-y-3">
-        <div className="flex justify-center">
-          <img src={logo} alt="Pinellas Logo" className="h-8 object-contain" />
-        </div>
+        <SectionHeader title="Equipos Pinellas" count={equiposPinellas.length} />
         {renderTable(equiposPinellas)}
       </div>
 
       {/* Equipos COCP */}
-      <div className="space-y-3 mt-8">
-        <div className="flex justify-center">
-          <img src={cocpLogo} alt="COCP Logo" className="h-8 object-contain" />
-        </div>
+      <div className="space-y-3">
+        <SectionHeader title="Equipos COCP" count={equiposCOCP.length} />
         {renderTable(equiposCOCP)}
       </div>
 

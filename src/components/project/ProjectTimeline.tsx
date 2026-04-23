@@ -46,7 +46,7 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
           {/* Fecha de Inicio */}
           <div className="flex items-start gap-3">
             <div className="mt-1">
-              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <div className="h-2 w-2 rounded-full bg-success" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Fecha de Inicio</p>
@@ -62,7 +62,7 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
           {/* Hoy */}
           <div className="flex items-start gap-3">
             <div className="mt-1">
-              <Clock className="h-4 w-4 text-blue-500" />
+              <Clock className="h-4 w-4 text-info" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Hoy</p>
@@ -90,8 +90,8 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
               <Flag
                 className={`h-4 w-4 ${
                   diasRestantes !== null && diasRestantes < 0
-                    ? 'text-red-500'
-                    : 'text-orange-500'
+                    ? 'text-error'
+                    : 'text-warning'
                 }`}
               />
             </div>
@@ -128,7 +128,7 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
             </div>
             <div className="w-full bg-secondary rounded-full h-2">
               <div
-                className="bg-blue-500 h-2 rounded-full"
+                className="bg-info h-2 rounded-full"
                 style={{
                   width: `${(() => {
                     const inicio = new Date(project.fecha_inicio);

@@ -25,8 +25,8 @@ export default function ExpensesByCategory({
 }: ExpensesByCategoryProps) {
   const getProgressColor = (percent: number) => {
     if (percent >= 90) return 'bg-destructive';
-    if (percent >= 75) return 'bg-yellow-500';
-    return 'bg-blue-500';
+    if (percent >= 75) return 'bg-warning';
+    return 'bg-info';
   };
 
   if (!categories || categories.length === 0) {
@@ -74,13 +74,13 @@ export default function ExpensesByCategory({
                       <span className="font-medium">{category.nombre}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatMoney(category.presupuesto_actual)}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-medium tabular-nums">
                     {formatMoney(category.gastado)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatMoney(category.disponible)}
                   </TableCell>
                   <TableCell>

@@ -110,8 +110,8 @@ export function ChangePasswordModal({
 
         {success ? (
           <div className="flex flex-col items-center gap-3 py-6">
-            <CheckCircle2 className="h-12 w-12 text-green-500" />
-            <p className="text-base font-medium text-green-700">
+            <CheckCircle2 className="h-12 w-12 text-success" />
+            <p className="text-base font-medium text-success">
               Contraseña cambiada exitosamente
             </p>
           </div>
@@ -156,7 +156,7 @@ export function ChangePasswordModal({
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { TableSkeleton } from '@/components/shell/states';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -190,92 +191,86 @@ export default function PermisosPage() {
     return count;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Desktop table */}
       <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
+        <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Acceso</TableHead>
-                <TableHead>Permisos</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+              <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Usuario</TableHead>
+                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rol</TableHead>
+                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Acceso</TableHead>
+                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Permisos</TableHead>
+                <TableHead className="w-[100px] px-4 py-2.5"></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {users
-                .filter((u) => u.activo)
-                .map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{user.nombre}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          user.rol === 'co-admin' ? 'default' : 'secondary'
-                        }
-                      >
-                        {user.rol}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.rol === 'co-admin' ? (
-                        <Badge variant="outline" className="text-green-600">
-                          Completo
+            {loading ? (
+              <TableSkeleton rows={5} columns={5} />
+            ) : (
+              <TableBody>
+                {users
+                  .filter((u) => u.activo)
+                  .map((user) => (
+                    <TableRow key={user.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60">
+                      <TableCell className="px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{user.nombre}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Badge className={
+                          user.rol === 'co-admin'
+                            ? 'bg-warning/10 text-warning border-warning/30 border'
+                            : 'bg-slate-100 text-slate-600 border-slate-200 border'
+                        }>
+                          {user.rol}
                         </Badge>
-                      ) : user.acceso_global ? (
-                        <Badge variant="outline" className="text-blue-600">
-                          Global
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Limitado</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {user.rol === 'co-admin' ? (
-                        <span className="text-xs text-muted-foreground">
-                          Todos
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          {countPerms(user)} activos
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {user.rol !== 'co-admin' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openUserDialog(user)}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {user.rol === 'co-admin' ? (
+                          <Badge className="bg-success/10 text-success border-success/30 border">
+                            Completo
+                          </Badge>
+                        ) : user.acceso_global ? (
+                          <Badge className="bg-info/10 text-info border-info/30 border">
+                            Global
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">Limitado</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {user.rol === 'co-admin' ? (
+                          <span className="text-xs text-muted-foreground">
+                            Todos
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {countPerms(user)} activos
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        {user.rol !== 'co-admin' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openUserDialog(user)}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            )}
           </Table>
-          </CardContent>
         </Card>
       </div>
 
@@ -295,8 +290,11 @@ export default function PermisosPage() {
                     {user.nombre}
                   </CardTitle>
                   <Badge
-                    variant={user.rol === 'co-admin' ? 'default' : 'secondary'}
-                    className="text-xs"
+                    className={`text-xs ${
+                      user.rol === 'co-admin'
+                        ? 'bg-warning/10 text-warning border-warning/30 border'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 border'
+                    }`}
                   >
                     {user.rol}
                   </Badge>

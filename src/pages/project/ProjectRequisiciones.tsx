@@ -19,6 +19,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/shell/Alert';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { StatCard } from '@/components/shell/StatCard';
+import { EmptyState, TableSkeleton } from '@/components/shell/states';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -92,7 +94,7 @@ interface HistoryData {
 }
 
 interface EstadoBadgeConfig {
-  variant: 'secondary' | 'outline' | 'default' | 'destructive';
+  className: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }
@@ -114,27 +116,23 @@ const formatDate = (dateString: string | null | undefined): string => {
 // Badge variants for each status
 const getEstadoBadge = (estado: EstadoRequisicion): ReactNode => {
   const variants: Record<EstadoRequisicion, EstadoBadgeConfig> = {
-    pendiente: { variant: 'secondary', label: 'Pendiente', icon: Clock },
-    en_cotizacion: { variant: 'outline', label: 'En Cotizacion', icon: Search },
-    por_aprobar: {
-      variant: 'outline',
-      label: 'Por Aprobar',
-      icon: AlertCircle,
-    },
-    aprobada: { variant: 'default', label: 'Aprobada', icon: Check },
-    pagada: { variant: 'default', label: 'Pagada', icon: Check },
-    rechazada: { variant: 'destructive', label: 'Rechazada', icon: X },
+    pendiente: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Pendiente', icon: Clock },
+    en_cotizacion: { className: 'bg-info/10 text-info border-info/30 border', label: 'En Cotizacion', icon: Search },
+    por_aprobar: { className: 'bg-info/10 text-info border-info/30 border', label: 'Por Aprobar', icon: AlertCircle },
+    aprobada: { className: 'bg-success/10 text-success border-success/30 border', label: 'Aprobada', icon: Check },
+    pagada: { className: 'bg-success/10 text-success border-success/30 border', label: 'Pagada', icon: Check },
+    rechazada: { className: 'bg-error/10 text-error border-error/30 border', label: 'Rechazada', icon: X },
   };
 
   const config = variants[estado] || {
-    variant: 'secondary' as const,
+    className: 'bg-slate-100 text-slate-600 border-slate-200 border',
     label: estado,
     icon: Clock,
   };
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
+    <Badge className={`flex items-center gap-1 w-fit ${config.className}`}>
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
@@ -345,59 +343,18 @@ export default function ProjectRequisiciones({
       .reduce((sum, r) => sum + parseFloat(String(r.monto_total || 0)), 0),
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="text-lg font-semibold">Cargando requisiciones...</div>
-          <div className="text-sm text-muted-foreground mt-2">
-            Por favor espere
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
+  if (error && !loading) {
     return <Alert variant="error" title={error} />;
   }
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="flex flex-wrap gap-4">
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">
-              Total Requisiciones
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold text-yellow-600">
-              {stats.porAprobar}
-            </div>
-            <div className="text-sm text-muted-foreground">Por Aprobar</div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold text-green-600">
-              {stats.pagadas}
-            </div>
-            <div className="text-sm text-muted-foreground">Pagadas</div>
-          </CardContent>
-        </Card>
-        <Card className="flex-1 min-w-[140px]">
-          <CardContent className="pt-4">
-            <div className="text-xl font-bold whitespace-nowrap">
-              {formatMoney(stats.montoPagado)}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Pagado</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total Requisiciones" value={String(stats.total)} accent="navy" />
+        <StatCard label="Por Aprobar" value={String(stats.porAprobar)} accent="warning" />
+        <StatCard label="Pagadas" value={String(stats.pagadas)} accent="success" />
+        <StatCard label="Total Pagado" value={formatMoney(stats.montoPagado)} accent="teal" />
       </div>
 
       {/* Actions Bar */}
@@ -431,12 +388,11 @@ export default function ProjectRequisiciones({
 
       {/* Requisiciones List - Cards for mobile */}
       <div className="md:hidden space-y-3">
-        {filteredRequisiciones.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No hay requisiciones para mostrar
-            </CardContent>
-          </Card>
+        {!loading && filteredRequisiciones.length === 0 ? (
+          <EmptyState
+            title="No hay requisiciones"
+            description="Crea la primera requisicion para este proyecto"
+          />
         ) : (
           filteredRequisiciones.map((req) => (
             <Card
@@ -482,54 +438,57 @@ export default function ProjectRequisiciones({
 
       {/* Requisiciones List - Table for desktop */}
       <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
+        <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Numero</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead className="text-right">Monto</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Numero</TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fecha</TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proveedor</TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categoria</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Monto</TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredRequisiciones.length === 0 ? (
+              {loading ? (
+                <TableSkeleton rows={5} columns={7} />
+              ) : filteredRequisiciones.length === 0 ? (
+                <TableBody>
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No hay requisiciones para mostrar
+                    <TableCell colSpan={7} className="p-0">
+                      <EmptyState
+                        title="No hay requisiciones"
+                        description="Crea la primera requisicion para este proyecto"
+                      />
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredRequisiciones.map((req) => (
+                </TableBody>
+              ) : (
+                <TableBody>
+                  {filteredRequisiciones.map((req) => (
                     <TableRow
                       key={req.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
                       onClick={() => openHistoryModal(req)}
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                         {req.numero}
                       </TableCell>
-                      <TableCell>{formatDate(req.fecha)}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-slate-700">{formatDate(req.fecha)}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <div>
-                          <div>{req.proveedor}</div>
+                          <div className="text-sm text-slate-700">{req.proveedor}</div>
                           {req.concepto && (
-                            <div className="text-sm text-muted-foreground line-clamp-1">
+                            <div className="text-xs text-muted-foreground line-clamp-1">
                               {req.concepto}
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {req.categoria_nombre ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 text-sm">
                             <span
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: req.categoria_color }}
@@ -540,11 +499,11 @@ export default function ProjectRequisiciones({
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
                         {formatMoney(req.monto_total)}
                       </TableCell>
-                      <TableCell>{getEstadoBadge(req.estado)}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="px-4 py-3">{getEstadoBadge(req.estado)}</TableCell>
+                      <TableCell className="px-4 py-3 text-right">
                         <div
                           className="flex gap-1 justify-end"
                           onClick={(e) => e.stopPropagation()}
@@ -553,11 +512,10 @@ export default function ProjectRequisiciones({
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
+                  ))}
+                </TableBody>
+              )}
             </Table>
-          </CardContent>
         </Card>
       </div>
 

@@ -6,6 +6,7 @@
 // is rendered, controlled by the `showProyectoColumn` prop.
 
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/shell/states';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -67,16 +68,15 @@ export function SolicitudesTable({
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {solicitudes.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No hay solicitudes de pago
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="No hay solicitudes de pago"
+            description="No se encontraron solicitudes con los filtros actuales"
+          />
         ) : (
           solicitudes.map((sol) => (
             <Card
               key={sol.id}
-              className={`hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
+              className={`hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-warning/[0.04]' : ''}`}
             >
               <CardContent className="pt-4">
                 <div
@@ -88,10 +88,10 @@ export function SolicitudesTable({
                       <div className="font-semibold flex items-center gap-1">
                         {sol.numero}
                         {sol.revisada && (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                          <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                         )}
                         {sol.urgente && (
-                          <span className="text-red-600 font-bold ml-1">!</span>
+                          <span className="text-error font-bold ml-1">!</span>
                         )}
                       </div>
                       {showProyectoColumn && sol.proyecto_nombre && (
@@ -104,18 +104,19 @@ export function SolicitudesTable({
                       </div>
                     </div>
                     <div className="space-y-1 flex flex-col items-end">
-                      {sol.estado === 'pendiente' &&
-                      sol.aprobadores_estado?.length ? (
-                        <AprobadoresAvatars
-                          aprobadores={sol.aprobadores_estado}
-                        />
+                      {sol.estado === 'pendiente' ? (
+                        sol.aprobadores_estado?.length ? (
+                          <AprobadoresAvatars
+                            aprobadores={sol.aprobadores_estado}
+                          />
+                        ) : null
                       ) : (
                         <EstadoBadge estado={sol.estado} />
                       )}
                       {sol.pinellas_paga && (
                         <Badge
                           variant="outline"
-                          className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
+                          className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-success/10 text-success border-success/30' : 'bg-warning/10 text-warning border-warning/30'}`}
                         >
                           Reembolso
                         </Badge>
@@ -137,8 +138,7 @@ export function SolicitudesTable({
 
       {/* Desktop Table */}
       <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
+        <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -206,29 +206,32 @@ export function SolicitudesTable({
                   <TableRow>
                     <TableCell
                       colSpan={showProyectoColumn ? 7 : 6}
-                      className="text-center py-8 text-muted-foreground"
+                      className="p-0"
                     >
-                      No hay solicitudes de pago
+                      <EmptyState
+                        title="No hay solicitudes de pago"
+                        description="No se encontraron solicitudes con los filtros actuales"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
                   solicitudes.map((sol) => (
                     <TableRow
                       key={sol.id}
-                      className={`cursor-pointer hover:bg-muted/50 ${sol.es_mi_turno ? 'bg-yellow-50/50' : ''}`}
+                      className={`cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60 ${sol.es_mi_turno ? 'bg-warning/[0.04]' : ''}`}
                       onClick={() => onRowClick(sol)}
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                         <span className="flex items-center gap-1">
                           {sol.numero}
                           {sol.revisada && (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                           )}
                         </span>
                       </TableCell>
                       <TableCell className="px-0 text-center">
                         {sol.urgente && (
-                          <span className="text-red-600 font-bold">!</span>
+                          <span className="text-error font-bold">!</span>
                         )}
                       </TableCell>
                       {showProyectoColumn && (
@@ -236,23 +239,24 @@ export function SolicitudesTable({
                       )}
                       <TableCell>{formatDate(sol.fecha)}</TableCell>
                       <TableCell>{sol.proveedor}</TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
                         {formatMoney(sol.monto_total)}
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {sol.estado === 'pendiente' &&
-                          sol.aprobadores_estado?.length ? (
-                            <AprobadoresAvatars
-                              aprobadores={sol.aprobadores_estado}
-                            />
+                          {sol.estado === 'pendiente' ? (
+                            sol.aprobadores_estado?.length ? (
+                              <AprobadoresAvatars
+                                aprobadores={sol.aprobadores_estado}
+                              />
+                            ) : null
                           ) : (
                             <EstadoBadge estado={sol.estado} />
                           )}
                           {sol.pinellas_paga && (
                             <Badge
                               variant="outline"
-                              className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-400'}`}
+                              className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-success/10 text-success border-success/30' : 'bg-warning/10 text-warning border-warning/30'}`}
                             >
                               Reembolso
                             </Badge>
@@ -264,7 +268,6 @@ export function SolicitudesTable({
                 )}
               </TableBody>
             </Table>
-          </CardContent>
         </Card>
       </div>
     </>

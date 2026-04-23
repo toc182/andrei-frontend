@@ -146,7 +146,7 @@ export default function AdjuntosPreview({
                   )
                 ) : (
                   <div className="w-full h-full bg-muted/50 flex flex-col items-center justify-center gap-0.5">
-                    <FileText className="h-7 w-7 text-red-600" />
+                    <FileText className="h-7 w-7 text-error" />
                     <span className="text-[10px] text-muted-foreground">
                       {(adj.tamano / 1024).toFixed(0)} KB
                     </span>
@@ -160,7 +160,7 @@ export default function AdjuntosPreview({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 shrink-0 text-white/70 hover:text-red-400 hover:bg-transparent"
+                      className="h-4 w-4 p-0 shrink-0 text-white/70 hover:text-error hover:bg-transparent"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete?.(adj.id);

@@ -4,17 +4,16 @@
 
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import logo from '../../assets/logo.png';
-import cocpLogo from '../../assets/LogoCOCPfondoblanco.png';
 import type { EquipoExtended, ApiResponse } from '@/types';
 
 // Shell components
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
-import { ErrorState, TableSkeleton } from '@/components/shell/states';
+import { SectionHeader } from '@/components/shell/SectionHeader';
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/shell/states';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -53,7 +52,7 @@ interface StatusFormData {
 
 interface EstadoBadgeInfo {
   label: string;
-  variant: 'default' | 'secondary' | 'outline' | 'destructive';
+  className: string;
 }
 
 export default function EquiposStatusN() {
@@ -79,18 +78,18 @@ export default function EquiposStatusN() {
   const getEstadoBadgeVariant = (estado?: string): EstadoBadgeInfo => {
     const estadoLower = (estado || '').toLowerCase();
     if (estadoLower.includes('operacion') || estadoLower.includes('operativo')) {
-      return { label: 'En Operación', variant: 'default' };
+      return { label: 'En Operación', className: 'bg-success/10 text-success border-success/30 border' };
     }
     if (estadoLower.includes('standby')) {
-      return { label: 'Standby', variant: 'secondary' };
+      return { label: 'Standby', className: 'bg-slate-100 text-slate-600 border-slate-200 border' };
     }
     if (estadoLower.includes('mantenimiento')) {
-      return { label: 'En Mantenimiento', variant: 'outline' };
+      return { label: 'En Mantenimiento', className: 'bg-warning/10 text-warning border-warning/30 border' };
     }
     if (estadoLower.includes('fuera')) {
-      return { label: 'Fuera de Servicio', variant: 'destructive' };
+      return { label: 'Fuera de Servicio', className: 'bg-error/10 text-error border-error/30 border' };
     }
-    return { label: 'En Operación', variant: 'default' };
+    return { label: 'En Operación', className: 'bg-success/10 text-success border-success/30 border' };
   };
 
   const loadEquiposStatus = async () => {
@@ -177,68 +176,69 @@ export default function EquiposStatusN() {
   };
 
   const renderTable = (equipos: EquipoWithStatus[]) => (
-    <Card>
-      <CardContent className="p-0">
+    <Card className="overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Código</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead className="w-[150px]">Estado</TableHead>
-              <TableHead>Ubicación</TableHead>
-              <TableHead className="w-[150px]">Última Act.</TableHead>
+            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+              <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
+              <TableHead className="w-[150px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ubicación</TableHead>
+              <TableHead className="w-[150px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Última Act.</TableHead>
             </TableRow>
           </TableHeader>
           {loading ? (
             <TableSkeleton rows={4} columns={5} />
+          ) : equipos.length === 0 ? (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    title="No hay equipos registrados"
+                    description="Agrega un equipo para comenzar"
+                  />
+                </TableCell>
+              </TableRow>
+            </TableBody>
           ) : (
             <TableBody>
-              {equipos.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No hay equipos registrados
-                  </TableCell>
-                </TableRow>
-              ) : (
-                equipos.map((equipo) => {
-                  const estadoInfo = getEstadoBadgeVariant(equipo.estado);
-                  return (
-                    <TableRow
-                      key={equipo.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleRowClick(equipo)}
-                    >
-                      <TableCell className="font-medium">
-                        {equipo.codigo || 'Sin código'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-0.5">
-                          <div className="font-medium">{equipo.descripcion}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {equipo.marca} {equipo.modelo}
-                          </div>
-                          {equipo.ano && (
-                            <div className="text-xs text-muted-foreground">{equipo.ano}</div>
-                          )}
+              {equipos.map((equipo) => {
+                const estadoInfo = getEstadoBadgeVariant(equipo.estado);
+                return (
+                  <TableRow
+                    key={equipo.id}
+                    className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
+                    onClick={() => handleRowClick(equipo)}
+                  >
+                    <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
+                      {equipo.codigo || 'Sin código'}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-medium text-foreground">{equipo.descripcion}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {equipo.marca} {equipo.modelo}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={estadoInfo.variant}>{estadoInfo.label}</Badge>
-                      </TableCell>
-                      <TableCell>{equipo.ubicacion || 'No especificada'}</TableCell>
-                      <TableCell className="text-sm">
-                        {equipo.updated_at
-                          ? formatLastUpdate(new Date(equipo.updated_at))
-                          : formatLastUpdate(lastUpdate)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+                        {equipo.ano && (
+                          <div className="text-xs text-muted-foreground">{equipo.ano}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <Badge className={estadoInfo.className}>{estadoInfo.label}</Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-sm text-slate-700">{equipo.ubicacion || 'No especificada'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm text-slate-700">
+                      {equipo.updated_at
+                        ? formatLastUpdate(new Date(equipo.updated_at))
+                        : formatLastUpdate(lastUpdate)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           )}
         </Table>
-      </CardContent>
     </Card>
   );
 
@@ -262,16 +262,12 @@ export default function EquiposStatusN() {
       </div>
 
       <div className="space-y-3">
-        <div className="flex justify-center">
-          <img src={logo} alt="Pinellas Logo" className="h-8 object-contain" />
-        </div>
+        <SectionHeader title="Equipos Pinellas" count={equiposPinellas.length} />
         {renderTable(equiposPinellas)}
       </div>
 
-      <div className="space-y-3 mt-8">
-        <div className="flex justify-center">
-          <img src={cocpLogo} alt="COCP Logo" className="h-8 object-contain" />
-        </div>
+      <div className="space-y-3">
+        <SectionHeader title="Equipos COCP" count={equiposCOCP.length} />
         {renderTable(equiposCOCP)}
       </div>
 
@@ -311,7 +307,7 @@ export default function EquiposStatusN() {
             <span className="font-medium text-muted-foreground">Estado:</span>
             <span className="col-span-2">
               {selectedEquipo && (
-                <Badge variant={getEstadoBadgeVariant(selectedEquipo.estado).variant}>
+                <Badge className={getEstadoBadgeVariant(selectedEquipo.estado).className}>
                   {getEstadoBadgeVariant(selectedEquipo.estado).label}
                 </Badge>
               )}

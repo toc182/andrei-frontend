@@ -72,9 +72,9 @@ interface Usuario {
 
 const estadoBadge = (estado: string) => {
   if (estado === 'abierta') {
-    return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">Abierta</Badge>;
+    return <Badge className="bg-success/10 text-success border-success/30 border">Abierta</Badge>;
   }
-  return <Badge variant="secondary">Cerrada</Badge>;
+  return <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">Cerrada</Badge>;
 };
 
 const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
@@ -106,11 +106,11 @@ const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
           onClick={(e) => e.stopPropagation()}
           aria-label="Comprobantes faltantes"
         >
-          <AlertCircle className="h-4 w-4 text-red-500" />
+          <AlertCircle className="h-4 w-4 text-error" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 text-sm" side="top">
-        <p className="font-medium text-red-600 mb-1">Comprobantes pendientes</p>
+        <p className="font-medium text-error mb-1">Comprobantes pendientes</p>
         <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
           {messages.map((m, i) => <li key={i}>{m}</li>)}
         </ul>
@@ -370,7 +370,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="text-green-600"
+          className="text-success"
           onClick={() => {
             setNuevoMonto('');
             setError('');
@@ -381,7 +381,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
           Subir monto
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-red-600"
+          className="text-destructive"
           onClick={() => {
             setNuevoMonto('');
             setComprobanteFile(null);
@@ -459,59 +459,64 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
 
       {/* Desktop: Table */}
       <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
+        <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  {!projectId && <TableHead>Proyecto</TableHead>}
-                  <TableHead>Responsable</TableHead>
-                  <TableHead className="text-right">Monto Asignado</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
+                  {!projectId && <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>}
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Responsable</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Monto Asignado</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saldo</TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+                  <TableHead className="w-[50px] px-4 py-2.5"></TableHead>
                 </TableRow>
               </TableHeader>
               {loading ? (
-                <TableSkeleton cols={projectId ? 5 : 6} rows={4} />
+                <TableSkeleton columns={projectId ? 6 : 7} rows={4} />
+              ) : cajas.length === 0 ? (
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={projectId ? 6 : 7} className="p-0">
+                      <EmptyState
+                        icon={Wallet}
+                        title="No hay cajas menudas registradas"
+                        description="Registra la primera caja menuda de un proyecto"
+                        action={
+                          <Button size="sm" onClick={handleNew}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Nueva Caja Menuda
+                          </Button>
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
               ) : (
                 <TableBody>
-                  {cajas.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={projectId ? 6 : 7}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        No hay cajas menudas registradas
+                  {cajas.map((caja) => (
+                    <TableRow key={caja.id} className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60" onClick={() => setSelectedCajaId(caja.id)}>
+                      <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          {caja.nombre}
+                          <ComprobanteAlertIcon caja={caja} />
+                        </div>
+                      </TableCell>
+                      {!projectId && <TableCell className="px-4 py-3 text-sm text-slate-700">{caja.proyecto_nombre}</TableCell>}
+                      <TableCell className="px-4 py-3 text-sm text-slate-700">{caja.responsable_nombre}</TableCell>
+                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">{formatMonto(caja.monto_asignado)}</TableCell>
+                      <TableCell className={`px-4 py-3 text-right text-sm font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
+                        {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">{estadoBadge(caja.estado)}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    cajas.map((caja) => (
-                      <TableRow key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {caja.nombre}
-                            <ComprobanteAlertIcon caja={caja} />
-                          </div>
-                        </TableCell>
-                        {!projectId && <TableCell>{caja.proyecto_nombre}</TableCell>}
-                        <TableCell>{caja.responsable_nombre}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatMonto(caja.monto_asignado)}</TableCell>
-                        <TableCell className={`text-right font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
-                        </TableCell>
-                        <TableCell>{estadoBadge(caja.estado)}</TableCell>
-                        <TableCell>
-                          {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  ))}
                 </TableBody>
               )}
             </Table>
-          </CardContent>
         </Card>
       </div>
 
@@ -563,7 +568,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Saldo</span>
-                  <span className={`font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <span className={`font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
                     {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
                   </span>
                 </div>

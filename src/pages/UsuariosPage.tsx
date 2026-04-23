@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Pencil, Plus, Loader2, UserX, UserCheck } from 'lucide-react';
+import { Pencil, Plus, Loader2, UserX, UserCheck, Users } from 'lucide-react';
 
 // Shadcn Components
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import { Input } from '@/components/ui/input';
 // Shell Components
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
+import { EmptyState, TableSkeleton } from '@/components/shell/states';
 
 interface Usuario {
   id: number;
@@ -233,14 +234,14 @@ const UsuariosPage = () => {
   };
 
   const getRolBadge = (rol: string) => {
-    if (rol === 'admin') return <Badge variant="destructive">Admin</Badge>;
+    if (rol === 'admin') return <Badge className="bg-error/10 text-error border-error/30 border">Admin</Badge>;
     if (rol === 'co-admin')
       return (
-        <Badge className="bg-orange-500 text-white hover:bg-orange-600">
+        <Badge className="bg-warning/10 text-warning border-warning/30 border">
           Co-Admin
         </Badge>
       );
-    return <Badge variant="secondary">Usuario</Badge>;
+    return <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">Usuario</Badge>;
   };
 
   // Co-admin no puede editar/desactivar admins
@@ -253,22 +254,11 @@ const UsuariosPage = () => {
 
   const getEstadoBadge = (activo: boolean) => {
     return activo ? (
-      <Badge variant="default">Activo</Badge>
+      <Badge className="bg-success/10 text-success border-success/30 border">Activo</Badge>
     ) : (
-      <Badge variant="outline">Inactivo</Badge>
+      <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">Inactivo</Badge>
     );
   };
-
-  if (loading && usuarios.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">
-          Cargando usuarios...
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -302,53 +292,57 @@ const UsuariosPage = () => {
 
       {/* Tabla desktop */}
       <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
+        <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-center">Rol</TableHead>
-                  <TableHead className="text-center">Estado</TableHead>
-                  <TableHead className="w-[100px]"></TableHead>
+                <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</TableHead>
+                  <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rol</TableHead>
+                  <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+                  <TableHead className="w-[100px] px-4 py-2.5"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredUsuarios.length === 0 ? (
+              {loading ? (
+                <TableSkeleton rows={5} columns={5} />
+              ) : filteredUsuarios.length === 0 ? (
+                <TableBody>
                   <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-24 text-center text-muted-foreground"
-                    >
-                      No hay usuarios registrados
+                    <TableCell colSpan={5} className="p-0">
+                      <EmptyState
+                        icon={Users}
+                        title="No hay usuarios registrados"
+                        description="Crea el primer usuario para comenzar"
+                      />
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredUsuarios.map((usuario) => (
-                    <TableRow key={usuario.id}>
-                      <TableCell className="font-medium">
+                </TableBody>
+              ) : (
+                <TableBody>
+                  {filteredUsuarios.map((usuario) => (
+                    <TableRow key={usuario.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60">
+                      <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                         {usuario.nombre}
                         {usuario.tipo_usuario === 'externo' && (
-                          <Badge variant="outline" className="ml-2 text-xs">
+                          <Badge className="ml-2 text-xs bg-slate-100 text-slate-600 border-slate-200 border">
                             Externo
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="px-4 py-3 text-sm text-slate-700">
                         {usuario.email || '—'}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="px-4 py-3 text-center">
                         {usuario.tipo_usuario === 'externo' ? (
                           <span className="text-muted-foreground text-sm">—</span>
                         ) : (
                           getRolBadge(usuario.rol)
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="px-4 py-3 text-center">
                         {getEstadoBadge(usuario.activo)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-4 py-3">
                         {canManageUser(usuario) && (
                           <div className="flex items-center gap-1">
                             <Button
@@ -368,7 +362,7 @@ const UsuariosPage = () => {
                                 className={
                                   usuario.activo
                                     ? 'text-destructive hover:text-destructive'
-                                    : 'text-green-600 hover:text-green-600'
+                                    : 'text-success hover:text-success'
                                 }
                               >
                                 {usuario.activo ? (
@@ -382,22 +376,21 @@ const UsuariosPage = () => {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
+                  ))}
+                </TableBody>
+              )}
             </Table>
-          </CardContent>
         </Card>
       </div>
 
       {/* Cards mobile */}
       <div className="md:hidden space-y-3">
-        {filteredUsuarios.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No hay usuarios registrados
-            </CardContent>
-          </Card>
+        {!loading && filteredUsuarios.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No hay usuarios registrados"
+            description="Crea el primer usuario para comenzar"
+          />
         ) : (
           filteredUsuarios.map((usuario) => (
             <Card key={usuario.id}>
@@ -438,7 +431,7 @@ const UsuariosPage = () => {
                           className={
                             usuario.activo
                               ? 'text-destructive hover:text-destructive'
-                              : 'text-green-600 hover:text-green-600'
+                              : 'text-success hover:text-success'
                           }
                         >
                           {usuario.activo ? (

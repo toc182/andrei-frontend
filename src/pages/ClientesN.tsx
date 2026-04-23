@@ -15,7 +15,7 @@ import { EmptyState, TableSkeleton } from '@/components/shell/states';
 // Shadcn Components
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -226,9 +226,9 @@ const ClientesN = () => {
   // Obtener badge de tipo
   const getTipoBadge = (tipo?: string) => {
     return tipo === 'estado' ? (
-      <Badge variant="secondary">Estado</Badge>
+      <Badge className="bg-info/10 text-info border-info/30 border">Estado</Badge>
     ) : (
-      <Badge variant="outline">Privado</Badge>
+      <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">Privado</Badge>
     );
   };
 
@@ -252,14 +252,13 @@ const ClientesN = () => {
       )}
 
       {/* Tabla de clientes */}
-      <Card>
-        <CardContent className="p-0">
+      <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="text-center">Abreviatura</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+              <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
+                <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Abreviatura</TableHead>
+                <TableHead className="w-[50px] px-4 py-2.5"></TableHead>
               </TableRow>
             </TableHeader>
             {loading ? (
@@ -289,13 +288,13 @@ const ClientesN = () => {
                 {clientes.map((cliente) => (
                   <TableRow
                     key={cliente.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
                     onClick={() => handleRowClick(cliente)}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                       {cliente.nombre}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="px-4 py-3 text-center text-sm text-slate-700">
                       {cliente.abreviatura}
                     </TableCell>
                     <TableCell>
@@ -318,7 +317,6 @@ const ClientesN = () => {
               </TableBody>
             )}
           </Table>
-        </CardContent>
       </Card>
 
       {/* Modal de formulario (crear/editar) */}

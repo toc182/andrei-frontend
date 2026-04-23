@@ -593,12 +593,12 @@ export default function BudgetConfigForm({
                         ({category.codigo})
                       </span>
                       {category.is_custom && (
-                        <span className="text-xs text-blue-500 ml-1">
+                        <span className="text-xs text-info ml-1">
                           (custom)
                         </span>
                       )}
                       {category.isPending && (
-                        <span className="text-xs text-orange-500 ml-1">
+                        <span className="text-xs text-warning ml-1">
                           (nuevo)
                         </span>
                       )}
@@ -615,7 +615,7 @@ export default function BudgetConfigForm({
                     />
                     <button
                       type="button"
-                      className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors"
+                      className="h-5 w-5 rounded-full bg-error flex items-center justify-center hover:bg-error/90 transition-colors"
                       onClick={() => handleRemoveCategory(category)}
                       title="Remover categoría"
                     >
@@ -647,7 +647,7 @@ export default function BudgetConfigForm({
                 <div
                   className={`flex items-center justify-between text-sm font-bold ${
                     Math.abs(difference) < 0.01
-                      ? 'text-green-600'
+                      ? 'text-success'
                       : 'text-destructive'
                   }`}
                 >
