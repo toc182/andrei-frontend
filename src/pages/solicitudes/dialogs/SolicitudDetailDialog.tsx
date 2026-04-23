@@ -174,7 +174,7 @@ export function SolicitudDetailDialog({
       />
 
       {solicitud?.urgente && (
-        <Badge variant="destructive" className="text-xs w-fit mt-2">
+        <Badge className="bg-error/10 text-error border-error/30 border text-xs w-fit mt-2">
           Urgente
         </Badge>
       )}

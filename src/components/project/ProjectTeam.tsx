@@ -27,23 +27,17 @@ export default function ProjectTeam({ project }: ProjectTeamProps) {
     (project?.datos_adicionales as { team?: TeamMember[] })?.team || [];
 
   const getRoleBadge = (role: string) => {
-    const variants: Record<
-      string,
-      {
-        variant: 'default' | 'secondary' | 'destructive' | 'outline';
-        label: string;
-      }
-    > = {
-      admin: { variant: 'destructive', label: 'Administrador' },
-      usuario: { variant: 'default', label: 'Usuario' },
+    const variants: Record<string, { className: string; label: string }> = {
+      admin: { className: 'bg-error/10 text-error border-error/30 border', label: 'Administrador' },
+      usuario: { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: 'Usuario' },
     };
 
     const config = variants[role] || {
-      variant: 'outline' as const,
+      className: 'bg-slate-100 text-slate-600 border-slate-200 border',
       label: role,
     };
     return (
-      <Badge variant={config.variant} className="text-xs">
+      <Badge className={`text-xs ${config.className}`}>
         {config.label}
       </Badge>
     );

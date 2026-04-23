@@ -146,20 +146,21 @@ Mobile-first. Use md: breakpoint for desktop layouts:
 
 ## Status badges
 
-Most estado badges use config maps within each file — follow the existing pattern.
-Hardcoded exceptions to keep consistent:
+All badges use the universal tinted pattern from FRONTEND_CONVENTIONS.md §14:
+`bg-[name]/10 text-[name] border-[name]/30 border`
 
-Roles:
-admin → variant="destructive"
-co-admin → className="bg-orange-500 text-white hover:bg-orange-600"
-usuario → variant="secondary"
+Never use solid fills (bg-green-600), shadcn variants (variant="destructive"),
+or arbitrary Tailwind colors (bg-orange-500). Always use named tokens.
 
-Reembolsos:
-Pinellas paga → variant="outline" className="bg-yellow-50/50 text-amber-700 border-amber-300"
-Reembolsado → variant="outline" className="bg-green-50 text-green-700 border-green-300"
+Common mappings:
+  admin     → className="bg-error/10 text-error border-error/30 border"
+  co-admin  → className="bg-warning/10 text-warning border-warning/30 border"
+  usuario   → className="bg-slate-100 text-slate-600 border-slate-200 border"
 
-Urgente (solicitudesPago):
-→ variant="destructive" className="text-xs w-fit"
+  Reembolso pendiente → className="bg-warning/10 text-warning border-warning/30 border"
+  Reembolsada         → className="bg-success/10 text-success border-success/30 border"
+
+  Urgente → row-level treatment (border-l-[3px] border-l-error), not a badge
 
 ## Critical rules
 

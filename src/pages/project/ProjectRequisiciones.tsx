@@ -801,13 +801,13 @@ export default function ProjectRequisiciones({
                       <div className="flex items-center gap-2 flex-wrap">
                         {item.estado_anterior && (
                           <>
-                            <Badge variant="outline">
+                            <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">
                               {estadoLabels[item.estado_anterior]}
                             </Badge>
                             <span className="text-muted-foreground">→</span>
                           </>
                         )}
-                        <Badge variant="default">
+                        <Badge className="bg-info/10 text-info border-info/30 border">
                           {estadoLabels[item.estado_nuevo]}
                         </Badge>
                       </div>
