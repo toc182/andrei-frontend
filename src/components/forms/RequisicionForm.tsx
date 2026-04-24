@@ -5,12 +5,7 @@
  */
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -339,15 +334,33 @@ export default function RequisicionForm({
   const totals = calculateTotals();
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle>
-            {editingRequisicion ? 'Editar Requisicion' : 'Nueva Requisicion'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <AppDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      size="standard"
+      title={editingRequisicion ? 'Editar Requisicion' : 'Nueva Requisicion'}
+      description="Completa los datos de la requisición"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" form="requisicion-form" disabled={loading}>
+            {loading
+              ? 'Guardando...'
+              : editingRequisicion
+                ? 'Actualizar'
+                : 'Crear'}
+          </Button>
+        </>
+      }
+    >
+        <form id="requisicion-form" onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -619,26 +632,7 @@ export default function RequisicionForm({
             </div>
           </div>
 
-          {/* Form Actions */}
-          <div className="flex gap-2 justify-end pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading
-                ? 'Guardando...'
-                : editingRequisicion
-                  ? 'Actualizar'
-                  : 'Crear'}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 }

@@ -1,10 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -374,13 +369,35 @@ export default function BudgetConfigForm({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Configuración de Presupuesto</DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <AppDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      size="complex"
+      title="Configuración de Presupuesto"
+      description="Configura las categorías y presupuesto del proyecto"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="budget-config-form"
+            disabled={loading || Math.abs(difference) > 0.01}
+            className="w-full sm:w-auto"
+          >
+            {loading ? 'Guardando...' : 'Guardar Presupuesto'}
+          </Button>
+        </>
+      }
+    >
+        <form id="budget-config-form" onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -672,27 +689,7 @@ export default function BudgetConfigForm({
             />
           </div>
 
-          {/* Botones */}
-          <div className="flex gap-2 flex-col sm:flex-row justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || Math.abs(difference) > 0.01}
-              className="w-full sm:w-auto"
-            >
-              {loading ? 'Guardando...' : 'Guardar Presupuesto'}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 }

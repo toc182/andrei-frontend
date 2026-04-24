@@ -240,7 +240,7 @@ export default function DashboardNew() {
 
       case 'projects':
         return (
-          <ProjectsList activeTab="proyectos" onNavigate={setCurrentView} />
+          <ProjectsList onNavigate={setCurrentView} />
         );
 
       case 'clientes':
@@ -265,13 +265,9 @@ export default function DashboardNew() {
 
       case 'equipos':
       case 'equipos-informacion':
-        return <EquiposPage defaultTab="informacion" onTabChange={(tab) => setCurrentView(`equipos-${tab}`)} />;
-
       case 'equipos-status':
-        return <EquiposPage defaultTab="status" onTabChange={(tab) => setCurrentView(`equipos-${tab}`)} />;
-
       case 'equipos-asignaciones':
-        return <EquiposPage defaultTab="asignaciones" onTabChange={(tab) => setCurrentView(`equipos-${tab}`)} />;
+        return <EquiposPage defaultTab={currentView === 'equipos-status' ? 'status' : currentView === 'equipos-asignaciones' ? 'asignaciones' : 'informacion'} />;
 
       case 'documentos':
       case 'doc-acuerdo-consorcio':
@@ -293,10 +289,8 @@ export default function DashboardNew() {
         return <DocumentosPage defaultTab="carta-compromiso-verde" onTabChange={(tab) => setCurrentView(`doc-${tab}`)} />;
 
       case 'usuarios':
-        return isAdminOrCoAdmin ? <AdministracionPage defaultTab="usuarios" onTabChange={(tab) => setCurrentView(tab === 'permisos' ? 'permisos' : 'usuarios')} /> : null;
-
       case 'permisos':
-        return isAdminOrCoAdmin ? <AdministracionPage defaultTab="permisos" onTabChange={(tab) => setCurrentView(tab === 'permisos' ? 'permisos' : 'usuarios')} /> : null;
+        return isAdminOrCoAdmin ? <AdministracionPage defaultTab={currentView === 'permisos' ? 'permisos' : 'usuarios'} /> : null;
 
       case 'mi-cuenta':
         return <MiCuentaPage />;

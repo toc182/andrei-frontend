@@ -5,12 +5,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -190,15 +185,38 @@ export default function ExpenseForm({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle>
-            {editingExpense ? 'Editar Gasto' : 'Registrar Nuevo Gasto'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <AppDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      size="simple"
+      title={editingExpense ? 'Editar Gasto' : 'Registrar Nuevo Gasto'}
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="expense-form"
+            disabled={loading}
+            className="w-full sm:w-auto"
+          >
+            {loading
+              ? 'Guardando...'
+              : editingExpense
+                ? 'Actualizar'
+                : 'Guardar'}
+          </Button>
+        </>
+      }
+    >
+        <form id="expense-form" onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -327,31 +345,7 @@ export default function ExpenseForm({
             />
           </div>
 
-          {/* Form Actions */}
-          <div className="flex gap-2 flex-col sm:flex-row justify-end pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              {loading
-                ? 'Guardando...'
-                : editingExpense
-                  ? 'Actualizar'
-                  : 'Guardar'}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 }

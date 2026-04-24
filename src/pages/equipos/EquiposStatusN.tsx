@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface EquipoWithStatus extends EquipoExtended {
   ubicacion?: string;
@@ -179,7 +179,7 @@ export default function EquiposStatusN() {
     <Card className="overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+            <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
               <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código</TableHead>
               <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
               <TableHead className="w-[150px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
@@ -254,13 +254,6 @@ export default function EquiposStatusN() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={loadEquiposStatus} variant="outline">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Actualizar
-        </Button>
-      </div>
-
       <div className="space-y-3">
         <SectionHeader title="Equipos Pinellas" count={equiposPinellas.length} />
         {renderTable(equiposPinellas)}
@@ -320,8 +313,9 @@ export default function EquiposStatusN() {
       <AppDialog
         open={statusFormOpen}
         onOpenChange={setStatusFormOpen}
-        size="simple"
+        size="standard"
         title="Actualizar Status del Equipo"
+        description="Actualiza el estado del equipo"
         footer={
           <>
             <Button

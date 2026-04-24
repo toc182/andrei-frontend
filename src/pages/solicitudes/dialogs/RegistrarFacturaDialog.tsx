@@ -44,7 +44,7 @@ export function RegistrarFacturaDialog({
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      size="confirm"
+      size="simple"
       title="Registrar Factura o Recibo"
       description="Ingresa los datos del documento del proveedor."
       footer={

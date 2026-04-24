@@ -58,7 +58,7 @@ export function RegistrarPagoDialog({
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      size="confirm"
+      size="simple"
       title={title}
       description={description}
       footer={

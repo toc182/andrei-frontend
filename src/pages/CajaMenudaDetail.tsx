@@ -1208,8 +1208,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       <AppDialog
         open={showGastoModal}
         onOpenChange={setShowGastoModal}
-        size="simple"
+        size="standard"
         title="Editar Gasto"
+        description="Modifica los datos del gasto seleccionado"
         footer={
           <>
             <Button type="button" variant="outline" onClick={() => setShowGastoModal(false)} disabled={submitting}>
@@ -1323,6 +1324,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
         onOpenChange={(open) => { if (!open) setShowBatchModal(false); }}
         size="complex"
         title="Registrar Gastos"
+        description="Registra múltiples gastos de caja menuda"
         footer={
           <>
             <span className="text-sm text-muted-foreground">

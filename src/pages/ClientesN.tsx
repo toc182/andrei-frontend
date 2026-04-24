@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Cliente {
   id: number;
@@ -255,7 +256,7 @@ const ClientesN = () => {
       <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+              <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
                 <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
                 <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Abreviatura</TableHead>
                 <TableHead className="w-[50px] px-4 py-2.5"></TableHead>
@@ -323,7 +324,7 @@ const ClientesN = () => {
       <AppDialog
         open={showFormModal}
         onOpenChange={setShowFormModal}
-        size="simple"
+        size="standard"
         title={editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}
         description={
           editingCliente
@@ -333,9 +334,15 @@ const ClientesN = () => {
         footer={
           <>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowFormModal(false)}
+                disabled={submitting}
+              >
+                Cancelar
+              </Button>
               {editingCliente && hasPermission('clientes_eliminar') && (
                 <Button
-                  type="button"
                   variant="destructive"
                   size="sm"
                   onClick={handleDeleteConfirm}
@@ -346,32 +353,22 @@ const ClientesN = () => {
                 </Button>
               )}
             </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowFormModal(false)}
-                disabled={submitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                form="cliente-form"
-                disabled={submitting}
-              >
-                {submitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {submitting
-                  ? editingCliente
-                    ? 'Actualizando...'
-                    : 'Creando...'
-                  : editingCliente
-                    ? 'Actualizar'
-                    : 'Crear'}
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              form="cliente-form"
+              disabled={submitting}
+            >
+              {submitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {submitting
+                ? editingCliente
+                  ? 'Actualizando...'
+                  : 'Creando...'
+                : editingCliente
+                  ? 'Actualizar'
+                  : 'Crear'}
+            </Button>
           </>
         }
       >
@@ -384,7 +381,7 @@ const ClientesN = () => {
           <form
             id="cliente-form"
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
             <FormField
               control={form.control}
@@ -430,16 +427,21 @@ const ClientesN = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Cliente *</FormLabel>
-                    <FormControl>
-                      <select
-                        {...field}
-                        disabled={submitting}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="privado">Privado</option>
-                        <option value="estado">Estado</option>
-                      </select>
-                    </FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={submitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar tipo..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="privado">Privado</SelectItem>
+                        <SelectItem value="estado">Estado</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -506,7 +508,7 @@ const ClientesN = () => {
               control={form.control}
               name="direccion"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="sm:col-span-2">
                   <FormLabel>Dirección</FormLabel>
                   <FormControl>
                     <Textarea

@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,25 +83,27 @@ export function ChangePasswordModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="sm:max-w-md"
-        onPointerDownOutside={forced ? (e) => e.preventDefault() : undefined}
-        onEscapeKeyDown={forced ? (e) => e.preventDefault() : undefined}
-        hideCloseButton={forced}
-      >
-        <DialogHeader>
-          <DialogTitle>
-            {forced ? 'Debes cambiar tu contraseña' : 'Cambiar Contraseña'}
-          </DialogTitle>
-          {forced && (
-            <DialogDescription>
-              Por seguridad, debes establecer una nueva contraseña antes de
-              continuar.
-            </DialogDescription>
+    <AppDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      size="simple"
+      title={forced ? 'Debes cambiar tu contraseña' : 'Cambiar Contraseña'}
+      description={forced ? 'Por seguridad, debes establecer una nueva contraseña antes de continuar.' : undefined}
+      footer={!success ? (
+        <>
+          {!forced && (
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              Cancelar
+            </Button>
           )}
-        </DialogHeader>
-
+          {forced && <div />}
+          <Button type="submit" form="change-password-form" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Cambiar Contraseña
+          </Button>
+        </>
+      ) : undefined}
+    >
         {success ? (
           <div className="flex flex-col items-center gap-3 py-6">
             <CheckCircle2 className="h-12 w-12 text-success" />
@@ -116,7 +112,7 @@ export function ChangePasswordModal({
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="change-password-form" onSubmit={handleSubmit} className="space-y-4">
             {!forced && (
               <div className="space-y-2">
                 <Label htmlFor="password-actual">Contraseña actual</Label>
@@ -157,14 +153,8 @@ export function ChangePasswordModal({
             </div>
 
             {error && <p className="text-sm text-error">{error}</p>}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Cambiar Contraseña
-            </Button>
           </form>
         )}
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 }

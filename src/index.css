@@ -49,8 +49,8 @@
   --color-secondary-foreground: oklch(37.2% 0.031 259);
   --color-muted:            oklch(97.6% 0.006 247);
   --color-muted-foreground: oklch(55.1% 0.031 254);   /* Slate 500 */
-  --color-accent:           oklch(49.1% 0.091 183);   /* Teal */
-  --color-accent-foreground: oklch(100% 0 0);
+  --color-accent:           oklch(96% 0.015 183);      /* Very light teal tint — subtle brand hover */
+  --color-accent-foreground: oklch(21.3% 0.034 265); /* Foreground — stays dark */
 
   --color-destructive:        oklch(48.5% 0.204 27);  /* Error */
   --color-destructive-foreground: oklch(100% 0 0);
@@ -116,6 +116,7 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
 }
 
 /* === SIDEBAR THEME (Dark Ink) === */

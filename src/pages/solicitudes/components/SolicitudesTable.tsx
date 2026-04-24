@@ -23,7 +23,7 @@ import type {
   SortDirection,
   ColumnFilters,
 } from '@/components/sortableHeaderUtils';
-import { AprobadoresAvatars } from './AprobadoresAvatars';
+import { ApprovalPillBar } from '@/components/shell/ApprovalPillBar';
 import { EstadoBadge } from './EstadoBadge';
 import type { SolicitudPago } from '../types';
 import { formatMoney } from '../../../utils/formatters';
@@ -106,20 +106,12 @@ export function SolicitudesTable({
                     <div className="space-y-1 flex flex-col items-end">
                       {sol.estado === 'pendiente' ? (
                         sol.aprobadores_estado?.length ? (
-                          <AprobadoresAvatars
+                          <ApprovalPillBar
                             aprobadores={sol.aprobadores_estado}
                           />
                         ) : null
                       ) : (
                         <EstadoBadge estado={sol.estado} />
-                      )}
-                      {sol.pinellas_paga && (
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-success/10 text-success border-success/30' : 'bg-warning/10 text-warning border-warning/30'}`}
-                        >
-                          Reembolso
-                        </Badge>
                       )}
                     </div>
                   </div>
@@ -246,20 +238,12 @@ export function SolicitudesTable({
                         <div className="space-y-1">
                           {sol.estado === 'pendiente' ? (
                             sol.aprobadores_estado?.length ? (
-                              <AprobadoresAvatars
+                              <ApprovalPillBar
                                 aprobadores={sol.aprobadores_estado}
                               />
                             ) : null
                           ) : (
                             <EstadoBadge estado={sol.estado} />
-                          )}
-                          {sol.pinellas_paga && (
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] px-1.5 py-0 w-fit ${sol.reembolso_registrado ? 'bg-success/10 text-success border-success/30' : 'bg-warning/10 text-warning border-warning/30'}`}
-                            >
-                              Reembolso
-                            </Badge>
                           )}
                         </div>
                       </TableCell>

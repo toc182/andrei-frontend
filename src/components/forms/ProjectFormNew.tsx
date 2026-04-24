@@ -7,14 +7,7 @@ import api from '../../services/api';
 import type { Project } from '@/types';
 
 // Shadcn Components
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import {
   Form,
   FormControl,
@@ -28,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Trash2, Plus } from 'lucide-react';
 
@@ -383,19 +377,55 @@ const ProjectFormNew = ({
   return (
     <>
       {/* Modal Principal */}
-      <Dialog open={isOpen && !showDeleteConfirmation} onOpenChange={onClose}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[700px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-          <DialogHeader>
-            <DialogTitle>
-              {projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}
-            </DialogTitle>
-            <DialogDescription>
-              {projectId
-                ? 'Modifica los datos del proyecto existente'
-                : 'Completa los datos para crear un nuevo proyecto'}
-            </DialogDescription>
-          </DialogHeader>
-
+      <AppDialog
+        open={isOpen && !showDeleteConfirmation}
+        onOpenChange={onClose}
+        size="standard"
+        title={projectId ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+        description={projectId
+          ? 'Modifica los datos del proyecto existente'
+          : 'Completa los datos para crear un nuevo proyecto'}
+        footer={
+          <>
+            {projectId && user?.rol === 'admin' && onDelete && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteConfirmation(true)}
+                disabled={loading}
+                className="sm:mr-auto w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar Proyecto
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="project-form"
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading
+                ? projectId
+                  ? 'Actualizando...'
+                  : 'Creando...'
+                : projectId
+                  ? 'Actualizar Proyecto'
+                  : 'Crear Proyecto'}
+            </Button>
+          </>
+        }
+      >
           {/* Loading state */}
           {loading && !form.getValues('nombre') && (
             <div className="flex flex-col items-center justify-center py-8">
@@ -416,6 +446,7 @@ const ProjectFormNew = ({
           {/* Formulario */}
           <Form {...form}>
             <form
+              id="project-form"
               onSubmit={form.handleSubmit(handleSubmit)}
               className="space-y-4"
             >
@@ -466,22 +497,26 @@ const ProjectFormNew = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente</FormLabel>
-                      <FormControl>
-                        <select
-                          {...field}
-                          disabled={loading || loadingClientes}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <option value="">Seleccionar cliente...</option>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={loading || loadingClientes}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar cliente..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
                           {clientes.map((cliente) => (
-                            <option key={cliente.id} value={cliente.id}>
+                            <SelectItem key={cliente.id} value={String(cliente.id)}>
                               {cliente.nombre}{' '}
                               {cliente.abreviatura &&
                                 `(${cliente.abreviatura})`}
-                            </option>
+                            </SelectItem>
                           ))}
-                        </select>
-                      </FormControl>
+                        </SelectContent>
+                      </Select>
                       {loadingClientes && (
                         <p className="text-xs text-muted-foreground mt-1">
                           Cargando clientes...
@@ -537,19 +572,24 @@ const ProjectFormNew = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Estado</FormLabel>
-                      <FormControl>
-                        <select
-                          {...field}
-                          disabled={loading}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={loading}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar estado..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
                           {estados.map((estado) => (
-                            <option key={estado.value} value={estado.value}>
+                            <SelectItem key={estado.value} value={estado.value}>
                               {estado.label}
-                            </option>
+                            </SelectItem>
                           ))}
-                        </select>
-                      </FormControl>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -845,7 +885,7 @@ const ProjectFormNew = ({
                     ) > 0.01 && (
                       <Alert className="ml-2 p-2 inline-flex items-center border-destructive">
                         <AlertDescription className="text-xs text-destructive">
-                          ⚠️ Debe sumar 100%
+                          Debe sumar 100%
                         </AlertDescription>
                       </Alert>
                     )}
@@ -872,87 +912,19 @@ const ProjectFormNew = ({
                   </FormItem>
                 )}
               />
-
-              {/* Footer */}
-              <DialogFooter className="gap-2 flex-col sm:flex-row">
-                {projectId && user?.rol === 'admin' && onDelete && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => setShowDeleteConfirmation(true)}
-                    disabled={loading}
-                    className="sm:mr-auto w-full sm:w-auto"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Eliminar Proyecto
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {loading
-                    ? projectId
-                      ? 'Actualizando...'
-                      : 'Creando...'
-                    : projectId
-                      ? 'Actualizar Proyecto'
-                      : 'Crear Proyecto'}
-                </Button>
-              </DialogFooter>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
+      </AppDialog>
 
       {/* Modal de Confirmación de Eliminación */}
-      <Dialog
+      <AppDialog
         open={showDeleteConfirmation}
         onOpenChange={setShowDeleteConfirmation}
-      >
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[500px] overflow-x-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Eliminar Proyecto
-            </DialogTitle>
-            <DialogDescription>
-              Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <p className="font-semibold">
-              ¿Estás seguro de que quieres eliminar este proyecto?
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Se eliminarán todos los datos del proyecto, incluyendo:
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Toda la información del proyecto</li>
-              <li>Adendas asociadas</li>
-              <li>Reportes y seguimiento</li>
-            </ul>
-            <Alert>
-              <AlertDescription>
-                <strong>Proyecto:</strong>{' '}
-                {form.getValues('nombre') || 'Sin nombre'}
-              </AlertDescription>
-            </Alert>
-          </div>
-
-          <DialogFooter className="gap-2 flex-col sm:flex-row">
+        size="confirm"
+        title="Eliminar Proyecto"
+        description="Esta acción no se puede deshacer."
+        footer={
+          <>
             <Button
               type="button"
               variant="outline"
@@ -972,9 +944,29 @@ const ProjectFormNew = ({
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sí, Eliminar Proyecto
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+          <div className="space-y-4">
+            <p className="font-semibold">
+              ¿Estás seguro de que quieres eliminar este proyecto?
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Se eliminarán todos los datos del proyecto, incluyendo:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Toda la información del proyecto</li>
+              <li>Adendas asociadas</li>
+              <li>Reportes y seguimiento</li>
+            </ul>
+            <Alert>
+              <AlertDescription>
+                <strong>Proyecto:</strong>{' '}
+                {form.getValues('nombre') || 'Sin nombre'}
+              </AlertDescription>
+            </Alert>
+          </div>
+      </AppDialog>
     </>
   );
 };

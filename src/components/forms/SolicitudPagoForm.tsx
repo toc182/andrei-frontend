@@ -5,12 +5,7 @@
  */
 
 import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -484,17 +479,35 @@ export default function SolicitudPagoForm({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[750px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle>
-            {editingSolicitud
-              ? `Editar ${editingSolicitud.numero}`
-              : `Nueva Solicitud de Pago${nextNumero ? ` (${nextNumero})` : ''}`}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+    <AppDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      size="complex"
+      title={editingSolicitud
+        ? `Editar ${editingSolicitud.numero}`
+        : `Nueva Solicitud de Pago${nextNumero ? ` (${nextNumero})` : ''}`}
+      description="Registra una nueva solicitud de pago"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" form="solicitud-pago-form" disabled={loading}>
+            {loading
+              ? 'Guardando...'
+              : editingSolicitud
+                ? 'Actualizar'
+                : 'Crear Solicitud'}
+          </Button>
+        </>
+      }
+    >
+        <form id="solicitud-pago-form" onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -1196,26 +1209,7 @@ export default function SolicitudPagoForm({
             </div>
           )}
 
-          {/* Form Actions */}
-          <div className="flex gap-2 justify-end pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading
-                ? 'Guardando...'
-                : editingSolicitud
-                  ? 'Actualizar'
-                  : 'Crear Solicitud'}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 }

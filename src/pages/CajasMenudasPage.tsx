@@ -72,9 +72,9 @@ interface Usuario {
 
 const estadoBadge = (estado: string) => {
   if (estado === 'abierta') {
-    return <Badge className="bg-success/10 text-success border-success/30 border">Abierta</Badge>;
+    return <Badge className="min-w-[4.5rem] justify-center bg-success/10 text-success border-success/30 border">Abierta</Badge>;
   }
-  return <Badge className="bg-slate-100 text-slate-600 border-slate-200 border">Cerrada</Badge>;
+  return <Badge className="min-w-[4.5rem] justify-center bg-slate-100 text-slate-600 border-slate-200 border">Cerrada</Badge>;
 };
 
 const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
@@ -180,7 +180,12 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       const url = projectId ? `/cajas-menudas/proyecto/${projectId}` : '/cajas-menudas';
       const response = await api.get(url);
       if (response.data.success) {
-        setCajas(response.data.data);
+        const sorted = [...(response.data.data as CajaMenuda[])].sort((a, b) => {
+          if (a.estado === 'abierta' && b.estado !== 'abierta') return -1;
+          if (a.estado !== 'abierta' && b.estado === 'abierta') return 1;
+          return 0;
+        });
+        setCajas(sorted);
       }
     } catch (err) {
       console.error('Error cargando cajas menudas:', err);
@@ -350,7 +355,8 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
+          className="h-8 w-8"
           onClick={(e) => e.stopPropagation()}
         >
           <Settings className="h-4 w-4" />
@@ -462,22 +468,20 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
                   <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
                   {!projectId && <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>}
-                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Responsable</TableHead>
-                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Monto Asignado</TableHead>
-                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Saldo</TableHead>
-                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
-                  <TableHead className="w-[50px] px-4 py-2.5"></TableHead>
+                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Asignado / Saldo</TableHead>
+                  <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+                  <TableHead className="w-10 px-2 py-2.5"></TableHead>
                 </TableRow>
               </TableHeader>
               {loading ? (
-                <TableSkeleton columns={projectId ? 6 : 7} rows={4} />
+                <TableSkeleton columns={projectId ? 4 : 5} rows={4} />
               ) : cajas.length === 0 ? (
                 <TableBody>
                   <TableRow>
-                    <TableCell colSpan={projectId ? 6 : 7} className="p-0">
+                    <TableCell colSpan={projectId ? 4 : 5} className="p-0">
                       <EmptyState
                         icon={Wallet}
                         title="No hay cajas menudas registradas"
@@ -503,13 +507,14 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
                         </div>
                       </TableCell>
                       {!projectId && <TableCell className="px-4 py-3 text-sm text-slate-700">{caja.proyecto_nombre}</TableCell>}
-                      <TableCell className="px-4 py-3 text-sm text-slate-700">{caja.responsable_nombre}</TableCell>
-                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">{formatMonto(caja.monto_asignado)}</TableCell>
-                      <TableCell className={`px-4 py-3 text-right text-sm font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
-                        {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
+                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums">
+                        <div className="text-slate-700">{formatMonto(caja.monto_asignado)}</div>
+                        <div className={`text-xs font-medium ${caja.estado === 'cerrada' ? 'text-slate-400' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
+                          {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
+                        </div>
                       </TableCell>
                       <TableCell className="px-4 py-3">{estadoBadge(caja.estado)}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell className="px-2 py-3">
                         {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
                       </TableCell>
                     </TableRow>
@@ -583,12 +588,12 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       <AppDialog
         open={showFormModal}
         onOpenChange={setShowFormModal}
-        size="simple"
+        size="standard"
         title="Nueva Caja Menuda"
+        description="Registra una nueva caja menuda para un proyecto"
         footer={
           <>
             <Button
-              type="button"
               variant="outline"
               onClick={() => setShowFormModal(false)}
               disabled={submitting}
@@ -701,6 +706,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         onOpenChange={(open) => { if (!open) setEditModalCaja(null); }}
         size="simple"
         title="Editar Caja Menuda"
+        description="Modifica los datos de la caja menuda"
         footer={
           <>
             <Button
@@ -867,8 +873,9 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       <AppDialog
         open={!!cerrarModalCaja}
         onOpenChange={(open) => { if (!open) { setCerrarModalCaja(null); setComprobanteFile(null); } }}
-        size="confirm"
+        size="simple"
         title="Cerrar Caja"
+        description="Esta acción no se puede deshacer"
         footer={
           <>
             <Button

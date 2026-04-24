@@ -1,11 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import {
   Select,
   SelectContent,
@@ -185,15 +179,30 @@ const AdendaForm = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {editingAdenda ? 'Editar Adenda' : 'Nueva Adenda'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <AppDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      size="standard"
+      title={editingAdenda ? 'Editar Adenda' : 'Nueva Adenda'}
+      description="Registra o modifica una adenda del contrato"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" form="adenda-form" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {editingAdenda ? 'Actualizar Adenda' : 'Crear Adenda'}
+          </Button>
+        </>
+      }
+    >
+        <form id="adenda-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Información de la Adenda */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground">
@@ -343,23 +352,8 @@ const AdendaForm = ({
             </Alert>
           )}
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingAdenda ? 'Actualizar Adenda' : 'Crear Adenda'}
-            </Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 };
 

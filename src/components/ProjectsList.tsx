@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ProjectFormNew from './forms/ProjectFormNew';
 import AdendaForm from './forms/AdendaForm';
-import LicitacionForm from './forms/LicitacionForm';
-import OportunidadForm from './forms/OportunidadForm';
 import api from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { formatMoney } from '../utils/formatters';
@@ -21,13 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +32,6 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface ProjectsListProps {
-  activeTab?: string;
   onStatsUpdate?: () => void;
   onNavigate?: (view: string) => void;
 }
@@ -52,37 +43,10 @@ interface Pagination {
   totalPages?: number;
 }
 
-const tabConfig: Record<
-  string,
-  {
-    labelNuevo: string;
-    labelVacio: string;
-    formType: 'project' | 'licitacion' | 'oportunidad';
-  }
-> = {
-  proyectos: {
-    labelNuevo: 'Nuevo Proyecto',
-    labelVacio: 'No hay proyectos disponibles',
-    formType: 'project',
-  },
-  licitaciones: {
-    labelNuevo: 'Nueva Licitación',
-    labelVacio: 'No hay licitaciones disponibles',
-    formType: 'licitacion',
-  },
-  oportunidades: {
-    labelNuevo: 'Nueva Oportunidad',
-    labelVacio: 'No hay oportunidades disponibles',
-    formType: 'oportunidad',
-  },
-};
-
 const ProjectsList: React.FC<ProjectsListProps> = ({
-  activeTab = 'proyectos',
   onStatsUpdate,
   onNavigate,
 }) => {
-  const config = tabConfig[activeTab] || tabConfig.proyectos;
   const { hasPermission } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,61 +61,19 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   const [projectToDelete, setProjectToDelete] = useState<number | null>(null);
   const [adendaToDelete, setAdendaToDelete] = useState<number | null>(null);
 
-  // Cargar datos según tab activo
+  // Cargar proyectos
   const loadProjects = async () => {
     try {
       setLoading(true);
-      let items: Project[];
-      let paginationData = {};
-
-      if (activeTab === 'licitaciones') {
-        const response = await api.get('/licitaciones');
-        if (!response.data.success) {
-          setError('Error cargando licitaciones');
-          return;
-        }
-        items = response.data.licitaciones.map(
-          (l: Record<string, unknown>) =>
-            ({
-              id: l.id,
-              nombre_corto: l.nombre,
-              cliente_abreviatura: l.entidad_licitante,
-              estado: l.estado_licitacion,
-              monto_total: l.presupuesto_referencial || 0,
-            }) as unknown as Project,
-        );
-        paginationData = response.data.pagination;
-      } else if (activeTab === 'oportunidades') {
-        const response = await api.get('/oportunidades');
-        if (!response.data.success) {
-          setError('Error cargando oportunidades');
-          return;
-        }
-        items = response.data.oportunidades.map(
-          (o: Record<string, unknown>) =>
-            ({
-              id: o.id,
-              nombre_corto: o.nombre_oportunidad,
-              cliente_abreviatura: o.cliente_potencial,
-              estado: o.estado_oportunidad,
-              monto_total: o.valor_estimado || 0,
-            }) as unknown as Project,
-        );
-        paginationData = response.data.pagination;
-      } else {
-        const response = await api.get('/projects', {
-          params: { tipo_origen: 'directo' },
-        });
-        if (!response.data.success) {
-          setError('Error cargando proyectos');
-          return;
-        }
-        items = response.data.proyectos;
-        paginationData = response.data.pagination;
+      const response = await api.get('/projects', {
+        params: { tipo_origen: 'directo' },
+      });
+      if (!response.data.success) {
+        setError('Error cargando proyectos');
+        return;
       }
-
-      setProjects(items);
-      setPagination(paginationData);
+      setProjects(response.data.proyectos);
+      setPagination(response.data.pagination);
       setError('');
     } catch (err) {
       console.error('Error:', err);
@@ -161,10 +83,9 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
     }
   };
 
-  // Cargar proyectos al montar o cambiar de tab
   useEffect(() => {
     loadProjects();
-  }, [activeTab]);
+  }, []);
 
   // Manejar guardado de proyecto
   const handleProjectSave = () => {
@@ -220,13 +141,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   const confirmDeleteProject = async () => {
     if (!projectToDelete) return;
     try {
-      const endpoint =
-        config.formType === 'licitacion'
-          ? `/licitaciones/${projectToDelete}`
-          : config.formType === 'oportunidad'
-            ? `/oportunidades/${projectToDelete}`
-            : `/projects/${projectToDelete}`;
-      const response = await api.delete(endpoint);
+      const response = await api.delete(`/projects/${projectToDelete}`);
 
       if (response.data.success) {
         loadProjects();
@@ -247,25 +162,11 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   // Obtener variante de badge para estado (Shadcn)
   const getStatusBadgeClassName = (estado: string): string => {
     const variants: Record<string, string> = {
-      // Proyectos
-      planificacion: 'bg-slate-100 text-slate-600 border-slate-200 border',
+      planificacion: 'bg-navy/10 text-navy border-navy/30 border',
       en_curso: 'bg-info/10 text-info border-info/30 border',
       pausado: 'bg-warning/10 text-warning border-warning/30 border',
       completado: 'bg-success/10 text-success border-success/30 border',
       cancelado: 'bg-error/10 text-error border-error/30 border',
-      // Licitaciones
-      activa: 'bg-info/10 text-info border-info/30 border',
-      presentada: 'bg-slate-100 text-slate-600 border-slate-200 border',
-      ganada: 'bg-success/10 text-success border-success/30 border',
-      perdida: 'bg-error/10 text-error border-error/30 border',
-      sin_interes: 'bg-slate-100 text-slate-600 border-slate-200 border',
-      cancelada: 'bg-error/10 text-error border-error/30 border',
-      // Oportunidades
-      prospecto: 'bg-slate-100 text-slate-600 border-slate-200 border',
-      calificada: 'bg-info/10 text-info border-info/30 border',
-      propuesta: 'bg-warning/10 text-warning border-warning/30 border',
-      negociacion: 'bg-info/10 text-info border-info/30 border',
-      cerrada: 'bg-success/10 text-success border-success/30 border',
     };
     return variants[estado] || 'bg-slate-100 text-slate-600 border-slate-200 border';
   };
@@ -273,25 +174,11 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
   // Obtener texto del estado
   const getStatusText = (estado: string) => {
     const statusTexts: Record<string, string> = {
-      // Proyectos
       planificacion: 'Planificación',
       en_curso: 'En Curso',
       pausado: 'Pausado',
       completado: 'Completado',
       cancelado: 'Cancelado',
-      // Licitaciones
-      activa: 'Activa',
-      presentada: 'Presentada',
-      ganada: 'Ganada',
-      perdida: 'Perdida',
-      sin_interes: 'Sin Interés',
-      cancelada: 'Cancelada',
-      // Oportunidades
-      prospecto: 'Prospecto',
-      calificada: 'Calificada',
-      propuesta: 'En Propuesta',
-      negociacion: 'En Negociación',
-      cerrada: 'Cerrada',
     };
     return statusTexts[estado] || estado;
   };
@@ -398,7 +285,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
         <div className="flex justify-end">
           <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            {config.labelNuevo}
+            Nuevo Proyecto
           </Button>
         </div>
       )}
@@ -416,67 +303,36 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
       )}
 
       {/* Modal para crear */}
-      {config.formType === 'project' && (
-        <ProjectFormNew
-          isOpen={showCreateForm}
-          onClose={() => setShowCreateForm(false)}
-          onSave={handleProjectSave}
-        />
-      )}
-      {config.formType === 'licitacion' && (
-        <LicitacionForm
-          isOpen={showCreateForm}
-          onClose={() => setShowCreateForm(false)}
-          onSave={handleProjectSave}
-        />
-      )}
-      {config.formType === 'oportunidad' && (
-        <OportunidadForm
-          isOpen={showCreateForm}
-          onClose={() => setShowCreateForm(false)}
-          onSave={handleProjectSave}
-        />
-      )}
+      <ProjectFormNew
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        onSave={handleProjectSave}
+      />
 
       {/* Modal para editar */}
-      {config.formType === 'project' && (
-        <ProjectFormNew
-          projectId={editingProject?.id}
-          isOpen={!!editingProject}
-          onClose={() => setEditingProject(null)}
-          onSave={handleProjectSave}
-          onDelete={handleDeleteProject}
-        />
-      )}
-      {config.formType === 'licitacion' && (
-        <LicitacionForm
-          licitacionId={editingProject?.id}
-          isOpen={!!editingProject}
-          onClose={() => setEditingProject(null)}
-          onSave={handleProjectSave}
-        />
-      )}
-      {config.formType === 'oportunidad' && (
-        <OportunidadForm
-          oportunidadId={editingProject?.id}
-          isOpen={!!editingProject}
-          onClose={() => setEditingProject(null)}
-          onSave={handleProjectSave}
-        />
-      )}
+      <ProjectFormNew
+        projectId={editingProject?.id}
+        isOpen={!!editingProject}
+        onClose={() => setEditingProject(null)}
+        onSave={handleProjectSave}
+        onDelete={handleDeleteProject}
+      />
 
-      {/* Modal para ver detalles del proyecto - Shadcn Dialog */}
-      <Dialog
+      {/* Modal para ver detalles del proyecto */}
+      <AppDialog
         open={!!viewingProject}
         onOpenChange={() => setViewingProject(null)}
+        size="detail"
+        title={viewingProject?.nombre_corto || 'Detalles del Proyecto'}
+        footer={
+          hasPermission('proyectos_editar') ? (
+            <Button onClick={() => setShowAdendaForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Adenda
+            </Button>
+          ) : undefined
+        }
       >
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {viewingProject?.nombre_corto || 'Detalles del Proyecto'}
-            </DialogTitle>
-          </DialogHeader>
-
           {viewingProject && (
             <div className="space-y-4">
               <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
@@ -812,18 +668,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
               )}
             </div>
           )}
-
-          {/* Footer con botón de agregar adenda */}
-          {hasPermission('proyectos_editar') && (
-            <DialogFooter>
-              <Button onClick={() => setShowAdendaForm(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar Adenda
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
+      </AppDialog>
 
       {/* Modal para crear/editar adenda */}
       <AdendaForm
@@ -842,7 +687,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
         {projects.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
-              {config.labelVacio}
+              No hay proyectos disponibles
             </CardContent>
           </Card>
         ) : (
@@ -851,11 +696,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
               key={project.id}
               className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => {
-                if (activeTab === 'proyectos') {
-                  if (onNavigate) onNavigate(`project-${project.id}-resumen`);
-                } else {
-                  handleEditProject(project);
-                }
+                if (onNavigate) onNavigate(`project-${project.id}-resumen`);
               }}
             >
               <CardHeader className="pb-3">
@@ -909,14 +750,14 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
       </div>
 
       {/* ===== TABLA DE PROYECTOS DESKTOP (Shadcn Table) ===== */}
-      <div className="hidden md:block rounded-md border">
+      <Card className="hidden md:block overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Proyecto</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
+            <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
+              <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+              <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Monto</TableHead>
               {hasPermission('proyectos_editar') && (
                 <TableHead className="w-[50px]"></TableHead>
               )}
@@ -929,7 +770,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                   colSpan={5}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  {config.labelVacio}
+                  No hay proyectos disponibles
                 </TableCell>
               </TableRow>
             ) : (
@@ -938,24 +779,19 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                   key={project.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => {
-                    if (activeTab === 'proyectos') {
-                      if (onNavigate)
-                        onNavigate(`project-${project.id}-resumen`);
-                    } else {
-                      handleEditProject(project);
-                    }
+                    if (onNavigate) onNavigate(`project-${project.id}-resumen`);
                   }}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
                     {project.nombre_corto}
                   </TableCell>
-                  <TableCell>{project.cliente_abreviatura}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusBadgeClassName(project.estado)}>
+                  <TableCell className="px-4 py-3 text-sm text-slate-700">{project.cliente_abreviatura}</TableCell>
+                  <TableCell className="px-4 py-3">
+                    <Badge className={`min-w-[5.5rem] justify-center ${getStatusBadgeClassName(project.estado)}`}>
                       {getStatusText(project.estado)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
                     {formatMoney(
                       project.monto_total ||
                         project.monto_contrato_original ||
@@ -982,7 +818,7 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       {/* Delete project confirmation */}
       <AlertDialog open={projectToDelete !== null} onOpenChange={(open) => { if (!open) setProjectToDelete(null); }}>

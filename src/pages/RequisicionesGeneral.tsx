@@ -404,7 +404,7 @@ export default function RequisicionesGeneral() {
       <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+              <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
                 <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Numero</TableHead>
                 <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>
                 <TableHead className="hidden sm:table-cell px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proveedor</TableHead>

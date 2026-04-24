@@ -25,9 +25,9 @@ const VARIANTS: Record<string, BadgeConfig> = {
   rechazada: { className: 'bg-error/10 text-error border-error/30 border', label: 'Rechazada', icon: X },
   pagada: { className: 'bg-success/10 text-success border-success/30 border', label: 'Pagada', icon: Check },
   facturada: { className: 'bg-info/10 text-info border-info/30 border', label: 'Facturada', icon: FileCheck },
-  reembolsada: { className: 'bg-info/10 text-info border-info/30 border', label: 'Reembolsada', icon: CreditCard },
+  reembolsada: { className: 'bg-info/10 text-info border-info/30 border', label: 'Verificada', icon: CreditCard },
   transferida: { className: 'bg-info/10 text-info border-info/30 border', label: 'Verificada', icon: ShieldCheck },
-  devolucion: { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: 'Devolución', icon: Undo2 },
+  devolucion: { className: 'bg-navy/10 text-navy border-navy/30 border', label: 'Devolución', icon: Undo2 },
 };
 
 interface EstadoBadgeProps {
@@ -43,8 +43,7 @@ export function EstadoBadge({ estado }: EstadoBadgeProps) {
   const Icon = config.icon;
 
   return (
-    <Badge className={`flex items-center gap-1 w-fit ${config.className}`}>
-      {Icon && <Icon className="h-3 w-3" />}
+    <Badge className={`w-[5rem] justify-center ${config.className}`}>
       {config.label}
     </Badge>
   );

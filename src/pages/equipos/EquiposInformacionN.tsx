@@ -99,7 +99,11 @@ const equipoSchema = z.object({
   owner: z.enum(['Pinellas', 'COCP']),
 });
 
-export default function EquiposInformacionN() {
+interface EquiposInformacionProps {
+  onRegisterAction?: (handler: (() => void) | null) => void;
+}
+
+export default function EquiposInformacionN({ onRegisterAction }: EquiposInformacionProps) {
   const { hasPermission } = useAuth();
   const [equiposPinellas, setEquiposPinellas] = useState<EquipoExtended[]>([]);
   const [equiposCOCP, setEquiposCOCP] = useState<EquipoExtended[]>([]);
@@ -180,6 +184,13 @@ export default function EquiposInformacionN() {
     });
     setFormOpen(true);
   };
+
+  useEffect(() => {
+    if (onRegisterAction) {
+      onRegisterAction(hasPermission('equipos_agregar') ? handleAddEquipo : null);
+      return () => onRegisterAction(null);
+    }
+  }, [onRegisterAction]);
 
   const handleEditEquipo = (equipo: EquipoExtended, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -284,7 +295,7 @@ export default function EquiposInformacionN() {
     <Card className="overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+            <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
               <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código</TableHead>
               <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
               <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Marca</TableHead>
@@ -354,16 +365,6 @@ export default function EquiposInformacionN() {
 
   return (
     <div className="space-y-6">
-      {/* Add button */}
-      {hasPermission('equipos_agregar') && (
-        <div className="flex justify-end">
-          <Button onClick={handleAddEquipo}>
-            <Plus className="mr-2 h-4 w-4" />
-            Agregar Equipo
-          </Button>
-        </div>
-      )}
-
       {/* Equipos Pinellas */}
       <div className="space-y-3">
         <SectionHeader title="Equipos Pinellas" count={equiposPinellas.length} />

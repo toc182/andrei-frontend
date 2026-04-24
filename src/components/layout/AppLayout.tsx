@@ -113,7 +113,7 @@ export function AppLayout({
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-background px-8 pt-6">
+        <div className="flex-1 overflow-auto bg-background px-8 pt-6 pb-8">
           {children}
         </div>
       </SidebarInset>

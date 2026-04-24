@@ -119,7 +119,11 @@ interface AsignacionesState {
   propios: AsignacionExtended[];
 }
 
-export default function AsignacionesEquiposN() {
+interface AsignacionesEquiposProps {
+  onRegisterAction?: (handler: (() => void) | null) => void;
+}
+
+export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesEquiposProps) {
   const [asignaciones, setAsignaciones] = useState<AsignacionesState>({
     alquiler: [],
     propios: [],
@@ -252,6 +256,13 @@ export default function AsignacionesEquiposN() {
     setFormOpen(true);
   };
 
+  useEffect(() => {
+    if (onRegisterAction) {
+      onRegisterAction(handleNewAsignacion);
+      return () => onRegisterAction(null);
+    }
+  }, [onRegisterAction]);
+
   const handleEditAsignacion = async (asignacion: AsignacionExtended) => {
     await loadFormData(asignacion);
     setSelectedAsignacion(asignacion);
@@ -376,7 +387,7 @@ export default function AsignacionesEquiposN() {
       <Card className="overflow-hidden p-0">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+            <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
               <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
               <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</TableHead>
               <TableHead className="w-[100px] px-4 py-2.5"></TableHead>
@@ -450,12 +461,6 @@ export default function AsignacionesEquiposN() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={handleNewAsignacion}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Asignación
-        </Button>
-      </div>
 
       {error && !formOpen && !registroUsoOpen && (
         <Alert variant="error" title={error} />
@@ -470,6 +475,7 @@ export default function AsignacionesEquiposN() {
         onOpenChange={setFormOpen}
         size="standard"
         title={selectedAsignacion ? 'Editar Asignación' : 'Nueva Asignación de Equipo'}
+        description="Asigna o reasigna un equipo a un proyecto"
         footer={
           <>
             <div>

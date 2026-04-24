@@ -78,11 +78,11 @@ export default function CuentasGeneralPage({ onNavigateToProject }: CuentasGener
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       <PageHeader title="Cuentas" subtitle="Vista general por proyecto" />
 
       <Tabs defaultValue="resumen">
-        <TabsList className="w-full justify-center">
+        <TabsList className="mb-6 w-full justify-center">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="actuales">Cuentas actuales</TabsTrigger>
           <TabsTrigger value="pendientes">Cuentas pendientes</TabsTrigger>

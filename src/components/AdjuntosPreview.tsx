@@ -7,13 +7,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import api from '../services/api';
 import type { SolicitudPagoAdjunto } from '../types/api';
 
@@ -177,12 +171,13 @@ export default function AdjuntosPreview({
       )}
 
       {/* Image Lightbox */}
-      <Dialog open={!!lightboxUrl} onOpenChange={() => setLightboxUrl(null)}>
-        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Ver imagen</DialogTitle>
-            <DialogDescription>{lightboxName}</DialogDescription>
-          </DialogHeader>
+      <AppDialog
+        open={!!lightboxUrl}
+        onOpenChange={() => setLightboxUrl(null)}
+        size="detail"
+        title="Ver imagen"
+        description={lightboxName}
+      >
           {lightboxUrl && (
             <img
               src={lightboxUrl}
@@ -190,8 +185,7 @@ export default function AdjuntosPreview({
               className="w-full h-full object-contain max-h-[85vh]"
             />
           )}
-        </DialogContent>
-      </Dialog>
+      </AppDialog>
     </div>
   );
 }

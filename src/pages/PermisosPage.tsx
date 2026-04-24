@@ -11,7 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -133,9 +132,9 @@ export default function PermisosPage() {
       ]);
       if (projRes.data.proyectos) {
         setAllProjects(
-          projRes.data.proyectos.map((p: { id: number; nombre: string }) => ({
+          projRes.data.proyectos.map((p: { id: number; nombre: string; nombre_corto?: string }) => ({
             id: p.id,
-            nombre: p.nombre,
+            nombre: p.nombre_corto || p.nombre,
           })),
         );
       }
@@ -198,7 +197,7 @@ export default function PermisosPage() {
         <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-border bg-slate-50 hover:bg-slate-50">
+              <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
                 <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Usuario</TableHead>
                 <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rol</TableHead>
                 <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Acceso</TableHead>
@@ -327,6 +326,7 @@ export default function PermisosPage() {
         onOpenChange={setShowDialog}
         size="simple"
         title={`Permisos — ${selectedUser?.nombre ?? ''}`}
+        description="Configura los permisos del usuario"
         footer={
           <>
             <Button variant="outline" onClick={() => setShowDialog(false)}>
@@ -341,7 +341,6 @@ export default function PermisosPage() {
           </>
         }
       >
-        <ScrollArea className="max-h-[65vh] pr-4">
             <div className="space-y-6">
               {/* Acceso Global */}
               <div className="flex items-center justify-between">
@@ -369,7 +368,7 @@ export default function PermisosPage() {
                     <p className="text-xs text-muted-foreground mb-3">
                       Selecciona los proyectos a los que tiene acceso
                     </p>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="space-y-2">
                       {allProjects.map((project) => (
                         <div
                           key={project.id}
@@ -550,7 +549,6 @@ export default function PermisosPage() {
                 </div>
               </div>
             </div>
-          </ScrollArea>
       </AppDialog>
     </div>
   );

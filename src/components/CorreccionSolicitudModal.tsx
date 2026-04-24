@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -413,15 +407,27 @@ export default function CorreccionSolicitudModal({
   // ---------------------------------------------------------------------------
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[750px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle>Corregir Solicitud #{solicitud.id}</DialogTitle>
-          <DialogDescription>
-            Modifique los campos necesarios e indique el motivo de la
-            corrección.
-          </DialogDescription>
-        </DialogHeader>
+    <AppDialog
+      open={open}
+      onOpenChange={(v) => !v && onClose()}
+      size="complex"
+      title={`Corregir Solicitud #${solicitud.id}`}
+      description="Modifique los campos necesarios e indique el motivo de la corrección."
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={saving || !motivo.trim()}
+            onClick={handleSubmit}
+          >
+            {saving ? 'Guardando...' : 'Guardar corrección'}
+          </Button>
+        </>
+      }
+    >
 
         {/* ---- Motivo ---- */}
         <div className="space-y-2">
@@ -991,20 +997,6 @@ export default function CorreccionSolicitudModal({
           <p className="text-sm text-error bg-error/[0.06] p-2 rounded">{error}</p>
         )}
 
-        {/* ---- Actions ---- */}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            disabled={saving || !motivo.trim()}
-            onClick={handleSubmit}
-          >
-            {saving ? 'Guardando...' : 'Guardar corrección'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </AppDialog>
   );
 }
