@@ -78,7 +78,7 @@ export default function CuentasGeneralPage({ onNavigateToProject }: CuentasGener
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title="Cuentas" subtitle="Vista general por proyecto" />
 
       <Tabs defaultValue="resumen">

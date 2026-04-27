@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { PageHeader } from '@/components/shell/PageHeader';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
 import type { Project, Adenda } from '@/types';
@@ -84,10 +85,12 @@ export default function ProjectInformacion({
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Información del Proyecto" />
+
       {/* Project Details */}
       <Card>
         <CardHeader>
-          <CardTitle>Información del Proyecto</CardTitle>
+          <CardTitle>Detalles</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <InfoRow label="Nombre:">{project.nombre}</InfoRow>

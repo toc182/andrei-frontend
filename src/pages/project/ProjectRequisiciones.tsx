@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/shell/Alert';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
 import { EmptyState, TableSkeleton } from '@/components/shell/states';
 import { Card, CardContent } from '@/components/ui/card';
@@ -349,6 +350,15 @@ export default function ProjectRequisiciones({
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Requisiciones">
+        {canManage && (
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Requisicion
+          </Button>
+        )}
+      </PageHeader>
+
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total Requisiciones" value={String(stats.total)} accent="navy" />
@@ -377,13 +387,6 @@ export default function ProjectRequisiciones({
             </SelectContent>
           </Select>
         </div>
-
-        {canManage && (
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Requisicion
-          </Button>
-        )}
       </div>
 
       {/* Requisiciones List - Cards for mobile */}

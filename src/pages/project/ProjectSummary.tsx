@@ -8,6 +8,7 @@ import ProjectTimeline from '../../components/project/ProjectTimeline';
 import ProjectTeam from '../../components/project/ProjectTeam';
 import ProjectAlerts from '../../components/project/ProjectAlerts';
 import QuickActions from '../../components/project/QuickActions';
+import { PageHeader } from '@/components/shell/PageHeader';
 import type { Project } from '@/types';
 
 interface ProjectSummaryProps {
@@ -21,6 +22,8 @@ export default function ProjectSummary({
 }: ProjectSummaryProps) {
   return (
     <div className="space-y-6">
+      <PageHeader title="Resumen" />
+
       {/* KPI Cards */}
       <ProjectKPIsCards project={project} />
 

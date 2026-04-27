@@ -37,6 +37,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert } from '@/components/shell/Alert';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { PageHeader } from '@/components/shell/PageHeader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -404,13 +405,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
   }
 
   return (
-    <div className="space-y-4 overflow-x-hidden">
-      {error && (
-        <Alert variant="error" title={error} />
-      )}
-
-      {/* Actions */}
-      <div className="flex gap-2 justify-end">
+    <div className="space-y-6 overflow-x-hidden">
+      <PageHeader title="Equipo del Proyecto">
         <Button
           onClick={() => {
             resetAddModal();
@@ -429,7 +425,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           <UserCircle className="h-4 w-4 mr-2" />
           Crear
         </Button>
-      </div>
+      </PageHeader>
+
+      {error && (
+        <Alert variant="error" title={error} />
+      )}
 
       {/* Members Table - Desktop */}
       <Card className="hidden md:block overflow-hidden">

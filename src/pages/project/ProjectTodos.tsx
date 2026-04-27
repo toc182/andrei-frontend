@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/select';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
+import { PageHeader } from '@/components/shell/PageHeader';
 import api from '../../services/api';
 
 type Prioridad = 'alta' | 'media' | 'baja';
@@ -494,6 +495,13 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Tareas">
+        <Button onClick={() => handleOpenForm()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nueva Tarea
+        </Button>
+      </PageHeader>
+
       {/* Error Alert */}
       {error && (
         <Alert
@@ -587,10 +595,6 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
           >
             <Settings className="h-4 w-4 mr-1" />
             Categorías
-          </Button>
-          <Button onClick={() => handleOpenForm()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Tarea
           </Button>
         </div>
       </div>

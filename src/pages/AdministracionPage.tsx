@@ -19,7 +19,7 @@ export default function AdministracionPage({
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title="Administración" />
       <Tabs
         value={activeTab}

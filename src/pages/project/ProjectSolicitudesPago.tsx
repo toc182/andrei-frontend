@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert } from '@/components/shell/Alert';
+import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -611,6 +612,22 @@ export default function ProjectSolicitudesPago({
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Solicitudes de Pago">
+        {canManage && hasApprovers && (
+          <Button
+            onClick={() => {
+              setEditingSolicitud(null);
+              setEditingItems([]);
+              setEditingAjustes([]);
+              setShowForm(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Solicitud
+          </Button>
+        )}
+      </PageHeader>
+
       {actionError && <Alert variant="error" title={actionError} />}
 
       {/* Summary Cards */}
@@ -651,19 +668,6 @@ export default function ProjectSolicitudesPago({
               </Button>
             }
           />
-        )}
-        {canManage && hasApprovers && (
-          <Button
-            onClick={() => {
-              setEditingSolicitud(null);
-              setEditingItems([]);
-              setEditingAjustes([]);
-              setShowForm(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Solicitud
-          </Button>
         )}
       </div>
 

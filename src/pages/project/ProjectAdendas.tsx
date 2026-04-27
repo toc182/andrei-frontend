@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
 import type { Adenda } from '@/types';
-import { SectionHeader } from '@/components/shell/SectionHeader';
+import { PageHeader } from '@/components/shell/PageHeader';
 
 interface ProjectAdendasProps {
   projectId: number;
@@ -62,42 +62,40 @@ export default function ProjectAdendas({
   // Empty State
   if (adendas.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            No hay adendas registradas
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Este proyecto aún no tiene adendas asociadas
-          </p>
-          {canManage && (
-            <Button onClick={onOpenForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Primera Adenda
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <PageHeader title="Adendas" />
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              No hay adendas registradas
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Este proyecto aún no tiene adendas asociadas
+            </p>
+            {canManage && (
+              <Button onClick={onOpenForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar Primera Adenda
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   // Adendas List View
   return (
     <div className="space-y-6">
-      {/* Header with Add Button */}
-      <SectionHeader
-        title="Adendas del Proyecto"
-        count={adendas.length}
-        action={
-          canManage ? (
-            <Button onClick={onOpenForm} size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Adenda
-            </Button>
-          ) : undefined
-        }
-      />
+      <PageHeader title="Adendas" subtitle={`${adendas.length} adendas`}>
+        {canManage && (
+          <Button onClick={onOpenForm} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Agregar Adenda
+          </Button>
+        )}
+      </PageHeader>
 
       {/* Cards Grid */}
       <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">

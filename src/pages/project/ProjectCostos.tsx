@@ -13,6 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Alert } from '@/components/shell/Alert';
+import { PageHeader } from '@/components/shell/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import api from '../../services/api';
 import CostSummaryCards from '../../components/project/CostSummaryCards';
@@ -153,26 +154,27 @@ export default function ProjectCostos({ projectId }: ProjectCostosProps) {
 
   return (
     <div className="space-y-6">
-      {/* Action Buttons */}
-      {canManage && (
-        <div className="flex gap-2 justify-end">
-          {tienPresupuestoDetallado ? (
-            <Button variant="outline" onClick={() => setShowBudgetConfig(true)}>
-              <Settings className="mr-2 h-4 w-4" />
-              Editar Presupuesto
+      <PageHeader title="Costos">
+        {canManage && (
+          <>
+            {tienPresupuestoDetallado ? (
+              <Button variant="outline" onClick={() => setShowBudgetConfig(true)}>
+                <Settings className="mr-2 h-4 w-4" />
+                Editar Presupuesto
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => setShowBudgetConfig(true)}>
+                <Settings className="mr-2 h-4 w-4" />
+                Configurar Presupuesto Detallado
+              </Button>
+            )}
+            <Button onClick={() => setShowExpenseForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Registrar Gasto
             </Button>
-          ) : (
-            <Button variant="outline" onClick={() => setShowBudgetConfig(true)}>
-              <Settings className="mr-2 h-4 w-4" />
-              Configurar Presupuesto Detallado
-            </Button>
-          )}
-          <Button onClick={() => setShowExpenseForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Registrar Gasto
-          </Button>
-        </div>
-      )}
+          </>
+        )}
+      </PageHeader>
 
       {/* Summary Cards */}
       <CostSummaryCards

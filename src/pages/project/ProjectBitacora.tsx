@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { PageHeader } from '@/components/shell/PageHeader';
 import api from '../../services/api';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -381,20 +382,16 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-lg font-semibold">Bitácora del Proyecto</h2>
-          <p className="text-sm text-muted-foreground">
-            {entries.length} entradas
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Bitácora"
+        subtitle={`${entries.length} entradas`}
+      >
         <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nueva Entrada
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Entries List - Compact Preview Cards */}
       <div className="space-y-2">

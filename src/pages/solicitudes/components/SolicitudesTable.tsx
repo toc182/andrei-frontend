@@ -133,7 +133,7 @@ export function SolicitudesTable({
         <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
                   <SortableHeader
                     columnKey="numero"
                     label="Numero"

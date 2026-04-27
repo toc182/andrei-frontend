@@ -38,7 +38,7 @@ export default function EquiposPage({
   const buttonLabel = tabButtons[activeTab];
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Equipos"
         subtitle="Administra equipos y asignaciones"
