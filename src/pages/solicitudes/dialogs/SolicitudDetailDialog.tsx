@@ -251,7 +251,7 @@ export function SolicitudDetailDialog({
             <div className="pt-4 border-t">
               <Button
                 variant="outline"
-                className="w-full text-muted-foreground hover:text-destructive hover:border-destructive"
+                className="w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                 onClick={() => onOpenDeleteDialog(solicitud.id)}
               >
                 Eliminar Solicitud
