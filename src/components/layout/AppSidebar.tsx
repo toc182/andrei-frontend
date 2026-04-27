@@ -240,9 +240,14 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
     <Sidebar>
       {/* ── Header: Logo + Project Switcher ── */}
       <SidebarHeader>
-        <div className="flex items-center justify-center px-2 py-2">
+        <button
+          type="button"
+          onClick={() => handleSelectProject(null)}
+          className="flex items-center justify-center px-2 py-2 rounded-md hover:opacity-80 transition-opacity"
+          title="Ir al dashboard"
+        >
           <img src={logo} alt="Pinellas" className="h-10 object-contain" />
-        </div>
+        </button>
 
         <SidebarMenu>
           <SidebarMenuItem>
