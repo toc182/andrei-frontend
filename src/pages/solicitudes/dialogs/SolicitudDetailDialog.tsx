@@ -93,7 +93,7 @@ interface SolicitudDetailDialogProps {
   onOpenCorreccion: () => void;
   onOpenDevolucionForm: () => void;
   onEditSolicitud: (sol: SolicitudPago) => void;
-  onRequestEditConfirmation: (sol: SolicitudPago) => void;
+  onRequestEditConfirmation: (sol: SolicitudPago, approvedCount: number) => void;
   onUploadAdjuntos: (files: FileList) => void;
   onDeleteAdjunto: (adjuntoId: number) => void;
   onPinellasPagaChange: (newValue: boolean) => void;

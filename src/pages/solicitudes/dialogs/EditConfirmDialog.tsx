@@ -16,6 +16,7 @@ import {
 interface EditConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  count: number;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -23,6 +24,7 @@ interface EditConfirmDialogProps {
 export function EditConfirmDialog({
   open,
   onOpenChange,
+  count,
   onCancel,
   onConfirm,
 }: EditConfirmDialogProps) {
@@ -30,18 +32,19 @@ export function EditConfirmDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Editar solicitud con aprobaciones?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Editar solicitud</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta solicitud tiene aprobaciones registradas. Al editarla, se
-            anularán todas las aprobaciones y volverá a estado pendiente.
-            ¿Desea continuar?
+            Esta solicitud ya tiene {count}{' '}
+            {count === 1 ? 'aprobación' : 'aprobaciones'}. Si la editas, se
+            reiniciará la cadena de aprobaciones y los aprobadores deberán
+            aprobar nuevamente. ¿Deseas continuar?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Continuar</AlertDialogAction>
+          <AlertDialogAction onClick={onConfirm}>
+            Editar y reiniciar aprobaciones
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -226,6 +226,7 @@ export default function ProjectSolicitudesPago({
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditSolicitud, setPendingEditSolicitud] =
     useState<SolicitudPago | null>(null);
+  const [pendingEditCount, setPendingEditCount] = useState(0);
 
   // Pinellas paga confirmation (AlertDialog)
   const [showPinellasPagaConfirm, setShowPinellasPagaConfirm] = useState(false);
@@ -788,8 +789,9 @@ export default function ProjectSolicitudesPago({
           setShowDevolucionModal(true);
         }}
         onEditSolicitud={openEditForm}
-        onRequestEditConfirmation={(sol) => {
+        onRequestEditConfirmation={(sol, approvedCount) => {
           setPendingEditSolicitud(sol);
+          setPendingEditCount(approvedCount);
           setShowEditConfirm(true);
         }}
         onUploadAdjuntos={handleUploadAdjuntos}
@@ -955,16 +957,21 @@ export default function ProjectSolicitudesPago({
         />
       )}
 
-      {/* AlertDialog para confirmar edición con aprobaciones parciales */}
+      {/* AlertDialog para confirmar edición que reinicia la cadena de aprobaciones */}
       <EditConfirmDialog
         open={showEditConfirm}
         onOpenChange={setShowEditConfirm}
-        onCancel={() => setPendingEditSolicitud(null)}
+        count={pendingEditCount}
+        onCancel={() => {
+          setPendingEditSolicitud(null);
+          setPendingEditCount(0);
+        }}
         onConfirm={() => {
           if (pendingEditSolicitud) {
             openEditForm(pendingEditSolicitud);
           }
           setPendingEditSolicitud(null);
+          setPendingEditCount(0);
           setShowEditConfirm(false);
         }}
       />

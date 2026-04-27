@@ -29,7 +29,7 @@ interface SolicitudDetailHeaderProps {
   onOpenCorreccion: () => void;
   onOpenDevolucionForm: () => void;
   onEditSolicitud: (sol: SolicitudPago) => void;
-  onRequestEditConfirmation: (sol: SolicitudPago) => void;
+  onRequestEditConfirmation: (sol: SolicitudPago, approvedCount: number) => void;
 }
 
 export function SolicitudDetailHeader({
@@ -84,7 +84,8 @@ export function SolicitudDetailHeader({
           </DropdownMenu>
         )}
       {canManage &&
-        solicitud.estado === 'pendiente' &&
+        (solicitud.estado === 'pendiente' ||
+          solicitud.estado === 'aprobada') &&
         canManageSolicitud(solicitud) && (
           <Button
             variant="outline"
@@ -95,7 +96,7 @@ export function SolicitudDetailHeader({
                 (a) => a.accion === 'aprobado',
               ).length;
               if (aprobadas > 0) {
-                onRequestEditConfirmation(solicitud);
+                onRequestEditConfirmation(solicitud, aprobadas);
                 return;
               }
               onEditSolicitud(solicitud);
