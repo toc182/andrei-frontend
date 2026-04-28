@@ -68,6 +68,7 @@ export interface ProjectFormData {
   presupuesto_base: string;
   contrato: string;
   acto_publico: string;
+  tipo_contrato: 'publico' | 'privado';
   es_consorcio: boolean;
   observaciones: string;
 }

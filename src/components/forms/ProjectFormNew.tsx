@@ -58,9 +58,15 @@ const projectSchema = z
     monto_contrato_original: z.string().optional(),
     presupuesto_base: z.string().optional(),
     itbms: z.string().optional(),
-    monto_total: z.string().optional(),
+    monto_total: z
+      .string()
+      .min(1, 'El monto total es requerido')
+      .refine((val) => parseFloat(val) > 0, {
+        message: 'El monto total debe ser mayor a cero',
+      }),
     contrato: z.string().optional(),
     acto_publico: z.string().optional(),
+    tipo_contrato: z.enum(['publico', 'privado']),
     datos_adicionales: z.object({
       observaciones: z.string().optional(),
       es_consorcio: z.boolean(),
@@ -157,6 +163,7 @@ const ProjectFormNew = ({
       monto_total: '',
       contrato: '',
       acto_publico: '',
+      tipo_contrato: 'privado',
       datos_adicionales: {
         observaciones: '',
         es_consorcio: false,
@@ -176,6 +183,14 @@ const ProjectFormNew = ({
   // Watch para reactive values
   const watchEsConsorcio = form.watch('datos_adicionales.es_consorcio');
   const watchSocios = form.watch('datos_adicionales.socios');
+  const watchTipoContrato = form.watch('tipo_contrato');
+
+  // Limpiar acto_publico al cambiar a contrato privado
+  useEffect(() => {
+    if (watchTipoContrato === 'privado' && form.getValues('acto_publico')) {
+      form.setValue('acto_publico', '');
+    }
+  }, [watchTipoContrato, form]);
 
   // Cargar clientes
   const loadClientes = async () => {
@@ -239,6 +254,7 @@ const ProjectFormNew = ({
           monto_total: project.monto_total ? String(project.monto_total) : '',
           contrato: project.contrato || '',
           acto_publico: project.acto_publico || '',
+          tipo_contrato: project.tipo_contrato || 'privado',
           datos_adicionales: {
             observaciones: project.datos_adicionales?.observaciones || '',
             es_consorcio: project.datos_adicionales?.es_consorcio || false,
@@ -450,6 +466,47 @@ const ProjectFormNew = ({
               onSubmit={form.handleSubmit(handleSubmit)}
               className="space-y-4"
             >
+              {/* Tipo de contrato — selector primario */}
+              <FormField
+                control={form.control}
+                name="tipo_contrato"
+                render={({ field }) => (
+                  <FormItem className="flex justify-center">
+                    <FormControl>
+                      <div className="inline-flex rounded-md border border-border bg-muted p-0.5">
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => field.onChange('publico')}
+                          className={
+                            'px-4 py-1.5 text-sm font-medium rounded-sm transition-colors ' +
+                            (field.value === 'publico'
+                              ? 'bg-card text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground')
+                          }
+                        >
+                          Público
+                        </button>
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => field.onChange('privado')}
+                          className={
+                            'px-4 py-1.5 text-sm font-medium rounded-sm transition-colors ' +
+                            (field.value === 'privado'
+                              ? 'bg-card text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground')
+                          }
+                        >
+                          Privado
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Grid de 2 columnas para campos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Nombre del Proyecto */}
@@ -644,24 +701,26 @@ const ProjectFormNew = ({
                   )}
                 />
 
-                {/* Acto Público */}
-                <FormField
-                  control={form.control}
-                  name="acto_publico"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Acto Público</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: AP-001-2025"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Acto Público — solo para contratos públicos */}
+                {watchTipoContrato === 'publico' && (
+                  <FormField
+                    control={form.control}
+                    name="acto_publico"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Acto Público</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: AP-001-2025"
+                            disabled={loading}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 {/* Presupuesto Base */}
                 <FormField
@@ -713,7 +772,7 @@ const ProjectFormNew = ({
                   name="monto_total"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monto Total (USD)</FormLabel>
+                      <FormLabel>Monto Total (USD) *</FormLabel>
                       <FormControl>
                         <Input
                           type="number"

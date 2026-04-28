@@ -102,6 +102,7 @@ export interface Project {
   monto_contrato_original?: number;
   contrato?: string;
   acto_publico?: string;
+  tipo_contrato?: 'publico' | 'privado';
   contratista?: string;
   ingeniero_residente?: string;
   es_consorcio?: boolean;
