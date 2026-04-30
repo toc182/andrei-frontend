@@ -379,6 +379,11 @@ export default function SolicitudPagoForm({
       return;
     }
 
+    if (!solicitadoPor || solicitadoPor === 'none') {
+      setError('Debes seleccionar quién está solicitando el pago');
+      return;
+    }
+
     const validItems = items.filter(
       (i) => i.descripcion.trim() && parseFloat(i.precio_unitario) > 0,
     );
