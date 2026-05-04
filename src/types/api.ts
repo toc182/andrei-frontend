@@ -652,7 +652,7 @@ export interface Cuenta {
   fecha_ultima_resubmision: string | null;
   fecha_pagada: string | null;
   observaciones_pago: string | null;
-  active: boolean;
+  activo: boolean;
   created_by: number;
   created_at: string;
   updated_at: string;
