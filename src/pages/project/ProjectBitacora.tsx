@@ -615,14 +615,14 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                         key={att.id}
                         onClick={() =>
                           setViewingImage(
-                            `${API_BASE}/uploads/bitacora/${att.filepath}`,
+                            `${API_BASE}/uploads/bitacora/${att.ruta_archivo}`,
                           )
                         }
                         className="relative group"
                       >
                         <img
-                          src={`${API_BASE}/uploads/bitacora/${att.filepath}`}
-                          alt={att.filename}
+                          src={`${API_BASE}/uploads/bitacora/${att.ruta_archivo}`}
+                          alt={att.nombre_archivo}
                           className="h-24 w-24 object-cover rounded border hover:opacity-90 transition"
                         />
                       </button>
@@ -669,13 +669,13 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                                     key={att.id}
                                     onClick={() =>
                                       setViewingImage(
-                                        `${API_BASE}/uploads/bitacora/${att.filepath}`,
+                                        `${API_BASE}/uploads/bitacora/${att.ruta_archivo}`,
                                       )
                                     }
                                   >
                                     <img
-                                      src={`${API_BASE}/uploads/bitacora/${att.filepath}`}
-                                      alt={att.filename}
+                                      src={`${API_BASE}/uploads/bitacora/${att.ruta_archivo}`}
+                                      alt={att.nombre_archivo}
                                       className="h-16 w-16 object-cover rounded border hover:opacity-90 transition"
                                     />
                                   </button>

@@ -310,7 +310,7 @@ export interface RequisicionItem {
 
 export interface BitacoraEntry {
   id: number;
-  project_id: number;
+  proyecto_id: number;
   titulo: string;
   contenido: string;
   tipo: 'general' | 'avance' | 'problema' | 'decision' | 'reunion';
@@ -329,7 +329,7 @@ export interface BitacoraEntry {
 
 export interface BitacoraComment {
   id: number;
-  entry_id: number;
+  bitacora_id: number;
   autor_id: number;
   contenido: string;
   created_at: string;
@@ -340,12 +340,13 @@ export interface BitacoraComment {
 
 export interface BitacoraAttachment {
   id: number;
-  entry_id?: number;
-  comment_id?: number;
-  filename: string;
+  bitacora_id?: number;
+  comentario_id?: number;
+  nombre_archivo: string;
   original_name: string;
-  mimetype: string;
-  size: number;
+  ruta_archivo: string;
+  tipo_mime: string;
+  tamano: number;
   created_at: string;
 }
 
