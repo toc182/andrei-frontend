@@ -66,7 +66,7 @@ interface ProjectMember {
   id: number;
   tipo_miembro: 'usuario' | 'externo';
   user_id?: number;
-  external_contact_id?: number;
+  contacto_externo_id?: number;
   rol_proyecto: string;
   nombre_display: string;
   usuario_email?: string;
@@ -282,7 +282,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     setSaving(true);
     try {
       const response = await api.post('/project-members', {
-        project_id: projectId,
+        proyecto_id: projectId,
         user_id: parseInt(userId),
         rol_proyecto: selectedRol,
       });
@@ -310,8 +310,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
       if (createRes.data.success) {
         const addRes = await api.post('/project-members/external', {
-          project_id: projectId,
-          external_contact_id: createRes.data.contact.id,
+          proyecto_id: projectId,
+          contacto_externo_id: createRes.data.contact.id,
           rol_proyecto: selectedRol,
         });
 

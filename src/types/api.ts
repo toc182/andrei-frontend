@@ -122,9 +122,9 @@ export interface Project {
 
 export interface ProjectMember {
   id: number;
-  project_id: number;
+  proyecto_id: number;
   user_id?: number;
-  external_contact_id?: number;
+  contacto_externo_id?: number;
   rol: 'responsable' | 'colaborador' | 'supervisor' | 'consultor';
   fecha_asignacion: string;
   activo: boolean;

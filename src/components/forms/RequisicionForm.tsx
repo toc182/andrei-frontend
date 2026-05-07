@@ -29,7 +29,7 @@ interface Solicitante {
   nombre: string;
   tipo: 'usuario' | 'externo';
   user_id?: number;
-  external_contact_id?: number;
+  contacto_externo_id?: number;
 }
 
 interface FormData {
@@ -112,17 +112,17 @@ export default function RequisicionForm({
             (m: {
               tipo_miembro: string;
               user_id: number;
-              external_contact_id: number;
+              contacto_externo_id: number;
               nombre_display: string;
             }) => ({
               id:
                 m.tipo_miembro === 'usuario'
                   ? m.user_id
-                  : `ext_${m.external_contact_id}`,
+                  : `ext_${m.contacto_externo_id}`,
               nombre: m.nombre_display,
               tipo: m.tipo_miembro as 'usuario' | 'externo',
               user_id: m.user_id,
-              external_contact_id: m.external_contact_id,
+              contacto_externo_id: m.contacto_externo_id,
             }),
           );
           setSolicitantes(members);
