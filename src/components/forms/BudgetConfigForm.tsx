@@ -130,16 +130,16 @@ export default function BudgetConfigForm({
       if (response.data.success) {
         setCategories(response.data.categories);
 
-        // Build a map of saved budgets by project_category_id
+        // Build a map of saved budgets by proyecto_categoria_id
         const savedBudgets: Record<number, number> = {};
         if (budgetResponse.data.success && budgetResponse.data.categories) {
           budgetResponse.data.categories.forEach(
             (cat: {
-              project_category_id: number;
+              proyecto_categoria_id: number;
               presupuesto_actual?: number;
               presupuesto_inicial?: number;
             }) => {
-              savedBudgets[cat.project_category_id] =
+              savedBudgets[cat.proyecto_categoria_id] =
                 cat.presupuesto_actual || cat.presupuesto_inicial || 0;
             },
           );
@@ -219,7 +219,7 @@ export default function BudgetConfigForm({
     });
 
     // Add to available list for potential re-activation
-    if (category.category_id) {
+    if (category.categoria_id) {
       setAvailableCategories((prev) => [...prev, category as ProjectCategory]);
     }
   };
@@ -338,12 +338,12 @@ export default function BudgetConfigForm({
         notas: notes,
         categories: [
           ...activeCategories.map((cat) => ({
-            project_category_id: cat.id,
+            proyecto_categoria_id: cat.id,
             presupuesto_inicial: parseFloat(budgets[cat.id] || '0'),
             presupuesto_actual: parseFloat(budgets[cat.id] || '0'),
           })),
           ...pendingNewCategories.map((cat) => ({
-            project_category_id: newCategoryIdMap[cat.tempId],
+            proyecto_categoria_id: newCategoryIdMap[cat.tempId],
             presupuesto_inicial: parseFloat(budgets[cat.tempId] || '0'),
             presupuesto_actual: parseFloat(budgets[cat.tempId] || '0'),
           })),

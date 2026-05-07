@@ -170,8 +170,8 @@ export interface ExpenseCategory {
 
 export interface ProjectCategory {
   id: number;
-  project_id: number;
-  category_id: number | null; // null for custom categories
+  proyecto_id: number;
+  categoria_id: number | null; // null for custom categories
   nombre: string;
   codigo: string;
   color: string;
@@ -182,8 +182,9 @@ export interface ProjectCategory {
 
 export interface Expense {
   id: number;
-  project_id: number;
-  category_id: number;
+  proyecto_id: number;
+  categoria_id: number;
+  proyecto_categoria_id?: number;
   fecha: string;
   concepto: string;
   descripcion?: string;
@@ -191,7 +192,7 @@ export interface Expense {
   moneda: string;
   tipo_gasto: 'real' | 'compromiso' | 'estimado';
   aprobado: boolean;
-  created_by: number;
+  creado_por: number;
   created_at: string;
   updated_at: string;
   // Joined fields
@@ -202,7 +203,7 @@ export interface Expense {
 }
 
 export interface CategoryBudget {
-  project_category_id: number;
+  proyecto_categoria_id: number;
   nombre: string;
   codigo: string;
   color: string;

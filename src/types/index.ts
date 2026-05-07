@@ -47,7 +47,7 @@ export type NavigationView =
 // ============================================
 
 export interface ExpenseFormData {
-  category_id: string;
+  proyecto_categoria_id: string;
   fecha: string;
   concepto: string;
   monto: string;

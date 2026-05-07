@@ -22,7 +22,7 @@ import api from '../../services/api';
 import type { Expense, ProjectCategory } from '@/types';
 
 interface ExpenseFormData {
-  category_id: string;
+  proyecto_categoria_id: string;
   fecha: string;
   concepto: string;
   monto: string;
@@ -55,7 +55,7 @@ export default function ExpenseForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ExpenseFormData>({
-    category_id: '',
+    proyecto_categoria_id: '',
     fecha: '',
     concepto: '',
     monto: '',
@@ -79,7 +79,7 @@ export default function ExpenseForm({
   useEffect(() => {
     if (editingExpense) {
       setFormData({
-        category_id: editingExpense.category_id?.toString() || '',
+        proyecto_categoria_id: editingExpense.proyecto_categoria_id?.toString() || '',
         fecha: editingExpense.fecha ? editingExpense.fecha.split('T')[0] : '',
         concepto: editingExpense.concepto || '',
         monto: editingExpense.monto?.toString() || '',
@@ -92,7 +92,7 @@ export default function ExpenseForm({
       // Reset form for new expense
       const today = new Date().toISOString().split('T')[0];
       setFormData({
-        category_id: '',
+        proyecto_categoria_id: '',
         fecha: today,
         concepto: '',
         monto: '',
@@ -122,8 +122,8 @@ export default function ExpenseForm({
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
 
-    if (!formData.category_id) {
-      errors.category_id = 'La categoría es requerida';
+    if (!formData.proyecto_categoria_id) {
+      errors.proyecto_categoria_id = 'La categoría es requerida';
     }
 
     if (!formData.concepto || formData.concepto.trim().length < 3) {
@@ -155,7 +155,7 @@ export default function ExpenseForm({
     try {
       const dataToSave = {
         ...formData,
-        category_id: parseInt(formData.category_id),
+        proyecto_categoria_id: parseInt(formData.proyecto_categoria_id),
         monto: parseFloat(formData.monto),
       };
 
@@ -225,17 +225,17 @@ export default function ExpenseForm({
 
           {/* Category */}
           <div className="space-y-2">
-            <Label htmlFor="category_id">
+            <Label htmlFor="proyecto_categoria_id">
               Categoría <span className="text-destructive">*</span>
             </Label>
             <Select
-              value={formData.category_id}
-              onValueChange={(value) => handleChange('category_id', value)}
+              value={formData.proyecto_categoria_id}
+              onValueChange={(value) => handleChange('proyecto_categoria_id', value)}
             >
               <SelectTrigger
-                id="category_id"
+                id="proyecto_categoria_id"
                 className={
-                  validationErrors.category_id ? 'border-destructive' : ''
+                  validationErrors.proyecto_categoria_id ? 'border-destructive' : ''
                 }
               >
                 <SelectValue placeholder="Seleccione una categoría" />
@@ -254,9 +254,9 @@ export default function ExpenseForm({
                 ))}
               </SelectContent>
             </Select>
-            {validationErrors.category_id && (
+            {validationErrors.proyecto_categoria_id && (
               <p className="text-sm text-destructive">
-                {validationErrors.category_id}
+                {validationErrors.proyecto_categoria_id}
               </p>
             )}
           </div>
