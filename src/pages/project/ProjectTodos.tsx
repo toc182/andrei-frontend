@@ -61,7 +61,7 @@ interface Todo {
   descripcion?: string;
   prioridad: Prioridad;
   estado: EstadoTodo;
-  category_id?: number;
+  categoria_id?: number;
   asignado_a?: number;
   fecha_limite?: string;
   created_at: string;
@@ -102,7 +102,7 @@ interface Comment {
 interface FormData {
   titulo: string;
   descripcion: string;
-  category_id: string;
+  categoria_id: string;
   asignado_a: string;
   fecha_limite: string;
   prioridad: Prioridad;
@@ -191,7 +191,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
   const [formData, setFormData] = useState<FormData>({
     titulo: '',
     descripcion: '',
-    category_id: '',
+    categoria_id: '',
     asignado_a: '',
     fecha_limite: '',
     prioridad: 'media',
@@ -273,7 +273,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
       setFormData({
         titulo: todo.titulo,
         descripcion: todo.descripcion || '',
-        category_id: todo.category_id?.toString() || 'none',
+        categoria_id: todo.categoria_id?.toString() || 'none',
         asignado_a: todo.asignado_a?.toString() || 'none',
         fecha_limite: todo.fecha_limite ? todo.fecha_limite.split('T')[0] : '',
         prioridad: todo.prioridad,
@@ -283,7 +283,7 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
       setFormData({
         titulo: '',
         descripcion: '',
-        category_id: 'none',
+        categoria_id: 'none',
         asignado_a: 'none',
         fecha_limite: '',
         prioridad: 'media',
@@ -305,9 +305,9 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
         prioridad: formData.prioridad,
       };
 
-      // Only include category_id if it has a valid value (not 'none')
-      if (formData.category_id && formData.category_id !== 'none') {
-        payload.category_id = parseInt(formData.category_id, 10);
+      // Only include categoria_id if it has a valid value (not 'none')
+      if (formData.categoria_id && formData.categoria_id !== 'none') {
+        payload.categoria_id = parseInt(formData.categoria_id, 10);
       }
 
       // Only include asignado_a if it has a valid value (not 'none')
@@ -839,9 +839,9 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
             <div>
               <Label>Categoría</Label>
               <Select
-                value={formData.category_id}
+                value={formData.categoria_id}
                 onValueChange={(v) =>
-                  setFormData({ ...formData, category_id: v })
+                  setFormData({ ...formData, categoria_id: v })
                 }
               >
                 <SelectTrigger className="mt-1">

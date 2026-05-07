@@ -356,7 +356,7 @@ export interface BitacoraAttachment {
 
 export interface ProjectTodo {
   id: number;
-  project_id: number;
+  proyecto_id: number;
   titulo: string;
   descripcion?: string;
   estado: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada';
@@ -364,7 +364,7 @@ export interface ProjectTodo {
   fecha_limite?: string;
   fecha_completado?: string;
   asignado_a?: number;
-  created_by: number;
+  creado_por: number;
   created_at: string;
   updated_at: string;
   // Joined fields
