@@ -655,7 +655,7 @@ export interface Cuenta {
   fecha_pagada: string | null;
   observaciones_pago: string | null;
   activo: boolean;
-  created_by: number;
+  creado_por: number;
   created_at: string;
   updated_at: string;
 }
