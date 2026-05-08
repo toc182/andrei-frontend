@@ -60,8 +60,8 @@ interface BitacoraComment {
 
 interface BitacoraAttachment {
   id: number;
-  filename: string;
-  filepath: string;
+  nombre_archivo: string;
+  ruta_archivo: string;
 }
 
 interface ProjectMember {
