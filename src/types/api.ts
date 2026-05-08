@@ -477,7 +477,7 @@ export interface EquipoExtended {
   valor_actual?: number;
   rata_mes?: number;
   observaciones?: string;
-  owner: 'Pinellas' | 'COCP';
+  propietario: 'Pinellas' | 'COCP';
   estado?:
     | 'en_operacion'
     | 'standby'

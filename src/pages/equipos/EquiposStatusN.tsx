@@ -104,8 +104,8 @@ export default function EquiposStatusN() {
           ultima_revision: equipo.updated_at,
           estado: equipo.estado || 'en_operacion',
         }));
-        setEquiposPinellas(equiposConStatus.filter((e) => e.owner === 'Pinellas'));
-        setEquiposCOCP(equiposConStatus.filter((e) => e.owner === 'COCP'));
+        setEquiposPinellas(equiposConStatus.filter((e) => e.propietario === 'Pinellas'));
+        setEquiposCOCP(equiposConStatus.filter((e) => e.propietario === 'COCP'));
         setLastUpdate(new Date());
       } else {
         setError('Error al cargar estatus de equipos');
@@ -285,7 +285,7 @@ export default function EquiposStatusN() {
             ['Rata Mensual', selectedEquipo?.rata_mes
               ? `$${parseFloat(selectedEquipo.rata_mes.toString()).toLocaleString()}`
               : 'No especificado'],
-            ['Propietario', selectedEquipo?.owner],
+            ['Propietario', selectedEquipo?.propietario],
             ['Observaciones', selectedEquipo?.observaciones || 'Sin observaciones'],
             ['Última Act.', selectedEquipo?.ultima_revision
               ? formatLastUpdate(new Date(selectedEquipo.ultima_revision))

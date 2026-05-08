@@ -77,7 +77,7 @@ interface EquipoFormData {
   valor_actual?: number | string;
   rata_mes?: number | string;
   observaciones?: string;
-  owner: 'Pinellas' | 'COCP';
+  propietario: 'Pinellas' | 'COCP';
 }
 
 // Schema de validación con Zod
@@ -96,7 +96,7 @@ const equipoSchema = z.object({
   valor_actual: z.any().optional(),
   rata_mes: z.any().optional(),
   observaciones: z.string().optional(),
-  owner: z.enum(['Pinellas', 'COCP']),
+  propietario: z.enum(['Pinellas', 'COCP']),
 });
 
 interface EquiposInformacionProps {
@@ -134,7 +134,7 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
       valor_actual: '',
       rata_mes: '',
       observaciones: '',
-      owner: 'Pinellas',
+      propietario: 'Pinellas',
     },
   });
 
@@ -148,8 +148,8 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
 
       if (response.data.success && response.data.data) {
         const equipos = response.data.data;
-        setEquiposPinellas(equipos.filter((e) => e.owner === 'Pinellas'));
-        setEquiposCOCP(equipos.filter((e) => e.owner === 'COCP'));
+        setEquiposPinellas(equipos.filter((e) => e.propietario === 'Pinellas'));
+        setEquiposCOCP(equipos.filter((e) => e.propietario === 'COCP'));
       } else {
         setError('Error al cargar equipos');
       }
@@ -180,7 +180,7 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
       valor_actual: '',
       rata_mes: '',
       observaciones: '',
-      owner: 'Pinellas',
+      propietario: 'Pinellas',
     });
     setFormOpen(true);
   };
@@ -207,7 +207,7 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
       valor_actual: equipo.valor_actual || '',
       rata_mes: equipo.rata_mes || '',
       observaciones: equipo.observaciones || '',
-      owner: equipo.owner || 'Pinellas',
+      propietario: equipo.propietario || 'Pinellas',
     });
     setFormOpen(true);
   };
@@ -241,7 +241,7 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
             ? parseFloat(String(data.rata_mes))
             : null,
         observaciones: data.observaciones || null,
-        owner: data.owner,
+        propietario: data.propietario,
       };
 
       if (editingEquipo) {
@@ -396,7 +396,7 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
             ['Costo', selectedEquipo ? formatMoney(selectedEquipo.costo) : 'N/A'],
             ['Valor Actual', selectedEquipo ? formatMoney(selectedEquipo.valor_actual) : 'N/A'],
             ['Rata/Mes', selectedEquipo ? formatMoney(selectedEquipo.rata_mes) : 'N/A'],
-            ['Propietario', selectedEquipo?.owner],
+            ['Propietario', selectedEquipo?.propietario],
           ].map(([label, value]) => (
             <div key={String(label)} className="grid grid-cols-3 gap-2">
               <span className="font-medium text-muted-foreground">{label}:</span>
@@ -472,7 +472,7 @@ export default function EquiposInformacionN({ onRegisterAction }: EquiposInforma
           >
             <FormField
               control={form.control}
-              name="owner"
+              name="propietario"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Propietario *</FormLabel>
