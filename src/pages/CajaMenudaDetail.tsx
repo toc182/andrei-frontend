@@ -1089,7 +1089,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
               {/* Synthetic initial row */}
               <TableRow>
                 <TableCell>{formatDate(caja.created_at)}</TableCell>
-                <TableCell>{caja.created_by_nombre || '—'}</TableCell>
+                <TableCell>{caja.creado_por_nombre || '—'}</TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {(() => {
                     const sorted = [...(caja.historial_montos || [])].sort(
