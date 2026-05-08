@@ -264,7 +264,7 @@ export default function RequisicionForm({
         proveedor: formData.proveedor,
         concepto: formData.concepto,
         solicitante_id: formData.solicitante_id,
-        project_id: projectId,
+        proyecto_id: projectId,
         items: items.map((item) => ({
           descripcion: item.descripcion,
           cantidad: parseFloat(item.cantidad) || 1,

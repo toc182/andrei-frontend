@@ -206,7 +206,7 @@ export default function RequisicionesGeneral() {
   const filteredRequisiciones = requisiciones.filter((req) => {
     if (filterEstado !== 'archivadas' && filterEstado !== 'all' && req.estado !== filterEstado)
       return false;
-    if (filterProyecto !== 'all' && req.project_id !== parseInt(filterProyecto)) return false;
+    if (filterProyecto !== 'all' && req.proyecto_id !== parseInt(filterProyecto)) return false;
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       return (
@@ -252,7 +252,7 @@ export default function RequisicionesGeneral() {
     try {
       const response = await api.get(`/requisiciones/${requisicion.id}`);
       if (response.data.success) {
-        setSelectedProjectId(requisicion.project_id);
+        setSelectedProjectId(requisicion.proyecto_id);
         setEditingRequisicion(response.data.requisicion);
         setExistingItems(response.data.items || []);
         setShowForm(true);

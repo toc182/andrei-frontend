@@ -139,7 +139,7 @@ export interface ProjectMember {
 
 export interface Adenda {
   id: number;
-  project_id: number;
+  proyecto_id: number;
   numero_adenda: number;
   tipo: 'tiempo' | 'costo' | 'mixta';
   estado: 'en_proceso' | 'aprobada' | 'rechazada';
@@ -216,7 +216,7 @@ export interface CategoryBudget {
 
 export interface ProjectBudget {
   id: number;
-  project_id: number;
+  proyecto_id: number;
   presupuesto_total: number;
   notas?: string;
   tiene_presupuesto_configurado: boolean;
@@ -254,7 +254,7 @@ export type EstadoRequisicion =
 export interface Requisicion {
   id: number;
   numero: string;
-  project_id: number;
+  proyecto_id: number;
   proveedor: string;
   concepto?: string;
   fecha: string;
