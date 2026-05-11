@@ -495,7 +495,7 @@ export interface AsignacionExtended {
   equipo_id: number;
   cliente_id?: number;
   proyecto_id: number;
-  responsable_id?: string;
+  responsable_id?: number;
   fecha_inicio: string;
   fecha_fin?: string;
   tipo_uso: 'propio' | 'alquiler';

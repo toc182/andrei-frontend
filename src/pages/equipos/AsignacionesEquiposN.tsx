@@ -14,6 +14,7 @@ import type {
   Project,
   RegistroUsoExtended,
   ApiResponse,
+  User,
 } from '@/types';
 
 // Shell components
@@ -141,6 +142,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
   const [equiposDisponibles, setEquiposDisponibles] = useState<EquipoExtended[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [proyectos, setProyectos] = useState<Project[]>([]);
+  const [usuarios, setUsuarios] = useState<User[]>([]);
   const [registrosUso, setRegistrosUso] = useState<RegistroUsoExtended[]>([]);
 
   const asignacionForm = useForm<AsignacionFormData>({
@@ -200,11 +202,12 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
 
   const loadFormData = async (editingAsignacion: AsignacionExtended | null = null) => {
     try {
-      const [equiposRes, clientesRes, proyectosRes, asignacionesRes] = await Promise.all([
+      const [equiposRes, clientesRes, proyectosRes, asignacionesRes, usuariosRes] = await Promise.all([
         api.get<ApiResponse<EquipoExtended[]>>('/equipos'),
         api.get<{ success: boolean; data: Cliente[] }>('/clientes'),
         api.get<{ success: boolean; proyectos: Project[] }>('/projects'),
         api.get<ApiResponse<AsignacionExtended[]>>('/asignaciones'),
+        api.get<ApiResponse<User[]>>('/users'),
       ]);
 
       if (equiposRes.data.success && equiposRes.data.data) {
@@ -221,6 +224,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
       }
       if (clientesRes.data.success) setClientes(clientesRes.data.data);
       if (proyectosRes.data.success) setProyectos(proyectosRes.data.proyectos);
+      if (usuariosRes.data.success && usuariosRes.data.data) setUsuarios(usuariosRes.data.data);
     } catch (err) {
       console.error('Error loading form data:', err);
       setError('Error al cargar datos del formulario');
@@ -270,7 +274,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
       equipo_id: asignacion.equipo_id?.toString() || '',
       cliente_id: asignacion.cliente_id?.toString() || '',
       proyecto_id: asignacion.proyecto_id?.toString() || '',
-      responsable_id: asignacion.responsable_id || '',
+      responsable_id: asignacion.responsable_id ? String(asignacion.responsable_id) : '',
       fecha_inicio: asignacion.fecha_inicio ? asignacion.fecha_inicio.split('T')[0] : '',
       fecha_fin: asignacion.fecha_fin ? asignacion.fecha_fin.split('T')[0] : '',
       tipo_uso: asignacion.tipo_uso || 'propio',
@@ -614,9 +618,20 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Responsable</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nombre del responsable" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar responsable..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {usuarios.map((u) => (
+                        <SelectItem key={u.id} value={String(u.id)}>
+                          {u.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
