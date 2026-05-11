@@ -483,9 +483,11 @@ export interface EquipoExtended {
     | 'standby'
     | 'en_mantenimiento'
     | 'fuera_de_servicio';
-  proyecto?: string;
+  proyecto_id?: number;
+  proyecto_nombre?: string;
   ubicacion?: string;
-  responsable?: string;
+  responsable_id?: number;
+  responsable_nombre?: string;
   created_at?: string;
   updated_at?: string;
 }

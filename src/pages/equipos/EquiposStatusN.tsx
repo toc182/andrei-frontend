@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import type { EquipoExtended, ApiResponse } from '@/types';
+import type { EquipoExtended, ApiResponse, Project, User } from '@/types';
 
 // Shell components
 import { AppDialog } from '@/components/shell/AppDialog';
@@ -35,17 +35,14 @@ import {
 import { Loader2 } from 'lucide-react';
 
 interface EquipoWithStatus extends EquipoExtended {
-  ubicacion?: string;
   ultima_revision?: string;
-  proyecto?: string;
-  responsable?: string;
   observaciones_status?: string;
 }
 
 interface StatusFormData {
   estado: string;
-  proyecto: string;
-  responsable: string;
+  proyecto_id: string;
+  responsable_id: string;
   rata_mes: string;
   observaciones_status: string;
 }
@@ -69,11 +66,14 @@ export default function EquiposStatusN() {
 
   const [formData, setFormData] = useState<StatusFormData>({
     estado: '',
-    proyecto: '',
-    responsable: '',
+    proyecto_id: '',
+    responsable_id: '',
     rata_mes: '',
     observaciones_status: '',
   });
+
+  const [proyectos, setProyectos] = useState<Project[]>([]);
+  const [usuarios, setUsuarios] = useState<User[]>([]);
 
   const getEstadoBadgeVariant = (estado?: string): EstadoBadgeInfo => {
     const estadoLower = (estado || '').toLowerCase();
@@ -100,7 +100,6 @@ export default function EquiposStatusN() {
       if (response.data.success && response.data.data) {
         const equiposConStatus: EquipoWithStatus[] = response.data.data.map((equipo) => ({
           ...equipo,
-          ubicacion: equipo.proyecto || 'No especificada',
           ultima_revision: equipo.updated_at,
           estado: equipo.estado || 'en_operacion',
         }));
@@ -118,8 +117,22 @@ export default function EquiposStatusN() {
     }
   };
 
+  const loadDropdownData = async () => {
+    try {
+      const [proyectosRes, usuariosRes] = await Promise.all([
+        api.get<{ success: boolean; proyectos: Project[] }>('/projects'),
+        api.get<ApiResponse<User[]>>('/users'),
+      ]);
+      if (proyectosRes.data.success) setProyectos(proyectosRes.data.proyectos);
+      if (usuariosRes.data.success && usuariosRes.data.data) setUsuarios(usuariosRes.data.data);
+    } catch (err) {
+      console.error('Error loading dropdown data:', err);
+    }
+  };
+
   useEffect(() => {
     loadEquiposStatus();
+    loadDropdownData();
     const interval = setInterval(loadEquiposStatus, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -145,8 +158,8 @@ export default function EquiposStatusN() {
   const handleOpenStatusForm = () => {
     setFormData({
       estado: selectedEquipo?.estado || 'en_operacion',
-      proyecto: selectedEquipo?.ubicacion || '',
-      responsable: selectedEquipo?.responsable || '',
+      proyecto_id: selectedEquipo?.proyecto_id ? String(selectedEquipo.proyecto_id) : '',
+      responsable_id: selectedEquipo?.responsable_id ? String(selectedEquipo.responsable_id) : '',
       rata_mes: selectedEquipo?.rata_mes?.toString() || '',
       observaciones_status: selectedEquipo?.observaciones_status || '',
     });
@@ -280,8 +293,8 @@ export default function EquiposStatusN() {
             ['Marca', selectedEquipo?.marca],
             ['Modelo', selectedEquipo?.modelo],
             ['Año', selectedEquipo?.ano || 'No especificado'],
-            ['Ubicación', selectedEquipo?.ubicacion || 'No especificada'],
-            ['Responsable', selectedEquipo?.responsable || 'No asignado'],
+            ['Ubicación', selectedEquipo?.proyecto_nombre || selectedEquipo?.ubicacion || 'No especificada'],
+            ['Responsable', selectedEquipo?.responsable_nombre || 'No asignado'],
             ['Rata Mensual', selectedEquipo?.rata_mes
               ? `$${parseFloat(selectedEquipo.rata_mes.toString()).toLocaleString()}`
               : 'No especificado'],
@@ -368,20 +381,40 @@ export default function EquiposStatusN() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Ubicación/Proyecto</label>
-            <Input
-              value={formData.proyecto}
-              onChange={(e) => handleFormChange('proyecto', e.target.value)}
-              placeholder="Proyecto donde se encuentra el equipo"
-            />
+            <Select
+              value={formData.proyecto_id}
+              onValueChange={(value) => handleFormChange('proyecto_id', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar proyecto..." />
+              </SelectTrigger>
+              <SelectContent>
+                {proyectos.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.nombre_corto || p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Responsable</label>
-            <Input
-              value={formData.responsable}
-              onChange={(e) => handleFormChange('responsable', e.target.value)}
-              placeholder="Persona responsable del equipo"
-            />
+            <Select
+              value={formData.responsable_id}
+              onValueChange={(value) => handleFormChange('responsable_id', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar responsable..." />
+              </SelectTrigger>
+              <SelectContent>
+                {usuarios.map((u) => (
+                  <SelectItem key={u.id} value={String(u.id)}>
+                    {u.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
