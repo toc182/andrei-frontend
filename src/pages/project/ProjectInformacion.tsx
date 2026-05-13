@@ -99,10 +99,6 @@ export default function ProjectInformacion({
             <InfoRow label="Nombre Corto:">{project.nombre_corto}</InfoRow>
           )}
 
-          {project.codigo_proyecto && (
-            <InfoRow label="Código:">{project.codigo_proyecto}</InfoRow>
-          )}
-
           {project.cliente_nombre && (
             <InfoRow label="Cliente:">{project.cliente_nombre}</InfoRow>
           )}

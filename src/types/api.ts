@@ -86,7 +86,6 @@ export interface Project {
   id: number;
   nombre: string;
   nombre_corto?: string;
-  codigo_proyecto?: string;
   cliente_id?: number;
   cliente_nombre?: string;
   cliente_abreviatura?: string;

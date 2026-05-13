@@ -371,15 +371,6 @@ export default function ProjectDetailLayout({
               </div>
             )}
 
-            {project.codigo_proyecto && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Código:
-                </label>
-                <span className="text-sm">{project.codigo_proyecto}</span>
-              </div>
-            )}
-
             {project.cliente_nombre && (
               <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
                 <label className="font-medium text-sm text-muted-foreground">

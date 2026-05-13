@@ -342,17 +342,6 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
                 <span className="text-sm">{viewingProject.nombre}</span>
               </div>
 
-              {viewingProject.codigo_proyecto && (
-                <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                  <label className="font-medium text-sm text-muted-foreground">
-                    Código:
-                  </label>
-                  <span className="text-sm">
-                    {viewingProject.codigo_proyecto}
-                  </span>
-                </div>
-              )}
-
               <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
                 <label className="font-medium text-sm text-muted-foreground">
                   Estado:

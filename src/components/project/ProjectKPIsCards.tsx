@@ -183,9 +183,6 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
             <div className="text-2xl font-bold">
               {getEstadoBadge(project?.estado)}
             </div>
-            <p className="text-xs text-muted-foreground text-center truncate max-w-full">
-              {project?.codigo_proyecto || 'N/A'}
-            </p>
           </div>
         </CardContent>
       </Card>

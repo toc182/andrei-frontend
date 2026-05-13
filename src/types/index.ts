@@ -60,7 +60,6 @@ export interface ExpenseFormData {
 export interface ProjectFormData {
   nombre: string;
   nombre_corto: string;
-  codigo_proyecto: string;
   cliente_id: string;
   estado: string;
   fecha_inicio: string;
