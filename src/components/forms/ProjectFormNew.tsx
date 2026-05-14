@@ -43,7 +43,7 @@ const projectSchema = z
   .object({
     nombre: z.string().min(1, 'El nombre del proyecto es obligatorio'),
     nombre_corto: z.string().optional(),
-    cliente_id: z.string().optional(),
+    cliente_id: z.string().min(1, 'El cliente es obligatorio'),
     contratista: z.string().optional(),
     ingeniero_residente: z.string().optional(),
     fecha_inicio: z.string().optional(),
