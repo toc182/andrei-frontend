@@ -279,10 +279,17 @@ export default function RequisicionForm({
       await onSave(dataToSave);
     } catch (err: unknown) {
       console.error('Error saving requisicion:', err);
-      const apiError = err as { response?: { data?: { message?: string } } };
-      setError(
-        apiError.response?.data?.message || 'Error al guardar la requisicion',
-      );
+      const apiError = err as {
+        response?: {
+          data?: { message?: string; field?: string };
+        };
+      };
+      const data = apiError.response?.data;
+      if (data?.field && data?.message) {
+        setValidationErrors({ [data.field]: data.message });
+      } else {
+        setError(data?.message || 'Error al guardar la requisicion');
+      }
     } finally {
       setLoading(false);
     }
@@ -384,6 +391,11 @@ export default function RequisicionForm({
                 className={`h-9 ${validationErrors.numero ? 'border-destructive' : ''}`}
                 disabled={!!editingRequisicion}
               />
+              {validationErrors.numero && (
+                <p className="text-xs text-error mt-1">
+                  {validationErrors.numero}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="fecha" className="text-xs">
