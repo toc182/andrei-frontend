@@ -269,7 +269,7 @@ export interface Requisicion {
   fecha_aprobacion?: string;
   pagado_por?: number;
   fecha_pago?: string;
-  expense_id?: number;
+  gasto_id?: number;
   archivada: boolean;
   fecha_archivado?: string;
   archivado_por?: number;
