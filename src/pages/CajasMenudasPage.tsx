@@ -208,7 +208,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
 
   const loadUsuarios = async () => {
     try {
-      const response = await api.get('/users');
+      const response = await api.get('/users/seleccionables');
       if (response.data.success) {
         setUsuarios(response.data.data || response.data.users);
       }
