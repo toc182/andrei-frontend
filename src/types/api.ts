@@ -78,6 +78,15 @@ export interface AuthResponse {
   user: User;
 }
 
+// Usuario reducido para poblar dropdowns. Lo devuelve
+// GET /users/seleccionables. No incluye email/rol/permissions
+// a propósito: cualquier autenticado puede leerlo.
+export interface UsuarioSeleccionable {
+  id: number;
+  nombre: string;
+  tipo_usuario: 'interno' | 'externo';
+}
+
 // ============================================
 // PROJECTS
 // ============================================

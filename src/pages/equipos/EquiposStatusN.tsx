@@ -3,8 +3,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import api from '../../services/api';
-import type { EquipoExtended, ApiResponse, Project, User } from '@/types';
+import api, { usuariosAPI } from '../../services/api';
+import type { EquipoExtended, ApiResponse, Project, UsuarioSeleccionable } from '@/types';
 
 // Shell components
 import { AppDialog } from '@/components/shell/AppDialog';
@@ -73,7 +73,7 @@ export default function EquiposStatusN() {
   });
 
   const [proyectos, setProyectos] = useState<Project[]>([]);
-  const [usuarios, setUsuarios] = useState<User[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioSeleccionable[]>([]);
 
   const getEstadoBadgeVariant = (estado?: string): EstadoBadgeInfo => {
     const estadoLower = (estado || '').toLowerCase();
@@ -119,12 +119,12 @@ export default function EquiposStatusN() {
 
   const loadDropdownData = async () => {
     try {
-      const [proyectosRes, usuariosRes] = await Promise.all([
+      const [proyectosRes, usuariosList] = await Promise.all([
         api.get<{ success: boolean; proyectos: Project[] }>('/projects'),
-        api.get<ApiResponse<User[]>>('/users'),
+        usuariosAPI.listSeleccionables(),
       ]);
       if (proyectosRes.data.success) setProyectos(proyectosRes.data.proyectos);
-      if (usuariosRes.data.success && usuariosRes.data.data) setUsuarios(usuariosRes.data.data);
+      setUsuarios(usuariosList);
     } catch (err) {
       console.error('Error loading dropdown data:', err);
     }

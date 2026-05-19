@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import type { AuthResponse, User } from '@/types';
+import type { AuthResponse, User, UsuarioSeleccionable } from '@/types';
 
 // Configuración base para API
 const api: AxiosInstance = axios.create({
@@ -115,6 +115,22 @@ export const authAPI = {
       { password_actual, password_nueva },
     );
     return response.data;
+  },
+};
+
+// Endpoints relacionados a usuarios. Mantener separado de authAPI:
+// authAPI es para sesión, este es para consultar usuarios.
+export const usuariosAPI = {
+  // Devuelve la lista mínima de usuarios para poblar dropdowns.
+  // Accesible para cualquier autenticado.
+  listSeleccionables: async (
+    tipo?: 'interno' | 'externo',
+  ): Promise<UsuarioSeleccionable[]> => {
+    const response = await api.get<{
+      success: boolean;
+      data: UsuarioSeleccionable[];
+    }>('/users/seleccionables', { params: tipo ? { tipo } : undefined });
+    return response.data.data;
   },
 };
 

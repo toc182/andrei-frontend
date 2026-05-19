@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import api from '../../services/api';
+import api, { usuariosAPI } from '../../services/api';
 import type {
   AsignacionExtended,
   EquipoExtended,
@@ -14,7 +14,7 @@ import type {
   Project,
   RegistroUsoExtended,
   ApiResponse,
-  User,
+  UsuarioSeleccionable,
 } from '@/types';
 
 // Shell components
@@ -142,7 +142,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
   const [equiposDisponibles, setEquiposDisponibles] = useState<EquipoExtended[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [proyectos, setProyectos] = useState<Project[]>([]);
-  const [usuarios, setUsuarios] = useState<User[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioSeleccionable[]>([]);
   const [registrosUso, setRegistrosUso] = useState<RegistroUsoExtended[]>([]);
 
   const asignacionForm = useForm<AsignacionFormData>({
@@ -202,12 +202,12 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
 
   const loadFormData = async (editingAsignacion: AsignacionExtended | null = null) => {
     try {
-      const [equiposRes, clientesRes, proyectosRes, asignacionesRes, usuariosRes] = await Promise.all([
+      const [equiposRes, clientesRes, proyectosRes, asignacionesRes, usuariosList] = await Promise.all([
         api.get<ApiResponse<EquipoExtended[]>>('/equipos'),
         api.get<{ success: boolean; data: Cliente[] }>('/clientes'),
         api.get<{ success: boolean; proyectos: Project[] }>('/projects'),
         api.get<ApiResponse<AsignacionExtended[]>>('/asignaciones'),
-        api.get<ApiResponse<User[]>>('/users'),
+        usuariosAPI.listSeleccionables(),
       ]);
 
       if (equiposRes.data.success && equiposRes.data.data) {
@@ -224,7 +224,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
       }
       if (clientesRes.data.success) setClientes(clientesRes.data.data);
       if (proyectosRes.data.success) setProyectos(proyectosRes.data.proyectos);
-      if (usuariosRes.data.success && usuariosRes.data.data) setUsuarios(usuariosRes.data.data);
+      setUsuarios(usuariosList);
     } catch (err) {
       console.error('Error loading form data:', err);
       setError('Error al cargar datos del formulario');

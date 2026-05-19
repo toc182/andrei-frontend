@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import api from '../services/api';
+import api, { usuariosAPI } from '../services/api';
 import { Plus, Pencil, Loader2, Wallet, Upload, AlertCircle, Settings, Minus, Lock } from 'lucide-react';
-import type { CajaMenuda } from '../types/api';
+import type { CajaMenuda, UsuarioSeleccionable } from '../types/api';
 import CajaMenudaDetail from './CajaMenudaDetail';
 
 // Shadcn Components
@@ -63,11 +63,6 @@ interface Proyecto {
   id: number;
   nombre: string;
   nombre_corto?: string;
-}
-
-interface Usuario {
-  id: number;
-  nombre: string;
 }
 
 const estadoBadge = (estado: string) => {
@@ -133,7 +128,7 @@ interface CajasMenudasPageProps {
 const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [cajas, setCajas] = useState<CajaMenuda[]>([]);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [usuarios, setUsuarios] = useState<UsuarioSeleccionable[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
   const [error, setError] = useState('');
@@ -208,10 +203,7 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
 
   const loadUsuarios = async () => {
     try {
-      const response = await api.get('/users/seleccionables');
-      if (response.data.success) {
-        setUsuarios(response.data.data || response.data.users);
-      }
+      setUsuarios(await usuariosAPI.listSeleccionables());
     } catch (err) {
       console.error('Error cargando usuarios:', err);
     }
