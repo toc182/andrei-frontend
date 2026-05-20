@@ -2,6 +2,7 @@ import { Component, type ReactNode, type ErrorInfo } from "react";
 import { FullPageState } from "./FullPageState";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, XCircle } from "lucide-react";
+import { isLocalDev } from "@/services/api";
 
 interface Props {
   children: ReactNode;
@@ -28,7 +29,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.hasError) return this.props.children;
 
-    const isDev = import.meta.env.DEV;
+    const isDev = isLocalDev();
 
     return (
       <FullPageState

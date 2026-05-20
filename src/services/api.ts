@@ -1,11 +1,21 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import type { AuthResponse, User, UsuarioSeleccionable } from '@/types';
 
+// True cuando la app se sirve desde localhost. Se evalúa en runtime
+// (no en build time) a propósito: import.meta.env.PROD depende del modo
+// de Vite y un mis-build en Vercel puede hornear el valor equivocado.
+// El hostname siempre es correcto en el navegador del usuario.
+export const isLocalDev = (): boolean =>
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1';
+
+const API_BASE_URL = isLocalDev()
+  ? 'http://localhost:5000/api'
+  : 'https://andrei-backend-production.up.railway.app/api';
+
 // Configuración base para API
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.PROD
-    ? 'https://andrei-backend-production.up.railway.app/api'
-    : 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import logo from '../assets/logo.png';
+import { isLocalDev } from '../services/api';
 
-const API_BASE = import.meta.env.PROD
-  ? 'https://andrei-backend-production.up.railway.app/api'
-  : 'http://localhost:5000/api';
+const API_BASE = isLocalDev()
+  ? 'http://localhost:5000/api'
+  : 'https://andrei-backend-production.up.railway.app/api';
 
 interface VerificacionData {
   numero: string;

@@ -16,6 +16,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '../context/AuthContext';
+import { isLocalDev } from '../services/api';
 import logo from '../assets/logo.png';
 
 import { Button } from '@/components/ui/button';
@@ -129,7 +130,7 @@ const LoginN = () => {
           </form>
 
           {/* Optional: Development hints */}
-          {process.env.NODE_ENV === 'development' && (
+          {isLocalDev() && (
             <div className="mt-4 pt-4 border-t">
               <p className="text-xs text-muted-foreground text-center">
                 Modo desarrollo: admin@andrei.com / 123456
