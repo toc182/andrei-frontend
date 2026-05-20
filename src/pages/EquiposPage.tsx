@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react';
 import EquiposInformacionN from './equipos/EquiposInformacionN';
 import EquiposStatusN from './equipos/EquiposStatusN';
 import AsignacionesEquiposN from './equipos/AsignacionesEquiposN';
+import { useAuth } from '@/context/AuthContext';
 
 interface EquiposPageProps {
   defaultTab?: 'informacion' | 'status' | 'asignaciones';
@@ -24,7 +25,11 @@ const tabButtons: Record<string, string> = {
 export default function EquiposPage({
   defaultTab = 'informacion',
 }: EquiposPageProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const { hasPermission } = useAuth();
+  const canAsignaciones = hasPermission('equipos_asignacion');
+  const initialTab =
+    defaultTab === 'asignaciones' && !canAsignaciones ? 'informacion' : defaultTab;
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [actionHandler, setActionHandler] = useState<(() => void) | null>(null);
 
   const handleRegisterAction = useCallback((handler: (() => void) | null) => {
@@ -57,7 +62,9 @@ export default function EquiposPage({
         <TabsList className="mb-6 w-full justify-center">
           <TabsTrigger value="informacion">Información</TabsTrigger>
           <TabsTrigger value="status">Status</TabsTrigger>
-          <TabsTrigger value="asignaciones">Asignaciones</TabsTrigger>
+          {canAsignaciones && (
+            <TabsTrigger value="asignaciones">Asignaciones</TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="informacion" forceMount className={activeTab !== 'informacion' ? 'hidden' : ''}>
           <EquiposInformacionN onRegisterAction={activeTab === 'informacion' ? handleRegisterAction : undefined} />
@@ -65,9 +72,11 @@ export default function EquiposPage({
         <TabsContent value="status" forceMount className={activeTab !== 'status' ? 'hidden' : ''}>
           <EquiposStatusN />
         </TabsContent>
-        <TabsContent value="asignaciones" forceMount className={activeTab !== 'asignaciones' ? 'hidden' : ''}>
-          <AsignacionesEquiposN onRegisterAction={activeTab === 'asignaciones' ? handleRegisterAction : undefined} />
-        </TabsContent>
+        {canAsignaciones && (
+          <TabsContent value="asignaciones" forceMount className={activeTab !== 'asignaciones' ? 'hidden' : ''}>
+            <AsignacionesEquiposN onRegisterAction={activeTab === 'asignaciones' ? handleRegisterAction : undefined} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
