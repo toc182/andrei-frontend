@@ -154,6 +154,7 @@ export default function SolicitudPagoForm({
   const [solicitadoPor, setSolicitadoPor] = useState<string>('none');
   const [requisicionId, setRequisicionId] = useState<string>('none');
   const [observaciones, setObservaciones] = useState('');
+  const [mensaje, setMensaje] = useState('');
   const [urgente, setUrgente] = useState(false);
   const [pinellasPaga, setPinellasPaga] = useState(false);
   const [beneficiario, setBeneficiario] = useState('');
@@ -188,6 +189,7 @@ export default function SolicitudPagoForm({
       setSolicitadoPor(editingSolicitud.solicitado_por?.toString() || 'none');
       setRequisicionId(editingSolicitud.requisicion_id?.toString() || 'none');
       setObservaciones(editingSolicitud.observaciones || '');
+      setMensaje(editingSolicitud.mensaje || '');
       setUrgente(editingSolicitud.urgente || false);
       setPinellasPaga(editingSolicitud.pinellas_paga || false);
       setBeneficiario(editingSolicitud.beneficiario || '');
@@ -237,6 +239,7 @@ export default function SolicitudPagoForm({
       setSolicitadoPor(user?.id?.toString() || 'none');
       setRequisicionId('none');
       setObservaciones('');
+      setMensaje('');
       setUrgente(false);
       setBeneficiario('');
       setBanco('');
@@ -448,8 +451,19 @@ export default function SolicitudPagoForm({
 
       if (editingSolicitud) {
         await api.put(`/solicitudes-pago/${editingSolicitud.id}`, payload);
+        // El PUT general no acepta mensaje. Enviar aparte solo si cambió.
+        const mensajeTrim = mensaje.trim();
+        const previo = (editingSolicitud.mensaje ?? '').trim();
+        if (mensajeTrim !== previo) {
+          await api.put(`/solicitudes-pago/${editingSolicitud.id}/mensaje`, {
+            mensaje: mensajeTrim || null,
+          });
+        }
       } else {
-        const createRes = await api.post('/solicitudes-pago', payload);
+        const createRes = await api.post('/solicitudes-pago', {
+          ...payload,
+          mensaje: mensaje.trim() || null,
+        });
 
         // Upload pending files if any
         if (pendingFiles.length > 0 && createRes.data.solicitud?.id) {
@@ -1213,6 +1227,20 @@ export default function SolicitudPagoForm({
               )}
             </div>
           )}
+
+          <div>
+            <Label htmlFor="mensaje" className="text-xs">
+              Mensaje (opcional)
+            </Label>
+            <Textarea
+              id="mensaje"
+              placeholder="Mensaje corto visible en la lista..."
+              rows={2}
+              maxLength={1000}
+              value={mensaje}
+              onChange={(e) => setMensaje(e.target.value)}
+            />
+          </div>
 
         </form>
     </AppDialog>

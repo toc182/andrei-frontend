@@ -124,6 +124,77 @@ export async function toggleRevisadaSolicitud(args: {
   }
 }
 
+export interface MensajeUpdated {
+  mensaje: string | null;
+  mensaje_autor_id: number | null;
+  mensaje_autor_nombre: string | null;
+  mensaje_updated_at: string | null;
+}
+
+/**
+ * Saves the mensaje on a solicitud (or clears it when `mensaje` is null/empty).
+ * The backend auto-marks the editor as having read the new mensaje, so the
+ * editor's own row will render in the "read" state immediately.
+ */
+export async function saveMensajeSolicitud(args: {
+  solicitudId: number;
+  mensaje: string | null;
+  setSaving: (loading: boolean) => void;
+  onSuccess: (updated: MensajeUpdated | null) => void;
+  onError?: (msg: string) => void;
+}): Promise<void> {
+  try {
+    args.setSaving(true);
+    const response = await api.put<{
+      success: boolean;
+      mensaje: MensajeUpdated | null;
+    }>(`/solicitudes-pago/${args.solicitudId}/mensaje`, {
+      mensaje: args.mensaje,
+    });
+    args.onSuccess(response.data.mensaje);
+  } catch (err) {
+    console.error('Error saving mensaje:', err);
+    const apiError = err as { response?: { data?: { message?: string } } };
+    args.onError?.(
+      apiError.response?.data?.message || 'Error al guardar el mensaje',
+    );
+  } finally {
+    args.setSaving(false);
+  }
+}
+
+/**
+ * Marks the mensaje of a solicitud as "read" for the current user.
+ * Optimistically updates the row in the list so the dot disappears
+ * immediately; rolls the row back on error.
+ */
+export async function marcarMensajeLeido(args: {
+  solicitudId: number;
+  setSolicitudes: React.Dispatch<React.SetStateAction<SolicitudPago[]>>;
+  onError?: (msg: string) => void;
+}): Promise<void> {
+  args.setSolicitudes((prev) =>
+    prev.map((s) =>
+      s.id === args.solicitudId ? { ...s, mensaje_leido: true } : s,
+    ),
+  );
+  try {
+    await api.post(`/solicitudes-pago/${args.solicitudId}/mensaje/leer`);
+  } catch (err) {
+    console.error('Error marking mensaje as read:', err);
+    args.setSolicitudes((prev) =>
+      prev.map((s) =>
+        s.id === args.solicitudId ? { ...s, mensaje_leido: false } : s,
+      ),
+    );
+    const apiError = err as { response?: { data?: { message?: string } } };
+    args.onError?.(
+      apiError.response?.data?.message ||
+        'No se pudo marcar el mensaje como leído',
+    );
+  }
+}
+
 /**
  * Registers the payment of a solicitud. Uploads the payment date and one
  * or more comprobante files, closes the registrar-pago modal and the

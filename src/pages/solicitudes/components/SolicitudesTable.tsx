@@ -25,6 +25,7 @@ import type {
 } from '@/components/sortableHeaderUtils';
 import { ApprovalPillBar } from '@/components/shell/ApprovalPillBar';
 import { EstadoBadge } from './EstadoBadge';
+import { MensajeIconPopover } from './MensajeIconPopover';
 import type { SolicitudPago } from '../types';
 import { formatMoney } from '../../../utils/formatters';
 
@@ -49,6 +50,7 @@ interface SolicitudesTableProps {
   uniqueProyectos: string[];
   uniqueEstados: string[];
   onRowClick: (sol: SolicitudPago) => void;
+  onMarkMensajeRead: (id: number) => void;
 }
 
 export function SolicitudesTable({
@@ -62,6 +64,7 @@ export function SolicitudesTable({
   uniqueProyectos,
   uniqueEstados,
   onRowClick,
+  onMarkMensajeRead,
 }: SolicitudesTableProps) {
   return (
     <>
@@ -99,8 +102,17 @@ export function SolicitudesTable({
                           {sol.proyecto_nombre}
                         </div>
                       )}
-                      <div className="text-sm text-muted-foreground">
-                        {sol.proveedor}
+                      <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                        <span>{sol.proveedor}</span>
+                        {sol.mensaje && (
+                          <MensajeIconPopover
+                            mensaje={sol.mensaje}
+                            autorNombre={sol.mensaje_autor_nombre ?? null}
+                            leido={!!sol.mensaje_leido}
+                            solicitudId={sol.id}
+                            onMarkRead={onMarkMensajeRead}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="space-y-1 flex flex-col items-end">
@@ -230,7 +242,20 @@ export function SolicitudesTable({
                         <TableCell>{sol.proyecto_nombre || '-'}</TableCell>
                       )}
                       <TableCell>{formatDate(sol.fecha)}</TableCell>
-                      <TableCell>{sol.proveedor}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span>{sol.proveedor}</span>
+                          {sol.mensaje && (
+                            <MensajeIconPopover
+                              mensaje={sol.mensaje}
+                              autorNombre={sol.mensaje_autor_nombre ?? null}
+                              leido={!!sol.mensaje_leido}
+                              solicitudId={sol.id}
+                              onMarkRead={onMarkMensajeRead}
+                            />
+                          )}
+                        </span>
+                      </TableCell>
                       <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
                         {formatMoney(sol.monto_total)}
                       </TableCell>

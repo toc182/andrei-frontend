@@ -62,6 +62,7 @@ import {
   registrarReembolsoSolicitud,
   registrarDevolucionSolicitud,
   confirmApprovalSolicitud,
+  marcarMensajeLeido,
 } from '../solicitudes/utils/solicitudActions';
 
 interface ProjectSolicitudesPagoProps {
@@ -723,6 +724,13 @@ export default function ProjectSolicitudesPago({
         uniqueProyectos={[]}
         uniqueEstados={uniqueEstados}
         onRowClick={openDetail}
+        onMarkMensajeRead={(id) =>
+          marcarMensajeLeido({
+            solicitudId: id,
+            setSolicitudes,
+            onError: setActionError,
+          })
+        }
       />
       <SolicitudesPagination
         totalItems={totalItems}
@@ -829,6 +837,20 @@ export default function ProjectSolicitudesPago({
         onOpenDeleteDialog={(id) => {
           setDeletingId(id);
           setShowDeleteModal(true);
+        }}
+        onMensajeSaved={(updated) => {
+          setDetailSolicitud((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  mensaje: updated?.mensaje ?? null,
+                  mensaje_autor_id: updated?.mensaje_autor_id ?? null,
+                  mensaje_autor_nombre: updated?.mensaje_autor_nombre ?? null,
+                  mensaje_updated_at: updated?.mensaje_updated_at ?? null,
+                }
+              : prev,
+          );
+          loadSolicitudes();
         }}
       />
 

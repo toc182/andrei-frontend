@@ -9,6 +9,7 @@
 // decision about requisicion-solicitud integration.
 
 import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AdjuntosPreview from '../../../components/AdjuntosPreview';
@@ -20,11 +21,13 @@ import type {
   Aprobacion,
   AprobadorProyecto,
 } from '../types';
+import type { MensajeUpdated } from '../utils/solicitudActions';
 import { SolicitudBankDataCard } from './detail/SolicitudBankDataCard';
 import { SolicitudBasicInfoSection } from './detail/SolicitudBasicInfoSection';
 import { SolicitudItemsAndTotals } from './detail/SolicitudItemsAndTotals';
 import { SolicitudDetailHeader } from './detail/SolicitudDetailHeader';
 import { SolicitudPaymentStatusCards } from './detail/SolicitudPaymentStatusCards';
+import { SolicitudMensajeEditor } from './detail/SolicitudMensajeEditor';
 import {
   SolicitudCorreccionesHistory,
   type Correccion,
@@ -105,6 +108,7 @@ interface SolicitudDetailDialogProps {
   onOpenRegistrarReembolsoPinellasDialog: () => void;
   onReenviar: (id: number) => void;
   onOpenDeleteDialog: (id: number) => void;
+  onMensajeSaved?: (updated: MensajeUpdated | null) => void;
 }
 
 export function SolicitudDetailDialog({
@@ -149,6 +153,7 @@ export function SolicitudDetailDialog({
   onOpenRegistrarReembolsoPinellasDialog,
   onReenviar,
   onOpenDeleteDialog,
+  onMensajeSaved,
 }: SolicitudDetailDialogProps) {
   return (
     <AppDialog
@@ -179,6 +184,15 @@ export function SolicitudDetailDialog({
         </Badge>
       )}
 
+      {solicitud?.mensaje && (
+        <Alert
+          variant="info"
+          title={solicitud.mensaje_autor_nombre ?? 'Usuario eliminado'}
+          description={solicitud.mensaje}
+          className="mt-2"
+        />
+      )}
+
       {solicitud && (
         <div className="space-y-4 mt-2">
           {/* Basic info */}
@@ -204,6 +218,13 @@ export function SolicitudDetailDialog({
             onUpload={onUploadAdjuntos}
             onDelete={onDeleteAdjunto}
             uploading={uploadingFiles}
+          />
+
+          {/* Mensaje (editable; banner above is the read-only view) */}
+          <SolicitudMensajeEditor
+            solicitudId={solicitud.id}
+            initialMensaje={solicitud.mensaje ?? null}
+            onSaved={onMensajeSaved ?? (() => {})}
           />
 
           {/* Payment status cards — Comprobante de Pago, Factura,

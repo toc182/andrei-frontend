@@ -31,6 +31,11 @@ export interface SolicitudPago {
   estado: EstadoSolicitud;
   tipo: TipoSolicitud;
   observaciones: string | null;
+  mensaje?: string | null;
+  mensaje_autor_id?: number | null;
+  mensaje_autor_nombre?: string | null;
+  mensaje_updated_at?: string | null;
+  mensaje_leido?: boolean | null;
   beneficiario: string | null;
   banco: string | null;
   tipo_cuenta: string | null;
