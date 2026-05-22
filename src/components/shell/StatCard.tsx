@@ -56,7 +56,7 @@ export function StatCard({
     <Wrapper
       {...clickProps}
       className={cn(
-        "block rounded-lg border border-border border-l-4 bg-card p-5",
+        "block min-w-0 rounded-lg border border-border border-l-4 bg-card p-5",
         accentMap[accent],
         isClickable &&
           "cursor-pointer transition-all hover:border-slate-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy/40 focus-visible:ring-offset-2"
@@ -68,7 +68,7 @@ export function StatCard({
         </p>
         {Icon && <Icon className="h-4 w-4 text-slate-300" aria-hidden />}
       </div>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+      <p className="mt-1 break-words text-2xl font-semibold tabular-nums text-foreground">
         {value}
       </p>
       {trend && (
