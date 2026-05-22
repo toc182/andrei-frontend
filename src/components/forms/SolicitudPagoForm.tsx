@@ -4,8 +4,12 @@
  * Sections: Datos principales, Items dinámicos, ITBMS, Ajustes, Datos bancarios
  */
 
-import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import {
   Plus,
   Trash2,
@@ -62,6 +73,8 @@ interface SolicitudPago {
   tipo_cuenta: string | null;
   numero_cuenta: string | null;
   urgente: boolean;
+  pinellas_paga?: boolean;
+  mensaje?: string | null;
 }
 
 interface SolicitudItem {
@@ -133,6 +146,41 @@ const emptyAjuste: AjusteFormData = {
   monto: '',
 };
 
+// Zod schema — single source of truth for scalar-field validation.
+const solicitudFormSchema = z.object({
+  proveedor: z.string().trim().min(1, 'El proveedor es requerido'),
+  fecha: z.string().min(1, 'La fecha es requerida'),
+  solicitado_por: z.string().refine((v) => v && v !== 'none', {
+    message: 'Debes seleccionar quién está solicitando el pago',
+  }),
+  observaciones: z.string(),
+  urgente: z.boolean(),
+  pinellas_paga: z.boolean(),
+  beneficiario: z.string(),
+  banco: z.string(),
+  tipo_cuenta: z.string(),
+  numero_cuenta: z.string(),
+  mensaje: z.string().max(1000, 'Máximo 1000 caracteres'),
+});
+
+type SolicitudFormData = z.infer<typeof solicitudFormSchema>;
+
+const todayDate = (): string => new Date().toISOString().split('T')[0];
+
+const defaultFormValues = (userId?: number): SolicitudFormData => ({
+  proveedor: '',
+  fecha: todayDate(),
+  solicitado_por: userId?.toString() ?? 'none',
+  observaciones: '',
+  urgente: false,
+  pinellas_paga: false,
+  beneficiario: '',
+  banco: '',
+  tipo_cuenta: 'none',
+  numero_cuenta: '',
+  mensaje: '',
+});
+
 export default function SolicitudPagoForm({
   projectId,
   isOpen,
@@ -145,57 +193,56 @@ export default function SolicitudPagoForm({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [itemsError, setItemsError] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const adjuntoFormRef = useRef<HTMLInputElement>(null);
 
-  // Form data
-  const [fecha, setFecha] = useState('');
-  const [proveedor, setProveedor] = useState('');
-  const [solicitadoPor, setSolicitadoPor] = useState<string>('none');
-  const [requisicionId, setRequisicionId] = useState<string>('none');
-  const [observaciones, setObservaciones] = useState('');
-  const [mensaje, setMensaje] = useState('');
-  const [urgente, setUrgente] = useState(false);
-  const [pinellasPaga, setPinellasPaga] = useState(false);
-  const [beneficiario, setBeneficiario] = useState('');
-  const [banco, setBanco] = useState('');
-  const [tipoCuenta, setTipoCuenta] = useState('none');
-  const [numeroCuenta, setNumeroCuenta] = useState('');
-
-  // Dynamic items & ajustes
+  // Dynamic items & ajustes — stay as plain state (intermixed UI/data state,
+  // no useFieldArray precedent in the codebase).
   const [items, setItems] = useState<ItemFormData[]>([{ ...emptyItem }]);
   const [itbmsActivo, setItbmsActivo] = useState(true);
   const [ajustes, setAjustes] = useState<AjusteFormData[]>([]);
 
   // Options
   const [miembrosProyecto, setMiembrosProyecto] = useState<MemberOption[]>([]);
-  const [requisiciones, setRequisiciones] = useState<RequisicionOption[]>([]);
+  const [, setRequisiciones] = useState<RequisicionOption[]>([]);
   const [nextNumero, setNextNumero] = useState<string>('');
+
+  // Form (react-hook-form + Zod)
+  const form = useForm<SolicitudFormData>({
+    resolver: zodResolver(solicitudFormSchema),
+    defaultValues: defaultFormValues(user?.id),
+  });
 
   // Load options when modal opens
   useEffect(() => {
     if (isOpen) {
       loadOptions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, projectId]);
 
   // Populate form when editing or reset for new
   useEffect(() => {
+    if (!isOpen) return;
+
     if (editingSolicitud) {
-      setFecha(
-        editingSolicitud.fecha ? editingSolicitud.fecha.split('T')[0] : '',
-      );
-      setProveedor(editingSolicitud.proveedor || '');
-      setSolicitadoPor(editingSolicitud.solicitado_por?.toString() || 'none');
-      setRequisicionId(editingSolicitud.requisicion_id?.toString() || 'none');
-      setObservaciones(editingSolicitud.observaciones || '');
-      setMensaje(editingSolicitud.mensaje || '');
-      setUrgente(editingSolicitud.urgente || false);
-      setPinellasPaga(editingSolicitud.pinellas_paga || false);
-      setBeneficiario(editingSolicitud.beneficiario || '');
-      setBanco(editingSolicitud.banco || '');
-      setTipoCuenta(editingSolicitud.tipo_cuenta || 'none');
-      setNumeroCuenta(editingSolicitud.numero_cuenta || '');
+      form.reset({
+        proveedor: editingSolicitud.proveedor ?? '',
+        fecha: editingSolicitud.fecha
+          ? editingSolicitud.fecha.split('T')[0]
+          : '',
+        solicitado_por:
+          editingSolicitud.solicitado_por?.toString() ?? 'none',
+        observaciones: editingSolicitud.observaciones ?? '',
+        urgente: !!editingSolicitud.urgente,
+        pinellas_paga: !!editingSolicitud.pinellas_paga,
+        beneficiario: editingSolicitud.beneficiario ?? '',
+        banco: editingSolicitud.banco ?? '',
+        tipo_cuenta: editingSolicitud.tipo_cuenta ?? 'none',
+        numero_cuenta: editingSolicitud.numero_cuenta ?? '',
+        mensaje: editingSolicitud.mensaje ?? '',
+      });
 
       if (existingItems.length > 0) {
         setItems(
@@ -233,24 +280,15 @@ export default function SolicitudPagoForm({
       }
     } else {
       // New solicitud
-      const today = new Date().toISOString().split('T')[0];
-      setFecha(today);
-      setProveedor('');
-      setSolicitadoPor(user?.id?.toString() || 'none');
-      setRequisicionId('none');
-      setObservaciones('');
-      setMensaje('');
-      setUrgente(false);
-      setBeneficiario('');
-      setBanco('');
-      setTipoCuenta('none');
-      setNumeroCuenta('');
+      form.reset(defaultFormValues(user?.id));
       setItems([{ ...emptyItem }]);
       setItbmsActivo(true);
       setAjustes([]);
       setPendingFiles([]);
     }
     setError(null);
+    setItemsError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingSolicitud, isOpen, user]);
 
   const loadOptions = async () => {
@@ -373,51 +411,40 @@ export default function SolicitudPagoForm({
     setAjustes((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Submit
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!proveedor.trim()) {
-      setError('El proveedor es requerido');
-      return;
-    }
-
-    if (!solicitadoPor || solicitadoPor === 'none') {
-      setError('Debes seleccionar quién está solicitando el pago');
-      return;
-    }
-
+  // Submit — react-hook-form invokes onSubmit only after Zod validation passes.
+  const onSubmit = async (data: SolicitudFormData) => {
+    // Items validation lives outside Zod since items[] is plain state.
     const validItems = items.filter(
       (i) => i.descripcion.trim() && parseFloat(i.precio_unitario) > 0,
     );
     if (validItems.length === 0) {
-      setError('Debe incluir al menos un item con descripción y precio');
+      setItemsError('Debe incluir al menos un item con descripción y precio');
       return;
     }
-
-    setLoading(true);
+    setItemsError(null);
     setError(null);
+    setLoading(true);
 
     try {
       const payload = {
         proyecto_id: projectId,
-        fecha,
-        proveedor: proveedor.trim(),
+        fecha: data.fecha,
+        proveedor: data.proveedor.trim(),
         solicitado_por:
-          solicitadoPor && solicitadoPor !== 'none'
-            ? parseInt(solicitadoPor)
+          data.solicitado_por && data.solicitado_por !== 'none'
+            ? parseInt(data.solicitado_por, 10)
             : null,
-        requisicion_id:
-          requisicionId && requisicionId !== 'none'
-            ? parseInt(requisicionId)
+        requisicion_id: null,
+        observaciones: data.observaciones.trim() || null,
+        urgente: data.urgente,
+        pinellas_paga: data.pinellas_paga,
+        beneficiario: data.beneficiario.trim() || null,
+        banco: data.banco.trim() || null,
+        tipo_cuenta:
+          data.tipo_cuenta && data.tipo_cuenta !== 'none'
+            ? data.tipo_cuenta
             : null,
-        observaciones: observaciones.trim() || null,
-        urgente,
-        pinellas_paga: pinellasPaga,
-        beneficiario: beneficiario.trim() || null,
-        banco: banco.trim() || null,
-        tipo_cuenta: tipoCuenta && tipoCuenta !== 'none' ? tipoCuenta : null,
-        numero_cuenta: numeroCuenta.trim() || null,
+        numero_cuenta: data.numero_cuenta.trim() || null,
         items: validItems.map((item) => ({
           cantidad: parseFloat(item.cantidad) || 1,
           unidad: item.unidad || 'unidad',
@@ -451,8 +478,9 @@ export default function SolicitudPagoForm({
 
       if (editingSolicitud) {
         await api.put(`/solicitudes-pago/${editingSolicitud.id}`, payload);
-        // El PUT general no acepta mensaje. Enviar aparte solo si cambió.
-        const mensajeTrim = mensaje.trim();
+
+        // PUT general no acepta mensaje. Enviar aparte solo si cambió.
+        const mensajeTrim = data.mensaje.trim();
         const previo = (editingSolicitud.mensaje ?? '').trim();
         if (mensajeTrim !== previo) {
           await api.put(`/solicitudes-pago/${editingSolicitud.id}/mensaje`, {
@@ -462,7 +490,7 @@ export default function SolicitudPagoForm({
       } else {
         const createRes = await api.post('/solicitudes-pago', {
           ...payload,
-          mensaje: mensaje.trim() || null,
+          mensaje: data.mensaje.trim() || null,
         });
 
         // Upload pending files if any
@@ -497,14 +525,18 @@ export default function SolicitudPagoForm({
     }
   };
 
+  const isSubmitting = form.formState.isSubmitting || loading;
+
   return (
     <AppDialog
       open={isOpen}
       onOpenChange={onClose}
       size="complex"
-      title={editingSolicitud
-        ? `Editar ${editingSolicitud.numero}`
-        : `Nueva Solicitud de Pago${nextNumero ? ` (${nextNumero})` : ''}`}
+      title={
+        editingSolicitud
+          ? `Editar ${editingSolicitud.numero}`
+          : `Nueva Solicitud de Pago${nextNumero ? ` (${nextNumero})` : ''}`
+      }
       description="Registra una nueva solicitud de pago"
       footer={
         <>
@@ -512,12 +544,16 @@ export default function SolicitudPagoForm({
             type="button"
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={isSubmitting}
           >
             Cancelar
           </Button>
-          <Button type="submit" form="solicitud-pago-form" disabled={loading}>
-            {loading
+          <Button
+            type="submit"
+            form="solicitud-pago-form"
+            disabled={isSubmitting}
+          >
+            {isSubmitting
               ? 'Guardando...'
               : editingSolicitud
                 ? 'Actualizar'
@@ -526,12 +562,13 @@ export default function SolicitudPagoForm({
         </>
       }
     >
-        <form id="solicitud-pago-form" onSubmit={handleSubmit} className="space-y-5">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+      <Form {...form}>
+        <form
+          id="solicitud-pago-form"
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-5"
+        >
+          {error && <Alert variant="error" title={error} className="mb-1" />}
 
           {/* Section 1: Datos principales */}
           <div className="space-y-3">
@@ -540,124 +577,150 @@ export default function SolicitudPagoForm({
             </h3>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="proveedor" className="text-xs">
-                  Proveedor *
-                </Label>
-                <Input
-                  id="proveedor"
-                  placeholder="Nombre del proveedor"
-                  value={proveedor}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setProveedor(e.target.value)
-                  }
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label htmlFor="fecha" className="text-xs">
-                  Fecha *
-                </Label>
-                <Input
-                  id="fecha"
-                  type="date"
-                  value={fecha}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setFecha(e.target.value)
-                  }
-                  className="h-9"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Solicitado por</Label>
-                <Select value={solicitadoPor} onValueChange={setSolicitadoPor}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Seleccionar</SelectItem>
-                    {miembrosProyecto
-                      .filter(
-                        (m) => m.tipo_usuario === 'interno' || !m.tipo_usuario,
-                      )
-                      .map((m) => (
-                        <SelectItem key={m.id} value={m.id.toString()}>
-                          {m.nombre}
-                        </SelectItem>
-                      ))}
-                    {miembrosProyecto.some(
-                      (m) => m.tipo_usuario === 'externo',
-                    ) &&
-                      miembrosProyecto.some(
-                        (m) => m.tipo_usuario === 'interno' || !m.tipo_usuario,
-                      ) && <div className="my-1 h-px bg-border" />}
-                    {miembrosProyecto
-                      .filter((m) => m.tipo_usuario === 'externo')
-                      .map((m) => (
-                        <SelectItem key={m.id} value={m.id.toString()}>
-                          {m.nombre}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Requisicion vinculada — oculto temporalmente
-              <div>
-                <Label className="text-xs">Requisicion vinculada</Label>
-                <Select value={requisicionId} onValueChange={setRequisicionId}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Ninguna" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Ninguna</SelectItem>
-                    {requisiciones.map(r => (
-                      <SelectItem key={r.id} value={r.id.toString()}>{r.numero}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              */}
-            </div>
-
-            <div>
-              <Label htmlFor="observaciones" className="text-xs">
-                Observaciones
-              </Label>
-              <Textarea
-                id="observaciones"
-                placeholder="Notas adicionales..."
-                rows={2}
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
+              <FormField
+                control={form.control}
+                name="proveedor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Proveedor *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre del proveedor"
+                        className="h-9"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fecha"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Fecha *</FormLabel>
+                    <FormControl>
+                      <Input type="date" className="h-9" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="solicitado_por"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Solicitado por</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Seleccionar</SelectItem>
+                        {miembrosProyecto
+                          .filter(
+                            (m) =>
+                              m.tipo_usuario === 'interno' || !m.tipo_usuario,
+                          )
+                          .map((m) => (
+                            <SelectItem key={m.id} value={m.id.toString()}>
+                              {m.nombre}
+                            </SelectItem>
+                          ))}
+                        {miembrosProyecto.some(
+                          (m) => m.tipo_usuario === 'externo',
+                        ) &&
+                          miembrosProyecto.some(
+                            (m) =>
+                              m.tipo_usuario === 'interno' || !m.tipo_usuario,
+                          ) && <div className="my-1 h-px bg-border" />}
+                        {miembrosProyecto
+                          .filter((m) => m.tipo_usuario === 'externo')
+                          .map((m) => (
+                            <SelectItem key={m.id} value={m.id.toString()}>
+                              {m.nombre}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Requisicion vinculada — oculto temporalmente; siempre se envia null. */}
+            </div>
+
+            <FormField
+              control={form.control}
+              name="observaciones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Observaciones</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Notas adicionales..."
+                      rows={2}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={urgente}
-                  onChange={(e) => setUrgente(e.target.checked)}
-                  className="h-4 w-4 rounded border-border"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Marcar como urgente
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={pinellasPaga}
-                  onChange={(e) => setPinellasPaga(e.target.checked)}
-                  className="h-4 w-4 rounded border-border"
-                />
-                <span className="text-sm text-muted-foreground">
-                  Pinellas paga — pendiente de reembolso
-                </span>
-              </label>
+              <FormField
+                control={form.control}
+                name="urgente"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          Marcar como urgente
+                        </span>
+                      </label>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pinellas_paga"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          Pinellas paga — pendiente de reembolso
+                        </span>
+                      </label>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
 
@@ -666,6 +729,12 @@ export default function SolicitudPagoForm({
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Items
             </h3>
+
+            {itemsError && (
+              <p className="text-sm font-medium text-destructive">
+                {itemsError}
+              </p>
+            )}
 
             {/* Table Header */}
             <div className="hidden sm:grid grid-cols-[1fr_70px_80px_90px_90px_30px] gap-2 text-xs font-medium text-muted-foreground px-1">
@@ -1100,61 +1169,82 @@ export default function SolicitudPagoForm({
               Datos Bancarios
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="beneficiario" className="text-xs">
-                  Beneficiario
-                </Label>
-                <Input
-                  id="beneficiario"
-                  placeholder="Nombre del beneficiario"
-                  value={beneficiario}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setBeneficiario(e.target.value)
-                  }
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label htmlFor="banco" className="text-xs">
-                  Banco
-                </Label>
-                <Input
-                  id="banco"
-                  placeholder="Nombre del banco"
-                  value={banco}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setBanco(e.target.value)
-                  }
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Tipo de Cuenta</Label>
-                <Select value={tipoCuenta} onValueChange={setTipoCuenta}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Seleccionar</SelectItem>
-                    <SelectItem value="ahorro">Ahorro</SelectItem>
-                    <SelectItem value="corriente">Corriente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="numero_cuenta" className="text-xs">
-                  Numero de Cuenta
-                </Label>
-                <Input
-                  id="numero_cuenta"
-                  placeholder="Numero de cuenta"
-                  value={numeroCuenta}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setNumeroCuenta(e.target.value)
-                  }
-                  className="h-9"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="beneficiario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Beneficiario</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre del beneficiario"
+                        className="h-9"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="banco"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Banco</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre del banco"
+                        className="h-9"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tipo_cuenta"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Tipo de Cuenta</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Seleccionar</SelectItem>
+                        <SelectItem value="ahorro">Ahorro</SelectItem>
+                        <SelectItem value="corriente">Corriente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="numero_cuenta"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Numero de Cuenta</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Numero de cuenta"
+                        className="h-9"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
 
@@ -1228,21 +1318,26 @@ export default function SolicitudPagoForm({
             </div>
           )}
 
-          <div>
-            <Label htmlFor="mensaje" className="text-xs">
-              Mensaje (opcional)
-            </Label>
-            <Textarea
-              id="mensaje"
-              placeholder="Mensaje corto visible en la lista..."
-              rows={2}
-              maxLength={1000}
-              value={mensaje}
-              onChange={(e) => setMensaje(e.target.value)}
-            />
-          </div>
-
+          <FormField
+            control={form.control}
+            name="mensaje"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Mensaje (opcional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Mensaje corto visible en la lista..."
+                    rows={2}
+                    maxLength={1000}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </form>
+      </Form>
     </AppDialog>
   );
 }
