@@ -13,6 +13,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import ProjectInformacion from './ProjectInformacion';
@@ -640,7 +641,12 @@ export default function ProjectDetailLayout({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteAdenda}>Eliminar</AlertDialogAction>
+            <AlertDialogAction
+              onClick={confirmDeleteAdenda}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

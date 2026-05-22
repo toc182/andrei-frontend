@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Paperclip,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -791,7 +791,10 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

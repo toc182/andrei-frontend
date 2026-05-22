@@ -8,7 +8,7 @@ import {
   Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send, AlertCircle, FileCheck,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -1441,7 +1441,12 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteGasto}>Eliminar</AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleDeleteGasto}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1455,7 +1460,12 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAdjunto}>Eliminar</AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleDeleteAdjunto}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -8,7 +8,7 @@ import { formatMoney } from '../utils/formatters';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import type { Project, Adenda } from '@/types';
 // Shadcn Components
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -818,7 +818,12 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProject}>Eliminar</AlertDialogAction>
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -832,7 +837,12 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteAdenda}>Eliminar</AlertDialogAction>
+            <AlertDialogAction
+              onClick={confirmDeleteAdenda}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              Eliminar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
