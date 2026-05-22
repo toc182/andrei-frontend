@@ -33,7 +33,6 @@ import { AppDialog } from '@/components/shell/AppDialog';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '../../services/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface ProjectBitacoraProps {
   projectId: number;
@@ -61,7 +60,8 @@ interface BitacoraComment {
 interface BitacoraAttachment {
   id: number;
   nombre_archivo: string;
-  ruta_archivo: string;
+  r2_key: string;
+  url?: string;
 }
 
 interface ProjectMember {
@@ -610,23 +610,21 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                     Fotos
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedEntry.attachments.map((att) => (
-                      <button
-                        key={att.id}
-                        onClick={() =>
-                          setViewingImage(
-                            `${API_BASE}/uploads/bitacora/${att.ruta_archivo}`,
-                          )
-                        }
-                        className="relative group"
-                      >
-                        <img
-                          src={`${API_BASE}/uploads/bitacora/${att.ruta_archivo}`}
-                          alt={att.nombre_archivo}
-                          className="h-24 w-24 object-cover rounded border hover:opacity-90 transition"
-                        />
-                      </button>
-                    ))}
+                    {selectedEntry.attachments
+                      .filter((att) => att.url)
+                      .map((att) => (
+                        <button
+                          key={att.id}
+                          onClick={() => setViewingImage(att.url ?? '')}
+                          className="relative group"
+                        >
+                          <img
+                            src={att.url}
+                            alt={att.nombre_archivo}
+                            className="h-24 w-24 object-cover rounded border hover:opacity-90 transition"
+                          />
+                        </button>
+                      ))}
                   </div>
                 </div>
               )}
@@ -664,22 +662,22 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                           {comment.attachments &&
                             comment.attachments.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
-                                {comment.attachments.map((att) => (
-                                  <button
-                                    key={att.id}
-                                    onClick={() =>
-                                      setViewingImage(
-                                        `${API_BASE}/uploads/bitacora/${att.ruta_archivo}`,
-                                      )
-                                    }
-                                  >
-                                    <img
-                                      src={`${API_BASE}/uploads/bitacora/${att.ruta_archivo}`}
-                                      alt={att.nombre_archivo}
-                                      className="h-16 w-16 object-cover rounded border hover:opacity-90 transition"
-                                    />
-                                  </button>
-                                ))}
+                                {comment.attachments
+                                  .filter((att) => att.url)
+                                  .map((att) => (
+                                    <button
+                                      key={att.id}
+                                      onClick={() =>
+                                        setViewingImage(att.url ?? '')
+                                      }
+                                    >
+                                      <img
+                                        src={att.url}
+                                        alt={att.nombre_archivo}
+                                        className="h-16 w-16 object-cover rounded border hover:opacity-90 transition"
+                                      />
+                                    </button>
+                                  ))}
                               </div>
                             )}
                         </div>

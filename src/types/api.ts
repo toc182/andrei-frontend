@@ -353,7 +353,8 @@ export interface BitacoraAttachment {
   comentario_id?: number;
   nombre_archivo: string;
   original_name: string;
-  ruta_archivo: string;
+  r2_key: string;
+  url?: string;
   tipo_mime: string;
   tamano: number;
   created_at: string;
