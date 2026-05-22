@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { PageHeader } from '@/components/shell/PageHeader';
+import { useAuth } from '@/context/AuthContext';
 import api from '../../services/api';
 
 
@@ -42,6 +43,7 @@ interface BitacoraEntry {
   id: number;
   titulo?: string;
   contenido: string;
+  creado_por: number;
   creador_nombre: string;
   created_at: string;
   comment_count: number;
@@ -52,6 +54,7 @@ interface BitacoraEntry {
 interface BitacoraComment {
   id: number;
   contenido: string;
+  creado_por: number;
   creador_nombre: string;
   created_at: string;
   attachments?: BitacoraAttachment[];
@@ -146,6 +149,8 @@ const truncateText = (text: string, maxLength: number = 120): string => {
 };
 
 export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.rol === 'admin' || user?.rol === 'co-admin';
   const [entries, setEntries] = useState<BitacoraEntry[]>([]);
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -587,14 +592,16 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                   {formatRelativeTime(selectedEntry.created_at)}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => handleDelete(selectedEntry.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {(isAdmin || selectedEntry.creado_por === user?.id) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDelete(selectedEntry.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
 
             {/* Content */}
@@ -681,14 +688,16 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                               </div>
                             )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeleteComment(comment.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {(isAdmin || comment.creado_por === user?.id) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteComment(comment.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
