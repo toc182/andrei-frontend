@@ -602,7 +602,7 @@ function ProjectHeader({ project: p }: { project: ProjectResumen }) {
   return (
     <div className="flex items-start gap-4">
       <div className="min-w-0 flex-1">
-        <div className="font-semibold text-[15px] leading-tight">{p.proyecto_nombre}</div>
+        <div className="font-semibold text-[15px] leading-tight">{p.proyecto_nombre_corto || p.proyecto_nombre}</div>
         {p.cliente_nombre && <div className="text-xs text-muted-foreground mt-0.5">{p.cliente_nombre}</div>}
       </div>
       <div className="flex items-center gap-4 flex-shrink-0">
