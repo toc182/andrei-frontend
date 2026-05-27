@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowRight, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Plus, ArrowRight, ChevronRight, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
@@ -78,21 +78,26 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-start">
-        <div>
-          <PageHeader title="Cuentas" />
-          {onNavigateToGeneral && (
-            <button onClick={onNavigateToGeneral} className="text-sm text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1 mt-0.5">
-              <ExternalLink className="h-3 w-3" />
+      <PageHeader
+        title="Cuentas"
+        subtitle={
+          onNavigateToGeneral ? (
+            <button
+              type="button"
+              onClick={onNavigateToGeneral}
+              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+            >
               Ver cuentas de todos los proyectos
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
-          )}
-        </div>
+          ) : undefined
+        }
+      >
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nueva Cuenta
         </Button>
-      </div>
+      </PageHeader>
 
       {loading ? (
         <p className="text-sm text-muted-foreground py-8 text-center">Cargando...</p>

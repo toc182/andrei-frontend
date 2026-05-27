@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   children?: ReactNode;
   className?: string;
 }
@@ -21,7 +21,7 @@ export function PageHeader({ title, subtitle, children, className }: PageHeaderP
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
         )}
       </div>
       {children && (
