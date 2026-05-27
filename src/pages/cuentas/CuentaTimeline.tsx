@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
-import type { CuentaEvento } from '@/types/api';
+import type { CuentaEstado, CuentaEvento } from '@/types/api';
 import api from '@/services/api';
+import { ESTADO_CONFIG } from './config';
+
+const estadoLabel = (estado: string | null | undefined): string => {
+  if (!estado) return '—';
+  return ESTADO_CONFIG[estado as CuentaEstado]?.label ?? estado;
+};
 
 interface Props {
   cuentaId: number;
@@ -72,7 +78,7 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
               <div className="text-sm text-muted-foreground leading-relaxed">
                 {ev.tipo === 'transicion' && (
                   <span>
-                    {ev.estado_desde} → <strong className="text-foreground">{ev.estado_hacia}</strong>
+                    {estadoLabel(ev.estado_desde)} → <strong className="text-foreground">{estadoLabel(ev.estado_hacia)}</strong>
                   </span>
                 )}
                 {ev.comentario && (
