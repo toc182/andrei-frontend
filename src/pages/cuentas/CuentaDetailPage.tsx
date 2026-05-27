@@ -157,11 +157,18 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
   adjuntos: CuentaDetail['adjuntos'];
   onChanged: () => void;
 }) {
+  const [uploading, setUploading] = useState<File | null>(null);
+
   const upload = async (file: File) => {
-    const fd = new FormData();
-    fd.append('file', file);
-    await api.post(`/cuentas/${cuentaId}/adjuntos`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-    onChanged();
+    setUploading(file);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      await api.post(`/cuentas/${cuentaId}/adjuntos`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      onChanged();
+    } finally {
+      setUploading(null);
+    }
   };
 
   const download = async (adjId: number, nombre: string) => {
@@ -183,7 +190,7 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
     <Card>
       <CardContent className="p-5">
         <h2 className="text-sm font-semibold mb-3">Adjuntos</h2>
-        {adjuntos.length > 0 && (
+        {(adjuntos.length > 0 || uploading) && (
           <div className="space-y-1.5 mb-3">
             {adjuntos.map((a) => (
               <div key={a.id} className="flex items-center gap-3 bg-muted/40 border rounded-md px-3 py-2 text-sm">
@@ -199,12 +206,32 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
                 </Button>
               </div>
             ))}
+            {uploading && (
+              <div className="flex items-center gap-3 bg-muted/40 border rounded-md px-3 py-2 text-sm">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+                <span className="flex-1 truncate">{uploading.name}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  Subiendo...
+                </span>
+              </div>
+            )}
           </div>
         )}
-        <label className="flex items-center justify-center gap-2 p-3 border border-dashed rounded-md text-sm text-muted-foreground cursor-pointer hover:border-foreground/30 hover:text-foreground/60 transition-colors">
+        <label
+          className={
+            uploading
+              ? 'flex items-center justify-center gap-2 p-3 border border-dashed rounded-md text-sm text-muted-foreground/50 cursor-not-allowed'
+              : 'flex items-center justify-center gap-2 p-3 border border-dashed rounded-md text-sm text-muted-foreground cursor-pointer hover:border-foreground/30 hover:text-foreground/60 transition-colors'
+          }
+        >
           <Upload className="h-4 w-4" />
           Subir archivo
-          <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+          <input
+            type="file"
+            className="hidden"
+            disabled={!!uploading}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
+          />
         </label>
       </CardContent>
     </Card>
