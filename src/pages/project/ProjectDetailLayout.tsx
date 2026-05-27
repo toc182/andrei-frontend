@@ -202,7 +202,6 @@ export default function ProjectDetailLayout({
         return (
           <CuentaDetailPage
             cuentaId={cuentaId}
-            projectName={project.nombre}
             onBack={() => onNavigate(`project-${projectId}-cuentas`)}
           />
         );

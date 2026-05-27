@@ -8,7 +8,7 @@ import { AppDialog } from '@/components/shell/AppDialog';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Settings, Upload, Download, Trash2, Loader2 } from 'lucide-react';
+import { Settings, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type { CuentaDetail, CuentaEstado } from '@/types/api';
@@ -19,11 +19,10 @@ import { formatMonto, formatDateExact, TRANSICIONES, getFlow } from './config';
 
 interface Props {
   cuentaId: number;
-  projectName?: string;
   onBack?: () => void;
 }
 
-export default function CuentaDetailPage({ cuentaId, projectName, onBack }: Props) {
+export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
   const [cuenta, setCuenta] = useState<CuentaDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,22 +52,18 @@ export default function CuentaDetailPage({ cuentaId, projectName, onBack }: Prop
 
   return (
     <div className="space-y-4">
-      {/* Breadcrumb */}
-      <div className="text-sm text-muted-foreground">
-        {onBack ? (
-          <button onClick={onBack} className="hover:underline">{projectName || 'Proyecto'}</button>
-        ) : (
-          <span>{projectName || 'Proyecto'}</span>
-        )}
-        <span className="mx-1.5">›</span>
-        {onBack && <button onClick={onBack} className="hover:underline">Cuentas</button>}
-        {!onBack && <span>Cuentas</span>}
-        <span className="mx-1.5">›</span>
-        <span className="text-foreground">Cuenta {cuenta.numero}</span>
-      </div>
-
       {/* Header */}
       <div className="flex items-center gap-3">
+        {onBack && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onBack}
+            aria-label="Volver a cuentas"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <PageHeader title={`Cuenta ${cuenta.numero}`} />
         <CuentaEstadoBadge estado={cuenta.estado} />
       </div>
