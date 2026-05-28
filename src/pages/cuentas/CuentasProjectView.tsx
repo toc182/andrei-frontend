@@ -261,18 +261,21 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
           {!pp.inicio && !pp.fin && <span className="text-muted-foreground">—</span>}
         </span>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex-1 rounded-full bg-secondary overflow-hidden h-1.5 flex">
+          <div className="flex-1 rounded-full bg-secondary overflow-hidden h-3 flex">
             {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
             {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
           </div>
           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{curr}%</span>
         </div>
-        {!isPagada && (
-          <span className={`text-xs shrink-0 flex items-center gap-1 ${dColor}`}>
-            {days != null && days >= 14 && <AlertTriangle className="h-3 w-3" />}
-            {days != null ? `${days}d` : '—'}
-          </span>
-        )}
+        {/* Days slot: fixed width so every bar track has the same length,
+            regardless of content or whether the row is pagada. */}
+        <span
+          className={`text-xs shrink-0 w-12 flex items-center justify-end gap-1 ${!isPagada ? dColor : ''}`}
+          aria-hidden={isPagada}
+        >
+          {!isPagada && days != null && days >= 14 && <AlertTriangle className="h-3 w-3" />}
+          {!isPagada && (days != null ? `${days}d` : '—')}
+        </span>
       </div>
     </div>
   );
