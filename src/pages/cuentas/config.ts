@@ -208,21 +208,25 @@ export function formatMonto(v: string | number | null | undefined): string {
   return `B/. ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Date-only strings ("YYYY-MM-DD") are parsed by JS Date as UTC midnight,
-// which becomes the previous day in negative-offset timezones. Append a
-// local-midnight time component so getDate() returns the intended day.
-function parseDate(s: string): Date {
-  return s.includes('T') ? new Date(s) : new Date(s + 'T00:00:00');
+// Periodo fields come back as either "YYYY-MM-DD" (DATE column) or
+// "YYYY-MM-DDT00:00:00.000Z" (DATE column auto-serialized by pg+Express).
+// Both formats represent a calendar day, not an instant — but JS Date
+// treats the "T00:00:00.000Z" form as UTC midnight, and getDate() then
+// returns the previous day in negative-offset timezones. Parse the
+// Y-M-D prefix directly so the calendar day is preserved.
+function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export function formatDate(s: string | null | undefined): string {
   if (!s) return '—';
-  return parseDate(s).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' });
+  return parseLocalDate(s).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDateExact(s: string | null | undefined): string {
   if (!s) return '';
-  const d = parseDate(s);
+  const d = parseLocalDate(s);
   const dd = String(d.getDate()).padStart(2, '0');
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const yy = String(d.getFullYear()).slice(2);
