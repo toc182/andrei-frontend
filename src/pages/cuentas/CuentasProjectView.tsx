@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Plus, ArrowRight, ChevronRight, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
+import { StatCard } from '@/components/shell/StatCard';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
@@ -84,15 +85,32 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
     cumAvance += c.avance_porcentaje ? Number(c.avance_porcentaje) : 0;
   }
 
-  // Total pending monto
+  // Section totals (used in the table band headers)
   const totalPendMonto = pendientes.reduce((s, c) => s + (c.monto_total ? Number(c.monto_total) : 0), 0);
   const totalPagMonto = pagadas.reduce((s, c) => s + (c.monto_total ? Number(c.monto_total) : 0), 0);
+
+  // Resumen totals: monto by category (currentCuenta is always borrador when set).
+  const totalPorPresentar =
+    (currentCuenta ? Number(currentCuenta.monto_total || 0) : 0) +
+    borradoresAdicionales.reduce((s, c) => s + Number(c.monto_total || 0), 0);
+  const totalContratado = totalPagMonto + totalPendMonto + totalPorPresentar;
+  const countPorPresentar = (currentCuenta ? 1 : 0) + borradoresAdicionales.length;
+
+  // Resumen avance (physical project progress, sum of avance_porcentaje per state).
+  const sumAvancePagado = pagadas.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
+  const sumAvancePendiente = pendientes.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
+  const sumAvanceBorrador =
+    (currentCuenta ? Number(currentCuenta.avance_porcentaje || 0) : 0) +
+    borradoresAdicionales.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
+  const sumAvance = sumAvancePagado + sumAvancePendiente + sumAvanceBorrador;
 
   const hasAnyCuenta =
     !!currentCuenta ||
     borradoresAdicionales.length > 0 ||
     pendientes.length > 0 ||
     pagadas.length > 0;
+
+  const pagadoPctOfTotal = totalContratado > 0 ? (totalPagMonto / totalContratado) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -116,6 +134,91 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
           Nueva Cuenta
         </Button>
       </PageHeader>
+
+      {!loading && hasAnyCuenta && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Total contratado"
+              value={formatMonto(totalContratado)}
+              accent="navy"
+              trend={{
+                direction: 'flat',
+                value: `${sorted.length} cuenta${sorted.length === 1 ? '' : 's'}`,
+              }}
+            />
+            <StatCard
+              label="Pagado"
+              value={formatMonto(totalPagMonto)}
+              accent="success"
+              trend={{
+                direction: 'flat',
+                value: `${pagadoPctOfTotal.toFixed(1)}% del total`,
+              }}
+            />
+            <StatCard
+              label="Pendiente de pago"
+              value={formatMonto(totalPendMonto)}
+              accent="info"
+              trend={{
+                direction: 'flat',
+                value: `${pendientes.length} en proceso`,
+              }}
+            />
+            <StatCard
+              label="Por presentar"
+              value={formatMonto(totalPorPresentar)}
+              accent="teal"
+              trend={{
+                direction: 'flat',
+                value: `${countPorPresentar} en borrador`,
+              }}
+            />
+          </div>
+
+          {sumAvance > 0 && (
+            <Card>
+              <CardContent className="p-5">
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
+                    Avance del proyecto
+                  </span>
+                  <span className="text-sm font-bold tabular-nums">
+                    {sumAvance.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-300">
+                  {sumAvancePagado > 0 && (
+                    <div className="h-full bg-success" style={{ width: `${sumAvancePagado}%` }} />
+                  )}
+                  {sumAvancePendiente > 0 && (
+                    <div className="h-full bg-info" style={{ width: `${sumAvancePendiente}%` }} />
+                  )}
+                  {sumAvanceBorrador > 0 && (
+                    <div className="h-full bg-teal" style={{ width: `${sumAvanceBorrador}%` }} />
+                  )}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-success" />
+                    Pagado {sumAvancePagado.toFixed(2)}%
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-info" />
+                    Pendiente de pago {sumAvancePendiente.toFixed(2)}%
+                  </span>
+                  {sumAvanceBorrador > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-teal" />
+                      Por presentar {sumAvanceBorrador.toFixed(2)}%
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
 
       {loading ? (
         <p className="text-sm text-muted-foreground py-8 text-center">Cargando...</p>
