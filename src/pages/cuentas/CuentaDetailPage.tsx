@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Settings, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -139,6 +149,7 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
         onOpenChange={setShowEdit}
         cuenta={cuenta}
         onSaved={() => { setShowEdit(false); load(); }}
+        onDeleted={() => { setShowEdit(false); onBack?.(); }}
       />
 
       {/* Transition dialog */}
@@ -242,17 +253,22 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
 
 // ── Edit Dialog ─────────────────────────────────────────────────────────
 
-function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved }: {
+function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   cuenta: CuentaDetail;
   onSaved: () => void;
+  onDeleted: () => void;
 }) {
   const [monto, setMonto] = useState('');
   const [inicio, setInicio] = useState('');
   const [fin, setFin] = useState('');
   const [avance, setAvance] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const canDelete = cuenta.estado === 'borrador';
 
   useEffect(() => {
     if (open) {
@@ -278,31 +294,79 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved }: {
     }
   };
 
+  const remove = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/cuentas/${cuenta.id}`);
+      setConfirmDelete(false);
+      onDeleted();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <AppDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      size="simple"
-      title="Editar cuenta"
-      footer={
-        <>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button form="edit-cuenta-form" type="submit" disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar
-          </Button>
-        </>
-      }
-    >
-      <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
-        <div><Label>Monto (B/.)</Label><Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>Periodo inicio</Label><Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></div>
-          <div><Label>Periodo fin</Label><Input type="date" value={fin} onChange={(e) => setFin(e.target.value)} /></div>
-        </div>
-        <div><Label>Avance (%)</Label><Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} /></div>
-      </form>
-    </AppDialog>
+    <>
+      <AppDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        size="simple"
+        title="Editar cuenta"
+        footer={
+          <>
+            {canDelete ? (
+              <Button
+                variant="outline"
+                className="text-error border-error/30 hover:bg-error/10 mr-auto"
+                onClick={() => setConfirmDelete(true)}
+                disabled={saving || deleting}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </Button>
+            ) : (
+              <span className="mr-auto" />
+            )}
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving || deleting}>Cancelar</Button>
+            <Button form="edit-cuenta-form" type="submit" disabled={saving || deleting}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar
+            </Button>
+          </>
+        }
+      >
+        <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
+          <div><Label>Monto (B/.)</Label><Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Periodo inicio</Label><Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></div>
+            <div><Label>Periodo fin</Label><Input type="date" value={fin} onChange={(e) => setFin(e.target.value)} /></div>
+          </div>
+          <div><Label>Avance (%)</Label><Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} /></div>
+        </form>
+      </AppDialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={(o) => { if (!o) setConfirmDelete(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar Cuenta {cuenta.numero}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={remove}
+              disabled={deleting}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
