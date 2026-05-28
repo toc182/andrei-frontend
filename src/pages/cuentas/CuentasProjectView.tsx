@@ -187,15 +187,15 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                     {sumAvance.toFixed(2)}%
                   </span>
                 </div>
-                <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-300">
+                <div className="flex h-3.5 overflow-hidden rounded-full bg-slate-300">
                   {sumAvancePagado > 0 && (
                     <div className="h-full bg-success" style={{ width: `${sumAvancePagado}%` }} />
                   )}
                   {sumAvancePendiente > 0 && (
-                    <div className="h-full bg-info" style={{ width: `${sumAvancePendiente}%` }} />
+                    <div className="h-full bg-success/60" style={{ width: `${sumAvancePendiente}%` }} />
                   )}
                   {sumAvanceBorrador > 0 && (
-                    <div className="h-full bg-teal" style={{ width: `${sumAvanceBorrador}%` }} />
+                    <div className="h-full bg-success/30" style={{ width: `${sumAvanceBorrador}%` }} />
                   )}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -204,12 +204,12 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                     Pagado {sumAvancePagado.toFixed(2)}%
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="inline-block h-2 w-2 rounded-full bg-info" />
+                    <span className="inline-block h-2 w-2 rounded-full bg-success/60" />
                     Pendiente de pago {sumAvancePendiente.toFixed(2)}%
                   </span>
                   {sumAvanceBorrador > 0 && (
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="inline-block h-2 w-2 rounded-full bg-teal" />
+                      <span className="inline-block h-2 w-2 rounded-full bg-success/30" />
                       Por presentar {sumAvanceBorrador.toFixed(2)}%
                     </span>
                   )}
