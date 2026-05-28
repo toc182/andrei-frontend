@@ -111,27 +111,14 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
             <CardContent className="px-5 py-4">
               <div className="text-[10px] font-semibold uppercase tracking-wide mb-3 text-teal">Cuenta actual</div>
               {currentCuenta ? (
-                <CuentaSubCard
-                  cuenta={currentCuenta}
-                  avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
-                  days={null}
-                  onClick={() => onCuentaClick?.(currentCuenta.id)}
-                  isCurrent
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Sin cuenta actual</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Borradores adicionales */}
-          {borradoresAdicionales.length > 0 && (
-            <Card>
-              <CardContent className="px-5 py-4">
-                <div className="text-[10px] font-semibold uppercase tracking-wide mb-3 text-muted-foreground">
-                  Borradores adicionales
-                </div>
                 <div className="space-y-2">
+                  <CuentaSubCard
+                    cuenta={currentCuenta}
+                    avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
+                    days={null}
+                    onClick={() => onCuentaClick?.(currentCuenta.id)}
+                    isCurrent
+                  />
                   {borradoresAdicionales.map((c) => (
                     <CuentaSubCard
                       key={c.id}
@@ -142,9 +129,11 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                     />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Sin cuenta actual</p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Pendientes */}
           {pendientes.length > 0 && (
