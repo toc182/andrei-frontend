@@ -268,9 +268,10 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{curr}%</span>
         </div>
         {/* Days slot: fixed width so every bar track has the same length,
-            regardless of content or whether the row is pagada. */}
+            regardless of content or whether the row is pagada. Content
+            sits at the left so there's no visible gap after the %. */}
         <span
-          className={`text-xs shrink-0 w-12 flex items-center justify-end gap-1 ${!isPagada ? dColor : ''}`}
+          className={`text-xs shrink-0 w-12 flex items-center gap-1 ${!isPagada ? dColor : ''}`}
           aria-hidden={isPagada}
         >
           {!isPagada && days != null && days >= 14 && <AlertTriangle className="h-3 w-3" />}
