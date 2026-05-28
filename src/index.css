@@ -35,6 +35,10 @@
   --color-error:   oklch(48.5% 0.204 27);    /* #B91C1C */
   --color-info:    oklch(47.4% 0.132 240);   /* #0369A1 */
 
+  /* Cuenta avance bar — past = royal blue, current = light blue */
+  --color-avance-past:    #1e4ba0;
+  --color-avance-current: #60a5fa;
+
   /* shadcn surface tokens — mapped to brand palette */
   --color-background:       oklch(97.6% 0.006 247);   /* canvas = Slate 50 */
   --color-foreground:       oklch(21.3% 0.034 265);   /* Ink */
