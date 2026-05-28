@@ -263,7 +263,7 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
         </span>
       </TableCell>
       <TableCell className="px-2 py-3">
-        <div className="rounded-full bg-secondary overflow-hidden h-3.5 flex">
+        <div className="rounded-full bg-slate-300 overflow-hidden h-3.5 flex">
           {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
           {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
         </div>
