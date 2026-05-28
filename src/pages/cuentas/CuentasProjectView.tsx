@@ -93,8 +93,15 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   const totalPorPresentar =
     (currentCuenta ? Number(currentCuenta.monto_total || 0) : 0) +
     borradoresAdicionales.reduce((s, c) => s + Number(c.monto_total || 0), 0);
-  const totalContratado = totalPagMonto + totalPendMonto + totalPorPresentar;
   const countPorPresentar = (currentCuenta ? 1 : 0) + borradoresAdicionales.length;
+
+  // "Total contratado" comes from the project's monto_total field (original
+  // contract + adendas). Fall back to the sum of cuenta amounts if the project
+  // has no contract amount set.
+  const projectMontoTotal = cuentas[0]?.proyecto_monto_total
+    ? Number(cuentas[0].proyecto_monto_total)
+    : null;
+  const totalContratado = projectMontoTotal ?? (totalPagMonto + totalPendMonto + totalPorPresentar);
 
   // Resumen avance (physical project progress, sum of avance_porcentaje per state).
   const sumAvancePagado = pagadas.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);

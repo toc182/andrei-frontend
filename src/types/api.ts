@@ -656,6 +656,7 @@ export interface Cuenta {
   proyecto_tiene_ipt?: boolean;
   cliente_nombre?: string;
   cliente_abreviatura?: string;
+  proyecto_monto_total?: string | null;
   numero: number;
   es_final: boolean;
   monto_total: string;
