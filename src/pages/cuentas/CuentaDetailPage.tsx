@@ -316,8 +316,8 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
           <>
             {canDelete ? (
               <Button
-                variant="outline"
-                className="text-error border-error/30 hover:bg-error/10 mr-auto"
+                variant="destructive"
+                className="mr-auto"
                 onClick={() => setConfirmDelete(true)}
                 disabled={saving || deleting}
               >
