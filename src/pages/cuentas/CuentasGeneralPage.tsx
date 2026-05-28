@@ -302,8 +302,8 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 rounded-full bg-secondary overflow-hidden h-2 flex">
-                            {prev > 0 && <div className="h-full bg-primary" style={{ width: `${prev}%` }} />}
-                            {curr > 0 && <div className="h-full bg-info" style={{ width: `${curr}%` }} />}
+                            {prev > 0 && <div className="h-full bg-primary/30" style={{ width: `${prev}%` }} />}
+                            {curr > 0 && <div className="h-full bg-primary" style={{ width: `${curr}%` }} />}
                           </div>
                           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{total.toFixed(0)}%</span>
                         </div>
@@ -581,8 +581,8 @@ function PendientesTab({ data, loading, onProjectClick }: {
                         </span>
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <div className="flex-1 rounded-full bg-secondary overflow-hidden h-1.5 flex">
-                            {prev > 0 && <div className="h-full bg-primary" style={{ width: `${prev}%` }} />}
-                            {curr > 0 && <div className="h-full bg-info" style={{ width: `${curr}%` }} />}
+                            {prev > 0 && <div className="h-full bg-primary/30" style={{ width: `${prev}%` }} />}
+                            {curr > 0 && <div className="h-full bg-primary" style={{ width: `${curr}%` }} />}
                           </div>
                           <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{curr}%</span>
                         </div>
