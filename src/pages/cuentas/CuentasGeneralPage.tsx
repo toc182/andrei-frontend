@@ -176,7 +176,11 @@ function ResumenCard({ project: p, onClick }: { project: ProjectResumen; onClick
                     return (
                       <div key={c.id} className="flex items-center gap-2 bg-muted/40 border rounded-md px-2.5 py-1.5 text-xs">
                         <span className="font-semibold min-w-[22px]">C{c.numero}</span>
-                        <CuentaEstadoBadge estado={c.estado} className="text-[10px] px-1.5 py-0" />
+                        <CuentaEstadoBadge
+                          estado={c.estado}
+                          clienteLabel={p.cliente_abreviatura || p.cliente_nombre}
+                          className="text-[10px] px-1.5 py-0"
+                        />
                         <span className="ml-auto text-muted-foreground">{formatMonto(c.monto_total)}</span>
                         <span className={`${days != null ? waitColor(days) : 'text-muted-foreground'}`}>
                           {days != null ? `${days}d` : '—'}
@@ -559,7 +563,10 @@ function PendientesTab({ data, loading, onProjectClick }: {
                         <div className="flex items-center gap-2">
                           {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0" />}
                           <span className="font-semibold text-sm">Cuenta {c.numero}</span>
-                          <CuentaEstadoBadge estado={c.estado} />
+                          <CuentaEstadoBadge
+                            estado={c.estado}
+                            clienteLabel={p.cliente_abreviatura || p.cliente_nombre}
+                          />
                         </div>
                         <span className="font-medium text-sm tabular-nums">{formatMonto(c.monto_total)}</span>
                       </div>

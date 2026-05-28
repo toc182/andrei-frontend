@@ -1,20 +1,18 @@
 import { Badge } from '@/components/ui/badge';
 import type { CuentaEstado } from '@/types/api';
-import { ESTADO_CONFIG } from './config';
+import { getBadgeDisplay } from './config';
 
 interface Props {
   estado: CuentaEstado | string;
+  clienteLabel?: string | null;
   className?: string;
 }
 
-export default function CuentaEstadoBadge({ estado, className = '' }: Props) {
-  const cfg = ESTADO_CONFIG[estado as CuentaEstado];
-  if (!cfg) {
-    return <Badge className={`bg-slate-100 text-slate-600 border-slate-200 border ${className}`}>{estado}</Badge>;
-  }
+export default function CuentaEstadoBadge({ estado, clienteLabel, className = '' }: Props) {
+  const display = getBadgeDisplay(estado as CuentaEstado, clienteLabel);
   return (
-    <Badge className={`${cfg.className} ${className}`}>
-      {cfg.label}
+    <Badge className={`${display.className} ${className}`}>
+      {display.label}
     </Badge>
   );
 }

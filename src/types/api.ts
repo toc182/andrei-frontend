@@ -654,6 +654,8 @@ export interface Cuenta {
   proyecto_nombre?: string;
   proyecto_tipo?: string;
   proyecto_tiene_ipt?: boolean;
+  cliente_nombre?: string;
+  cliente_abreviatura?: string;
   numero: number;
   es_final: boolean;
   monto_total: string;
@@ -674,7 +676,7 @@ export interface Cuenta {
 export interface CuentaEvento {
   id: number;
   cuenta_id: number;
-  tipo: 'transicion' | 'comentario';
+  tipo: 'creacion' | 'transicion' | 'comentario' | 'edicion';
   estado_desde: CuentaEstado | null;
   estado_hacia: CuentaEstado | null;
   comentario: string | null;
@@ -719,4 +721,6 @@ export interface CuentaDetail extends Cuenta {
   eventos: CuentaEvento[];
   adjuntos: CuentaAdjunto[];
   ipt: CuentaIpt | null;
+  cliente_nombre?: string | null;
+  cliente_abreviatura?: string | null;
 }

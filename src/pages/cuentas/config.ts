@@ -74,6 +74,132 @@ export const TRANSICIONES: Record<CuentaFlow, Partial<Record<CuentaEstado, { to:
   },
 };
 
+// ── Bucket picker (free-form estado picker) ────────────────────────────
+//
+// The TRANSICIONES map above describes the legacy linear flow, but it is
+// no longer enforced. The "Cambiar estado" UI now shows a flat list of
+// "places" (buckets) where the cuenta can be, per flow. Each bucket maps
+// to one granular DB estado at submit time. The granular DB estado set
+// stays the same so audit log, badges, and existing filters keep working.
+
+export type Bucket =
+  | 'borrador'
+  | 'cliente'
+  | 'contraloria'
+  | 'por_subsanar'
+  | 'aprobada'
+  | 'pagada';
+
+export function getBuckets(flow: CuentaFlow): Bucket[] {
+  if (flow === 'privado') {
+    return ['borrador', 'cliente', 'por_subsanar', 'aprobada', 'pagada'];
+  }
+  // publico_normal and publico_ipt — same 6-bucket shape.
+  return [
+    'borrador',
+    'cliente',
+    'contraloria',
+    'por_subsanar',
+    'aprobada',
+    'pagada',
+  ];
+}
+
+export function bucketLabel(bucket: Bucket, clienteLabel: string): string {
+  switch (bucket) {
+    case 'borrador':
+      return 'Borrador';
+    case 'cliente':
+      return clienteLabel;
+    case 'contraloria':
+      return 'Contraloría';
+    case 'por_subsanar':
+      return 'Por Subsanar';
+    case 'aprobada':
+      return 'Aprobada';
+    case 'pagada':
+      return 'Pagada';
+  }
+}
+
+export function bucketToEstado(
+  bucket: Bucket,
+  flow: CuentaFlow,
+  currentEstado: CuentaEstado,
+): CuentaEstado {
+  switch (bucket) {
+    case 'borrador':
+      return 'borrador';
+    case 'cliente':
+      return flow === 'privado' ? 'enviada' : 'enviada_institucion';
+    case 'contraloria':
+      return 'enviada_contraloria';
+    case 'por_subsanar':
+      if (flow === 'privado') return 'observaciones';
+      // Context-aware: if the cuenta was last at Contraloría, observations
+      // come from there. Otherwise default to institución.
+      if (
+        currentEstado === 'enviada_contraloria' ||
+        currentEstado === 'aprobada_contraloria' ||
+        currentEstado === 'observaciones_contraloria'
+      ) {
+        return 'observaciones_contraloria';
+      }
+      return 'observaciones_institucion';
+    case 'aprobada':
+      if (flow === 'privado') return 'aprobada';
+      if (flow === 'publico_ipt') return 'aprobada_institucion';
+      return 'aprobada_contraloria';
+    case 'pagada':
+      return 'pagada';
+  }
+}
+
+export function estadoToBucket(estado: CuentaEstado): Bucket {
+  switch (estado) {
+    case 'borrador':
+      return 'borrador';
+    case 'enviada':
+    case 'enviada_institucion':
+      return 'cliente';
+    case 'enviada_contraloria':
+      return 'contraloria';
+    case 'observaciones':
+    case 'observaciones_institucion':
+    case 'observaciones_contraloria':
+      return 'por_subsanar';
+    case 'aprobada':
+    case 'aprobada_institucion':
+    case 'aprobada_contraloria':
+      return 'aprobada';
+    case 'pagada':
+      return 'pagada';
+  }
+}
+
+// Bucket-based badge colors. Borrador and Por Subsanar both represent
+// "in the office" — Borrador is neutral (slate), Por Subsanar uses warning
+// to signal "office action needed".
+const BUCKET_BADGE_CLASS: Record<Bucket, string> = {
+  borrador: 'bg-slate-100 text-slate-600 border-slate-200 border',
+  cliente: 'bg-info/10 text-info border-info/30 border',
+  por_subsanar: 'bg-warning/10 text-warning border-warning/30 border',
+  contraloria: 'bg-navy/10 text-navy border-navy/30 border',
+  aprobada: 'bg-success/10 text-success border-success/30 border',
+  pagada: 'bg-teal/10 text-teal border-teal/30 border',
+};
+
+export function getBadgeDisplay(
+  estado: CuentaEstado,
+  clienteLabel?: string | null,
+): { label: string; className: string } {
+  const bucket = estadoToBucket(estado);
+  const label = bucket === 'cliente'
+    ? (clienteLabel?.trim() || 'Cliente')
+    : bucketLabel(bucket, '');
+  return { label, className: BUCKET_BADGE_CLASS[bucket] };
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 export function formatMonto(v: string | number | null | undefined): string {

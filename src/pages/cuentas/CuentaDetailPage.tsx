@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AppDialog } from '@/components/shell/AppDialog';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Settings, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
@@ -15,7 +13,16 @@ import type { CuentaDetail, CuentaEstado } from '@/types/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import CuentaTimeline from './CuentaTimeline';
 import AvanceBar from './AvanceBar';
-import { formatMonto, formatDateExact, TRANSICIONES, getFlow } from './config';
+import {
+  formatMonto,
+  formatDateExact,
+  getFlow,
+  getBuckets,
+  bucketLabel,
+  bucketToEstado,
+  estadoToBucket,
+  type Bucket,
+} from './config';
 
 interface Props {
   cuentaId: number;
@@ -45,9 +52,6 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
     return <div className="p-6 text-sm text-muted-foreground">Cargando...</div>;
   }
 
-  const flow = getFlow(cuenta.proyecto_tipo, cuenta.proyecto_tiene_ipt);
-  const transitions = TRANSICIONES[flow][cuenta.estado as CuentaEstado] || [];
-
   const LOCKED = ['aprobada', 'pagada', 'aprobada_institucion', 'aprobada_contraloria'].includes(cuenta.estado);
 
   return (
@@ -65,33 +69,28 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
           </Button>
         )}
         <PageHeader title={`Cuenta ${cuenta.numero}`} />
-        <CuentaEstadoBadge estado={cuenta.estado} />
+        <CuentaEstadoBadge
+          estado={cuenta.estado}
+          clienteLabel={cuenta.cliente_abreviatura || cuenta.cliente_nombre}
+        />
       </div>
 
       {/* Details card */}
       <Card className="relative">
         <CardContent className="p-5">
-          <div className="absolute top-4 right-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {!LOCKED && (
-                  <DropdownMenuItem onClick={() => setShowEdit(true)}>
-                    Editar cuenta
-                  </DropdownMenuItem>
-                )}
-                {transitions.length > 0 && (
-                  <DropdownMenuItem onClick={() => setShowTransition(true)}>
-                    Cambiar estado
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {!LOCKED && (
+            <div className="absolute top-4 right-4">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowEdit(true)}
+                aria-label="Editar cuenta"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             <div>
@@ -114,16 +113,25 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
         </CardContent>
       </Card>
 
-      {/* Adjuntos */}
-      <AdjuntosSection cuentaId={cuentaId} adjuntos={cuenta.adjuntos} onChanged={load} />
-
       {/* Timeline */}
       <Card>
         <CardContent className="p-5">
-          <h2 className="text-sm font-semibold mb-4">Historial</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold">Historial</h2>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowTransition(true)}
+            >
+              Cambiar estado
+            </Button>
+          </div>
           <CuentaTimeline cuentaId={cuentaId} eventos={cuenta.eventos} onChanged={load} />
         </CardContent>
       </Card>
+
+      {/* Adjuntos */}
+      <AdjuntosSection cuentaId={cuentaId} adjuntos={cuenta.adjuntos} onChanged={load} />
 
       {/* Edit dialog */}
       <EditCuentaDialog
@@ -137,8 +145,7 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
       <TransitionDialog
         open={showTransition}
         onOpenChange={setShowTransition}
-        cuentaId={cuentaId}
-        transitions={transitions}
+        cuenta={cuenta}
         onDone={() => { setShowTransition(false); load(); }}
       />
     </div>
@@ -301,26 +308,42 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved }: {
 
 // ── Transition Dialog ───────────────────────────────────────────────────
 
-function TransitionDialog({ open, onOpenChange, cuentaId, transitions, onDone }: {
+function TransitionDialog({ open, onOpenChange, cuenta, onDone }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  cuentaId: number;
-  transitions: { to: CuentaEstado; label: string }[];
+  cuenta: CuentaDetail;
   onDone: () => void;
 }) {
-  const [selected, setSelected] = useState<CuentaEstado | ''>('');
+  const flow = getFlow(cuenta.proyecto_tipo, cuenta.proyecto_tiene_ipt);
+  const clienteLabel =
+    cuenta.cliente_abreviatura || cuenta.cliente_nombre || 'Cliente';
+  const buckets = getBuckets(flow);
+  const currentBucket = estadoToBucket(cuenta.estado as CuentaEstado);
+
+  const [selected, setSelected] = useState<Bucket | ''>('');
   const [comment, setComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => { if (open) { setSelected(''); setComment(''); setError(''); } }, [open]);
+  useEffect(() => {
+    if (open) {
+      setSelected('');
+      setComment('');
+      setError('');
+    }
+  }, [open]);
 
   const save = async () => {
     if (!selected) return;
+    const targetEstado = bucketToEstado(
+      selected,
+      flow,
+      cuenta.estado as CuentaEstado,
+    );
     setSaving(true);
     try {
-      await api.post(`/cuentas/${cuentaId}/transicion`, {
-        estado_hacia: selected,
+      await api.post(`/cuentas/${cuenta.id}/transicion`, {
+        estado_hacia: targetEstado,
         comentario: comment || undefined,
       });
       onDone();
@@ -349,14 +372,40 @@ function TransitionDialog({ open, onOpenChange, cuentaId, transitions, onDone }:
       }
     >
       <form id="transition-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
-        <div className="space-y-2">
-          {transitions.map((t) => (
-            <label key={t.to} className={`flex items-center gap-3 border rounded-md p-3 cursor-pointer transition-colors ${selected === t.to ? 'border-foreground bg-muted/50' : 'hover:border-border'}`}>
-              <input type="radio" name="estado" checked={selected === t.to} onChange={() => setSelected(t.to)} className="accent-current" />
-              <span className="text-sm">{t.label}</span>
-            </label>
-          ))}
-        </div>
+        <RadioGroup
+          value={selected}
+          onValueChange={(v) => setSelected(v as Bucket)}
+          className="space-y-2"
+        >
+          {buckets.map((b) => {
+            const isCurrent = b === currentBucket;
+            return (
+              <label
+                key={b}
+                htmlFor={`bucket-${b}`}
+                className={`flex items-center gap-3 border rounded-md p-3 transition-colors ${
+                  isCurrent
+                    ? 'border-border bg-muted/40 cursor-not-allowed opacity-60'
+                    : selected === b
+                      ? 'border-foreground bg-muted/50 cursor-pointer'
+                      : 'cursor-pointer hover:border-border'
+                }`}
+              >
+                <RadioGroupItem
+                  id={`bucket-${b}`}
+                  value={b}
+                  disabled={isCurrent}
+                />
+                <span className="text-sm flex-1">{bucketLabel(b, clienteLabel)}</span>
+                {isCurrent && (
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Estado actual
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </RadioGroup>
         <div>
           <Label>Comentario (opcional)</Label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />

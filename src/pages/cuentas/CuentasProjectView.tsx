@@ -209,7 +209,10 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
       {CURRENT_STATUS_CONFIG.borrador.label}
     </Badge>
   ) : (
-    <CuentaEstadoBadge estado={c.estado} />
+    <CuentaEstadoBadge
+      estado={c.estado}
+      clienteLabel={c.cliente_abreviatura || c.cliente_nombre}
+    />
   );
 
   return (
