@@ -208,14 +208,21 @@ export function formatMonto(v: string | number | null | undefined): string {
   return `B/. ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// Date-only strings ("YYYY-MM-DD") are parsed by JS Date as UTC midnight,
+// which becomes the previous day in negative-offset timezones. Append a
+// local-midnight time component so getDate() returns the intended day.
+function parseDate(s: string): Date {
+  return s.includes('T') ? new Date(s) : new Date(s + 'T00:00:00');
+}
+
 export function formatDate(s: string | null | undefined): string {
   if (!s) return '—';
-  return new Date(s).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' });
+  return parseDate(s).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDateExact(s: string | null | undefined): string {
   if (!s) return '';
-  const d = new Date(s);
+  const d = parseDate(s);
   const dd = String(d.getDate()).padStart(2, '0');
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const yy = String(d.getFullYear()).slice(2);
