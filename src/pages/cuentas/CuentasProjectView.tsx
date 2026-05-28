@@ -59,13 +59,15 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   );
   const currentCuenta = lastSubmittedIdx < sorted.length - 1 ? sorted[lastSubmittedIdx + 1] : null;
 
+  // Sections render newest-first (highest numero on top). Cuenta actual
+  // stays at the top of its card as the next actionable item.
   const pendientes = sorted.filter(
     (c) => PENDING_STATES.includes(c.estado) && c.id !== currentCuenta?.id,
-  );
+  ).reverse();
   const borradoresAdicionales = sorted.filter(
     (c) => c.estado === 'borrador' && c.id !== currentCuenta?.id,
-  );
-  const pagadas = sorted.filter((c) => PAGADA_STATES.includes(c.estado));
+  ).reverse();
+  const pagadas = sorted.filter((c) => PAGADA_STATES.includes(c.estado)).reverse();
 
   // Compute avance_previo for each cuenta (sum of all cuentas before it)
   const avancePrevioMap = new Map<number, number>();
