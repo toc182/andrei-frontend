@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 import { Plus, ArrowRight, ChevronRight, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
-import { formatMonto, formatPeriodoParts, waitColor, CURRENT_STATUS_CONFIG } from './config';
-import { Badge } from '@/components/ui/badge';
+import { formatMonto, formatPeriodoParts, waitColor } from './config';
 import CreateCuentaDialog from './CreateCuentaDialog';
 
 interface Props {
@@ -81,6 +88,12 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   const totalPendMonto = pendientes.reduce((s, c) => s + (c.monto_total ? Number(c.monto_total) : 0), 0);
   const totalPagMonto = pagadas.reduce((s, c) => s + (c.monto_total ? Number(c.monto_total) : 0), 0);
 
+  const hasAnyCuenta =
+    !!currentCuenta ||
+    borradoresAdicionales.length > 0 ||
+    pendientes.length > 0 ||
+    pagadas.length > 0;
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -106,23 +119,37 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
 
       {loading ? (
         <p className="text-sm text-muted-foreground py-8 text-center">Cargando...</p>
+      ) : !hasAnyCuenta ? (
+        <p className="text-sm text-muted-foreground py-8 text-center italic">
+          Sin cuentas
+        </p>
       ) : (
-        <div className="space-y-4">
-          {/* Cuenta actual */}
-          <Card>
-            <CardContent className="px-5 py-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wide mb-3 text-teal">Cuenta actual</div>
-              {currentCuenta ? (
-                <div className="space-y-2">
-                  <CuentaSubCard
-                    cuenta={currentCuenta}
-                    avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
-                    days={null}
-                    onClick={() => onCuentaClick?.(currentCuenta.id)}
-                    isCurrent
-                  />
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[1%] whitespace-nowrap px-2 py-2">Cuenta</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap px-2 py-2">Período</TableHead>
+                <TableHead className="px-2 py-2">Avance</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap text-center pl-2 pr-1 py-2">%</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap text-center px-1 py-2">Días</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap text-center pl-1 pr-2 py-2">Monto</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(currentCuenta || borradoresAdicionales.length > 0) && (
+                <>
+                  <SectionBand label="Cuenta actual" />
+                  {currentCuenta && (
+                    <CuentaTableRow
+                      cuenta={currentCuenta}
+                      avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
+                      days={null}
+                      onClick={() => onCuentaClick?.(currentCuenta.id)}
+                    />
+                  )}
                   {borradoresAdicionales.map((c) => (
-                    <CuentaSubCard
+                    <CuentaTableRow
                       key={c.id}
                       cuenta={c}
                       avancePrevio={avancePrevioMap.get(c.id) ?? 0}
@@ -130,28 +157,14 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                       onClick={() => onCuentaClick?.(c.id)}
                     />
                   ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Sin cuenta actual</p>
+                </>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Pendientes */}
-          {pendientes.length > 0 && (
-            <Card>
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-warning">
-                    Pendientes
-                  </div>
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    Total: {formatMonto(totalPendMonto)}
-                  </span>
-                </div>
-                <div className="space-y-2">
+              {pendientes.length > 0 && (
+                <>
+                  <SectionBand label={`Pendientes — Total ${formatMonto(totalPendMonto)}`} />
                   {pendientes.map((c) => (
-                    <CuentaSubCard
+                    <CuentaTableRow
                       key={c.id}
                       cuenta={c}
                       avancePrevio={avancePrevioMap.get(c.id) ?? 0}
@@ -159,26 +172,14 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                       onClick={() => onCuentaClick?.(c.id)}
                     />
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </>
+              )}
 
-          {/* Pagadas */}
-          {pagadas.length > 0 && (
-            <Card>
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Pagadas
-                  </div>
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    Total: {formatMonto(totalPagMonto)}
-                  </span>
-                </div>
-                <div className="space-y-2">
+              {pagadas.length > 0 && (
+                <>
+                  <SectionBand label={`Pagadas — Total ${formatMonto(totalPagMonto)}`} />
                   {pagadas.map((c) => (
-                    <CuentaSubCard
+                    <CuentaTableRow
                       key={c.id}
                       cuenta={c}
                       avancePrevio={avancePrevioMap.get(c.id) ?? 0}
@@ -187,11 +188,11 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                       isPagada
                     />
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <CreateCuentaDialog
@@ -204,14 +205,28 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   );
 }
 
-// ── Cuenta Sub-Card ───────────────────────────────────────────────────────
+// ── Section band ─────────────────────────────────────────────────────────
 
-function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPagada }: {
+function SectionBand({ label }: { label: string }) {
+  return (
+    <TableRow className="bg-muted/50 hover:bg-muted/50">
+      <TableCell
+        colSpan={6}
+        className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground py-2 px-2"
+      >
+        {label}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// ── Cuenta row ───────────────────────────────────────────────────────────
+
+function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
   cuenta: Cuenta;
   avancePrevio: number;
   days: number | null;
   onClick: () => void;
-  isCurrent?: boolean;
   isPagada?: boolean;
 }) {
   const obs = isObservaciones(c.estado);
@@ -220,64 +235,55 @@ function CuentaSubCard({ cuenta: c, avancePrevio, days, onClick, isCurrent, isPa
   const pp = formatPeriodoParts(c.periodo_inicio, c.periodo_fin);
   const dColor = days != null ? waitColor(days) : 'text-muted-foreground';
 
-  const statusBadge = isCurrent && c.estado === 'borrador' ? (
-    <Badge variant="outline" className={CURRENT_STATUS_CONFIG.borrador.className}>
-      {CURRENT_STATUS_CONFIG.borrador.label}
-    </Badge>
-  ) : (
-    <CuentaEstadoBadge
-      estado={c.estado}
-      clienteLabel={c.cliente_abreviatura || c.cliente_nombre}
-    />
-  );
-
   return (
-    <div
-      className={`border rounded-md px-4 py-3 cursor-pointer transition-colors ${
+    <TableRow
+      className={`cursor-pointer ${
         obs
-          ? 'bg-error/[0.04] border-l-4 border-l-error hover:bg-error/[0.06]'
-          : isPagada
-            ? 'bg-muted/20 hover:bg-muted/40'
-            : 'bg-muted/40 hover:bg-muted/60'
+          ? 'bg-error/[0.04] hover:bg-error/[0.06]'
+          : 'hover:bg-muted/30'
       }`}
       onClick={onClick}
     >
-      {/* Row 1: Cuenta + badge + monto */}
-      <div className="flex justify-between items-center">
+      <TableCell className="w-[1%] whitespace-nowrap px-2 py-3">
         <div className="flex items-center gap-2">
           {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0" />}
           <span className="font-semibold text-sm">Cuenta {c.numero}</span>
-          {statusBadge}
+          <CuentaEstadoBadge
+            estado={c.estado}
+            clienteLabel={c.cliente_abreviatura || c.cliente_nombre}
+          />
         </div>
-        <span className="font-medium text-sm tabular-nums">{formatMonto(c.monto_total)}</span>
-      </div>
-
-      {/* Row 2: Periodo + stacked bar + days */}
-      <div className="flex items-center gap-4 mt-2">
-        <span className="flex items-center gap-1.5 text-xs shrink-0">
-          {pp.inicio && <span className="text-muted-foreground">{pp.inicio}</span>}
+      </TableCell>
+      <TableCell className="w-[1%] whitespace-nowrap px-2 py-3">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {pp.inicio && <span>{pp.inicio}</span>}
           {(pp.inicio || pp.fin) && <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />}
-          {pp.fin && <span className="text-muted-foreground">{pp.fin}</span>}
-          {!pp.inicio && !pp.fin && <span className="text-muted-foreground">—</span>}
+          {pp.fin && <span>{pp.fin}</span>}
+          {!pp.inicio && !pp.fin && <span>—</span>}
         </span>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex-1 rounded-full bg-secondary overflow-hidden h-3 flex">
-            {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
-            {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
-          </div>
-          <span className="text-xs text-muted-foreground w-7 text-right shrink-0">{curr}%</span>
+      </TableCell>
+      <TableCell className="px-2 py-3">
+        <div className="rounded-full bg-secondary overflow-hidden h-3.5 flex">
+          {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
+          {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
         </div>
-        {/* Days slot: fixed width so every bar track has the same length,
-            regardless of content or whether the row is pagada. Content
-            sits at the left so there's no visible gap after the %. */}
-        <span
-          className={`text-xs shrink-0 w-12 flex items-center gap-1 ${!isPagada ? dColor : ''}`}
-          aria-hidden={isPagada}
-        >
+      </TableCell>
+      <TableCell className="w-[1%] whitespace-nowrap text-center text-xs text-muted-foreground tabular-nums pl-2 pr-1 py-3">
+        {curr}%
+      </TableCell>
+      <TableCell
+        className={`w-[1%] whitespace-nowrap text-center text-xs tabular-nums px-1 py-3 ${
+          isPagada ? 'text-muted-foreground/40' : dColor
+        }`}
+      >
+        <span className="inline-flex items-center justify-center gap-1">
           {!isPagada && days != null && days >= 14 && <AlertTriangle className="h-3 w-3" />}
-          {!isPagada && (days != null ? `${days}d` : '—')}
+          {isPagada ? '—' : (days != null ? `${days}d` : '—')}
         </span>
-      </div>
-    </div>
+      </TableCell>
+      <TableCell className="w-[1%] whitespace-nowrap text-center text-sm font-semibold tabular-nums pl-1 pr-2 py-3">
+        {formatMonto(c.monto_total)}
+      </TableCell>
+    </TableRow>
   );
 }
