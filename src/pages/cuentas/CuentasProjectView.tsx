@@ -62,6 +62,9 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   const pendientes = sorted.filter(
     (c) => PENDING_STATES.includes(c.estado) && c.id !== currentCuenta?.id,
   );
+  const borradoresAdicionales = sorted.filter(
+    (c) => c.estado === 'borrador' && c.id !== currentCuenta?.id,
+  );
   const pagadas = sorted.filter((c) => PAGADA_STATES.includes(c.estado));
 
   // Compute avance_previo for each cuenta (sum of all cuentas before it)
@@ -120,6 +123,28 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
               )}
             </CardContent>
           </Card>
+
+          {/* Borradores adicionales */}
+          {borradoresAdicionales.length > 0 && (
+            <Card>
+              <CardContent className="px-5 py-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wide mb-3 text-muted-foreground">
+                  Borradores adicionales
+                </div>
+                <div className="space-y-2">
+                  {borradoresAdicionales.map((c) => (
+                    <CuentaSubCard
+                      key={c.id}
+                      cuenta={c}
+                      avancePrevio={avancePrevioMap.get(c.id) ?? 0}
+                      days={null}
+                      onClick={() => onCuentaClick?.(c.id)}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pendientes */}
           {pendientes.length > 0 && (
