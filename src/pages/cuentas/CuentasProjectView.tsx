@@ -67,8 +67,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   );
   const currentCuenta = lastSubmittedIdx < sorted.length - 1 ? sorted[lastSubmittedIdx + 1] : null;
 
-  // Sections render newest-first (highest numero on top). Cuenta actual
-  // stays at the top of its card as the next actionable item.
+  // Sections render newest-first (highest numero on top).
   const pendientes = sorted.filter(
     (c) => PENDING_STATES.includes(c.estado) && c.id !== currentCuenta?.id,
   ).reverse();
@@ -250,14 +249,6 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
               {(currentCuenta || borradoresAdicionales.length > 0) && (
                 <>
                   <SectionBand label="Cuenta actual" />
-                  {currentCuenta && (
-                    <CuentaTableRow
-                      cuenta={currentCuenta}
-                      avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
-                      days={null}
-                      onClick={() => onCuentaClick?.(currentCuenta.id)}
-                    />
-                  )}
                   {borradoresAdicionales.map((c) => (
                     <CuentaTableRow
                       key={c.id}
@@ -267,6 +258,14 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                       onClick={() => onCuentaClick?.(c.id)}
                     />
                   ))}
+                  {currentCuenta && (
+                    <CuentaTableRow
+                      cuenta={currentCuenta}
+                      avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
+                      days={null}
+                      onClick={() => onCuentaClick?.(currentCuenta.id)}
+                    />
+                  )}
                 </>
               )}
 
