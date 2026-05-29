@@ -8,6 +8,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -401,14 +402,9 @@ export default function RequisicionForm({
               <Label htmlFor="fecha" className="text-xs">
                 Fecha *
               </Label>
-              <Input
-                id="fecha"
-                type="date"
+              <DatePicker
                 value={formData.fecha}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  handleChange('fecha', e.target.value)
-                }
-                className={`h-9 ${validationErrors.fecha ? 'border-destructive' : ''}`}
+                onChange={(value) => handleChange('fecha', value)}
               />
             </div>
             <div>

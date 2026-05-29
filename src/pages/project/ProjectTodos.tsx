@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -824,12 +825,9 @@ export default function ProjectTodos({ projectId }: ProjectTodosProps) {
 
             <div>
               <Label>Fecha Límite</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={formData.fecha_limite}
-                onChange={(e) =>
-                  setFormData({ ...formData, fecha_limite: e.target.value })
-                }
+                onChange={(value) => setFormData({ ...formData, fecha_limite: value })}
                 className="mt-1"
               />
             </div>

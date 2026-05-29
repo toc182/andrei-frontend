@@ -5,6 +5,7 @@
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 
 interface RegistrarDevolucionDialogProps {
@@ -61,10 +62,9 @@ export function RegistrarDevolucionDialog({
       <div className="space-y-4">
         <div>
           <Label>Fecha de devolución *</Label>
-          <Input
-            type="date"
+          <DatePicker
             value={fecha}
-            onChange={(e) => onFechaChange(e.target.value)}
+            onChange={onFechaChange}
             className="mt-1"
           />
         </div>

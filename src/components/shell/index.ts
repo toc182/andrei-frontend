@@ -2,6 +2,7 @@ export { PageHeader } from "./PageHeader";
 export { SectionHeader } from "./SectionHeader";
 export { StatCard } from "./StatCard";
 export { AppDialog } from "./AppDialog";
+export { DatePicker } from "./DatePicker";
 export { Alert } from "./Alert";
 export { EmptyState, ErrorState, TableSkeleton, StatCardSkeleton } from "./states";
 export { FullPageState } from "./FullPageState";

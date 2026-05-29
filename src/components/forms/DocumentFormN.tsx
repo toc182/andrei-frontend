@@ -22,6 +22,7 @@ import api from '../../services/api';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -376,15 +377,9 @@ const DocumentFormN = ({ documentType }: DocumentFormNProps) => {
                   )}
                 </Label>
                 {field.type === 'date' ? (
-                  <Input
-                    type="date"
-                    id={field.name}
-                    name={field.name}
+                  <DatePicker
                     value={formData[field.name] || ''}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange(field.name, e.target.value)
-                    }
-                    required={field.required}
+                    onChange={(value) => handleInputChange(field.name, value)}
                   />
                 ) : field.name === 'projectName' ? (
                   <Textarea

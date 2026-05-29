@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,11 +81,11 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Periodo inicio</Label>
-            <Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
+            <DatePicker value={periodoInicio} onChange={setPeriodoInicio} />
           </div>
           <div>
             <Label>Periodo fin</Label>
-            <Input type="date" value={periodoFin} onChange={(e) => setPeriodoFin(e.target.value)} />
+            <DatePicker value={periodoFin} onChange={setPeriodoFin} />
           </div>
         </div>
         <div>

@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -262,13 +263,10 @@ const AdendaForm = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nueva Fecha de Terminación *</Label>
-                  <Input
-                    type="date"
-                    name="nueva_fecha_fin"
+                  <DatePicker
                     value={formData.nueva_fecha_fin}
-                    onChange={handleInputChange}
+                    onChange={(value) => setFormData(prev => ({ ...prev, nueva_fecha_fin: value }))}
                     disabled={loading}
-                    required
                   />
                 </div>
 

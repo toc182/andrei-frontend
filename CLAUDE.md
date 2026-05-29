@@ -45,6 +45,7 @@ Key rules (always in effect — read the full file for details):
 - [ ] Alerts use Option C left-accent via `<Alert>`
 - [ ] Empty/loading/error use `<EmptyState>`, `<TableSkeleton>`, `<ErrorState>`
 - [ ] Mobile: `md:hidden` cards + `hidden md:block` table
+- [ ] Date fields use `<DatePicker>` — never `<Input type="date">`
 - [ ] Toasts only for transient confirmations
 
 ## Structure

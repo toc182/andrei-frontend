@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -460,12 +461,7 @@ export default function CorreccionSolicitudModal({
             </div>
             <div className="space-y-1">
               <Label htmlFor="corr-fecha">Fecha</Label>
-              <Input
-                id="corr-fecha"
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-              />
+              <DatePicker value={fecha} onChange={setFecha} />
             </div>
           </div>
           <div className="space-y-1">
@@ -886,12 +882,7 @@ export default function CorreccionSolicitudModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="corr-fecha-pago">Fecha de pago</Label>
-                  <Input
-                    id="corr-fecha-pago"
-                    type="date"
-                    value={fechaPago}
-                    onChange={(e) => setFechaPago(e.target.value)}
-                  />
+                  <DatePicker value={fechaPago} onChange={setFechaPago} />
                 </div>
                 <div className="space-y-1">
                   <Label>Reemplazar archivos</Label>
@@ -933,12 +924,7 @@ export default function CorreccionSolicitudModal({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="corr-fecha-factura">Fecha de factura</Label>
-                  <Input
-                    id="corr-fecha-factura"
-                    type="date"
-                    value={fechaFactura}
-                    onChange={(e) => setFechaFactura(e.target.value)}
-                  />
+                  <DatePicker value={fechaFactura} onChange={setFechaFactura} />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="corr-numero-factura">Número de factura</Label>

@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -660,7 +661,7 @@ const ProjectFormNew = ({
                     <FormItem>
                       <FormLabel>Fecha de Inicio</FormLabel>
                       <FormControl>
-                        <Input type="date" disabled={loading} {...field} />
+                        <DatePicker value={field.value} onChange={field.onChange} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -675,7 +676,7 @@ const ProjectFormNew = ({
                     <FormItem>
                       <FormLabel>Fecha de Terminación</FormLabel>
                       <FormControl>
-                        <Input type="date" disabled={loading} {...field} />
+                        <DatePicker value={field.value} onChange={field.onChange} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

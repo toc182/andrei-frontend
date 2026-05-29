@@ -7,6 +7,7 @@
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import type { TipoSolicitud } from '../types';
 
@@ -86,10 +87,9 @@ export function RegistrarPagoDialog({
       <div className="space-y-4">
         <div>
           <Label>{fechaLabel}</Label>
-          <Input
-            type="date"
+          <DatePicker
             value={fecha}
-            onChange={(e) => onFechaChange(e.target.value)}
+            onChange={onFechaChange}
             className="mt-1"
           />
         </div>

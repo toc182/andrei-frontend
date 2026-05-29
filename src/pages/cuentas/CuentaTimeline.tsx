@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -307,12 +307,7 @@ function EditEventoDialog({
       >
         <div>
           <Label htmlFor="evento-fecha">Fecha</Label>
-          <Input
-            id="evento-fecha"
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-          />
+          <DatePicker value={fecha} onChange={setFecha} />
         </div>
 
         {isTransicion && (

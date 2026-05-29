@@ -685,6 +685,42 @@ Outline "Cancel" on the **left**, primary action on the **right**. `sm:justify-b
 - Multi-column layout: `grid grid-cols-1 gap-4 sm:grid-cols-2`. Full-width fields use `sm:col-span-2`.
 - Submit state: disable the button and show `<Loader2 className="mr-2 h-4 w-4 animate-spin" />`. **Never** optimistically close a dialog on submit.
 
+### Date inputs (DatePicker)
+
+**Source:** `src/components/shell/DatePicker.tsx`. Use `<DatePicker>` for every date field. **Never** use `<Input type="date">` — the native control looks different on every browser/OS and ignores the app's `DD/MM/YYYY` Panama convention.
+
+- **The contract is a string.** `value` is always `"YYYY-MM-DD"` (or `""` when empty), and `onChange` receives the same shape. Form schemas, API payloads, and DB columns stay exactly as they were under `<Input type="date">` — this is a drop-in swap.
+- **No `Date` objects cross the component boundary.** That single rule eliminates the timezone-drift bug (serializing a `Date` to JSON yields UTC midnight, which displays as the previous day in Panama UTC-5). The wrapper handles `Date` only internally for the Calendar.
+- **Trigger display is zero-padded `DD/MM/YYYY`.** Matches the Panama convention used everywhere else in the app.
+- Height is `h-9`, background `bg-card` — same as every other form control in §12.
+
+**With react-hook-form (preferred):**
+
+```tsx
+<FormField
+  control={form.control}
+  name="fecha"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Fecha</FormLabel>
+      <FormControl>
+        <DatePicker value={field.value} onChange={field.onChange} />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+**With `useState`:**
+
+```tsx
+const [fecha, setFecha] = useState("");
+<DatePicker value={fecha} onChange={setFecha} />
+```
+
+Props: `value: string`, `onChange: (value: string) => void`, `disabled?: boolean`, `placeholder?: string`, `className?: string`.
+
 ---
 
 ## 13. Buttons

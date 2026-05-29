@@ -6,6 +6,7 @@ import { useId } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -95,10 +96,9 @@ export function RegistrarFacturaDialog({
         </div>
         <div>
           <Label>Fecha *</Label>
-          <Input
-            type="date"
+          <DatePicker
             value={fecha}
-            onChange={(e) => onFechaChange(e.target.value)}
+            onChange={onFechaChange}
             className="mt-1"
           />
         </div>

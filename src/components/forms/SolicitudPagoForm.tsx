@@ -12,6 +12,7 @@ import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -601,7 +602,7 @@ export default function SolicitudPagoForm({
                   <FormItem>
                     <FormLabel className="text-xs">Fecha *</FormLabel>
                     <FormControl>
-                      <Input type="date" className="h-9" {...field} />
+                      <DatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

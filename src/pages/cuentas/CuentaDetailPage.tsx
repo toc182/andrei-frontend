@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Settings, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
@@ -338,8 +339,8 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
         <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
           <div><Label>Monto (B/.)</Label><Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Periodo inicio</Label><Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} /></div>
-            <div><Label>Periodo fin</Label><Input type="date" value={fin} onChange={(e) => setFin(e.target.value)} /></div>
+            <div><Label>Periodo inicio</Label><DatePicker value={inicio} onChange={setInicio} /></div>
+            <div><Label>Periodo fin</Label><DatePicker value={fin} onChange={setFin} /></div>
           </div>
           <div><Label>Avance (%)</Label><Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} /></div>
         </form>

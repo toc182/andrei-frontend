@@ -8,6 +8,7 @@ import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -268,14 +269,9 @@ export default function ExpenseForm({
               <Label htmlFor="fecha">
                 Fecha <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="fecha"
-                type="date"
+              <DatePicker
                 value={formData.fecha}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  handleChange('fecha', e.target.value)
-                }
-                className={validationErrors.fecha ? 'border-destructive' : ''}
+                onChange={(value) => handleChange('fecha', value)}
               />
               {validationErrors.fecha && (
                 <p className="text-sm text-destructive">

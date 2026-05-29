@@ -51,6 +51,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -644,7 +645,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
                 <FormItem>
                   <FormLabel>Fecha de Inicio *</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker value={field.value} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -838,7 +839,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
                 <FormItem>
                   <FormLabel>Fecha *</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker value={field.value} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -853,7 +854,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
                   <FormItem>
                     <FormLabel>Fecha Fin</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

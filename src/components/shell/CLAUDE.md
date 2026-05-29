@@ -24,6 +24,7 @@ Import from `@/components/shell` (barrel export in index.ts).
 | SectionHeader | H2 with 2px Navy left border | §7 |
 | StatCard | KPI tile with 4px accent border | §9 |
 | AppDialog | Dialog with standardized width scale | §11 |
+| DatePicker | Date input with timezone-safe YYYY-MM-DD string contract | §12 |
 | Alert | Left-accent inline alert (not shadcn Alert) | §15 |
 | EmptyState | "No data" centered state | §16 |
 | ErrorState | Error state with retry | §16 |
