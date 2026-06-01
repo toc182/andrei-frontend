@@ -257,6 +257,9 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   <span className="flex-1 truncate text-left font-semibold">
                     {selectedProject ? (selectedProject.nombre_corto || selectedProject.nombre) : 'Todos los proyectos'}
                   </span>
+                  {selectedProjectId !== null && (
+                    <PendingBadge count={pendingApprovalCount} />
+                  )}
                   <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -270,7 +273,10 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                     key={project.id}
                     onClick={() => handleSelectProject(project.id)}
                   >
-                    {project.nombre_corto || project.nombre}
+                    <span className="flex-1 truncate">
+                      {project.nombre_corto || project.nombre}
+                    </span>
+                    <PendingBadge count={pendingByProject[project.id] ?? 0} />
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
