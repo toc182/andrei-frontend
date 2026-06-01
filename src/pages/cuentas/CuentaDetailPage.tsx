@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { DatePicker } from '@/components/shell/DatePicker';
-import { Settings, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { Pencil, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type { CuentaDetail, CuentaEstado } from '@/types/api';
@@ -84,25 +84,17 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
           estado={cuenta.estado}
           clienteLabel={cuenta.cliente_abreviatura || cuenta.cliente_nombre}
         />
+        {!LOCKED && (
+          <Button variant="outline" size="sm" onClick={() => setShowEdit(true)} className="ml-auto">
+            <Pencil className="mr-2 h-4 w-4" />
+            Editar cuenta
+          </Button>
+        )}
       </div>
 
       {/* Details card */}
-      <Card className="relative">
+      <Card>
         <CardContent className="p-5">
-          {!LOCKED && (
-            <div className="absolute top-4 right-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowEdit(true)}
-                aria-label="Editar cuenta"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Monto</div>
