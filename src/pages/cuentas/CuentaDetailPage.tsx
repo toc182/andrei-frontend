@@ -17,13 +17,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { DatePicker } from '@/components/shell/DatePicker';
-import { Pencil, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
-import type { CuentaDetail, CuentaEstado } from '@/types/api';
+import type { CuentaDetail, CuentaEstado, CuentaAjuste } from '@/types/api';
+import { cn } from '@/lib/utils';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import CuentaTimeline from './CuentaTimeline';
-import AvanceBar from './AvanceBar';
 import {
   formatMonto,
   formatDateExact,
@@ -38,6 +38,28 @@ import {
 interface Props {
   cuentaId: number;
   onBack?: () => void;
+}
+
+function calcMontoAPagar(monto: string, ajustes: CuentaAjuste[]): number {
+  const base = Number(monto) || 0;
+  return ajustes.reduce((acc, aj) => {
+    const m = Number(aj.monto) || 0;
+    return acc + (aj.tipo === 'aumento' ? m : -m);
+  }, base);
+}
+
+function parseLocalDate(s: string | null | undefined): Date | null {
+  if (!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function daysBetween(start: string | null | undefined, end: string | null | undefined): number | null {
+  const s = parseLocalDate(start);
+  const e = parseLocalDate(end);
+  if (!s || !e) return null;
+  return Math.floor((e.getTime() - s.getTime()) / 86400000) + 1;
 }
 
 export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
@@ -80,10 +102,6 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
           </Button>
         )}
         <PageHeader title={`Cuenta ${cuenta.numero}`} />
-        <CuentaEstadoBadge
-          estado={cuenta.estado}
-          clienteLabel={cuenta.cliente_abreviatura || cuenta.cliente_nombre}
-        />
         {!LOCKED && (
           <Button variant="outline" size="sm" onClick={() => setShowEdit(true)} className="ml-auto">
             <Pencil className="mr-2 h-4 w-4" />
@@ -92,29 +110,73 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
         )}
       </div>
 
-      {/* Details card */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            <div>
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Monto</div>
-              <div className="font-medium">{formatMonto(cuenta.monto_total)}</div>
+      {/* Details + Monto cards — side by side on md+, stacked on narrow screens */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-5">
+            <div className="grid grid-cols-2 items-center gap-x-3 gap-y-1.5 text-sm">
+              <span className="text-right text-muted-foreground">Estado:</span>
+              <CuentaEstadoBadge
+                estado={cuenta.estado}
+                clienteLabel={cuenta.cliente_abreviatura || cuenta.cliente_nombre}
+                className="justify-self-start"
+              />
+
+              <span className="text-right text-muted-foreground">Periodo inicio:</span>
+              <span className="tabular-nums">{formatDateExact(cuenta.periodo_inicio) || '—'}</span>
+
+              <span className="text-right text-muted-foreground">Periodo fin:</span>
+              <span className="tabular-nums">{formatDateExact(cuenta.periodo_fin) || '—'}</span>
+
+              <span className="text-right text-muted-foreground">Cantidad de días:</span>
+              <span className="tabular-nums">
+                {(() => {
+                  const d = daysBetween(cuenta.periodo_inicio, cuenta.periodo_fin);
+                  return d != null ? `${d}` : '—';
+                })()}
+              </span>
+
+              <span className="text-right text-muted-foreground">Avance:</span>
+              <span className="tabular-nums">
+                {cuenta.avance_porcentaje != null && cuenta.avance_porcentaje !== ''
+                  ? `${Number(cuenta.avance_porcentaje).toFixed(2)}%`
+                  : '—'}
+              </span>
+
+              <span className="text-right text-muted-foreground">Avance total hasta esta cuenta:</span>
+              <span className="tabular-nums">{Number(cuenta.avance_acumulado).toFixed(2)}%</span>
             </div>
-            <div>
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Periodo inicio</div>
-              <div className="font-medium">{formatDateExact(cuenta.periodo_inicio)  || '—'}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Monto bruto:</span>
+              <span className="tabular-nums">{formatMonto(cuenta.monto_total)}</span>
             </div>
-            <div>
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Periodo fin</div>
-              <div className="font-medium">{formatDateExact(cuenta.periodo_fin) || '—'}</div>
-            </div>
-            <div>
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Avance</div>
-              <AvanceBar value={cuenta.avance_porcentaje} width={60} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            {cuenta.ajustes.length > 0 && (
+              <>
+                <div className="mt-2 space-y-1.5">
+                  {cuenta.ajustes.map((aj) => (
+                    <div key={aj.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{aj.descripcion}:</span>
+                      <span className={cn('tabular-nums', aj.tipo === 'disminucion' && 'text-error')}>
+                        {aj.tipo === 'disminucion' ? '-' : ''}{formatMonto(aj.monto)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-3">
+                  <span>Monto a pagar:</span>
+                  <span className="tabular-nums">{formatMonto(calcMontoAPagar(cuenta.monto_total, cuenta.ajustes))}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Timeline */}
       <Card>
@@ -246,6 +308,12 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
 
 // ── Edit Dialog ─────────────────────────────────────────────────────────
 
+interface AjusteFormItem {
+  tipo: 'aumento' | 'disminucion';
+  descripcion: string;
+  monto: string;
+}
+
 function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -257,6 +325,7 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
   const [inicio, setInicio] = useState('');
   const [fin, setFin] = useState('');
   const [avance, setAvance] = useState('');
+  const [ajustes, setAjustes] = useState<AjusteFormItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -269,17 +338,55 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
       setInicio(cuenta.periodo_inicio?.split('T')[0] || '');
       setFin(cuenta.periodo_fin?.split('T')[0] || '');
       setAvance(cuenta.avance_porcentaje || '');
+      setAjustes(
+        (cuenta.ajustes ?? []).map((a) => ({
+          tipo: a.tipo,
+          descripcion: a.descripcion,
+          monto: a.monto,
+        })),
+      );
     }
   }, [open, cuenta]);
+
+  const addAjuste = () =>
+    setAjustes((prev) => [...prev, { tipo: 'disminucion', descripcion: '', monto: '' }]);
+  const toggleAjusteTipo = (i: number) =>
+    setAjustes((prev) =>
+      prev.map((a, idx) =>
+        idx === i ? { ...a, tipo: a.tipo === 'aumento' ? 'disminucion' : 'aumento' } : a,
+      ),
+    );
+  const updateAjuste = (i: number, field: 'descripcion' | 'monto', value: string) =>
+    setAjustes((prev) =>
+      prev.map((a, idx) => (idx === i ? { ...a, [field]: value } : a)),
+    );
+  const removeAjuste = (i: number) =>
+    setAjustes((prev) => prev.filter((_, idx) => idx !== i));
+
+  const montoAPagarLive =
+    (Number(monto) || 0) +
+    ajustes.reduce(
+      (acc, a) => acc + (a.tipo === 'aumento' ? Number(a.monto) || 0 : -(Number(a.monto) || 0)),
+      0,
+    );
 
   const save = async () => {
     setSaving(true);
     try {
+      const ajustesPayload = ajustes
+        .filter((a) => a.descripcion.trim() && a.monto !== '')
+        .map((a, i) => ({
+          tipo: a.tipo,
+          descripcion: a.descripcion.trim(),
+          monto: Number(a.monto),
+          orden: i,
+        }));
       await api.put(`/cuentas/${cuenta.id}`, {
         monto_total: Number(monto),
         periodo_inicio: inicio || null,
         periodo_fin: fin || null,
         avance_porcentaje: avance ? Number(avance) : null,
+        ajustes: ajustesPayload,
       });
       onSaved();
     } finally {
@@ -328,8 +435,87 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
           </>
         }
       >
-        <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
-          <div><Label>Monto (B/.)</Label><Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} /></div>
+        <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Label className="flex-1">Monto bruto (B/.)</Label>
+            <Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+            <span className="h-9 w-9 shrink-0" aria-hidden />
+          </div>
+
+          {/* Ajustes — rows (if any) followed by the Agregar Ajuste button */}
+          <div className="space-y-2">
+            {ajustes.length > 0 && (
+              <div className="space-y-2">
+                {ajustes.map((aj, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        'h-9 w-9 p-0 shrink-0 font-bold text-base',
+                        aj.tipo === 'aumento'
+                          ? 'text-success border-success/30'
+                          : 'text-error border-error/30',
+                      )}
+                      onClick={() => toggleAjusteTipo(index)}
+                      title={
+                        aj.tipo === 'aumento'
+                          ? 'Aumento (click para cambiar)'
+                          : 'Disminución (click para cambiar)'
+                      }
+                    >
+                      {aj.tipo === 'aumento' ? '+' : '−'}
+                    </Button>
+                    <Input
+                      placeholder="Descripción del ajuste"
+                      value={aj.descripcion}
+                      onChange={(e) => updateAjuste(index, 'descripcion', e.target.value)}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={aj.monto}
+                      onChange={(e) => updateAjuste(index, 'monto', e.target.value)}
+                      className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeAjuste(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addAjuste}
+              className="h-7 text-xs"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Agregar Ajuste
+            </Button>
+          </div>
+
+          {/* Auto-calculated total */}
+          <div className="flex items-center gap-2 pb-3 border-b border-border">
+            <span className="flex-1 font-semibold">Total a cobrar</span>
+            <span className="w-40 text-right font-semibold tabular-nums pr-3">
+              B/. {montoAPagarLive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="w-9 shrink-0" aria-hidden />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Periodo inicio</Label><DatePicker value={inicio} onChange={setInicio} /></div>
             <div><Label>Periodo fin</Label><DatePicker value={fin} onChange={setFin} /></div>

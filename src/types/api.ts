@@ -718,10 +718,22 @@ export interface CuentaIpt {
   updated_at: string;
 }
 
+export type CuentaAjusteTipo = 'aumento' | 'disminucion';
+
+export interface CuentaAjuste {
+  id: number;
+  tipo: CuentaAjusteTipo;
+  descripcion: string;
+  monto: string;
+  orden: number;
+}
+
 export interface CuentaDetail extends Cuenta {
   eventos: CuentaEvento[];
   adjuntos: CuentaAdjunto[];
   ipt: CuentaIpt | null;
+  ajustes: CuentaAjuste[];
+  avance_acumulado: string;
   cliente_nombre?: string | null;
   cliente_abreviatura?: string | null;
 }
