@@ -733,6 +733,7 @@ export interface CuentaAjusteOpcion {
   tipo: CuentaAjusteTipo;
   descripcion: string;
   orden: number;
+  es_global?: boolean;
 }
 
 export interface CuentaDetail extends Cuenta {
