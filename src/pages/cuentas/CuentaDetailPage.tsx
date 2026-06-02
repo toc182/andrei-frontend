@@ -17,10 +17,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { DatePicker } from '@/components/shell/DatePicker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
-import type { CuentaDetail, CuentaEstado, CuentaAjuste } from '@/types/api';
+import type { CuentaDetail, CuentaEstado, CuentaAjuste, CuentaAjusteOpcion, CuentaAjusteTipo } from '@/types/api';
 import { cn } from '@/lib/utils';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import CuentaTimeline from './CuentaTimeline';
@@ -326,9 +334,18 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
   const [fin, setFin] = useState('');
   const [avance, setAvance] = useState('');
   const [ajustes, setAjustes] = useState<AjusteFormItem[]>([]);
+  const [opciones, setOpciones] = useState<CuentaAjusteOpcion[]>([]);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Create-new-opcion sub-dialog state. createOpcionForRow holds the index
+  // of the ajuste row that triggered the create flow, so we can auto-select
+  // the new opcion for that row after it's saved.
+  const [createOpcionForRow, setCreateOpcionForRow] = useState<number | null>(null);
+  const [newOpcionTipo, setNewOpcionTipo] = useState<CuentaAjusteTipo>('disminucion');
+  const [newOpcionDescripcion, setNewOpcionDescripcion] = useState('');
+  const [savingOpcion, setSavingOpcion] = useState(false);
 
   const canDelete = cuenta.estado === 'borrador';
 
@@ -345,16 +362,38 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
           monto: a.monto,
         })),
       );
+      setOpciones(cuenta.ajuste_opciones ?? []);
     }
   }, [open, cuenta]);
 
+  // Combined option list shown in each row's Select: real project opciones,
+  // plus any legacy ajuste combos that aren't yet in the project's options
+  // (those appear as session-only "ghost" entries so the Select can match
+  // their current value — without auto-persisting them as new options).
+  const allOpciones: CuentaAjusteOpcion[] = (() => {
+    const seen = new Set(opciones.map((o) => `${o.tipo}|${o.descripcion}`));
+    const ghosts: CuentaAjusteOpcion[] = [];
+    ajustes.forEach((aj, idx) => {
+      if (!aj.descripcion) return;
+      const key = `${aj.tipo}|${aj.descripcion}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        ghosts.push({
+          id: -1 - idx,
+          tipo: aj.tipo,
+          descripcion: aj.descripcion,
+          orden: 9999 + idx,
+        });
+      }
+    });
+    return [...opciones, ...ghosts];
+  })();
+
   const addAjuste = () =>
     setAjustes((prev) => [...prev, { tipo: 'disminucion', descripcion: '', monto: '' }]);
-  const toggleAjusteTipo = (i: number) =>
+  const selectAjusteOpcion = (i: number, tipo: CuentaAjusteTipo, descripcion: string) =>
     setAjustes((prev) =>
-      prev.map((a, idx) =>
-        idx === i ? { ...a, tipo: a.tipo === 'aumento' ? 'disminucion' : 'aumento' } : a,
-      ),
+      prev.map((a, idx) => (idx === i ? { ...a, tipo, descripcion } : a)),
     );
   const updateAjuste = (i: number, field: 'descripcion' | 'monto', value: string) =>
     setAjustes((prev) =>
@@ -362,6 +401,31 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
     );
   const removeAjuste = (i: number) =>
     setAjustes((prev) => prev.filter((_, idx) => idx !== i));
+
+  const openCreateOpcion = (rowIndex: number) => {
+    setCreateOpcionForRow(rowIndex);
+    setNewOpcionTipo(ajustes[rowIndex]?.tipo || 'disminucion');
+    setNewOpcionDescripcion('');
+  };
+
+  const saveNewOpcion = async () => {
+    if (createOpcionForRow === null) return;
+    const trimmed = newOpcionDescripcion.trim();
+    if (!trimmed) return;
+    setSavingOpcion(true);
+    try {
+      const res = await api.post(`/cuentas/${cuenta.id}/ajuste-opciones`, {
+        tipo: newOpcionTipo,
+        descripcion: trimmed,
+      });
+      const created: CuentaAjusteOpcion = res.data.data;
+      setOpciones((prev) => [...prev, created]);
+      selectAjusteOpcion(createOpcionForRow, created.tipo, created.descripcion);
+      setCreateOpcionForRow(null);
+    } finally {
+      setSavingOpcion(false);
+    }
+  };
 
   const montoAPagarLive =
     (Number(monto) || 0) +
@@ -446,53 +510,86 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
           <div className="space-y-2">
             {ajustes.length > 0 && (
               <div className="space-y-2">
-                {ajustes.map((aj, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        'h-9 w-9 p-0 shrink-0 font-bold text-base',
-                        aj.tipo === 'aumento'
-                          ? 'text-success border-success/30'
-                          : 'text-error border-error/30',
-                      )}
-                      onClick={() => toggleAjusteTipo(index)}
-                      title={
-                        aj.tipo === 'aumento'
-                          ? 'Aumento (click para cambiar)'
-                          : 'Disminución (click para cambiar)'
-                      }
-                    >
-                      {aj.tipo === 'aumento' ? '+' : '−'}
-                    </Button>
-                    <Input
-                      placeholder="Descripción del ajuste"
-                      value={aj.descripcion}
-                      onChange={(e) => updateAjuste(index, 'descripcion', e.target.value)}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={aj.monto}
-                      onChange={(e) => updateAjuste(index, 'monto', e.target.value)}
-                      className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeAjuste(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                {ajustes.map((aj, index) => {
+                  const selectedKey = aj.descripcion ? `${aj.tipo}|${aj.descripcion}` : '';
+                  return (
+                    <div key={index} className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'h-9 w-9 inline-flex items-center justify-center rounded-md border font-bold text-base shrink-0',
+                          !aj.descripcion
+                            ? 'text-muted-foreground border-border'
+                            : aj.tipo === 'aumento'
+                              ? 'text-success border-success/30'
+                              : 'text-error border-error/30',
+                        )}
+                        aria-hidden
+                      >
+                        {!aj.descripcion ? '' : aj.tipo === 'aumento' ? '+' : '−'}
+                      </span>
+                      <Select
+                        value={selectedKey}
+                        onValueChange={(value) => {
+                          if (value === '__new__') {
+                            openCreateOpcion(index);
+                            return;
+                          }
+                          const sep = value.indexOf('|');
+                          const tipo = value.slice(0, sep) as CuentaAjusteTipo;
+                          const descripcion = value.slice(sep + 1);
+                          selectAjusteOpcion(index, tipo, descripcion);
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Seleccionar ajuste" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allOpciones.map((o) => (
+                            <SelectItem
+                              key={`${o.tipo}|${o.descripcion}`}
+                              value={`${o.tipo}|${o.descripcion}`}
+                            >
+                              <span
+                                className={cn(
+                                  'font-bold mr-2',
+                                  o.tipo === 'aumento' ? 'text-success' : 'text-error',
+                                )}
+                              >
+                                {o.tipo === 'aumento' ? '+' : '−'}
+                              </span>
+                              {o.descripcion}
+                            </SelectItem>
+                          ))}
+                          {allOpciones.length > 0 && <SelectSeparator />}
+                          <SelectItem value="__new__">
+                            <span className="inline-flex items-center">
+                              <Plus className="h-3 w-3 mr-1" />
+                              Crear nueva opción
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={aj.monto}
+                        onChange={(e) => updateAjuste(index, 'monto', e.target.value)}
+                        className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeAjuste(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             )}
             <Button
@@ -545,6 +642,54 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create-new-opcion sub-dialog */}
+      <AppDialog
+        open={createOpcionForRow !== null}
+        onOpenChange={(v) => { if (!v) setCreateOpcionForRow(null); }}
+        size="confirm"
+        title="Nueva opción de ajuste"
+        description="Esta opción quedará disponible para futuras cuentas de este proyecto."
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setCreateOpcionForRow(null)} disabled={savingOpcion}>Cancelar</Button>
+            <Button onClick={saveNewOpcion} disabled={savingOpcion || !newOpcionDescripcion.trim()}>
+              {savingOpcion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Crear
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Tipo</Label>
+            <Select value={newOpcionTipo} onValueChange={(v) => setNewOpcionTipo(v as CuentaAjusteTipo)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="disminucion">
+                  <span className="text-error font-bold mr-2">−</span>
+                  Disminución
+                </SelectItem>
+                <SelectItem value="aumento">
+                  <span className="text-success font-bold mr-2">+</span>
+                  Aumento
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Descripción</Label>
+            <Input
+              value={newOpcionDescripcion}
+              onChange={(e) => setNewOpcionDescripcion(e.target.value)}
+              placeholder="Ej: Retención 5%"
+              autoFocus
+            />
+          </div>
+        </div>
+      </AppDialog>
     </>
   );
 }

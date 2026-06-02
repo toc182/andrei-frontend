@@ -728,11 +728,19 @@ export interface CuentaAjuste {
   orden: number;
 }
 
+export interface CuentaAjusteOpcion {
+  id: number;
+  tipo: CuentaAjusteTipo;
+  descripcion: string;
+  orden: number;
+}
+
 export interface CuentaDetail extends Cuenta {
   eventos: CuentaEvento[];
   adjuntos: CuentaAdjunto[];
   ipt: CuentaIpt | null;
   ajustes: CuentaAjuste[];
+  ajuste_opciones: CuentaAjusteOpcion[];
   avance_acumulado: string;
   cliente_nombre?: string | null;
   cliente_abreviatura?: string | null;
