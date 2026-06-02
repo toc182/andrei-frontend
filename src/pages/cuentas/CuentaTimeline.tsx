@@ -140,7 +140,7 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
                   </span>
                 )}
                 {ev.comentario && (
-                  <span className={ev.tipo === 'transicion' ? 'block mt-1' : ''}>
+                  <span className={`whitespace-pre-line ${ev.tipo === 'transicion' ? 'block mt-1' : ''}`}>
                     {ev.comentario}
                   </span>
                 )}
