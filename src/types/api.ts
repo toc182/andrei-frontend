@@ -57,6 +57,7 @@ export interface UserPermissions {
   registrar_pago: boolean;
   caja_menuda: boolean;
   cuentas: boolean;
+  cotizaciones: boolean;
 }
 
 export interface User {
@@ -745,4 +746,85 @@ export interface CuentaDetail extends Cuenta {
   avance_acumulado: string;
   cliente_nombre?: string | null;
   cliente_abreviatura?: string | null;
+}
+
+// ============================================
+// COTIZACIONES
+// ============================================
+
+export type CotizacionTipo = 'producto' | 'servicio';
+
+// When proyecto_id is null, ambito records whether the quote is for the
+// office ('oficina') or miscellaneous ('otros'). Null when tied to a project.
+export type CotizacionAmbito = 'oficina' | 'otros';
+
+// Row in the "Por solicitud" tab (one per request).
+export interface Cotizacion {
+  id: number;
+  descripcion: string;
+  descripcion_larga: string | null;
+  tipo: CotizacionTipo | null;
+  proyecto_id: number | null;
+  proyecto_nombre: string | null;
+  ambito: CotizacionAmbito | null;
+  created_at: string;
+}
+
+// Row in the "Por proveedor" tab (one per supplier offer, flattened).
+export interface CotizacionOfertaFlat {
+  id: number;
+  cotizacion_id: number;
+  proveedor: string;
+  monto: string | null; // pg DECIMAL → string
+  nota: string | null;
+  elegida: boolean;
+  created_at: string;
+  descripcion: string;
+  tipo: CotizacionTipo | null;
+  proyecto_id: number | null;
+  proyecto_nombre: string | null;
+  ambito: CotizacionAmbito | null;
+  agregado_por_nombre: string | null;
+  archivos_count: number;
+}
+
+// Oferta inside a cotización detail.
+export interface CotizacionOferta {
+  id: number;
+  proveedor: string;
+  monto: string | null;
+  nota: string | null;
+  elegida: boolean;
+  created_at: string;
+  creado_por_nombre: string | null;
+  archivos_count: number;
+}
+
+export interface CotizacionDetalle {
+  id: number;
+  descripcion: string;
+  descripcion_larga: string | null;
+  tipo: CotizacionTipo | null;
+  proyecto_id: number | null;
+  proyecto_nombre: string | null;
+  ambito: CotizacionAmbito | null;
+  pedido_por_nombre: string | null;
+  created_at: string;
+  updated_at: string;
+  ofertas: CotizacionOferta[];
+}
+
+export interface CotizacionArchivo {
+  id: number;
+  nombre_original: string;
+  tipo_mime: string | null;
+  tamano: number | null;
+  created_at: string;
+  subido_por_nombre: string | null;
+}
+
+export interface CotizacionArchivoUrl {
+  id: number;
+  url: string;
+  tipo_mime: string | null;
 }

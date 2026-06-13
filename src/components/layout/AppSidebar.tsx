@@ -44,6 +44,7 @@ import {
   User,
   FileText,
   ReceiptText,
+  FileSearch,
   UserCog,
   type LucideIcon,
 } from 'lucide-react';
@@ -73,6 +74,7 @@ const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
   { label: 'Requisiciones', icon: ClipboardList, view: 'requisiciones' },
   { label: 'Cajas Menudas', icon: Wallet, view: 'cajas-menudas' },
   { label: 'Cuentas', icon: ReceiptText, view: 'cuentas' },
+  { label: 'Cotizaciones', icon: FileSearch, view: 'cotizaciones' },
 ];
 
 const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
@@ -235,6 +237,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
   // ── Determine which "Cajas Menudas" item to show in "Todos" ──
   const showCajasMenudas = hasPermission('caja_menuda');
   const showCuentas = hasPermission('cuentas');
+  const showCotizaciones = hasPermission('cotizaciones');
 
   return (
     <Sidebar>
@@ -298,6 +301,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   .filter((item) => {
                     if (item.view === 'cajas-menudas') return showCajasMenudas;
                     if (item.view === 'cuentas') return showCuentas;
+                    if (item.view === 'cotizaciones') return showCotizaciones;
                     return true;
                   })
                   .map((item) => {

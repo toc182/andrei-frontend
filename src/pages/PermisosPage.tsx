@@ -50,6 +50,7 @@ interface PermUser {
   registrar_pago: boolean | null;
   caja_menuda: boolean | null;
   cuentas: boolean | null;
+  cotizaciones: boolean | null;
 }
 
 interface ProjectOption {
@@ -84,6 +85,7 @@ const DEFAULT_PERMS: UserPermissions = {
   registrar_pago: false,
   caja_menuda: false,
   cuentas: false,
+  cotizaciones: false,
 };
 
 export default function PermisosPage() {
@@ -480,6 +482,11 @@ export default function PermisosPage() {
                     label="Acceso a cuentas"
                     checked={perms.cuentas}
                     onChange={() => togglePerm('cuentas')}
+                  />
+                  <PermCheckbox
+                    label="Acceso a cotizaciones"
+                    checked={perms.cotizaciones}
+                    onChange={() => togglePerm('cotizaciones')}
                   />
                 </div>
               </div>

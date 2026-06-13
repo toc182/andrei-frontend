@@ -29,6 +29,7 @@ import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
 import MiCuentaPage from './MiCuentaPage';
 import CajasMenudasPage from './CajasMenudasPage';
 import CuentasGeneralPage from './cuentas/CuentasGeneralPage';
+import CotizacionesPage from './cotizaciones/CotizacionesPage';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -262,6 +263,9 @@ export default function DashboardNew() {
             onNavigateToProject={(projectId) => setCurrentView(`project-${projectId}-cuentas`)}
           />
         );
+
+      case 'cotizaciones':
+        return <CotizacionesPage key={navKey} />;
 
       case 'equipos':
       case 'equipos-informacion':
