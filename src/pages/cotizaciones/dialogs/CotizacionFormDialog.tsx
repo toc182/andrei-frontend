@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import api from '@/services/api';
 import type { CotizacionTipo, CotizacionAmbito, CotizacionDetalle } from '@/types/api';
 import { PendingFilesPicker } from '../components/PendingFilesPicker';
@@ -61,10 +62,12 @@ export function CotizacionFormDialog({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [tipoError, setTipoError] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setError('');
+    setTipoError('');
     setProveedor('');
     setMonto('');
     setNota('');
@@ -90,10 +93,17 @@ export function CotizacionFormDialog({
 
   const submit = async () => {
     setError('');
+    setTipoError('');
+    let invalid = false;
     if (!descripcion.trim()) {
       setError('La descripción es obligatoria');
-      return;
+      invalid = true;
     }
+    if (!tipo) {
+      setTipoError('Selecciona un tipo');
+      invalid = true;
+    }
+    if (invalid) return;
     setSaving(true);
     try {
       let proyecto_id: number | null = null;
@@ -157,9 +167,6 @@ export function CotizacionFormDialog({
     }
   };
 
-  const toggleTipo = (value: CotizacionTipo) =>
-    setTipo((prev) => (prev === value ? null : value));
-
   return (
     <AppDialog
       open={open}
@@ -191,6 +198,58 @@ export function CotizacionFormDialog({
         }}
         className="space-y-4"
       >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label>
+              Proyecto{' '}
+              <span className="font-normal text-muted-foreground">(opcional)</span>
+            </Label>
+            <Select value={proyectoId} onValueChange={setProyectoId}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={AMBITO_OFICINA}>Oficina</SelectItem>
+                <SelectItem value={AMBITO_OTROS}>Otros</SelectItem>
+                {projects.length > 0 && <SelectSeparator />}
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.nombre_corto || p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>
+              Tipo <span className="text-error">*</span>
+            </Label>
+            <RadioGroup
+              value={tipo ?? ''}
+              onValueChange={(v) => {
+                setTipo(v as CotizacionTipo);
+                setTipoError('');
+              }}
+              className="flex items-center gap-6 pt-1.5"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="producto" id="tipo-producto" />
+                <Label htmlFor="tipo-producto" className="cursor-pointer font-normal">
+                  Producto
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="servicio" id="tipo-servicio" />
+                <Label htmlFor="tipo-servicio" className="cursor-pointer font-normal">
+                  Servicio
+                </Label>
+              </div>
+            </RadioGroup>
+            {tipoError && <p className="text-sm text-error">{tipoError}</p>}
+          </div>
+        </div>
+
         <div className="space-y-1">
           <Label>Descripción</Label>
           <Input
@@ -213,55 +272,6 @@ export function CotizacionFormDialog({
             placeholder="Detalles, especificaciones, contexto…"
             rows={3}
           />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label>
-              Tipo{' '}
-              <span className="font-normal text-muted-foreground">(opcional)</span>
-            </Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={tipo === 'producto' ? 'default' : 'outline'}
-                className="flex-1"
-                onClick={() => toggleTipo('producto')}
-              >
-                Producto
-              </Button>
-              <Button
-                type="button"
-                variant={tipo === 'servicio' ? 'default' : 'outline'}
-                className="flex-1"
-                onClick={() => toggleTipo('servicio')}
-              >
-                Servicio
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label>
-              Proyecto{' '}
-              <span className="font-normal text-muted-foreground">(opcional)</span>
-            </Label>
-            <Select value={proyectoId} onValueChange={setProyectoId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={AMBITO_OFICINA}>Oficina</SelectItem>
-                <SelectItem value={AMBITO_OTROS}>Otros</SelectItem>
-                {projects.length > 0 && <SelectSeparator />}
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={String(p.id)}>
-                    {p.nombre_corto || p.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {mode === 'create' && (
