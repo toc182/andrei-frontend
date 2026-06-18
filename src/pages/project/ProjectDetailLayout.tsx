@@ -28,6 +28,7 @@ import ProjectAdendas from './ProjectAdendas';
 import CajasMenudasPage from '../CajasMenudasPage';
 import CuentasProjectView from '../cuentas/CuentasProjectView';
 import CuentaDetailPage from '../cuentas/CuentaDetailPage';
+import CronogramaWorkspace from '../cronogramas/CronogramaWorkspace';
 import AdendaForm from '../../components/forms/AdendaForm';
 import api from '../../services/api';
 import { formatDate } from '../../utils/dateUtils';
@@ -127,6 +128,7 @@ export default function ProjectDetailLayout({
         miembros: 'Miembros',
         adendas: 'Adendas',
         configuracion: 'Personal',
+        cronograma: 'Cronograma',
       };
 
       const subviewLabel = subviewTitles[subview] || 'Resumen';
@@ -296,6 +298,9 @@ export default function ProjectDetailLayout({
             onDeleteAdenda={handleDeleteAdenda}
           />
         );
+
+      case 'cronograma':
+        return <CronogramaWorkspace projectId={projectId} embedded onNavigate={onNavigate} />;
 
       default:
         return <ProjectSummary project={project} onNavigate={onNavigate} />;

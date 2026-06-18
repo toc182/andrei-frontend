@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { canUseCronogramas } from '@/lib/cronogramaAccess';
 import api from '../../services/api';
 import { getInitials } from '../../utils/formatters';
 import logo from '../../assets/LogoInvertido.png';
@@ -38,7 +39,6 @@ import {
   BookOpen,
   Users,
   Truck,
-  Layers,
   ChevronsUpDown,
   LogOut,
   User,
@@ -46,6 +46,7 @@ import {
   ReceiptText,
   FileSearch,
   UserCog,
+  CalendarRange,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -75,6 +76,7 @@ const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
   { label: 'Cajas Menudas', icon: Wallet, view: 'cajas-menudas' },
   { label: 'Cuentas', icon: ReceiptText, view: 'cuentas' },
   { label: 'Cotizaciones', icon: FileSearch, view: 'cotizaciones' },
+  { label: 'Cronogramas', icon: CalendarRange, view: 'cronogramas' },
 ];
 
 const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
@@ -89,7 +91,7 @@ const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
   { key: 'bitacora', label: 'Bitacora', icon: BookOpen },
   { key: 'miembros', label: 'Miembros', icon: Users },
   { key: 'equipos', label: 'Equipos', icon: Truck },
-  { key: 'adendas', label: 'Adendas', icon: Layers },
+  { key: 'cronograma', label: 'Cronograma', icon: CalendarRange },
 ];
 
 // ---------------------------------------------------------------------------
@@ -296,12 +298,13 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
           <SidebarGroup>
 
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5 [&_button]:h-7">
                 {todosMenuItems
                   .filter((item) => {
                     if (item.view === 'cajas-menudas') return showCajasMenudas;
                     if (item.view === 'cuentas') return showCuentas;
                     if (item.view === 'cotizaciones') return showCotizaciones;
+                    if (item.view === 'cronogramas') return canUseCronogramas(user);
                     return true;
                   })
                   .map((item) => {
@@ -330,11 +333,12 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
           <SidebarGroup>
 
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5 [&_button]:h-7">
                 {projectMenuItems
                   .filter((item) => {
                     if (item.key === 'caja-menuda') return hasPermission('caja_menuda');
                     if (item.key === 'cuentas') return hasPermission('cuentas');
+                    if (item.key === 'cronograma') return canUseCronogramas(user);
                     return true;
                   })
                   .map((item) => {
@@ -373,7 +377,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupLabel>Información de la Empresa</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5 [&_button]:h-7">
               {/* Proyectos */}
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -397,6 +401,20 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   <span>Clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              {/* Cronogramas — shown here only inside a project (top menu carries it otherwise) */}
+              {selectedProjectId !== null && canUseCronogramas(user) && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={currentView === 'cronogramas' || currentView.startsWith('cronograma-')}
+                    onClick={() => onNavigate('cronogramas')}
+                    tooltip="Cronogramas"
+                  >
+                    <CalendarRange />
+                    <span>Cronogramas</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
 
               {/* Equipos */}
               {hasPermission('equipos_ver') && (

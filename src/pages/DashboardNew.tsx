@@ -30,6 +30,9 @@ import MiCuentaPage from './MiCuentaPage';
 import CajasMenudasPage from './CajasMenudasPage';
 import CuentasGeneralPage from './cuentas/CuentasGeneralPage';
 import CotizacionesPage from './cotizaciones/CotizacionesPage';
+import CronogramasIndexPage from './cronogramas/CronogramasIndexPage';
+import CronogramaWorkspace from './cronogramas/CronogramaWorkspace';
+import { canUseCronogramas } from '@/lib/cronogramaAccess';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -52,7 +55,7 @@ interface ProjectContext {
 }
 
 export default function DashboardNew() {
-  const { isAdminOrCoAdmin } = useAuth();
+  const { isAdminOrCoAdmin, user } = useAuth();
   const [currentView, _setCurrentView] = useState('dashboard');
   const [navKey, setNavKey] = useState(0);
   const setCurrentView = (view: string) => {
@@ -146,6 +149,14 @@ export default function DashboardNew() {
             onCloseInfo={() => setShowProjectInfo(false)}
           />
         );
+      }
+    }
+
+    // Standalone cronograma editor (pattern: cronograma-{id}). Gated to a single user in v1.
+    if (currentView.startsWith('cronograma-') && canUseCronogramas(user)) {
+      const id = parseInt(currentView.slice('cronograma-'.length), 10);
+      if (!isNaN(id)) {
+        return <CronogramaWorkspace key={navKey} cronogramaId={id} onNavigate={setCurrentView} />;
       }
     }
 
@@ -266,6 +277,11 @@ export default function DashboardNew() {
 
       case 'cotizaciones':
         return <CotizacionesPage key={navKey} />;
+
+      case 'cronogramas':
+        return canUseCronogramas(user) ? (
+          <CronogramasIndexPage key={navKey} onNavigate={setCurrentView} />
+        ) : null;
 
       case 'equipos':
       case 'equipos-informacion':
