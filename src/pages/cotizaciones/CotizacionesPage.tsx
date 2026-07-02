@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Plus } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { PageHeader, ErrorState } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import type { Cotizacion, CotizacionOfertaFlat } from '@/types/api';
 import { TIPO_LABEL, proyectoLabel } from './shared';
 import { CotizacionesSolicitudTable } from './components/CotizacionesSolicitudTable';
 import { OfertasProveedorTable } from './components/OfertasProveedorTable';
+import { CostosUnitariosTable } from './components/CostosUnitariosTable';
 import { CotizacionFormDialog } from './dialogs/CotizacionFormDialog';
 import { CotizacionDetailDialog } from './dialogs/CotizacionDetailDialog';
 import {
@@ -52,6 +54,7 @@ type ProvView = CotizacionOfertaFlat & {
 };
 
 export default function CotizacionesPage() {
+  const { isAdminOrCoAdmin } = useAuth();
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
   const [ofertas, setOfertas] = useState<CotizacionOfertaFlat[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -254,6 +257,9 @@ export default function CotizacionesPage() {
           <TabsList className="mb-6 w-full justify-center">
             <TabsTrigger value="solicitud">Por solicitud</TabsTrigger>
             <TabsTrigger value="proveedor">Por proveedor</TabsTrigger>
+            {isAdminOrCoAdmin && (
+              <TabsTrigger value="costos">Costos unitarios</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="solicitud" className="space-y-4">
@@ -304,6 +310,12 @@ export default function CotizacionesPage() {
               onPageSizeChange={setPageSize}
             />
           </TabsContent>
+
+          {isAdminOrCoAdmin && (
+            <TabsContent value="costos" className="space-y-4">
+              <CostosUnitariosTable />
+            </TabsContent>
+          )}
         </Tabs>
       )}
 

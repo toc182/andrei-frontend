@@ -2,7 +2,7 @@
 // ordered visible rows (honoring collapse), compute WBS numbers ("1.2.3"), and format
 // predecessors in MS-Project row-number style ("4FS+2, 7SS").
 
-import type { EngineTask, TaskId } from './cronogramaEngine';
+import type { EngineTask, TaskId, Predecessor, DepType } from './cronogramaEngine';
 
 export interface GanttRow {
   task: EngineTask;
@@ -39,6 +39,32 @@ export function rowNumberMap(rows: GanttRow[]): Map<TaskId, number> {
   return m;
 }
 
+/**
+ * Row numbers from the COMPLETE task tree, ignoring collapse — mirrors gantto's
+ * fullOrder() + rowNum (app.js). Predecessor display/parse use these so "4FS+2"
+ * row numbers stay stable when groups are collapsed, unlike rowNumberMap() which
+ * numbers only the currently-visible rows.
+ */
+export function fullOrderRowNumbers(tasks: EngineTask[]): Map<TaskId, number> {
+  const byParent = new Map<TaskId | null, EngineTask[]>();
+  for (const t of tasks) {
+    const k = (t.parentId ?? null) as TaskId | null;
+    if (!byParent.has(k)) byParent.set(k, []);
+    byParent.get(k)!.push(t);
+  }
+  for (const arr of byParent.values()) arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const m = new Map<TaskId, number>();
+  let n = 0;
+  const walk = (parent: TaskId | null) => {
+    for (const t of byParent.get(parent) || []) {
+      m.set(t.id, ++n);
+      walk(t.id);
+    }
+  };
+  walk(null);
+  return m;
+}
+
 /** "4FS+2, 7SS-1" — predecessors as row numbers + type (+lag). FS lag 0 shows just the number. */
 export function formatPredecessors(task: EngineTask, rowNum: Map<TaskId, number>): string {
   return (task.predecessors || [])
@@ -51,6 +77,41 @@ export function formatPredecessors(task: EngineTask, rowNum: Map<TaskId, number>
     })
     .filter(Boolean)
     .join(', ');
+}
+
+/**
+ * Parse MS-Project row-number predecessors ("4FS+2, 7SS-1") into Predecessor[].
+ * Verbatim port of gantto's parsePreds (app.js): returns null on ANY invalid token,
+ * self-reference, unknown row number, or group target (all-or-nothing — matching gantto,
+ * which rejects the whole entry rather than salvaging valid parts). `rowMap` must be the
+ * full-order map from fullOrderRowNumbers(tasks). Default type is FS, default lag 0.
+ */
+export function parsePredecessors(
+  str: string,
+  selfId: TaskId,
+  tasks: EngineTask[],
+  rowMap: Map<TaskId, number>,
+): Predecessor[] | null {
+  const out: Predecessor[] = [];
+  const numToId = new Map<number, TaskId>();
+  for (const [id, n] of rowMap) numToId.set(n, id);
+  const parts = str.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  for (const part of parts) {
+    const m = part.match(/^(\d+)\s*(FS|SS|FF|SF)?\s*([+-]\s*\d+)?$/i);
+    if (!m) return null;
+    // gantto uses `!id` (its ids are always-truthy uuids); we use `== null` so a valid
+    // numeric id of 0 is not rejected — same intent: reject row numbers that map nowhere.
+    const id = numToId.get(parseInt(m[1], 10));
+    if (id == null || id === selfId) return null;
+    const target = tasks.find((t) => t.id === id);
+    if (!target || target.type === 'group') return null;
+    out.push({
+      taskId: id,
+      type: ((m[2] || 'FS').toUpperCase()) as DepType,
+      lag: m[3] ? parseInt(m[3].replace(/\s/g, ''), 10) : 0,
+    });
+  }
+  return out;
 }
 
 export function hasChildren(task: EngineTask, tasks: EngineTask[]): boolean {

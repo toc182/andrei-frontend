@@ -13,6 +13,16 @@ export interface CronogramaConfig {
   workWeek: number; // 5 | 6 | 7
   holidays: string[];
   baseline: unknown | null;
+  updatedAt?: string; // server version stamp; sent back as the save precondition
+}
+
+/** Thrown by saveCronograma when the backend rejects the save with 409 (another tab/device
+ *  saved first). Distinct from transient/network errors so the caller can branch. */
+export class CronogramaConflictError extends Error {
+  constructor(message = 'Otra pestaña guardó cambios; recarga para combinar.') {
+    super(message);
+    this.name = 'CronogramaConflictError';
+  }
 }
 
 export interface CronogramaListItem {
@@ -74,10 +84,18 @@ export async function createCronograma(body: CronogramaConfigInput): Promise<num
 
 export async function saveCronograma(
   id: number,
-  body: { project: CronogramaConfigInput; tasks: EngineTask[] },
+  body: { project: CronogramaConfigInput; tasks: EngineTask[]; baseUpdatedAt?: string | null },
 ): Promise<SaveResult> {
-  const res = await api.put(`/cronogramas/${id}/save`, body);
-  return res.data.data as SaveResult;
+  try {
+    const res = await api.put(`/cronogramas/${id}/save`, body);
+    return res.data.data as SaveResult;
+  } catch (e) {
+    const err = e as { response?: { status?: number; data?: { code?: string; message?: string } } };
+    if (err.response?.status === 409 || err.response?.data?.code === 'conflict') {
+      throw new CronogramaConflictError(err.response?.data?.message);
+    }
+    throw e;
+  }
 }
 
 export async function deleteCronograma(id: number): Promise<void> {

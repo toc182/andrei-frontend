@@ -1237,6 +1237,23 @@ When a solicitud has been marked as reviewed during a batch review session, a `C
 
 Urgent + reviewed on the same row is valid — the red left border signals urgency at the row level, the green check signals personal review status inside the cell. They use different visual lanes and do not conflict.
 
+### 20.2 Cronograma — bulk paste dialog ("Pegar filas…")
+
+**Source:** `src/components/cronograma/CronogramaPasteDialog.tsx`. Pattern for pasting a spreadsheet range into a structured, hierarchical list with a live preview before anything is written. Reuse this shape for any future "paste many rows from Excel" flow.
+
+- **Shell:** `<AppDialog size="complex">` (§11). Autofocus the paste `Textarea` (`font-mono text-xs`).
+- **Controls row:** a header `Switch` ("Primera fila es encabezado"), a date-format `Select` (`dd/mm/aaaa` default), and a hierarchy-mode `Select` (Automático + explicit overrides). Below them, one small role `Select` per detected column (Nombre / Días / Inicio / Fin / Nivel / Ignorar), auto-mapped from the header row.
+- **Preview:** the **table-in-card** pattern (§10) inside the dialog body — `<Card className="overflow-hidden p-0">` wrapping a `<Table>` with the `bg-slate-200` header row and hairline `border-slate-100` body rows. Depth is shown by indenting the name cell (`style={{ paddingLeft: depth * 16 }}` — the one allowed dynamic inline style, matching the WBS table). Cap the preview at ~200 rows with a "+N filas más" footer. All numeric cells use `tabular-nums`.
+- **Per-row status badge set** (tinted `<Badge variant="outline">`, §14 pattern), highest issue wins:
+  - Error → `bg-error/10 text-error border-error/30` (row is excluded from the insert)
+  - Aviso → `bg-warning/10 text-warning border-warning/30`
+  - Nota → `bg-info/10 text-info border-info/30`
+  - OK → `bg-success/10 text-success border-success/30`
+- **Computed-vs-typed date echo:** when the engine's computed start differs from the typed Inicio (a manual date is a floor), show the **computed** date in `text-info` with the typed date in the cell title. On a row promoted to a group, show the typed Inicio struck through (`text-muted-foreground line-through`) — its date was pushed down to the first child. A Fin-before-start collapse renders the Fin in `text-warning`.
+- **Aggregate counters** sit in a `bg-muted/40` card footer (total, a insertar, con error, duración asumida, etc.).
+- **No silent row loss:** blocked rows are never inserted implicitly. The user fixes them, marks **Ignorar** (per-row `Checkbox`), or ticks the **"Insertar X de Y (omitir Z con errores)"** opt-in. **Insertar** stays disabled until every row is valid-or-Ignored-or-opted-in, and while a date-format conflict is unresolved (the conflict `Alert` offers a one-click switch).
+- **One commit:** the whole batch is a single `commit()` in the workspace — one undo, one autosave. Nothing is written until Insertar; the dialog only reads and clones.
+
 ---
 
 *End of FRONTEND_CONVENTIONS.md. Questions or edge cases not covered here should be resolved by picking the closest existing pattern and extending it — not by inventing new patterns. Consistency is the feature.*

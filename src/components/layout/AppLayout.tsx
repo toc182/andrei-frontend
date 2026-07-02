@@ -63,7 +63,7 @@ export function AppLayout({
   return (
     <SidebarProvider>
       <AppSidebar currentView={currentView} onNavigate={onNavigate} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         {/* Topbar */}
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
           <SidebarTrigger />
