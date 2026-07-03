@@ -242,11 +242,11 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[180px]">Proyecto</TableHead>
-                  <TableHead className="w-[90px]">Estado</TableHead>
+                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                  <TableHead className="min-w-[180px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>
+                  <TableHead className="w-[90px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
                   <TableHead
-                    className={`min-w-[200px] cursor-pointer select-none ${sortKey === 'avance' ? 'text-info' : ''}`}
+                    className={`min-w-[200px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none ${sortKey === 'avance' ? 'text-info' : 'text-muted-foreground'}`}
                     onClick={() => toggleSort('avance')}
                   >
                     <span className="flex items-center gap-1">
@@ -255,7 +255,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                     </span>
                   </TableHead>
                   <TableHead
-                    className={`w-[70px] text-right cursor-pointer select-none ${sortKey === 'dias' ? 'text-info' : ''}`}
+                    className={`w-[70px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-right cursor-pointer select-none ${sortKey === 'dias' ? 'text-info' : 'text-muted-foreground'}`}
                     onClick={() => toggleSort('dias')}
                   >
                     <span className="flex items-center justify-end gap-1">
@@ -264,7 +264,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                     </span>
                   </TableHead>
                   <TableHead
-                    className={`w-[120px] text-right cursor-pointer select-none ${sortKey === 'monto' ? 'text-info' : ''}`}
+                    className={`w-[120px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-right cursor-pointer select-none ${sortKey === 'monto' ? 'text-info' : 'text-muted-foreground'}`}
                     onClick={() => toggleSort('monto')}
                   >
                     <span className="flex items-center justify-end gap-1">
@@ -301,7 +301,7 @@ function ActualesTable({ data, loading, onProjectClick }: { data: ProjectResumen
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 rounded-full bg-secondary overflow-hidden h-2 flex">
+                          <div className="flex-1 rounded-full bg-border overflow-hidden h-2 flex">
                             {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
                             {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
                           </div>
@@ -580,7 +580,7 @@ function PendientesTab({ data, loading, onProjectClick }: {
                           {!pp.inicio && !pp.fin && <span className="text-muted-foreground">—</span>}
                         </span>
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <div className="flex-1 rounded-full bg-secondary overflow-hidden h-1.5 flex">
+                          <div className="flex-1 rounded-full bg-border overflow-hidden h-1.5 flex">
                             {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
                             {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
                           </div>
