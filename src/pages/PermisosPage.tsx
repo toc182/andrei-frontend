@@ -51,6 +51,7 @@ interface PermUser {
   caja_menuda: boolean | null;
   cuentas: boolean | null;
   cotizaciones: boolean | null;
+  cronogramas_ver: boolean | null;
 }
 
 interface ProjectOption {
@@ -86,6 +87,7 @@ const DEFAULT_PERMS: UserPermissions = {
   caja_menuda: false,
   cuentas: false,
   cotizaciones: false,
+  cronogramas_ver: false,
 };
 
 export default function PermisosPage() {
@@ -552,6 +554,11 @@ export default function PermisosPage() {
                     label="Ver oportunidades"
                     checked={perms.oportunidades_ver}
                     onChange={() => togglePerm('oportunidades_ver')}
+                  />
+                  <PermCheckbox
+                    label="Acceso a cronogramas"
+                    checked={perms.cronogramas_ver}
+                    onChange={() => togglePerm('cronogramas_ver')}
                   />
                 </div>
               </div>

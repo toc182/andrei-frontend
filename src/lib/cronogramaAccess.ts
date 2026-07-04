@@ -1,18 +1,14 @@
-// Single source of truth for Cronograma feature visibility on the frontend (v1).
+// Single source of truth for Cronograma feature visibility on the frontend.
 //
-// Gated by EMAIL because admin/co-admin bypass the permission system on the backend, so
-// a permission key can't make the feature visible to EXACTLY one person. Mirrors
-// andrei-backend/src/middleware/cronogramaGate.ts.
-//
-// To open it up later, flip this single line to:
-//   return !!user && (user.email === ... || !!user.permissions?.cronogramas_ver
-//     || user.rol === 'admin' || user.rol === 'co-admin');
-// and swap betaFeatureSingleUser -> checkPermission('cronogramas_ver') on the backend.
+// Mirrors the backend gate (routes/cronogramas.ts uses checkPermission('cronogramas_ver')):
+// admin/co-admin always see it (they bypass granular permissions and the backend never
+// sends them a permissions object), and a 'usuario' sees it when granted `cronogramas_ver`
+// from the Permisos page.
 
 import type { User } from '@/types/api';
 
-const ALLOWED_EMAILS = ['ivan@pinellaspanama.com'];
-
 export function canUseCronogramas(user: User | null | undefined): boolean {
-  return !!user && ALLOWED_EMAILS.includes(user.email);
+  if (!user) return false;
+  if (user.rol === 'admin' || user.rol === 'co-admin') return true;
+  return user.permissions?.cronogramas_ver === true;
 }

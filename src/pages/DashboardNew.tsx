@@ -152,7 +152,7 @@ export default function DashboardNew() {
       }
     }
 
-    // Standalone cronograma editor (pattern: cronograma-{id}). Gated to a single user in v1.
+    // Standalone cronograma editor (pattern: cronograma-{id}). Gated by canUseCronogramas.
     if (currentView.startsWith('cronograma-') && canUseCronogramas(user)) {
       const id = parseInt(currentView.slice('cronograma-'.length), 10);
       if (!isNaN(id)) {
