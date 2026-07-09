@@ -13,12 +13,14 @@ export interface CronogramaConfig {
   workWeek: number; // 5 | 6 | 7
   holidays: string[];
   baseline: unknown | null;
-  ajustesImpresion?: Partial<AjustesImpresion> | null; // saved print setup (unknown keys tolerated)
+  ajustesImpresion?: Partial<AjustesImpresion> | null; // saved print setup (missing/older keys tolerated)
   updatedAt?: string; // server version stamp; sent back as the save precondition
 }
 
 /** Logo slot choice: bundled key, none, or an uploaded image embedded as a data URL. */
 export type LogoChoice = 'pinellas' | 'cocp' | 'none' | { dataUrl: string };
+
+export type ColumnaImpresion = 'dur' | 'inicio' | 'fin' | 'pct' | 'pred';
 
 /** Per-cronograma print setup, persisted server-side (cronogramas.ajustes_impresion). */
 export interface AjustesImpresion {
@@ -30,7 +32,7 @@ export interface AjustesImpresion {
   paginasAncho: number;
   maxPaginasAlto: number;
   reducirLetra: boolean;
-  columnas: string[]; // subset of dur|inicio|fin|pct|pred (# y Nombre siempre van)
+  columnas: ColumnaImpresion[]; // # y Nombre siempre van
   titulo: string;
   subtitulo: string;
   logoIzq: LogoChoice;
