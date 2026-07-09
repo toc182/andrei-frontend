@@ -3,7 +3,7 @@
 // builder in cronogramaPrint.ts, opens the print window, and persists the setup per
 // cronograma (fire-and-forget — a failed save never blocks printing).
 
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,11 @@ const DEFAULT_AJUSTES: AjustesImpresion = {
 };
 
 async function toDataUrl(url: string): Promise<string> {
+  // fetch() on a Vite-bundled same-origin asset — NOT an API call; the axios instance
+  // (baseURL /api + auth header) cannot load static assets, so the repo's no-fetch rule
+  // doesn't apply here.
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`logo asset ${res.status}`);
   const blob = await res.blob();
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
@@ -85,24 +89,40 @@ export function PrintDialog({
   const [warn, setWarn] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // (Re)seed from the saved setup each time the dialog opens.
+  // (Re)seed from the saved setup on the closed→open transition ONLY — config.ajustesImpresion
+  // also changes when OUR save round-trips (onSavedAjustes), and re-seeding then would wipe
+  // the warning/edits while the dialog is still open.
   useEffect(() => {
     if (!open) return;
     setErr(null);
     setWarn(null);
     setA({ ...DEFAULT_AJUSTES, ...(config.ajustesImpresion ?? {}) });
-  }, [open, config.ajustesImpresion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const set = <K extends keyof AjustesImpresion>(k: K, v: AjustesImpresion[K]) =>
     setA((prev) => ({ ...prev, [k]: v }));
 
   const toggleCol = (key: ColumnaImpresion, on: boolean) =>
-    set('columnas', on ? [...new Set([...a.columnas, key])] : a.columnas.filter((c) => c !== key));
+    setA((prev) => ({
+      ...prev,
+      columnas: on ? [...new Set([...prev.columnas, key])] : prev.columnas.filter((c) => c !== key),
+    }));
 
-  const logoValue = (c: LogoChoice) => (typeof c === 'object' ? 'otro' : c);
+  // Defensive: the value round-trips through unvalidated JSONB, so tolerate null/undefined.
+  const logoValue = (c: LogoChoice) => (typeof c === 'string' ? c : c ? 'otro' : 'none');
+
+  const logoFileRefs = {
+    logoIzq: useRef<HTMLInputElement>(null),
+    logoDer: useRef<HTMLInputElement>(null),
+  };
 
   const onLogoSelect = (slot: 'logoIzq' | 'logoDer') => (v: string) => {
-    if (v === 'otro') return; // wait for the file input; keep prior choice until a file lands
+    if (v === 'otro') {
+      // Open the file picker; keep the prior choice until a file actually lands.
+      logoFileRefs[slot].current?.click();
+      return;
+    }
     set(slot, v as LogoChoice);
   };
 
@@ -152,13 +172,22 @@ export function PrintDialog({
       return;
     }
 
+    // Normalize what gets printed AND persisted, so a reopen shows exactly what printed.
+    const norm: AjustesImpresion = {
+      ...a,
+      margenMM: marginMM,
+      paginasAncho: Math.max(1, Math.min(12, Math.round(a.paginasAncho || 1))),
+      maxPaginasAlto: Math.max(0, Math.round(a.maxPaginasAlto || 0)),
+    };
+    setA(norm);
+
     setBusy(true);
     try {
       let logoLeft: string | null = null;
       let logoRight: string | null = null;
       let logoFailed = false;
       try {
-        [logoLeft, logoRight] = await Promise.all([resolveLogo(a.logoIzq), resolveLogo(a.logoDer)]);
+        [logoLeft, logoRight] = await Promise.all([resolveLogo(norm.logoIzq), resolveLogo(norm.logoDer)]);
       } catch {
         logoFailed = true;
       }
@@ -166,13 +195,13 @@ export function PrintDialog({
       const { rangeStart, totalDays } = computeChartRange(computed.schedule, config.startDate, todayStr);
       const opts: PrintOptions = {
         Wmm, Hmm, marginMM,
-        fontKey: a.letra,
-        pagesWide: a.paginasAncho,
-        maxTall: a.maxPaginasAlto,
-        shrinkToFit: a.reducirLetra,
-        visibleCols: a.columnas,
-        title: a.titulo.trim() || config.name,
-        subtitle: a.subtitulo.trim(),
+        fontKey: norm.letra,
+        pagesWide: norm.paginasAncho,
+        maxTall: norm.maxPaginasAlto,
+        shrinkToFit: norm.reducirLetra,
+        visibleCols: norm.columnas,
+        title: norm.titulo.trim() || config.name,
+        subtitle: norm.subtitulo.trim(),
         logoLeft, logoRight,
       };
       const data: PrintData = {
@@ -196,12 +225,14 @@ export function PrintDialog({
         return;
       }
       // Persist fire-and-forget: a failed save must never block the print that already opened.
-      saveAjustesImpresion(config.id, a)
-        .then(() => onSavedAjustes(a))
+      saveAjustesImpresion(config.id, norm)
+        .then(() => onSavedAjustes(norm))
         .catch(() => setWarn('No se pudieron guardar los ajustes de impresión (el PDF no se afecta).'));
       if (logoFailed) setWarn('No se pudo cargar un logo; se imprimió sin él.');
       if (layout.warn) setWarn(layout.warn);
       if (!layout.warn && !logoFailed) onOpenChange(false);
+    } catch {
+      setErr('No se pudo generar el PDF; intenta de nuevo.');
     } finally {
       setBusy(false);
     }
@@ -219,10 +250,10 @@ export function PrintDialog({
           <SelectItem value="otro">Otra imagen…</SelectItem>
         </SelectContent>
       </Select>
-      {typeof a[slot] === 'object' && (
+      {a[slot] && typeof a[slot] === 'object' && (
         <p className="text-xs text-muted-foreground">Imagen personalizada guardada.</p>
       )}
-      <Input type="file" accept="image/*" onChange={onLogoFile(slot)} className="text-xs" />
+      <Input ref={logoFileRefs[slot]} type="file" accept="image/*" onChange={onLogoFile(slot)} className="text-xs" />
     </div>
   );
 
