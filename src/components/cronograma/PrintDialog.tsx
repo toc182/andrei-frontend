@@ -1,0 +1,348 @@
+// PrintDialog — options dialog for cronograma print/PDF (ERP take on gantto's #pdfDialog).
+// Form state + orchestration ONLY: resolves logo choices to data URLs, calls the pure
+// builder in cronogramaPrint.ts, opens the print window, and persists the setup per
+// cronograma (fire-and-forget — a failed save never blocks printing).
+
+import { useEffect, useState, type ChangeEvent } from 'react';
+import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { computeChartRange } from '@/lib/cronogramaGeometry';
+import {
+  PRINT_PAPERS, buildPrintPages, openPrintWindow,
+  type PrintOptions, type PrintData,
+} from '@/lib/cronogramaPrint';
+import {
+  saveAjustesImpresion,
+  type AjustesImpresion, type ColumnaImpresion, type CronogramaConfig, type LogoChoice,
+} from '@/lib/cronogramaApi';
+import type { GanttRow } from '@/lib/cronogramaModel';
+import type { ScheduleEntry, TaskId } from '@/lib/cronogramaEngine';
+import logoPinellas from '@/assets/logo.png';
+import logoCocp from '@/assets/LogoCOCPfondoblanco.png';
+
+const COLUMN_OPTIONS: { key: ColumnaImpresion; label: string }[] = [
+  { key: 'dur', label: 'Días' },
+  { key: 'inicio', label: 'Inicio' },
+  { key: 'fin', label: 'Fin' },
+  { key: 'pct', label: '%' },
+  { key: 'pred', label: 'Pred' },
+];
+
+const DEFAULT_AJUSTES: AjustesImpresion = {
+  papel: 'legal', customWmm: null, customHmm: null, margenMM: 10, letra: 'normal',
+  paginasAncho: 1, maxPaginasAlto: 0, reducirLetra: true,
+  columnas: ['dur', 'inicio', 'fin', 'pct', 'pred'],
+  titulo: '', subtitulo: '', logoIzq: 'pinellas', logoDer: 'none',
+};
+
+async function toDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(new Error('logo read failed'));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function resolveLogo(choice: LogoChoice): Promise<string | null> {
+  if (!choice || choice === 'none') return null;
+  if (typeof choice === 'object') return choice.dataUrl;
+  return toDataUrl(choice === 'pinellas' ? logoPinellas : logoCocp);
+}
+
+interface PrintDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  config: CronogramaConfig;
+  rows: GanttRow[];
+  computed: {
+    schedule: Record<string, ScheduleEntry>;
+    rollup: Record<string, number>;
+    violations: Set<string>;
+    critical: Set<string>;
+    cycle: boolean;
+  };
+  showCritical: boolean;
+  fullRowNum: Map<TaskId, number>;
+  /** Reflect the persisted setup back into the workspace's config state. */
+  onSavedAjustes: (a: AjustesImpresion) => void;
+}
+
+export function PrintDialog({
+  open, onOpenChange, config, rows, computed, showCritical, fullRowNum, onSavedAjustes,
+}: PrintDialogProps) {
+  const [a, setA] = useState<AjustesImpresion>(DEFAULT_AJUSTES);
+  const [err, setErr] = useState<string | null>(null);
+  const [warn, setWarn] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // (Re)seed from the saved setup each time the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    setErr(null);
+    setWarn(null);
+    setA({ ...DEFAULT_AJUSTES, ...(config.ajustesImpresion ?? {}) });
+  }, [open, config.ajustesImpresion]);
+
+  const set = <K extends keyof AjustesImpresion>(k: K, v: AjustesImpresion[K]) =>
+    setA((prev) => ({ ...prev, [k]: v }));
+
+  const toggleCol = (key: ColumnaImpresion, on: boolean) =>
+    set('columnas', on ? [...new Set([...a.columnas, key])] : a.columnas.filter((c) => c !== key));
+
+  const logoValue = (c: LogoChoice) => (typeof c === 'object' ? 'otro' : c);
+
+  const onLogoSelect = (slot: 'logoIzq' | 'logoDer') => (v: string) => {
+    if (v === 'otro') return; // wait for the file input; keep prior choice until a file lands
+    set(slot, v as LogoChoice);
+  };
+
+  const onLogoFile = (slot: 'logoIzq' | 'logoDer') => async (e: ChangeEvent<HTMLInputElement>) => {
+    setErr(null);
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith('image/')) {
+      setErr('El logo debe ser una imagen.');
+      return;
+    }
+    const dataUrl = await new Promise<string | null>((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(f);
+    });
+    if (!dataUrl) {
+      setErr('No se pudo leer el logo.');
+      return;
+    }
+    if (dataUrl.length > 400_000) {
+      setErr('Logo demasiado grande (máx. ~400 KB). Usa una imagen más liviana.');
+      return;
+    }
+    set(slot, { dataUrl });
+  };
+
+  const generar = async () => {
+    setErr(null);
+    setWarn(null);
+    let Wmm: number, Hmm: number;
+    if (a.papel === 'custom') {
+      if (!a.customWmm || !a.customHmm || a.customWmm <= 0 || a.customHmm <= 0) {
+        setErr('Indica ancho y alto válidos.');
+        return;
+      }
+      Wmm = a.customWmm;
+      Hmm = a.customHmm;
+    } else {
+      [Wmm, Hmm] = PRINT_PAPERS[a.papel];
+    }
+    if (Wmm < Hmm) [Wmm, Hmm] = [Hmm, Wmm]; // siempre horizontal
+    const marginMM = Math.max(0, Math.min(40, a.margenMM || 0));
+    if (Wmm - 2 * marginMM < 20 || Hmm - 2 * marginMM < 20) {
+      setErr('Margen demasiado grande para el papel.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      let logoLeft: string | null = null;
+      let logoRight: string | null = null;
+      let logoFailed = false;
+      try {
+        [logoLeft, logoRight] = await Promise.all([resolveLogo(a.logoIzq), resolveLogo(a.logoDer)]);
+      } catch {
+        logoFailed = true;
+      }
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const { rangeStart, totalDays } = computeChartRange(computed.schedule, config.startDate, todayStr);
+      const opts: PrintOptions = {
+        Wmm, Hmm, marginMM,
+        fontKey: a.letra,
+        pagesWide: a.paginasAncho,
+        maxTall: a.maxPaginasAlto,
+        shrinkToFit: a.reducirLetra,
+        visibleCols: a.columnas,
+        title: a.titulo.trim() || config.name,
+        subtitle: a.subtitulo.trim(),
+        logoLeft, logoRight,
+      };
+      const data: PrintData = {
+        rows,
+        schedule: computed.schedule,
+        rollup: computed.rollup,
+        critical: showCritical ? computed.critical : null,
+        violations: computed.violations,
+        baselineBars: (config.baseline as { bars?: Record<string, { s: string; f: string }> } | null)?.bars ?? null,
+        cycle: computed.cycle,
+        todayStr, rangeStart, totalDays,
+        rowNum: fullRowNum,
+      };
+      const { pages, layout } = buildPrintPages(opts, data);
+      if (layout.errTableTooWide) {
+        setErr('La tabla no cabe a lo ancho: usa letra más pequeña, menos columnas o papel más grande.');
+        return;
+      }
+      if (!openPrintWindow(pages, { Wmm, Hmm, marginMM, docTitle: opts.title })) {
+        setErr('El navegador bloqueó la ventana de impresión — permite ventanas emergentes para este sitio.');
+        return;
+      }
+      // Persist fire-and-forget: a failed save must never block the print that already opened.
+      saveAjustesImpresion(config.id, a)
+        .then(() => onSavedAjustes(a))
+        .catch(() => setWarn('No se pudieron guardar los ajustes de impresión (el PDF no se afecta).'));
+      if (logoFailed) setWarn('No se pudo cargar un logo; se imprimió sin él.');
+      if (layout.warn) setWarn(layout.warn);
+      if (!layout.warn && !logoFailed) onOpenChange(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const logoSlot = (slot: 'logoIzq' | 'logoDer', label: string) => (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Select value={logoValue(a[slot])} onValueChange={onLogoSelect(slot)}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="pinellas">Pinellas</SelectItem>
+          <SelectItem value="cocp">COCP</SelectItem>
+          <SelectItem value="none">Ninguno</SelectItem>
+          <SelectItem value="otro">Otra imagen…</SelectItem>
+        </SelectContent>
+      </Select>
+      {typeof a[slot] === 'object' && (
+        <p className="text-xs text-muted-foreground">Imagen personalizada guardada.</p>
+      )}
+      <Input type="file" accept="image/*" onChange={onLogoFile(slot)} className="text-xs" />
+    </div>
+  );
+
+  return (
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      size="standard"
+      title="Imprimir / PDF"
+      description="Genera el cronograma listo para imprimir o guardar como PDF (escala 100%)."
+      footer={
+        <>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={generar} disabled={busy}>{busy ? 'Generando…' : 'Generar PDF'}</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label>Tamaño de papel</Label>
+            <Select value={a.papel} onValueChange={(v) => set('papel', v as AjustesImpresion['papel'])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="legal">Legal</SelectItem>
+                <SelectItem value="letter">Carta</SelectItem>
+                <SelectItem value="a4">A4</SelectItem>
+                <SelectItem value="a3">A3</SelectItem>
+                <SelectItem value="tabloid">Tabloide</SelectItem>
+                <SelectItem value="custom">Personalizado…</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Margen (mm)</Label>
+            <Input type="number" min={0} max={40} step={1} className="tabular-nums" value={a.margenMM}
+              onChange={(e) => set('margenMM', parseFloat(e.target.value) || 0)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tamaño de letra</Label>
+            <Select value={a.letra} onValueChange={(v) => set('letra', v as AjustesImpresion['letra'])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="grande">Grande</SelectItem>
+                <SelectItem value="extra">Extra</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {a.papel === 'custom' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Ancho (mm)</Label>
+              <Input type="number" min={1} className="tabular-nums" value={a.customWmm ?? ''}
+                onChange={(e) => set('customWmm', parseFloat(e.target.value) || null)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Alto (mm)</Label>
+              <Input type="number" min={1} className="tabular-nums" value={a.customHmm ?? ''}
+                onChange={(e) => set('customHmm', parseFloat(e.target.value) || null)} />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label>Páginas de ancho</Label>
+            <Input type="number" min={1} max={12} step={1} className="tabular-nums" value={a.paginasAncho}
+              onChange={(e) => set('paginasAncho', parseInt(e.target.value, 10) || 1)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Máx. páginas de alto (0 = auto)</Label>
+            <Input type="number" min={0} step={1} className="tabular-nums" value={a.maxPaginasAlto}
+              onChange={(e) => set('maxPaginasAlto', parseInt(e.target.value, 10) || 0)} />
+          </div>
+          <div className="flex items-end gap-2 pb-1">
+            <Checkbox id="print-shrink" checked={a.reducirLetra}
+              onCheckedChange={(v) => set('reducirLetra', v === true)} />
+            <Label htmlFor="print-shrink" className="text-sm font-normal leading-tight">
+              Reducir la letra si hace falta
+            </Label>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Columnas</Label>
+          <div className="flex flex-wrap gap-4">
+            {COLUMN_OPTIONS.map((c) => (
+              <label key={c.key} className="flex items-center gap-1.5 text-sm">
+                <Checkbox checked={a.columnas.includes(c.key)}
+                  onCheckedChange={(v) => toggleCol(c.key, v === true)} />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Título</Label>
+            <Input value={a.titulo} placeholder={config.name}
+              onChange={(e) => set('titulo', e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Subtítulo</Label>
+            <Input value={a.subtitulo} placeholder="p. ej. Cronograma maestro — Para revisión"
+              onChange={(e) => set('subtitulo', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {logoSlot('logoIzq', 'Logo izquierdo')}
+          {logoSlot('logoDer', 'Logo derecho')}
+        </div>
+
+        {err && <Alert variant="error" title={err} />}
+        {warn && <Alert variant="warning" title={warn} />}
+      </div>
+    </AppDialog>
+  );
+}
