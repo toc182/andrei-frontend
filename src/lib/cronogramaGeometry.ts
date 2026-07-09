@@ -1,4 +1,5 @@
-// Shared row geometry for the cronograma WBS table + Gantt chart.
+// Shared render-input math for the cronograma, used by BOTH the on-screen WBS table + Gantt
+// chart AND the print renderer: row geometry (30px slots) and the chart date range.
 //
 // The gantto 30px row layout is encoded ONCE here. Bars, group brackets, milestone diamonds,
 // the % overlay, the baseline ghost and every dependency-arrow endpoint are pinned to a FIXED
@@ -7,7 +8,7 @@
 // that slot. So a single-line row is pixel-identical to gantto and only wrapped rows are taller,
 // with the bar staying where the eye expects it.
 
-import { parseDate, fmtDate, calDays } from './cronogramaEngine';
+import { parseDate, fmtDate, calDays, type ScheduleEntry } from './cronogramaEngine';
 
 export const ROW_H = 30; // default + minimum row height, AND the fixed bar-slot height
 // Shared height of the time-axis header band, used by BOTH the WBS table header and the Gantt
@@ -39,7 +40,7 @@ export function rowTopsFrom(heights: number[]): number[] {
  * GanttChart so screen and print can never drift.
  */
 export function computeChartRange(
-  schedule: Record<string, { s: string; f: string }>,
+  schedule: Record<string, ScheduleEntry>,
   startDate: string,
   todayStr: string,
 ): { rangeStart: string; totalDays: number } {
