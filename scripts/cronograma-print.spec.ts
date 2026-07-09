@@ -77,6 +77,15 @@ const baseOpts = (over: Partial<PrintOptions> = {}): PrintOptions => ({
   ok(L.titleLines.length >= 1 && L.titleLines.length <= 3, 'título largo: envuelve a ≤3 líneas');
 }
 
+// ---- golden mm (pin PT_MM and the column/row factors against hand-computed values) ----
+{
+  ok(PRINT_PAPERS.a4[0] === 210 && PRINT_PAPERS.a4[1] === 297 && PRINT_PAPERS.legal[1] === 355.6,
+    'papers: dimensiones mm');
+  const L = computePrintLayout(baseOpts(), 80, 365);
+  ok(Math.abs(L.rowH - 5.39784) < 0.001, `golden: rowH 9pt = 5.398mm (got ${L.rowH})`);
+  ok(Math.abs(L.tableW - 155.076768) < 0.01, `golden: tableW completo = 155.08mm (got ${L.tableW})`);
+}
+
 // ---- printTimeSegments ----
 {
   const { seg1, seg2 } = printTimeSegments('2025-12-29', 40); // lunes; 1-ene cae en el índice 3
@@ -155,6 +164,21 @@ function fixtureData(rowCount: number, totalDays: number): PrintData {
   const data = { ...fixtureData(6, 60), cycle: true };
   const { pages } = buildPrintPages(baseOpts(), data);
   ok(pages[0].includes('—'), 'pages: ciclo muestra — en fechas');
+}
+{
+  const { pages } = buildPrintPages(baseOpts(), fixtureData(10, 60));
+  ok(pages[0].includes('viewBox="0 0 277.00 190.00"'), 'golden: página A4 apaisada 277×190mm');
+  ok(pages[0].includes('width="277.00mm" height="190.00mm"'), 'golden: tamaño físico exacto en mm');
+}
+{
+  const { pages } = buildPrintPages(baseOpts({ logoLeft: '"><script>x</script>' }), fixtureData(6, 60));
+  ok(!pages[0].includes('<script>'), 'seguridad: logo sin esquema data:image/ se descarta');
+}
+{
+  const d = fixtureData(6, 60);
+  d.rows[1].task.color = '"/><script>x</script>';
+  const { pages } = buildPrintPages(baseOpts(), d);
+  ok(!pages.join('').includes('<script>'), 'seguridad: color inválido cae al color por defecto');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

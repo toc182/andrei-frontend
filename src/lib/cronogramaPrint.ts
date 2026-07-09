@@ -19,6 +19,7 @@
 
 import { parseDate, fmtDate, calDays, type ScheduleEntry, type TaskId } from './cronogramaEngine';
 import { formatPredecessors, type GanttRow } from './cronogramaModel';
+import { ROW_H as ROW_PX } from './cronogramaGeometry';
 
 // ---- constants (gantto parity) ----
 
@@ -34,7 +35,9 @@ const PT_MM = 0.3528; // 1 pt in mm
 const MIN_PT = 6; // shrink floor
 const MIN_TL_MM = 20; // minimum timeline width per page-column
 const PXD = 26; // px per day in the print chart's px space (day-zoom density; physical size is mm)
-const ROW_PX = 30; // uniform print row slot — print ignores on-screen wrapped-row heights
+// ROW_PX (imported as ROW_H alias): uniform print row slot — print ignores on-screen
+// wrapped-row heights.
+const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/; // task.color is server-persisted free text — never trust it into SVG
 
 const COL = {
   bar: '#4a90d9',
@@ -316,7 +319,7 @@ export function buildChartSvg(data: PrintData): string {
       const fill = viol ? COL.violation : isCrit ? COL.critical : t.milestoneType === 'fixed' ? COL.msFixed : COL.msCalc;
       out += `<path d="M${cx},${cy - 7} L${cx + 7},${cy} L${cx},${cy + 7} L${cx - 7},${cy} z" fill="${fill}"/>`;
     } else {
-      const fill = isCrit ? COL.critical : t.color || COL.bar;
+      const fill = isCrit ? COL.critical : t.color && HEX_COLOR.test(t.color) ? t.color : COL.bar;
       const pct = Math.max(0, Math.min(100, t.percentComplete || 0));
       out += `<rect x="${x}" y="${y + 8}" width="${w}" height="14" rx="3" fill="${fill}"/>`;
       if (pct > 0) out += `<rect x="${x}" y="${y + 8}" width="${(w * pct) / 100}" height="14" rx="3" fill="rgba(0,0,0,0.30)"/>`;
@@ -370,6 +373,11 @@ export function buildChartSvg(data: PrintData): string {
 // ---- page assembly (gantto buildPdfPages) ----
 
 export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: string[]; layout: PrintLayout } {
+  // Logos are attacker-influenceable (persisted server-side, shared across users): require
+  // the data:image/ scheme and escape — they land inside a same-origin popup document.
+  const safeLogo = (s: string | null) => (s && s.startsWith('data:image/') ? esc(s) : null);
+  const logoL = safeLogo(opts.logoLeft);
+  const logoR = safeLogo(opts.logoRight);
   const layout = computePrintLayout(opts, data.rows.length, data.totalDays);
   if (layout.errTableTooWide) return { pages: [], layout };
   const {
@@ -440,8 +448,8 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
       // document frame
       svg += `<rect x="0.5" y="0.5" width="${f2(pwMM - 1)}" height="${f2(phMM - 1)}" fill="none" stroke="${COL.frame}" stroke-width="0.4"/>`;
       // header: optional logos + CENTERED title/subtitle
-      if (opts.logoLeft) svg += `<image href="${opts.logoLeft}" x="2" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
-      if (opts.logoRight) svg += `<image href="${opts.logoRight}" x="${f2(pwMM - 2 - logoW)}" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
+      if (logoL) svg += `<image href="${logoL}" x="2" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
+      if (logoR) svg += `<image href="${logoR}" x="${f2(pwMM - 2 - logoW)}" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
       const titleLineMM = titleFontMM * 1.2;
       const subMM = opts.subtitle ? fontMM * 1.3 : 0;
       const blockH = titleLines.length * titleLineMM + subMM;
@@ -565,7 +573,9 @@ export function openPrintWindow(
   const blocks = pages
     .map((s, i) => `<div class="pg"${i < pages.length - 1 ? ' style="break-after:page"' : ''}>${s}</div>`)
     .join('');
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(opts.docTitle)}</title>
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
+<title>${esc(opts.docTitle)}</title>
 <style>
 @page { size: ${opts.Wmm}mm ${opts.Hmm}mm; margin: ${opts.marginMM}mm; }
 html, body { margin: 0; padding: 0; }
@@ -574,6 +584,11 @@ html, body { margin: 0; padding: 0; }
 </style></head><body>${blocks}</body></html>`);
   win.document.close();
   win.focus();
-  setTimeout(() => win.print(), 350);
+  // Print after the document (incl. data-URL logo decode) has loaded; the plain timeout is
+  // a fallback in case 'load' fired before the listener attached.
+  let fired = false;
+  const fire = () => { if (!fired) { fired = true; win.print(); } };
+  win.addEventListener('load', () => setTimeout(fire, 50));
+  setTimeout(fire, 800);
   return true;
 }
