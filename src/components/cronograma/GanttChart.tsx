@@ -4,6 +4,10 @@
 // date, drag the right edge to change duration, drag a fixed milestone to move its date. The
 // engine still rules — if predecessors push later, the bar won't retreat.
 //
+// PRINT TWIN: src/lib/cronogramaPrint.ts buildChartSvg() redraws these bars/arrows for
+// the printed PDF. Any visual change here (bar geometry, colors, arrow routing) must be
+// mirrored there.
+//
 // Colors are raw hex inside SVG presentation attributes (a canvas-like context, mirroring the
 // standalone tool) — the design-system "no raw hex" rule targets Tailwind utility classes.
 
