@@ -7,6 +7,8 @@
 // that slot. So a single-line row is pixel-identical to gantto and only wrapped rows are taller,
 // with the bar staying where the eye expects it.
 
+import { parseDate, fmtDate, calDays } from './cronogramaEngine';
+
 export const ROW_H = 30; // default + minimum row height, AND the fixed bar-slot height
 // Shared height of the time-axis header band, used by BOTH the WBS table header and the Gantt
 // chart header so row 0 starts at the same y in both panes. Sized to hold up to three stacked
@@ -27,4 +29,34 @@ export function rowTopsFrom(heights: number[]): number[] {
   }
   tops.push(acc);
   return tops;
+}
+
+/**
+ * Chart date range shared by the on-screen Gantt AND the print renderer (port of
+ * gantto computeRange, app.js): min/max over the FULL schedule (so the axis doesn't
+ * shrink when groups collapse), fold today in, start 7 days before min backed up to
+ * a Monday (week columns line up), extend 21 days past max. Extracted from
+ * GanttChart so screen and print can never drift.
+ */
+export function computeChartRange(
+  schedule: Record<string, { s: string; f: string }>,
+  startDate: string,
+  todayStr: string,
+): { rangeStart: string; totalDays: number } {
+  let min = startDate;
+  let max = startDate;
+  for (const sc of Object.values(schedule)) {
+    if (sc.s < min) min = sc.s;
+    if (sc.f > max) max = sc.f;
+  }
+  if (todayStr < min) min = todayStr;
+  if (todayStr > max) max = todayStr;
+  const d = parseDate(min);
+  d.setDate(d.getDate() - 7);
+  while (d.getDay() !== 1) d.setDate(d.getDate() - 1);
+  const start = fmtDate(d);
+  const end = parseDate(max);
+  end.setDate(end.getDate() + 21);
+  const days = calDays(start, fmtDate(end)) + 1;
+  return { rangeStart: start, totalDays: days };
 }

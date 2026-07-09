@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseDate, fmtDate, calDays, nextWorkDay, isWorkDay, type ScheduleEntry, type TaskId } from '@/lib/cronogramaEngine';
 import type { GanttRow } from '@/lib/cronogramaModel';
-import { ROW_H, HEADER_H } from '@/lib/cronogramaGeometry';
+import { ROW_H, HEADER_H, computeChartRange } from '@/lib/cronogramaGeometry';
 
 // The bottom tier of the time header IS the zoom: 'day' shows year▸month▸day, 'month' shows
 // year▸month, 'year' shows year only. The body still works in day-pixel space; only `pxd` and
@@ -185,27 +185,10 @@ export function GanttChart({
     };
   }, [dragging, pxd, workWeek, holSet, onCommitTask]);
 
-  const { rangeStart, totalDays } = useMemo(() => {
-    // Port of gantto computeRange (app.js): min/max over the FULL schedule (so the axis
-    // doesn't shrink when groups collapse), fold today in, start 7d before min then back
-    // up to Monday so week columns line up, and extend 21d past max.
-    let min = startDate;
-    let max = startDate;
-    for (const sc of Object.values(schedule)) {
-      if (sc.s < min) min = sc.s;
-      if (sc.f > max) max = sc.f;
-    }
-    if (todayStr < min) min = todayStr;
-    if (todayStr > max) max = todayStr;
-    const d = parseDate(min);
-    d.setDate(d.getDate() - 7);
-    while (d.getDay() !== 1) d.setDate(d.getDate() - 1);
-    const start = fmtDate(d);
-    const end = parseDate(max);
-    end.setDate(end.getDate() + 21);
-    const days = calDays(start, fmtDate(end)) + 1;
-    return { rangeStart: start, totalDays: days };
-  }, [schedule, startDate, todayStr]);
+  const { rangeStart, totalDays } = useMemo(
+    () => computeChartRange(schedule, startDate, todayStr),
+    [schedule, startDate, todayStr],
+  );
 
   const W = Math.ceil(totalDays * pxd);
   // Variable row heights (from the table's measurement) when present; uniform ROW_H otherwise.
