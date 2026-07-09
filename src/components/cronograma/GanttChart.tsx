@@ -362,15 +362,13 @@ export function GanttChart({
       const cx = x + (zoom === 'day' ? pxd / 2 : 0) + dMove;
       const cy = y + ROW_H / 2;
       const viol = violations?.has(String(t.id));
-      const fill = viol ? COL.violation : t.milestoneType === 'fixed' ? COL.msFixed : COL.msCalc;
+      const fill = viol ? COL.violation : isCrit ? COL.critical : t.milestoneType === 'fixed' ? COL.msFixed : COL.msCalc;
       const draggable = onCommitTask && t.milestoneType === 'fixed';
       bars.push(
         <g key={`m${i}`} onClick={() => onSelect?.(t.id)}>
           <path
             d={`M${cx},${cy - 7} L${cx + 7},${cy} L${cx},${cy + 7} L${cx - 7},${cy} z`}
             fill={fill}
-            stroke={isCrit ? COL.critical : undefined}
-            strokeWidth={isCrit ? 2 : undefined}
             style={draggable ? { cursor: 'grab' } : undefined}
             onMouseDown={draggable ? (e) => startDrag(e, t.id, 'move', sc.s, sc.f) : undefined}
           />
@@ -382,7 +380,9 @@ export function GanttChart({
         </g>,
       );
     } else {
-      const fill = t.color || COL.bar;
+      // Ruta crítica fills the bar red (overriding any custom color) — the progress overlay
+      // below darkens the completed stretch, giving light/dark red tones like the blues.
+      const fill = isCrit ? COL.critical : t.color || COL.bar;
       const pct = Math.max(0, Math.min(100, t.percentComplete || 0));
       const by = y + 8;
       const bx = x + dMove;
@@ -396,8 +396,6 @@ export function GanttChart({
             height={14}
             rx={3}
             fill={fill}
-            stroke={isCrit ? COL.critical : undefined}
-            strokeWidth={isCrit ? 2 : undefined}
             style={onCommitTask ? { cursor: 'grab' } : undefined}
             onMouseDown={onCommitTask ? (e) => startDrag(e, t.id, 'move', sc.s, sc.f) : undefined}
           />
