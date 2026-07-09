@@ -13,7 +13,28 @@ export interface CronogramaConfig {
   workWeek: number; // 5 | 6 | 7
   holidays: string[];
   baseline: unknown | null;
+  ajustesImpresion?: Partial<AjustesImpresion> | null; // saved print setup (unknown keys tolerated)
   updatedAt?: string; // server version stamp; sent back as the save precondition
+}
+
+/** Logo slot choice: bundled key, none, or an uploaded image embedded as a data URL. */
+export type LogoChoice = 'pinellas' | 'cocp' | 'none' | { dataUrl: string };
+
+/** Per-cronograma print setup, persisted server-side (cronogramas.ajustes_impresion). */
+export interface AjustesImpresion {
+  papel: 'letter' | 'legal' | 'a4' | 'a3' | 'tabloid' | 'custom';
+  customWmm: number | null;
+  customHmm: number | null;
+  margenMM: number;
+  letra: 'normal' | 'grande' | 'extra';
+  paginasAncho: number;
+  maxPaginasAlto: number;
+  reducirLetra: boolean;
+  columnas: string[]; // subset of dur|inicio|fin|pct|pred (# y Nombre siempre van)
+  titulo: string;
+  subtitulo: string;
+  logoIzq: LogoChoice;
+  logoDer: LogoChoice;
 }
 
 /** Thrown by saveCronograma when the backend rejects the save with 409 (another tab/device
@@ -123,4 +144,9 @@ export async function exportCronograma(id: number, filename = `cronograma-${id}.
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/** Persist the print setup. Never bumps updated_at server-side, so it can't 409 a save. */
+export async function saveAjustesImpresion(id: number, ajustes: AjustesImpresion): Promise<void> {
+  await api.put(`/cronogramas/${id}/ajustes-impresion`, ajustes);
 }
