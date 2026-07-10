@@ -1181,7 +1181,7 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="outline" title="Más acciones" aria-label="Más acciones">
+              <Button size="icon" variant="outline" className="h-8 w-8" title="Más acciones" aria-label="Más acciones">
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

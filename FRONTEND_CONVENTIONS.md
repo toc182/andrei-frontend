@@ -397,7 +397,7 @@ Badges inside nav items (e.g., pending solicitudes count) use `bg-error text-whi
 - Actions right-aligned on desktop, wrap below on mobile (automatic).
 - Breadcrumbs belong in the global top bar, not in the PageHeader.
 - Subtitle optional but consistent when used — summary of counts, not decoration.
-- **Split action:** to demote secondary actions, pair a primary text `<Button>` with an adjacent icon-only `<DropdownMenuTrigger>` button (`size="icon" variant="outline"`, `title` + `aria-label`) holding the demoted items. Reference: cronograma workspace "Imprimir…" + "Exportar JSON".
+- **Split action:** to demote secondary actions, pair a primary text `<Button>` with an adjacent icon-only `<DropdownMenuTrigger>` button (`size="icon" variant="outline"`, `title` + `aria-label`) holding the demoted items. The icon trigger must match its primary sibling's height (e.g. `className="h-8 w-8"` next to `size="sm"` buttons). Reference: cronograma workspace "Imprimir…" + "Exportar JSON".
 
 ---
 
