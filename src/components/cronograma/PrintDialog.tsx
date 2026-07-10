@@ -130,6 +130,9 @@ export function PrintDialog({
     setErr(null);
     const f = e.target.files?.[0];
     if (!f) return;
+    // Clear the native input right away: no stale filename shown, and re-picking
+    // the same file fires a fresh change event.
+    e.target.value = '';
     if (!f.type.startsWith('image/')) {
       setErr('El logo debe ser una imagen.');
       return;
@@ -231,7 +234,8 @@ export function PrintDialog({
       if (logoFailed) setWarn('No se pudo cargar un logo; se imprimió sin él.');
       if (layout.warn) setWarn(layout.warn);
       if (!layout.warn && !logoFailed) onOpenChange(false);
-    } catch {
+    } catch (e) {
+      console.error('Error generando PDF de cronograma:', e);
       setErr('No se pudo generar el PDF; intenta de nuevo.');
     } finally {
       setBusy(false);
