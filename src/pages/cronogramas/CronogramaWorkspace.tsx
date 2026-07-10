@@ -485,7 +485,8 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
     setUndoStack((s) => s.slice(0, -1));
     // updatedAt is a server version stamp, not user content — never let an undo revert it, or the
     // next save sends a stale baseUpdatedAt and self-409s. Keep the live stamp.
-    setConfig((live) => ({ ...prev.config, updatedAt: live?.updatedAt }));
+    // ajustesImpresion: saved out-of-band, never undo-tracked
+    setConfig((live) => ({ ...prev.config, updatedAt: live?.updatedAt, ajustesImpresion: live?.ajustesImpresion }));
     setTasks(prev.tasks);
     // A batch paste can be undone: if the selection pointed at a now-removed row, clear it so a
     // dangling id can't break labelOf/buildRows.
@@ -498,7 +499,8 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
     const next = redoStack[redoStack.length - 1];
     setUndoStack((s) => [...s, { config: structuredClone(config), tasks: structuredClone(tasks) }]);
     setRedoStack((r) => r.slice(0, -1));
-    setConfig((live) => ({ ...next.config, updatedAt: live?.updatedAt })); // keep the live version stamp (see undo)
+    // ajustesImpresion: saved out-of-band, never undo-tracked
+    setConfig((live) => ({ ...next.config, updatedAt: live?.updatedAt, ajustesImpresion: live?.ajustesImpresion })); // keep the live version stamp (see undo)
     setTasks(next.tasks);
     markDirty();
   }, [redoStack, config, tasks, markDirty]);
@@ -908,8 +910,10 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
         setRedoStack((s) => s.map((snap) => remapSnapshot(snap, idMap)));
 
         if (!concurrentEdit) {
-          // No edits during the await: adopt the server's authoritative copy.
-          setConfig(res.project);
+          // No edits during the await: adopt the server's authoritative copy. EXCEPT
+          // ajustesImpresion — it's saved by an independent PUT that can commit after this
+          // save's post-commit read, so the response may echo a stale value; keep the live one.
+          setConfig((live) => ({ ...res.project, ajustesImpresion: live?.ajustesImpresion ?? res.project.ajustesImpresion }));
           setTasks(res.tasks);
           setPendingEdit((p) => (p == null ? p : { ...p, id: remapId(p.id, idMap) }));
           setDirty(false);
@@ -1005,12 +1009,12 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
   const cycle = computed?.cycle ?? false;
   useEffect(() => {
     if (!autosaveEnabled || !dirty || saving || cycle) return;
-    if (anyInteracting || editingId != null || createOpen || deleteConfirm != null || pasteOpen) return;
+    if (anyInteracting || editingId != null || createOpen || deleteConfirm != null || pasteOpen || printOpen) return;
     const elapsed = firstDirtyAtRef.current != null ? Date.now() - firstDirtyAtRef.current : 0;
     const delay = Math.max(0, Math.min(AUTOSAVE_DELAY, AUTOSAVE_MAX_WAIT - elapsed));
     const t = setTimeout(() => void performSaveRef.current('auto'), delay);
     return () => clearTimeout(t);
-  }, [autosaveEnabled, dirty, saving, cycle, anyInteracting, editingId, createOpen, deleteConfirm, pasteOpen, tasks]);
+  }, [autosaveEnabled, dirty, saving, cycle, anyInteracting, editingId, createOpen, deleteConfirm, pasteOpen, printOpen, tasks]);
 
   // Debounced local draft of unsaved work (crash/offline safety net).
   useEffect(() => {
@@ -1177,7 +1181,7 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" aria-label="Más opciones de exportación">
+              <Button size="icon" variant="outline" title="Más acciones" aria-label="Más acciones">
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -1433,8 +1437,8 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
         computed={computed}
         showCritical={showCritical}
         fullRowNum={fullRowNum}
-        onSavedAjustes={(aj: AjustesImpresion) =>
-          setConfig((c) => (c ? { ...c, ajustesImpresion: aj } : c))
+        onSavedAjustes={(aj: AjustesImpresion, forId: number) =>
+          setConfig((c) => (c && c.id === forId ? { ...c, ajustesImpresion: aj } : c))
         }
       />
     </div>

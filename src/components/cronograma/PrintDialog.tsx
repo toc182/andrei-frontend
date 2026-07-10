@@ -77,8 +77,10 @@ interface PrintDialogProps {
   };
   showCritical: boolean;
   fullRowNum: Map<TaskId, number>;
-  /** Reflect the persisted setup back into the workspace's config state. */
-  onSavedAjustes: (a: AjustesImpresion) => void;
+  /** Reflect the persisted setup back into the workspace's config state.
+   *  Carries the cronograma id the settings were saved FOR — the workspace may have
+   *  switched to another cronograma while the PUT was in flight. */
+  onSavedAjustes: (a: AjustesImpresion, cronogramaId: number) => void;
 }
 
 export function PrintDialog({
@@ -229,7 +231,7 @@ export function PrintDialog({
       }
       // Persist fire-and-forget: a failed save must never block the print that already opened.
       saveAjustesImpresion(config.id, norm)
-        .then(() => onSavedAjustes(norm))
+        .then(() => onSavedAjustes(norm, config.id))
         .catch(() => setWarn('No se pudieron guardar los ajustes de impresión (el PDF no se afecta).'));
       if (logoFailed) setWarn('No se pudo cargar un logo; se imprimió sin él.');
       if (layout.warn) setWarn(layout.warn);
