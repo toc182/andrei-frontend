@@ -41,6 +41,8 @@ import {
   IndentIncrease,
   IndentDecrease,
   Route,
+  Printer,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -61,6 +63,7 @@ import { GanttChart, type Zoom } from '@/components/cronograma/GanttChart';
 import { CronogramaWbsTable, type EditField } from '@/components/cronograma/CronogramaWbsTable';
 import { CronogramaTaskDialog } from '@/components/cronograma/CronogramaTaskDialog';
 import { CronogramaPasteDialog } from '@/components/cronograma/CronogramaPasteDialog';
+import { PrintDialog } from '@/components/cronograma/PrintDialog';
 import {
   getCronograma,
   listCronogramas,
@@ -70,6 +73,7 @@ import {
   CronogramaConflictError,
   type CronogramaConfig,
   type CronogramaListItem,
+  type AjustesImpresion,
 } from '@/lib/cronogramaApi';
 
 interface Props {
@@ -225,6 +229,7 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
   const [editingId, setEditingId] = useState<TaskId | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<TaskId | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
   const [scrollToId, setScrollToId] = useState<TaskId | null>(null);
   const [pendingEdit, setPendingEdit] = useState<{ id: TaskId; field: EditField } | null>(null);
   const tempId = useRef(-1);
@@ -1167,9 +1172,21 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
           <Button size="sm" onClick={() => void performSave('manual')} disabled={!dirty || computed.cycle || saving}>
             <Save className="mr-2 h-4 w-4" /> {saving ? 'Guardando…' : dirty ? 'Guardar' : 'Guardado'}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => exportCronograma(config.id, `${config.name}.gantto.json`)}>
-            <Download className="mr-2 h-4 w-4" /> Exportar
+          <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)}>
+            <Printer className="mr-2 h-4 w-4" /> Imprimir…
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" aria-label="Más opciones de exportación">
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportCronograma(config.id, `${config.name}.gantto.json`)}>
+                <Download className="mr-2 h-4 w-4" /> Exportar JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </PageHeader>
 
@@ -1407,6 +1424,19 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
       >
         <p className="text-sm">Esta tarea tiene sub-tareas. ¿Eliminar la tarea y todo su subárbol?</p>
       </AppDialog>
+
+      <PrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        config={config}
+        rows={rows}
+        computed={computed}
+        showCritical={showCritical}
+        fullRowNum={fullRowNum}
+        onSavedAjustes={(aj: AjustesImpresion) =>
+          setConfig((c) => (c ? { ...c, ajustesImpresion: aj } : c))
+        }
+      />
     </div>
   );
 }
