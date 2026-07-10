@@ -2,8 +2,9 @@
 // Gantto print pipeline (ganttoweb/app.js: pdfColumns / computePdfLayout / buildPdfPages /
 // exportPDF), MS-Project style: table text at a FIXED physical size (pt→mm); the timeline
 // COMPRESSES to fit `pagesWide` page-columns; rows paginate automatically. Every page is a
-// millimeter-viewBox <svg> string; the chart band is a nested px-space
-// <svg preserveAspectRatio="none"> so only shapes scale, never text.
+// millimeter-viewBox <svg> string; the chart band is a nested mm-space <svg> that WINDOWS
+// (1:1 crop, never a scale) the full-schedule chart per page. The chart itself is emitted
+// directly in mm (see buildChartSvg) so shapes keep their physical size at any compression.
 //
 // DEVIATION from gantto: gantto sliced the live #chartSvg innerHTML with regexes (its
 // HANDOFF gotcha #1 — a real bug source). This module REDRAWS bars/brackets/diamonds/
@@ -38,6 +39,14 @@ const PXD = 26; // px per day in the print chart's px space (day-zoom density; p
 // ROW_PX (imported as ROW_H alias): uniform print row slot — print ignores on-screen
 // wrapped-row heights.
 const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/; // task.color is server-persisted free text — never trust it into SVG
+
+// Fixed physical sizes for chart marks (mm). Row-proportional shapes (bars, brackets,
+// diamonds) scale with rowH via k = rowH/ROW_PX; the sizes below are the
+// compression-independent ones that the old px→mm scaling used to crush.
+const MIN_BAR_MM = 0.6; // a 1-day task stays a visible tick even at extreme compression
+// wrap must exceed the arrowhead: markerWidth 7 × stroke 0.3 ≈ 2.1mm (gantto HANDOFF, now in mm)
+const ARROW_MM = { stroke: 0.3, wrap: 3.2, drop: 1.4, back: 1.1, edge: 0.2 };
+const TODAY_MM = { stroke: 0.35, dash: '1.2 0.9' };
 
 const COL = {
   bar: '#4a90d9',
@@ -273,23 +282,37 @@ function fmtHuman(s: string | undefined): string {
   return `${d} ${MONTHS[m - 1]} ${String(y).slice(2)}`;
 }
 
-// ---- full-chart redraw in px space (VISUAL TWIN of GanttChart.tsx bars/arrows) ----
-// Weekend shading + vertical gridlines deliberately dropped (paper stays clean);
-// horizontal row lines + today line kept. No milestone date labels (dates are columns).
+/** mm formatter — 0.01mm precision keeps SVG strings compact and the golden spec stable. */
+const f2 = (n: number) => n.toFixed(2);
 
-export function buildChartSvg(data: PrintData): string {
+// ---- full-chart redraw in mm space (VISUAL TWIN of GanttChart.tsx bars/arrows) ----
+// The chart is emitted DIRECTLY in mm — the page's units — so the per-page window in
+// buildPrintPages is a uniform 1:1 crop, never a scale. Dates map via dayMM; heights that
+// are fractions of the 30px screen row map via k = rowH/ROW_PX (bars, brackets, diamonds
+// keep the screen's proportions); physically-fixed sizes (arrow strokes/elbows, minimum
+// bar width, today line) come from the *_MM constants. Anything else distorts: the old
+// px-space chart under preserveAspectRatio="none" had a ~14× horizontal/vertical scale
+// mismatch that crushed diamonds, elbows and stroke pens.
+//
+// Weekend shading + vertical gridlines deliberately dropped (paper stays clean); horizontal
+// row lines come from the table grid in buildPrintPages (they span the full page width).
+// No milestone date labels (dates are columns).
+
+export interface ChartScale {
+  dayMM: number; // printed width of one day (PXD × mmPerPx)
+  rowH: number; // printed row height (layout.rowH)
+}
+
+export function buildChartSvg(data: PrintData, scale: ChartScale): string {
   const { rows, schedule, critical, violations, baselineBars, todayStr, rangeStart, totalDays } = data;
-  const xOf = (date: string) => calDays(rangeStart, date) * PXD;
-  const yOf = (i: number) => i * ROW_PX;
-  const W = totalDays * PXD;
-  const H = rows.length * ROW_PX;
+  const { dayMM, rowH } = scale;
+  const k = rowH / ROW_PX; // mm per screen-px for row-proportional heights
+  const xOf = (date: string) => calDays(rangeStart, date) * dayMM;
+  const yOf = (i: number) => i * rowH;
+  const H = rows.length * rowH;
   const yIdx = new Map<string, number>();
   rows.forEach((r, i) => yIdx.set(String(r.task.id), i));
   let out = '';
-
-  for (let i = 0; i < rows.length; i++) {
-    out += `<line x1="0" y1="${yOf(i + 1)}" x2="${W}" y2="${yOf(i + 1)}" stroke="${COL.rowline}" stroke-width="0.5"/>`;
-  }
 
   rows.forEach((r, i) => {
     const t = r.task;
@@ -297,32 +320,33 @@ export function buildChartSvg(data: PrintData): string {
     if (!sc) return;
     const y = yOf(i);
     const x = xOf(sc.s);
-    const w = Math.max((calDays(sc.s, sc.f) + 1) * PXD, 2);
+    const w = Math.max((calDays(sc.s, sc.f) + 1) * dayMM, MIN_BAR_MM);
     const isCrit = critical?.has(String(t.id)) ?? false;
 
     if (baselineBars && baselineBars[String(t.id)]) {
       const b = baselineBars[String(t.id)];
       const gx = xOf(b.s);
-      const gw = Math.max((calDays(b.s, b.f) + 1) * PXD, 2);
-      out += `<rect x="${gx}" y="${y + 24}" width="${gw}" height="4" rx="2" fill="${COL.ghost}" opacity="0.6"/>`;
+      const gw = Math.max((calDays(b.s, b.f) + 1) * dayMM, MIN_BAR_MM);
+      out += `<rect x="${f2(gx)}" y="${f2(y + 24 * k)}" width="${f2(gw)}" height="${f2(4 * k)}" rx="${f2(2 * k)}" fill="${COL.ghost}" opacity="0.6"/>`;
     }
 
     if (t.type === 'group') {
-      const gy = y + 9;
-      out += `<rect x="${x}" y="${gy}" width="${w}" height="6" fill="${COL.group}"/>`;
-      out += `<path d="M${x},${gy} l0,12 l6,-6 z" fill="${COL.group}"/>`;
-      out += `<path d="M${x + w},${gy} l0,12 l-6,-6 z" fill="${COL.group}"/>`;
+      const gy = y + 9 * k;
+      out += `<rect x="${f2(x)}" y="${f2(gy)}" width="${f2(w)}" height="${f2(6 * k)}" fill="${COL.group}"/>`;
+      out += `<path d="M${f2(x)},${f2(gy)} l0,${f2(12 * k)} l${f2(6 * k)},${f2(-6 * k)} z" fill="${COL.group}"/>`;
+      out += `<path d="M${f2(x + w)},${f2(gy)} l0,${f2(12 * k)} l${f2(-6 * k)},${f2(-6 * k)} z" fill="${COL.group}"/>`;
     } else if (t.type === 'milestone') {
-      const cx = x + PXD / 2;
-      const cy = y + ROW_PX / 2;
+      const cx = x + dayMM / 2;
+      const cy = y + rowH / 2;
+      const h = 7 * k;
       const viol = violations.has(String(t.id));
       const fill = viol ? COL.violation : isCrit ? COL.critical : t.milestoneType === 'fixed' ? COL.msFixed : COL.msCalc;
-      out += `<path d="M${cx},${cy - 7} L${cx + 7},${cy} L${cx},${cy + 7} L${cx - 7},${cy} z" fill="${fill}"/>`;
+      out += `<path d="M${f2(cx)},${f2(cy - h)} L${f2(cx + h)},${f2(cy)} L${f2(cx)},${f2(cy + h)} L${f2(cx - h)},${f2(cy)} z" fill="${fill}"/>`;
     } else {
       const fill = isCrit ? COL.critical : t.color && HEX_COLOR.test(t.color) ? t.color : COL.bar;
       const pct = Math.max(0, Math.min(100, t.percentComplete || 0));
-      out += `<rect x="${x}" y="${y + 8}" width="${w}" height="14" rx="3" fill="${fill}"/>`;
-      if (pct > 0) out += `<rect x="${x}" y="${y + 8}" width="${(w * pct) / 100}" height="14" rx="3" fill="rgba(0,0,0,0.30)"/>`;
+      out += `<rect x="${f2(x)}" y="${f2(y + 8 * k)}" width="${f2(w)}" height="${f2(14 * k)}" rx="${f2(3 * k)}" fill="${fill}"/>`;
+      if (pct > 0) out += `<rect x="${f2(x)}" y="${f2(y + 8 * k)}" width="${f2((w * pct) / 100)}" height="${f2(14 * k)}" rx="${f2(3 * k)}" fill="rgba(0,0,0,0.30)"/>`;
     }
   });
 
@@ -339,33 +363,33 @@ export function buildChartSvg(data: PrintData): string {
       if (pi == null || !pm) continue;
       const exFromStart = p.type === 'SS' || p.type === 'SF';
       const enAtFinish = p.type === 'FF' || p.type === 'SF';
-      const sx = exFromStart ? xOf(pm.s) : xOf(pm.f) + PXD;
-      const sy = yOf(pi) + ROW_PX / 2;
-      const enX = enAtFinish ? xOf(tm.f) + PXD : xOf(tm.s);
-      const enY = yOf(ti) + ROW_PX / 2;
-      const wrap = 18; // must exceed arrowhead length ~11px (gantto HANDOFF)
+      const sx = exFromStart ? xOf(pm.s) : xOf(pm.f) + dayMM;
+      const sy = yOf(pi) + rowH / 2;
+      const enX = enAtFinish ? xOf(tm.f) + dayMM : xOf(tm.s);
+      const enY = yOf(ti) + rowH / 2;
+      const wrap = ARROW_MM.wrap;
       let d: string;
       if (p.type === 'FS') {
-        const dropX = Math.max(sx, enX + 8);
-        const landY = yOf(ti) + (ti > pi ? 8 : ROW_PX - 8);
-        d = `M${sx},${sy} H${dropX} V${landY}`;
+        const dropX = Math.max(sx, enX + ARROW_MM.drop);
+        const landY = yOf(ti) + (ti > pi ? 8 * k : rowH - 8 * k);
+        d = `M${f2(sx)},${f2(sy)} H${f2(dropX)} V${f2(landY)}`;
       } else if (p.type === 'SF') {
-        const leftX = Math.max(1, sx - 6);
+        const leftX = Math.max(ARROW_MM.edge, sx - ARROW_MM.back);
         const laneY = yOf(ti);
-        d = `M${sx},${sy} H${leftX} V${laneY} H${enX + wrap} V${enY} H${enX}`;
+        d = `M${f2(sx)},${f2(sy)} H${f2(leftX)} V${f2(laneY)} H${f2(enX + wrap)} V${f2(enY)} H${f2(enX)}`;
       } else {
-        const turnX = enAtFinish ? Math.max(sx, enX) + wrap : Math.max(1, Math.min(sx, enX) - wrap);
-        d = `M${sx},${sy} H${turnX} V${enY} H${enX}`;
+        const turnX = enAtFinish ? Math.max(sx, enX) + wrap : Math.max(ARROW_MM.edge, Math.min(sx, enX) - wrap);
+        d = `M${f2(sx)},${f2(sy)} H${f2(turnX)} V${f2(enY)} H${f2(enX)}`;
       }
-      out += `<path d="${d}" fill="none" stroke="${COL.dep}" stroke-width="1.6" opacity="0.85" marker-end="url(#parr)"/>`;
+      out += `<path d="${d}" fill="none" stroke="${COL.dep}" stroke-width="${ARROW_MM.stroke}" opacity="0.85" marker-end="url(#parr)"/>`;
     }
   });
 
   const end = parseDate(rangeStart);
   end.setDate(end.getDate() + totalDays);
   if (todayStr >= rangeStart && todayStr <= fmtDate(end)) {
-    const tx = xOf(todayStr) + PXD / 2;
-    out += `<line x1="${tx}" y1="0" x2="${tx}" y2="${H}" stroke="${COL.today}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    const tx = xOf(todayStr) + dayMM / 2;
+    out += `<line x1="${f2(tx)}" y1="0" x2="${f2(tx)}" y2="${f2(H)}" stroke="${COL.today}" stroke-width="${TODAY_MM.stroke}" stroke-dasharray="${TODAY_MM.dash}"/>`;
   }
   return out;
 }
@@ -387,7 +411,7 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
   } = layout;
   const totalPages = pagesTall * pagesWide;
   const colByKey = Object.fromEntries(cols.map((c) => [c.key, c]));
-  const chart = buildChartSvg(data);
+  const chart = buildChartSvg(data, { dayMM: PXD * mmPerPx, rowH });
   const { seg1, seg2 } = printTimeSegments(data.rangeStart, data.totalDays);
 
   // Label only months WITH bar activity (skip empty lead/tail padding months).
@@ -404,7 +428,6 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
   const fAxis2 = fontPt * 0.85 * PT_MM;
   const fColHdr = fontPt * 0.9 * PT_MM;
   const indentMM = fontMM * 0.9;
-  const f2 = (n: number) => n.toFixed(2);
 
   const truncMM = (s: string, widthMM: number, indentUsed = 0) => {
     const maxChars = Math.max(1, Math.floor((widthMM - padMM - indentUsed) / emMM));
@@ -545,7 +568,7 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
       svg += `<line x1="${f2(tableW)}" y1="0" x2="${f2(tableW)}" y2="${f2(tableBottom)}" stroke="${COL.headerLine}" stroke-width="0.3"/>`;
       svg +=
         `<svg x="${f2(tableW)}" y="${f2(headerBand)}" width="${f2(colWmm)}" height="${f2(bandRows * rowH)}" ` +
-        `viewBox="${f2(colStartPx)} ${rowStart * ROW_PX} ${f2(colPx)} ${bandRows * ROW_PX}" preserveAspectRatio="none">${chartP}</svg>`;
+        `viewBox="${f2(colStartPx * mmPerPx)} ${f2(rowStart * rowH)} ${f2(colPx * mmPerPx)} ${f2(bandRows * rowH)}">${chartP}</svg>`;
 
       svg += '</g></svg>';
       pages.push(svg);
