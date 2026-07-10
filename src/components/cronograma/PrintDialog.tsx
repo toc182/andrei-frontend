@@ -5,6 +5,7 @@
 // so a failed save can actually be shown as a warning).
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { X } from 'lucide-react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { computeChartRange } from '@/lib/cronogramaGeometry';
 import {
-  PRINT_PAPERS, buildPrintPages, openPrintWindow,
+  MAX_LOGOS_PER_SIDE, PRINT_PAPERS, buildPrintPages, openPrintWindow,
   type PrintOptions, type PrintData,
 } from '@/lib/cronogramaPrint';
 import {
@@ -40,7 +41,21 @@ const DEFAULT_AJUSTES: AjustesImpresion = {
   papel: 'legal', customWmm: null, customHmm: null, margenMM: 10, letra: 'normal',
   paginasAncho: 1, maxPaginasAlto: 0, reducirLetra: true,
   columnas: ['dur', 'inicio', 'fin', 'pct', 'pred'],
-  titulo: '', subtitulo: '', logoIzq: 'pinellas', logoDer: 'none',
+  titulo: '', subtitulo: 'Cronograma de Trabajo', logosIzq: ['pinellas'], logosDer: [],
+};
+
+type LogoSide = 'logosIzq' | 'logosDer';
+
+const isLogoEntry = (c: unknown): c is LogoChoice =>
+  c === 'pinellas' || c === 'cocp' ||
+  (typeof c === 'object' && c !== null && typeof (c as { dataUrl?: unknown }).dataUrl === 'string');
+
+/** Normalize one side's logos from unvalidated JSONB: new array shape wins; a legacy
+ *  single-logo key maps to a 0/1-item list ('none' → empty); otherwise the default. */
+const sideLogos = (arr: unknown, legacy: unknown, fallback: LogoChoice[]): LogoChoice[] => {
+  if (Array.isArray(arr)) return arr.filter(isLogoEntry).slice(0, MAX_LOGOS_PER_SIDE);
+  if (legacy !== undefined) return isLogoEntry(legacy) ? [legacy] : [];
+  return fallback;
 };
 
 async function toDataUrl(url: string): Promise<string> {
@@ -99,12 +114,18 @@ export function PrintDialog({
     if (!open) return;
     setErr(null);
     setWarn(null);
-    const saved = { ...DEFAULT_AJUSTES, ...(config.ajustesImpresion ?? {}) };
+    const raw = (config.ajustesImpresion ?? {}) as Partial<AjustesImpresion>;
+    const saved = { ...DEFAULT_AJUSTES, ...raw };
     // JSONB is shape-unvalidated server-side: defend the keys whose corruption would throw.
     if (saved.papel !== 'custom' && !PRINT_PAPERS[saved.papel]) saved.papel = 'legal';
     saved.columnas = Array.isArray(saved.columnas)
       ? saved.columnas.filter((c) => COLUMN_OPTIONS.some((o) => o.key === c))
       : DEFAULT_AJUSTES.columnas;
+    saved.logosIzq = sideLogos(raw.logosIzq, raw.logoIzq, DEFAULT_AJUSTES.logosIzq);
+    saved.logosDer = sideLogos(raw.logosDer, raw.logoDer, DEFAULT_AJUSTES.logosDer);
+    // Legacy single-logo keys: consumed above, never written back.
+    delete saved.logoIzq;
+    delete saved.logoDer;
     setA(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -118,30 +139,43 @@ export function PrintDialog({
       columnas: on ? [...new Set([...prev.columnas, key])] : prev.columnas.filter((c) => c !== key),
     }));
 
-  // Defensive: the value round-trips through unvalidated JSONB, so tolerate null/undefined.
-  const logoValue = (c: LogoChoice) => (typeof c === 'string' ? c : c ? 'otro' : 'none');
-
   const logoFileRefs = {
-    logoIzq: useRef<HTMLInputElement>(null),
-    logoDer: useRef<HTMLInputElement>(null),
+    logosIzq: useRef<HTMLInputElement>(null),
+    logosDer: useRef<HTMLInputElement>(null),
   };
+  // Which list slot the open file picker belongs to (set by "Otra imagen…").
+  const pendingLogoSlot = useRef<{ side: LogoSide; index: number } | null>(null);
 
-  const onLogoSelect = (slot: 'logoIzq' | 'logoDer') => (v: string) => {
+  const setLogo = (side: LogoSide, index: number, v: LogoChoice) =>
+    setA((prev) => ({ ...prev, [side]: prev[side].map((c, j) => (j === index ? v : c)) }));
+  const removeLogo = (side: LogoSide, index: number) =>
+    setA((prev) => ({ ...prev, [side]: prev[side].filter((_, j) => j !== index) }));
+  const addLogo = (side: LogoSide) =>
+    setA((prev) =>
+      prev[side].length >= MAX_LOGOS_PER_SIDE
+        ? prev
+        : { ...prev, [side]: [...prev[side], 'pinellas' as LogoChoice] });
+
+  const onLogoSelect = (side: LogoSide, index: number) => (v: string) => {
     if (v === 'otro') {
       // Open the file picker; keep the prior choice until a file actually lands.
-      logoFileRefs[slot].current?.click();
+      pendingLogoSlot.current = { side, index };
+      logoFileRefs[side].current?.click();
       return;
     }
-    set(slot, v as LogoChoice);
+    setLogo(side, index, v as LogoChoice);
   };
 
-  const onLogoFile = (slot: 'logoIzq' | 'logoDer') => async (e: ChangeEvent<HTMLInputElement>) => {
+  const onLogoFile = (side: LogoSide) => async (e: ChangeEvent<HTMLInputElement>) => {
     setErr(null);
     const f = e.target.files?.[0];
     if (!f) return;
     // Clear the native input right away: no stale filename shown, and re-picking
     // the same file fires a fresh change event.
     e.target.value = '';
+    const slot = pendingLogoSlot.current;
+    pendingLogoSlot.current = null;
+    if (!slot || slot.side !== side) return;
     if (!f.type.startsWith('image/')) {
       setErr('El logo debe ser una imagen.');
       return;
@@ -160,7 +194,7 @@ export function PrintDialog({
       setErr('Logo demasiado grande (máx. ~400 KB). Usa una imagen más liviana.');
       return;
     }
-    set(slot, { dataUrl });
+    setLogo(side, slot.index, { dataUrl });
   };
 
   const generar = async () => {
@@ -202,14 +236,16 @@ export function PrintDialog({
 
     setBusy(true);
     try {
-      let logoLeft: string | null = null;
-      let logoRight: string | null = null;
-      let logoFailed = false;
-      try {
-        [logoLeft, logoRight] = await Promise.all([resolveLogo(norm.logoIzq), resolveLogo(norm.logoDer)]);
-      } catch {
-        logoFailed = true;
-      }
+      // Resolve each logo independently: one broken image drops only itself.
+      const resolveSide = async (arr: LogoChoice[]) => {
+        const settled = await Promise.allSettled(arr.map(resolveLogo));
+        return {
+          urls: settled.flatMap((s) => (s.status === 'fulfilled' && s.value ? [s.value] : [])),
+          failed: settled.some((s) => s.status === 'rejected'),
+        };
+      };
+      const [izq, der] = await Promise.all([resolveSide(norm.logosIzq), resolveSide(norm.logosDer)]);
+      const logoFailed = izq.failed || der.failed;
       const todayStr = new Date().toISOString().slice(0, 10);
       const { rangeStart, totalDays } = computeChartRange(computed.schedule, config.startDate, todayStr);
       const opts: PrintOptions = {
@@ -219,9 +255,9 @@ export function PrintDialog({
         maxTall: norm.maxPaginasAlto,
         shrinkToFit: norm.reducirLetra,
         visibleCols: norm.columnas,
-        title: norm.titulo.trim() || config.name,
+        title: norm.titulo.trim() || config.proyectoNombre || config.name,
         subtitle: norm.subtitulo.trim(),
-        logoLeft, logoRight,
+        logosLeft: izq.urls, logosRight: der.urls,
       };
       const data: PrintData = {
         rows,
@@ -264,22 +300,34 @@ export function PrintDialog({
     }
   };
 
-  const logoSlot = (slot: 'logoIzq' | 'logoDer', label: string) => (
+  const logoList = (side: LogoSide, label: string) => (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      <Select value={logoValue(a[slot])} onValueChange={onLogoSelect(slot)}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="pinellas">Pinellas</SelectItem>
-          <SelectItem value="cocp">COCP</SelectItem>
-          <SelectItem value="none">Ninguno</SelectItem>
-          <SelectItem value="otro">Otra imagen…</SelectItem>
-        </SelectContent>
-      </Select>
-      {a[slot] && typeof a[slot] === 'object' && (
+      {a[side].map((c, j) => (
+        <div key={j} className="flex items-center gap-1.5">
+          <Select value={typeof c === 'string' ? c : 'otro'} onValueChange={onLogoSelect(side, j)}>
+            <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pinellas">Pinellas</SelectItem>
+              <SelectItem value="cocp">COCP</SelectItem>
+              <SelectItem value="otro">Otra imagen…</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button type="button" variant="ghost" size="icon" aria-label="Quitar logo"
+            onClick={() => removeLogo(side, j)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+      {a[side].some((c) => typeof c === 'object') && (
         <p className="text-xs text-muted-foreground">Imagen personalizada guardada.</p>
       )}
-      <Input ref={logoFileRefs[slot]} type="file" accept="image/*" onChange={onLogoFile(slot)} className="text-xs" />
+      {a[side].length < MAX_LOGOS_PER_SIDE && (
+        <Button type="button" variant="outline" size="sm" onClick={() => addLogo(side)}>
+          Agregar logo
+        </Button>
+      )}
+      <Input ref={logoFileRefs[side]} type="file" accept="image/*" onChange={onLogoFile(side)} className="hidden" />
     </div>
   );
 
@@ -382,7 +430,7 @@ export function PrintDialog({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Título</Label>
-            <Input value={a.titulo} placeholder={config.name}
+            <Input value={a.titulo} placeholder={config.proyectoNombre ?? config.name}
               onChange={(e) => set('titulo', e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -393,8 +441,8 @@ export function PrintDialog({
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {logoSlot('logoIzq', 'Logo izquierdo')}
-          {logoSlot('logoDer', 'Logo derecho')}
+          {logoList('logosIzq', 'Logos izquierda')}
+          {logoList('logosDer', 'Logos derecha')}
         </div>
 
         {err && <Alert variant="error" title={err} />}

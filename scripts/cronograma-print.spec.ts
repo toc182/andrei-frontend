@@ -27,7 +27,7 @@ const baseOpts = (over: Partial<PrintOptions> = {}): PrintOptions => ({
   Wmm: 297, Hmm: 210, marginMM: 10, fontKey: 'normal',
   pagesWide: 1, maxTall: 0, shrinkToFit: true,
   visibleCols: ['dur', 'inicio', 'fin', 'pct', 'pred'],
-  title: 'Test', subtitle: '', logoLeft: null, logoRight: null,
+  title: 'Test', subtitle: '', logosLeft: [], logosRight: [],
   ...over,
 });
 
@@ -190,8 +190,26 @@ function fixtureData(rowCount: number, totalDays: number): PrintData {
   ok(pages[0].includes('x1="45.72"') && pages[0].includes('stroke-dasharray="1.2 0.9"'), 'golden mm: línea de hoy en mm');
 }
 {
-  const { pages } = buildPrintPages(baseOpts({ logoLeft: '"><script>x</script>' }), fixtureData(6, 60));
+  const { pages } = buildPrintPages(baseOpts({ logosLeft: ['"><script>x</script>'] }), fixtureData(6, 60));
   ok(!pages[0].includes('<script>'), 'seguridad: logo sin esquema data:image/ se descarta');
+}
+
+// ---- multi-logo (hasta 3 por lado, fila en la cabecera) ----
+{
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  const { pages, layout } = buildPrintPages(
+    baseOpts({ logosLeft: [png, png, png], logosRight: [png] }), fixtureData(6, 60));
+  ok(Math.abs(layout.logoW - 28) < 0.01, `logos: logoW 28mm en A4 con 3 por lado (got ${layout.logoW})`);
+  ok((pages[0].match(/<image /g) || []).length === 4, 'logos: 4 imágenes en la página');
+  ok(pages[0].includes('x="2.00"') && pages[0].includes('x="32.00"') && pages[0].includes('x="62.00"'),
+    'logos: fila izquierda en x=2/32/62 (paso logoW+2)');
+  ok(pages[0].includes('x="247.00"'), 'logos: logo derecho anclado al borde derecho');
+}
+{
+  // un solo logo por lado conserva la geometría previa (logoW 28, título centrado intacto)
+  const png = 'data:image/png;base64,iVBORw0KGgo=';
+  const { layout } = buildPrintPages(baseOpts({ logosLeft: [png] }), fixtureData(6, 60));
+  ok(Math.abs(layout.logoW - 28) < 0.01, 'logos: 1 por lado mantiene logoW 28mm');
 }
 {
   const d = fixtureData(6, 60);

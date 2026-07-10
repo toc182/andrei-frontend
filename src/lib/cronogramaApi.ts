@@ -9,6 +9,9 @@ export interface CronogramaConfig {
   id: number;
   name: string;
   proyectoId: number | null;
+  /** Nombre del proyecto vinculado (null si el cronograma no tiene proyecto) —
+   *  default del título de impresión. */
+  proyectoNombre?: string | null;
   startDate: string; // YYYY-MM-DD
   workWeek: number; // 5 | 6 | 7
   holidays: string[];
@@ -35,8 +38,12 @@ export interface AjustesImpresion {
   columnas: ColumnaImpresion[]; // # y Nombre siempre van
   titulo: string;
   subtitulo: string;
-  logoIzq: LogoChoice;
-  logoDer: LogoChoice;
+  logosIzq: LogoChoice[]; // hasta 3 por lado; las entradas nunca son 'none'
+  logosDer: LogoChoice[];
+  /** @deprecated pre-multi-logo single keys — read when seeding old saves, never written back */
+  logoIzq?: LogoChoice;
+  /** @deprecated see logoIzq */
+  logoDer?: LogoChoice;
 }
 
 /** Thrown by saveCronograma when the backend rejects the save with 409 (another tab/device

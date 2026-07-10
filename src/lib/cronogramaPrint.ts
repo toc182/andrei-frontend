@@ -44,6 +44,8 @@ const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/; // task.color is server-persisted free 
 // diamonds) scale with rowH via k = rowH/ROW_PX; the sizes below are the
 // compression-independent ones that the old px→mm scaling used to crush.
 const MIN_BAR_MM = 0.6; // a 1-day task stays a visible tick even at extreme compression
+export const MAX_LOGOS_PER_SIDE = 3;
+const LOGO_GAP_MM = 2; // gap between logos in a side's header row
 // wrap must exceed the arrowhead: markerWidth 7 × stroke 0.3 ≈ 2.1mm (gantto HANDOFF, now in mm)
 const ARROW_MM = { stroke: 0.3, wrap: 3.2, drop: 1.4, back: 1.1, edge: 0.2 };
 const TODAY_MM = { stroke: 0.35, dash: '1.2 0.9' };
@@ -82,8 +84,8 @@ export interface PrintOptions {
   visibleCols: string[]; // subset of dur|inicio|fin|pct|pred
   title: string;
   subtitle: string;
-  logoLeft: string | null; // data URL, ready to embed
-  logoRight: string | null;
+  logosLeft: string[]; // data URLs, ready to embed; up to MAX_LOGOS_PER_SIDE each side
+  logosRight: string[];
 }
 
 export interface PrintData {
@@ -146,7 +148,7 @@ export function printColumns(fontPt: number, visible: string[]) {
 // piecemeal in new code paths without adding it here first.
 
 export function computePrintLayout(opts: PrintOptions, rowCount: number, totalDays: number) {
-  const { Wmm, Hmm, marginMM, fontKey, shrinkToFit, visibleCols, logoLeft, logoRight, title, subtitle } = opts;
+  const { Wmm, Hmm, marginMM, fontKey, shrinkToFit, visibleCols, logosLeft, logosRight, title, subtitle } = opts;
   const pwMM = Wmm - 2 * marginMM;
   const phMM = Hmm - 2 * marginMM;
   const pagesWide = Math.max(1, Math.min(12, Math.round(opts.pagesWide || 1)));
@@ -181,8 +183,17 @@ export function computePrintLayout(opts: PrintOptions, rowCount: number, totalDa
   }
 
   // Title fit: shrink toward body size, then word-wrap to ≤3 centered lines.
-  const logoW = logoLeft || logoRight ? Math.min(28, pwMM * 0.16) : 0;
-  const titleAvail = pwMM - 2 * (logoW + 4);
+  // Each side's logos share one header row; with 2-3 per side each logo narrows so the
+  // widest strip never claims more than ~⅓ of the page (the centered title gets the rest).
+  const nLogos = Math.max(
+    Math.min(logosLeft.length, MAX_LOGOS_PER_SIDE),
+    Math.min(logosRight.length, MAX_LOGOS_PER_SIDE),
+  );
+  const logoW = nLogos > 0
+    ? Math.min(28, pwMM * 0.16, (pwMM * 0.34 - LOGO_GAP_MM * (nLogos - 1)) / nLogos)
+    : 0;
+  const logoStripW = nLogos > 0 ? nLogos * logoW + LOGO_GAP_MM * (nLogos - 1) : 0;
+  const titleAvail = pwMM - 2 * (logoStripW + 4);
   const wmm = (s: string, fpt: number) => s.length * fpt * PT_MM * 0.6;
   const titleStr = (title || '').trim() || ' ';
   let tf = L.fontPt * 1.7;
@@ -399,9 +410,13 @@ export function buildChartSvg(data: PrintData, scale: ChartScale): string {
 export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: string[]; layout: PrintLayout } {
   // Logos are attacker-influenceable (persisted server-side, shared across users): require
   // the data:image/ scheme and escape — they land inside a same-origin popup document.
-  const safeLogo = (s: string | null) => (s && s.startsWith('data:image/') ? esc(s) : null);
-  const logoL = safeLogo(opts.logoLeft);
-  const logoR = safeLogo(opts.logoRight);
+  const safeLogos = (arr: string[]) =>
+    arr
+      .map((s) => (s && s.startsWith('data:image/') ? esc(s) : null))
+      .filter((s): s is string => s != null)
+      .slice(0, MAX_LOGOS_PER_SIDE);
+  const logosL = safeLogos(opts.logosLeft);
+  const logosR = safeLogos(opts.logosRight);
   const layout = computePrintLayout(opts, data.rows.length, data.totalDays);
   if (layout.errTableTooWide) return { pages: [], layout };
   const {
@@ -471,8 +486,12 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
       // document frame
       svg += `<rect x="0.5" y="0.5" width="${f2(pwMM - 1)}" height="${f2(phMM - 1)}" fill="none" stroke="${COL.frame}" stroke-width="0.4"/>`;
       // header: optional logos + CENTERED title/subtitle
-      if (logoL) svg += `<image href="${logoL}" x="2" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
-      if (logoR) svg += `<image href="${logoR}" x="${f2(pwMM - 2 - logoW)}" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
+      logosL.forEach((l, j) => {
+        svg += `<image href="${l}" x="${f2(2 + j * (logoW + LOGO_GAP_MM))}" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
+      });
+      logosR.forEach((l, j) => {
+        svg += `<image href="${l}" x="${f2(pwMM - 2 - logoW - j * (logoW + LOGO_GAP_MM))}" y="1.5" width="${f2(logoW)}" height="${f2(docHeaderH - 3)}" preserveAspectRatio="xMidYMid meet"/>`;
+      });
       const titleLineMM = titleFontMM * 1.2;
       const subMM = opts.subtitle ? fontMM * 1.3 : 0;
       const blockH = titleLines.length * titleLineMM + subMM;
