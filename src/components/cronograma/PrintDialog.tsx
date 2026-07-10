@@ -1,7 +1,8 @@
 // PrintDialog — options dialog for cronograma print/PDF (ERP take on gantto's #pdfDialog).
 // Form state + orchestration ONLY: resolves logo choices to data URLs, calls the pure
 // builder in cronogramaPrint.ts, opens the print window, and persists the setup per
-// cronograma (fire-and-forget — a failed save never blocks printing).
+// cronograma (printing never blocks on the save — only the dialog close waits for it,
+// so a failed save can actually be shown as a warning).
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
@@ -98,7 +99,13 @@ export function PrintDialog({
     if (!open) return;
     setErr(null);
     setWarn(null);
-    setA({ ...DEFAULT_AJUSTES, ...(config.ajustesImpresion ?? {}) });
+    const saved = { ...DEFAULT_AJUSTES, ...(config.ajustesImpresion ?? {}) };
+    // JSONB is shape-unvalidated server-side: defend the keys whose corruption would throw.
+    if (saved.papel !== 'custom' && !PRINT_PAPERS[saved.papel]) saved.papel = 'legal';
+    saved.columnas = Array.isArray(saved.columnas)
+      ? saved.columnas.filter((c) => COLUMN_OPTIONS.some((o) => o.key === c))
+      : DEFAULT_AJUSTES.columnas;
+    setA(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -186,6 +193,13 @@ export function PrintDialog({
     };
     setA(norm);
 
+    // Server caps the stored JSON at 600 KB; check with headroom up front so the failure is
+    // actionable BEFORE printing (two ~350 KB logos pass the per-file cap but not the total).
+    if (new TextEncoder().encode(JSON.stringify(norm)).length > 550 * 1024) {
+      setErr('Los logos suman demasiado (máx. ~550 KB en total). Usa imágenes más livianas.');
+      return;
+    }
+
     setBusy(true);
     try {
       let logoLeft: string | null = null;
@@ -229,13 +243,19 @@ export function PrintDialog({
         setErr('El navegador bloqueó la ventana de impresión — permite ventanas emergentes para este sitio.');
         return;
       }
-      // Persist fire-and-forget: a failed save must never block the print that already opened.
-      saveAjustesImpresion(config.id, norm)
-        .then(() => onSavedAjustes(norm, config.id))
-        .catch(() => setWarn('No se pudieron guardar los ajustes de impresión (el PDF no se afecta).'));
+      // The print window is already open; awaiting the save only delays the dialog close a
+      // moment so a failure can actually be SEEN (a warn set after close would be lost).
+      let saveFailed = false;
+      try {
+        await saveAjustesImpresion(config.id, norm);
+        onSavedAjustes(norm, config.id);
+      } catch {
+        saveFailed = true;
+        setWarn('No se pudieron guardar los ajustes de impresión (el PDF no se afecta).');
+      }
       if (logoFailed) setWarn('No se pudo cargar un logo; se imprimió sin él.');
       if (layout.warn) setWarn(layout.warn);
-      if (!layout.warn && !logoFailed) onOpenChange(false);
+      if (!layout.warn && !logoFailed && !saveFailed) onOpenChange(false);
     } catch (e) {
       console.error('Error generando PDF de cronograma:', e);
       setErr('No se pudo generar el PDF; intenta de nuevo.');
