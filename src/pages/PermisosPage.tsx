@@ -52,6 +52,7 @@ interface PermUser {
   cuentas: boolean | null;
   cotizaciones: boolean | null;
   cronogramas_ver: boolean | null;
+  desglose_ver: boolean | null;
 }
 
 interface ProjectOption {
@@ -88,6 +89,7 @@ const DEFAULT_PERMS: UserPermissions = {
   cuentas: false,
   cotizaciones: false,
   cronogramas_ver: false,
+  desglose_ver: false,
 };
 
 export default function PermisosPage() {
@@ -559,6 +561,11 @@ export default function PermisosPage() {
                     label="Acceso a cronogramas"
                     checked={perms.cronogramas_ver}
                     onChange={() => togglePerm('cronogramas_ver')}
+                  />
+                  <PermCheckbox
+                    label="Desglose de precios"
+                    checked={perms.desglose_ver}
+                    onChange={() => togglePerm('desglose_ver')}
                   />
                 </div>
               </div>
