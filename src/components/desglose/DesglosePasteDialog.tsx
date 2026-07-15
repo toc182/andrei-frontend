@@ -29,6 +29,10 @@ interface DesglosePasteDialogProps {
 const PAD = ['pl-0', 'pl-4', 'pl-8', 'pl-12', 'pl-16', 'pl-20', 'pl-24', 'pl-28', 'pl-32'];
 const padClass = (depth: number) => PAD[Math.min(depth, PAD.length - 1)];
 
+// Preview renders at most this many rows (huge pastes would freeze the
+// dialog); Confirmar still inserts ALL parsed rows.
+const PREVIEW_CAP = 200;
+
 export function DesglosePasteDialog({ open, onOpenChange, onConfirm }: DesglosePasteDialogProps) {
   const [text, setText] = useState('');
   const [mode, setMode] = useState<DesglosePasteMode>('codigos');
@@ -104,7 +108,7 @@ export function DesglosePasteDialog({ open, onOpenChange, onConfirm }: DesgloseP
             <p className="text-sm text-muted-foreground">Pega filas arriba para ver la vista previa.</p>
           ) : (
             <div className="max-h-80 space-y-1 overflow-y-auto rounded-md border border-border p-2">
-              {parsed.rows.map((r) => (
+              {parsed.rows.slice(0, PREVIEW_CAP).map((r) => (
                 <div key={r.tempId} className={`flex items-center gap-2 py-0.5 text-sm ${padClass(r.depth)}`}>
                   {r.item && <span className="text-muted-foreground">{r.item}</span>}
                   <span className={r.tipo === 'grupo' ? 'font-semibold' : ''}>
@@ -127,6 +131,11 @@ export function DesglosePasteDialog({ open, onOpenChange, onConfirm }: DesgloseP
                   )}
                 </div>
               ))}
+              {count > PREVIEW_CAP && (
+                <p className="py-0.5 text-xs text-muted-foreground">
+                  …y {count - PREVIEW_CAP} filas más
+                </p>
+              )}
             </div>
           )}
         </div>

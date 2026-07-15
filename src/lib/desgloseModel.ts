@@ -96,29 +96,90 @@ export const indentLegal = (rows: DesgloseRow[], i: number): boolean =>
 
 export const outdentLegal = (rows: DesgloseRow[], i: number): boolean => rows[i].depth > 0;
 
-/** Moves the subtree rooted at rows[i] (the row plus every following row with
- *  depth > rows[i].depth) to swap places with the ADJACENT SIBLING subtree in
- *  the given direction. A sibling is the nearest subtree root at the SAME
- *  depth under the same parent — found by scanning past the neighboring
- *  subtree's own descendants (depth > target depth) until a row at exactly
- *  target depth (a real sibling) or below it (a parent boundary — no sibling)
- *  is reached. Returns the SAME array reference when there is no such
- *  sibling (first child moving up, last child moving down, or the neighbor
- *  belongs to a different parent). Depths never change. */
-export function moveSubtree(rows: DesgloseRow[], i: number, dir: -1 | 1): DesgloseRow[] {
+/** Exclusive end index of the subtree rooted at rows[i]: the row itself plus
+ *  every following row with depth > rows[i].depth. */
+export function subtreeEnd(rows: DesgloseRow[], i: number): number {
   const depth = rows[i].depth;
   let j = i + 1;
-  while (j < rows.length && rows[j].depth > depth) j++; // end of rows[i]'s own subtree (exclusive)
+  while (j < rows.length && rows[j].depth > depth) j++;
+  return j;
+}
 
+/** New rows array with [i, j) shifted by delta depth. Internal — every public
+ *  op validates legality BEFORE calling this. */
+const shiftDepth = (rows: DesgloseRow[], i: number, j: number, delta: number): DesgloseRow[] =>
+  rows.map((r, idx) => (idx >= i && idx < j ? { ...r, depth: r.depth + delta } : r));
+
+/** Index of the row that would become rows[i]'s structural parent after an
+ *  indent — its nearest PRECEDING sibling at the same depth — or -1 when the
+ *  indent is illegal. The parent candidate may be an 'item'; the view must
+ *  promote it to 'grupo' first (indentRows refuses otherwise). */
+export function indentParentIndex(rows: DesgloseRow[], i: number): number {
+  if (!indentLegal(rows, i)) return -1;
+  const depth = rows[i].depth;
+  let k = i - 1;
+  while (k >= 0 && rows[k].depth > depth) k--; // walk past the previous sibling's descendants
+  return k >= 0 && rows[k].depth === depth ? k : -1;
+}
+
+/** +1 depth for rows[i] and its whole subtree, nesting it under its previous
+ *  sibling. Returns the SAME reference when illegal (per indentLegal) or when
+ *  the new structural parent is not a 'grupo' — the view owns the
+ *  promote-to-grupo confirmation and must promote BEFORE calling this. */
+export function indentRows(rows: DesgloseRow[], i: number): DesgloseRow[] {
+  const k = indentParentIndex(rows, i);
+  if (k < 0 || rows[k].tipo !== 'grupo') return rows;
+  return shiftDepth(rows, i, subtreeEnd(rows, i), 1);
+}
+
+/** -1 depth for rows[i] and its whole subtree. Returns the SAME reference when
+ *  illegal: at depth 0, or when the moved row is an 'item' and a next sibling
+ *  exists — that sibling (the first row after the subtree, at the ORIGINAL
+ *  depth) would end up structurally parented to a non-grupo. When the moved
+ *  row is a 'grupo', the followers legally become its children (MS-Project
+ *  adoption semantics). */
+export function outdentRows(rows: DesgloseRow[], i: number): DesgloseRow[] {
+  if (!outdentLegal(rows, i)) return rows;
+  const j = subtreeEnd(rows, i);
+  if (rows[i].tipo === 'item' && j < rows.length && rows[j].depth === rows[i].depth) return rows;
+  return shiftDepth(rows, i, j, -1);
+}
+
+/** Removes rows[i] and its whole subtree. Followers keep a legal tree without
+ *  depth edits: rows[subtreeEnd] has depth ≤ rows[i].depth ≤ prevDepth+1, so
+ *  the depth invariant holds across the splice. */
+export function deleteSubtree(rows: DesgloseRow[], i: number): DesgloseRow[] {
+  return [...rows.slice(0, i), ...rows.slice(subtreeEnd(rows, i))];
+}
+
+/** Same legality as moveSubtree — an adjacent sibling subtree exists in the
+ *  given direction — WITHOUT allocating a new array. */
+export function canMoveSubtree(rows: DesgloseRow[], i: number, dir: -1 | 1): boolean {
+  const depth = rows[i].depth;
   if (dir === -1) {
     let k = i - 1;
     while (k >= 0 && rows[k].depth > depth) k--; // walk past the previous subtree's descendants
-    if (k < 0 || rows[k].depth !== depth) return rows; // no previous sibling
+    return k >= 0 && rows[k].depth === depth;
+  }
+  const j = subtreeEnd(rows, i);
+  return j < rows.length && rows[j].depth === depth;
+}
+
+/** Moves the subtree rooted at rows[i] (the row plus every following row with
+ *  depth > rows[i].depth) to swap places with the ADJACENT SIBLING subtree in
+ *  the given direction. A sibling is the nearest subtree root at the SAME
+ *  depth under the same parent. Returns the SAME array reference when there
+ *  is no such sibling (first child moving up, last child moving down, or the
+ *  neighbor belongs to a different parent). Depths never change. */
+export function moveSubtree(rows: DesgloseRow[], i: number, dir: -1 | 1): DesgloseRow[] {
+  if (!canMoveSubtree(rows, i, dir)) return rows;
+  const j = subtreeEnd(rows, i);
+  if (dir === -1) {
+    const depth = rows[i].depth;
+    let k = i - 1;
+    while (k >= 0 && rows[k].depth > depth) k--; // start of the previous sibling's subtree
     return [...rows.slice(0, k), ...rows.slice(i, j), ...rows.slice(k, i), ...rows.slice(j)];
   }
-
-  if (j >= rows.length || rows[j].depth !== depth) return rows; // no next sibling
-  let m = j + 1;
-  while (m < rows.length && rows[m].depth > depth) m++; // end of the next sibling's subtree
+  const m = subtreeEnd(rows, j); // end of the next sibling's subtree
   return [...rows.slice(0, i), ...rows.slice(j, m), ...rows.slice(i, j), ...rows.slice(m)];
 }

@@ -85,9 +85,15 @@ export default function ProjectInformacion({
 }: ProjectInformacionProps) {
   const [deleteAdendaId, setDeleteAdendaId] = useState<number | null>(null);
   const [seccion, setSeccion] = useState<'datos' | 'desglose'>('datos');
+  // Dirty state reported by DesgloseView so switching to Datos can warn
+  // before discarding unsaved changes (the subview unmounts on switch).
+  const [desgloseDirty, setDesgloseDirty] = useState(false);
+  const [confirmDatosOpen, setConfirmDatosOpen] = useState(false);
   const { user } = useAuth();
   const puedeVerDesglose =
     user?.rol === 'admin' || user?.rol === 'co-admin' || !!user?.permissions?.desglose_ver;
+  // Render guard: desglose only when BOTH selected and permitted.
+  const showDesglose = seccion === 'desglose' && puedeVerDesglose;
 
   return (
     <div className="space-y-6">
@@ -96,15 +102,21 @@ export default function ProjectInformacion({
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          variant={seccion === 'datos' ? 'secondary' : 'ghost'}
-          onClick={() => setSeccion('datos')}
+          variant={!showDesglose ? 'secondary' : 'ghost'}
+          onClick={() => {
+            if (showDesglose && desgloseDirty) {
+              setConfirmDatosOpen(true);
+              return;
+            }
+            setSeccion('datos');
+          }}
         >
           Datos
         </Button>
         {puedeVerDesglose && (
           <Button
             size="sm"
-            variant={seccion === 'desglose' ? 'secondary' : 'ghost'}
+            variant={showDesglose ? 'secondary' : 'ghost'}
             onClick={() => setSeccion('desglose')}
           >
             Desglose
@@ -112,7 +124,7 @@ export default function ProjectInformacion({
         )}
       </div>
 
-      {seccion === 'datos' ? (
+      {!showDesglose ? (
         <>
           {/* Project Details */}
           <Card>
@@ -278,8 +290,33 @@ export default function ProjectInformacion({
           </AlertDialog>
         </>
       ) : (
-        <DesgloseView proyectoId={project.id} />
+        <DesgloseView proyectoId={project.id} onDirtyChange={setDesgloseDirty} />
       )}
+
+      {/* Guard: switching to Datos discards unsaved desglose edits (the
+          subview unmounts) — confirm first. */}
+      <AlertDialog open={confirmDatosOpen} onOpenChange={setConfirmDatosOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cambios sin guardar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tienes cambios sin guardar en el desglose — ¿descartarlos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDesgloseDirty(false);
+                setSeccion('datos');
+                setConfirmDatosOpen(false);
+              }}
+            >
+              Descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

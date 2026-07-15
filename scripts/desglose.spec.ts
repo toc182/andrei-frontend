@@ -2,7 +2,9 @@
 // cd andrei-frontend && npx tsx scripts/desglose.spec.ts
 import './desgloseSpecEnv'; // MUST be first: stubs window before desgloseApi loads @/services/api
 import {
-  computeTotals, toWireItems, indentLegal, outdentLegal, moveSubtree, GRAND_TOTAL_KEY, type DesgloseRow,
+  computeTotals, toWireItems, indentLegal, outdentLegal, moveSubtree, canMoveSubtree,
+  subtreeEnd, indentRows, indentParentIndex, outdentRows, deleteSubtree,
+  GRAND_TOTAL_KEY, type DesgloseRow,
 } from '../src/lib/desgloseModel';
 import { parseDesglosePaste, parseMoney } from '../src/lib/desglosePaste';
 import { wireToRows, type DesgloseItemWire } from '../src/lib/desgloseApi';
@@ -176,6 +178,97 @@ const row = (over: Partial<DesgloseRow>): DesgloseRow => ({
   ok(moveSubtree(rows, 1, -1) === rows, 'moveSubtree: primer hijo no sube');
   ok(moveSubtree(rows, 4, 1) === rows, 'moveSubtree: último hijo no baja (no cruza al grupo C)');
   ok(moveSubtree(rows, 5, 1) === rows, 'moveSubtree: última raíz no baja');
+}
+
+// ---- model: subtreeEnd ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),            // 0: G
+    row({ tempId: 2, depth: 1 }),                 // 1:   item
+    row({ tempId: 3, depth: 1, tipo: 'grupo' }),  // 2:   subgrupo
+    row({ tempId: 4, depth: 2 }),                 // 3:     item
+    row({ tempId: 5 }),                           // 4: item raíz
+  ];
+  ok(subtreeEnd(rows, 0) === 4, 'subtreeEnd: grupo incluye todo su subárbol');
+  ok(subtreeEnd(rows, 2) === 4, 'subtreeEnd: subgrupo incluye a su hijo');
+  ok(subtreeEnd(rows, 4) === 5, 'subtreeEnd: hoja = i+1');
+}
+// ---- model: outdentRows — item con seguidor a la misma profundidad es ilegal ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),  // 0: G
+    row({ tempId: 2, depth: 1 }),       // 1:   A item
+    row({ tempId: 3, depth: 1 }),       // 2:   B item
+  ];
+  ok(outdentRows(rows, 1) === rows, 'outdentRows: item con hermano siguiente no sale (B quedaría bajo un item)');
+  const last = outdentRows(rows, 2);
+  ok(last !== rows && last.map((r) => r.depth).join(',') === '0,1,0', 'outdentRows: último hijo sí sale');
+  ok(outdentRows(rows, 0) === rows, 'outdentRows: profundidad 0 no sale');
+}
+// ---- model: outdentRows — grupo adopta a los seguidores (semántica MS-Project) ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),            // 0: G
+    row({ tempId: 2, depth: 1, tipo: 'grupo' }),  // 1:   A grupo
+    row({ tempId: 3, depth: 1 }),                 // 2:   B item
+  ];
+  const out = outdentRows(rows, 1);
+  ok(out !== rows && out.map((r) => r.tempId).join(',') === '1,2,3', 'outdentRows: adopción no reordena filas');
+  ok(out.map((r) => r.depth).join(',') === '0,0,1', 'outdentRows: B queda adoptado bajo A');
+  const wire = toWireItems(out);
+  ok(wire[0].parentTempId === null && wire[1].parentTempId === null && wire[2].parentTempId === 2,
+    'outdentRows: padres G:null, A:null, B:A');
+}
+// ---- model: indentRows ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1 }),                 // 0: item raíz
+    row({ tempId: 2, tipo: 'grupo' }),  // 1: grupo raíz
+    row({ tempId: 3 }),                 // 2: item raíz
+  ];
+  ok(indentRows(rows, 0) === rows, 'indentRows: fila 0 nunca');
+  ok(indentParentIndex(rows, 2) === 1, 'indentParentIndex: hermano anterior es el nuevo padre');
+  const ind = indentRows(rows, 2);
+  ok(ind !== rows && ind.map((r) => r.depth).join(',') === '0,0,1', 'indentRows: bajo un grupo indenta');
+  const rows2: DesgloseRow[] = [row({ tempId: 1 }), row({ tempId: 2 })];
+  ok(indentRows(rows2, 1) === rows2, 'indentRows: padre item exige promoción (misma referencia)');
+  const rows3: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),
+    row({ tempId: 2, tipo: 'grupo' }),
+    row({ tempId: 3, depth: 1 }),
+  ];
+  const ind3 = indentRows(rows3, 1);
+  ok(ind3 !== rows3 && ind3.map((r) => r.depth).join(',') === '0,1,2', 'indentRows: subárbol completo +1');
+}
+// ---- model: deleteSubtree — grupo intermedio deja un árbol legal ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),            // 0: G
+    row({ tempId: 2, depth: 1, tipo: 'grupo' }),  // 1:   X grupo (intermedio)
+    row({ tempId: 3, depth: 2 }),                 // 2:     X.1
+    row({ tempId: 4, depth: 1 }),                 // 3:   S seguidor
+  ];
+  const del = deleteSubtree(rows, 1);
+  ok(del.map((r) => r.tempId).join(',') === '1,4', 'deleteSubtree: sale el subárbol completo');
+  let legal = true; let prev = -1;
+  for (const r of del) { if (r.depth > prev + 1) legal = false; prev = r.depth; }
+  ok(legal, 'deleteSubtree: invariante de profundidad intacto en los seguidores');
+  ok(toWireItems(del)[1].parentTempId === 1, 'deleteSubtree: el seguidor sigue bajo G');
+  ok(deleteSubtree(rows, 3).length === 3, 'deleteSubtree: hoja elimina solo una fila');
+}
+// ---- model: canMoveSubtree coincide con la identidad de moveSubtree ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),            // 0: grupo A
+    row({ tempId: 2, depth: 1 }),                 // 1:   item A.1
+    row({ tempId: 3, depth: 1, tipo: 'grupo' }),  // 2:   grupo A.B
+    row({ tempId: 4, depth: 2 }),                 // 3:     item A.B.1
+    row({ tempId: 5, depth: 1 }),                 // 4:   item A.2
+    row({ tempId: 6, tipo: 'grupo' }),            // 5: grupo C
+  ];
+  const cases: [number, -1 | 1][] = [[2, -1], [2, 1], [1, -1], [4, 1], [5, 1]];
+  ok(cases.every(([i, d]) => canMoveSubtree(rows, i, d) === (moveSubtree(rows, i, d) !== rows)),
+    'canMoveSubtree: coincide con moveSubtree en los 5 casos existentes');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
