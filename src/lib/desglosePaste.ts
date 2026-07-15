@@ -10,6 +10,10 @@
 // A row with no cantidad AND no PU is a grupo. Totals are recomputed; a
 // pasted total that disagrees sets totalMismatch (preview badge, computed
 // value wins — Ivan's rounding decision).
+// A final normalization pass makes the preview satisfy the editor-model
+// invariant (depth ≤ prevDepth+1; a structural parent is always a 'grupo'),
+// so what the user previews is exactly what saves — children of an 'item'
+// are demoted to siblings, never silently flattened later.
 
 import { parseTsv } from './cronogramaPasteTsv';
 import type { DesgloseRow } from './desgloseModel';
@@ -25,9 +29,18 @@ export interface DesglosePasteResult {
   skippedHeader: boolean;
 }
 
-/** "1,200.50", "$12.75", "B/. 5" -> number|null. */
+/** "1,200.50", "$12.75", "B/. 5", "1.234.567", "(1,200.50)" -> number|null. */
 export function parseMoney(raw: string): number | null {
-  const s = raw.replace(/[^0-9.,-]/g, '').trim();
+  let s = raw.trim();
+  if (!s) return null;
+  // Accounting negatives: "(1,200.50)" -> -1200.50.
+  let negative = false;
+  const paren = s.match(/^\((.*)\)$/);
+  if (paren) { negative = true; s = paren[1]; }
+  // Strip currency tokens BEFORE the character-class strip so "B/." doesn't
+  // leave a stray dot behind that corrupts the separator heuristics.
+  s = s.replace(/B\/\.?/gi, '').replace(/\$/g, '');
+  s = s.replace(/[^0-9.,-]/g, '').trim();
   if (!s) return null;
   // If both separators appear, the LAST one is the decimal point.
   const lastComma = s.lastIndexOf(','); const lastDot = s.lastIndexOf('.');
@@ -37,9 +50,16 @@ export function parseMoney(raw: string): number | null {
   } else if (lastComma > -1) {
     // lone comma: decimal if followed by 1-2 digits, else thousands
     norm = /,\d{1,2}$/.test(s) ? s.replace(',', '.') : s.replace(/,/g, '');
+  } else if (lastDot > -1 && s.indexOf('.') !== lastDot) {
+    // multiple dots, no comma: dots are thousands separators ("1.234.567")
+    norm = s.replace(/\./g, '');
   }
+  // Reject malformed remainders outright instead of trusting parseFloat's
+  // lenient prefix-parse ("12.3,4" must be null, not 12.3).
+  if (!/^-?\d*(\.\d*)?$/.test(norm) || !/\d/.test(norm)) return null;
   const n = parseFloat(norm);
-  return Number.isFinite(n) ? n : null;
+  if (!Number.isFinite(n)) return null;
+  return negative ? -n : n;
 }
 
 /** "A1.1" -> ["A","1","1"]; "1.2.3" -> ["1","2","3"]; "1.01" -> ["1","01"]. */
@@ -67,8 +87,8 @@ export function parseDesglosePaste(text: string, mode: DesglosePasteMode): Desgl
   const codeStack: { segs: string[]; depth: number }[] = [];
   let tempId = 1;
   for (const cells of dataRows) {
+    if (cells.every((c) => !c.trim())) continue; // fully blank line — EVERY cell empty
     const [c0 = '', c1 = '', c2 = '', c3 = '', c4 = '', c5 = ''] = cells.map((c) => c.trim());
-    if (!c0 && !c1) continue; // fully blank line
     const cantidad = parseMoney(c3);
     const precioUnitario = parseMoney(c4);
     const pastedTotal = parseMoney(c5);
@@ -92,6 +112,21 @@ export function parseDesglosePaste(text: string, mode: DesglosePasteMode): Desgl
       precioUnitario: tipo === 'grupo' ? null : precioUnitario,
       totalMismatch: computed != null && pastedTotal != null && Math.abs(computed - pastedTotal) > 0.005,
     });
+  }
+  // Final normalization: the preview must already satisfy the editor-model
+  // invariant end to end. (i) clamp depth to ≤ prevDepth+1; (ii) a row whose
+  // structural parent (nearest preceding row at depth-1, after clamping) is
+  // tipo 'item' is demoted to that parent's depth — a sibling — iterating
+  // until the parent is a grupo or the row reaches the root. Money is never
+  // touched; nothing gets silently flattened at save time.
+  const lastTipoAtDepth: ('grupo' | 'item')[] = [];
+  let prevDepth = -1;
+  for (const r of out) {
+    let d = Math.min(r.depth, prevDepth + 1);
+    while (d > 0 && lastTipoAtDepth[d - 1] !== 'grupo') d--;
+    r.depth = d;
+    lastTipoAtDepth[d] = r.tipo;
+    prevDepth = d;
   }
   return { rows: out, mode, skippedHeader };
 }
