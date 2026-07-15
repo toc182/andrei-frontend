@@ -1,9 +1,11 @@
-// Golden gate for the desglose model + paste parser (pure functions only — no DOM).
+// Golden gate for the desglose model + paste parser + API tree reconstruction.
 // cd andrei-frontend && npx tsx scripts/desglose.spec.ts
+import './desgloseSpecEnv'; // MUST be first: stubs window before desgloseApi loads @/services/api
 import {
   computeTotals, toWireItems, indentLegal, outdentLegal, GRAND_TOTAL_KEY, type DesgloseRow,
 } from '../src/lib/desgloseModel';
 import { parseDesglosePaste, parseMoney } from '../src/lib/desglosePaste';
+import { wireToRows, type DesgloseItemWire } from '../src/lib/desgloseApi';
 
 let passed = 0; let failed = 0;
 function ok(cond: boolean, label: string) {
@@ -133,6 +135,15 @@ const row = (over: Partial<DesgloseRow>): DesgloseRow => ({
   ok(r.rows.length === 1 && r.rows[0].tipo === 'item'
     && r.rows[0].item === '' && r.rows[0].descripcion === '',
     'paste: fila solo-montos no se descarta');
+}
+
+// ---- api: wire round-trip ----
+{
+  const rows = wireToRows([
+    { id: 10, parentId: null, tipo: 'grupo', item: '1', descripcion: 'Cap', unidad: null, cantidad: null, precioUnitario: null, orden: 0 },
+    { id: 11, parentId: 10, tipo: 'item', item: '1.1', descripcion: 'Sub', unidad: 'gl', cantidad: 1, precioUnitario: 5, orden: 1 },
+  ] satisfies DesgloseItemWire[]);
+  ok(rows.length === 2 && rows[1].depth === 1, 'wireToRows: profundidad reconstruida');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
