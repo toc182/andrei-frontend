@@ -247,7 +247,11 @@ export function DesgloseView({ proyectoId, onDirtyChange }: DesgloseViewProps) {
       setDirty(editedMidFlight);
     } catch (e) {
       if (e instanceof DesgloseConflictError) setConflictMsg(e.message);
-      else setSaveErr('No se pudo guardar; intenta de nuevo.');
+      else {
+        // Backend 400s carry actionable messages (e.g. "Máximo 5000 filas").
+        const serverMsg = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
+        setSaveErr(serverMsg || 'No se pudo guardar; intenta de nuevo.');
+      }
     } finally {
       setBusy(false);
     }

@@ -14,6 +14,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/formatters';
 import type { DesgloseRow } from '@/lib/desgloseModel';
+import { parseMoney } from '@/lib/desglosePaste';
 
 // Depth padding for the Descripción cell — literal Tailwind classes (no
 // dynamic `pl-${n}` strings), clamped for depths beyond the scale.
@@ -52,7 +53,8 @@ function DesgloseTableRowBase({
 }: DesgloseTableRowProps) {
   // Numeric cells edit a raw STRING draft while focused and only parse on
   // blur — parsing per keystroke made "3.5" impossible to type (the
-  // intermediate "3." collapsed). Comma is accepted as decimal separator;
+  // intermediate "3." collapsed). Parsing goes through parseMoney so pasted
+  // formats ("1,234.56", "B/. 5") behave the same here as in Pegar filas;
   // empty or unparseable input commits null.
   const [drafts, setDrafts] = useState<Partial<Record<NumericField, string>>>({});
 
@@ -66,8 +68,7 @@ function DesgloseTableRowBase({
       const raw = drafts[field];
       if (raw === undefined) return; // never touched — nothing to commit
       setDrafts((d) => ({ ...d, [field]: undefined }));
-      const n = parseFloat(raw.trim().replace(',', '.'));
-      const value = Number.isFinite(n) ? n : null;
+      const value = parseMoney(raw);
       if (value !== r[field]) onChange(index, { [field]: value });
     },
   });
@@ -75,7 +76,7 @@ function DesgloseTableRowBase({
   return (
     <TableRow className="border-b border-slate-100 last:border-0">
       <TableCell className="px-4 py-2">
-        <Input value={r.item} onChange={(e) => onChange(index, { item: e.target.value })} className="h-8" />
+        <Input value={r.item} maxLength={60} onChange={(e) => onChange(index, { item: e.target.value })} className="h-8" />
       </TableCell>
       <TableCell className="px-4 py-2">
         <div className={padClass(r.depth)}>
@@ -89,6 +90,7 @@ function DesgloseTableRowBase({
       <TableCell className="px-4 py-2">
         <Input
           value={r.unidad ?? ''}
+          maxLength={30}
           onChange={(e) => onChange(index, { unidad: e.target.value || null })}
           className="h-8"
         />
