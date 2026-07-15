@@ -38,6 +38,7 @@
 18. [PR checklist for new or refactored pages](#18-pr-checklist)
 19. [What this file does NOT cover](#19-not-covered)
 20. [Feature-specific badge and row patterns](#20-feature-specific-patterns)
+21. [In-page secondary navigation](#21-in-page-secondary-navigation)
 
 ---
 
@@ -1254,6 +1255,36 @@ Urgent + reviewed on the same row is valid — the red left border signals urgen
 - **Aggregate counters** sit in a `bg-muted/40` card footer (total, a insertar, con error, duración asumida, etc.).
 - **No silent row loss:** blocked rows are never inserted implicitly. The user fixes them, marks **Ignorar** (per-row `Checkbox`), or ticks the **"Insertar X de Y (omitir Z con errores)"** opt-in. **Insertar** stays disabled until every row is valid-or-Ignored-or-opted-in, and while a date-format conflict is unresolved (the conflict `Alert` offers a one-click switch).
 - **One commit:** the whole batch is a single `commit()` in the workspace — one undo, one autosave. Nothing is written until Insertar; the dialog only reads and clones.
+
+---
+
+## 21. In-page secondary navigation
+
+When a single subview needs to hold more than one distinct body of content — and that content doesn't warrant a new top-level sidebar tab — switch between them with a **left-aligned row of `size="sm"` buttons directly under the `PageHeader`**, not a nested tab component.
+
+```jsx
+<PageHeader title="Información del Proyecto" />
+
+<div className="flex items-center gap-2">
+  <Button size="sm" variant={seccion === "datos" ? "secondary" : "ghost"} onClick={() => setSeccion("datos")}>
+    Datos
+  </Button>
+  <Button size="sm" variant={seccion === "desglose" ? "secondary" : "ghost"} onClick={() => setSeccion("desglose")}>
+    Desglose
+  </Button>
+</div>
+
+{seccion === "datos" ? <DatosContent /> : <DesgloseView proyectoId={project.id} />}
+```
+
+### Rules
+
+- **Active section:** `variant="secondary"`. **Inactive sections:** `variant="ghost"`. Never any other variant pair.
+- Buttons sit in their own row, left-aligned, directly below the `PageHeader` — not inside a Card, not right-aligned, not styled as pills or underlined tabs.
+- Local component state only (`useState`), never a URL param and never React Router — routing in this app is manual (see `CLAUDE.md`).
+- A section may be conditionally rendered (e.g. hidden entirely for users without the relevant permission) — check the permission before adding the button, not after clicking into the section.
+- **Never** reach for a nested shadcn `Tabs` component for this — the ERP's tab metaphor is reserved for the sidebar's top-level navigation. **Never** add a new top-level sidebar tab for content that belongs inside an existing subview without explicit product approval — this pattern exists specifically so that decision doesn't get made by default.
+- Reference implementation: `src/pages/project/ProjectInformacion.tsx` (Datos | Desglose).
 
 ---
 

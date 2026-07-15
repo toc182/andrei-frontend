@@ -95,3 +95,30 @@ export const indentLegal = (rows: DesgloseRow[], i: number): boolean =>
   i > 0 && rows[i].depth <= rows[i - 1].depth;
 
 export const outdentLegal = (rows: DesgloseRow[], i: number): boolean => rows[i].depth > 0;
+
+/** Moves the subtree rooted at rows[i] (the row plus every following row with
+ *  depth > rows[i].depth) to swap places with the ADJACENT SIBLING subtree in
+ *  the given direction. A sibling is the nearest subtree root at the SAME
+ *  depth under the same parent — found by scanning past the neighboring
+ *  subtree's own descendants (depth > target depth) until a row at exactly
+ *  target depth (a real sibling) or below it (a parent boundary — no sibling)
+ *  is reached. Returns the SAME array reference when there is no such
+ *  sibling (first child moving up, last child moving down, or the neighbor
+ *  belongs to a different parent). Depths never change. */
+export function moveSubtree(rows: DesgloseRow[], i: number, dir: -1 | 1): DesgloseRow[] {
+  const depth = rows[i].depth;
+  let j = i + 1;
+  while (j < rows.length && rows[j].depth > depth) j++; // end of rows[i]'s own subtree (exclusive)
+
+  if (dir === -1) {
+    let k = i - 1;
+    while (k >= 0 && rows[k].depth > depth) k--; // walk past the previous subtree's descendants
+    if (k < 0 || rows[k].depth !== depth) return rows; // no previous sibling
+    return [...rows.slice(0, k), ...rows.slice(i, j), ...rows.slice(k, i), ...rows.slice(j)];
+  }
+
+  if (j >= rows.length || rows[j].depth !== depth) return rows; // no next sibling
+  let m = j + 1;
+  while (m < rows.length && rows[m].depth > depth) m++; // end of the next sibling's subtree
+  return [...rows.slice(0, i), ...rows.slice(j, m), ...rows.slice(i, j), ...rows.slice(m)];
+}

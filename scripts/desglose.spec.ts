@@ -2,7 +2,7 @@
 // cd andrei-frontend && npx tsx scripts/desglose.spec.ts
 import './desgloseSpecEnv'; // MUST be first: stubs window before desgloseApi loads @/services/api
 import {
-  computeTotals, toWireItems, indentLegal, outdentLegal, GRAND_TOTAL_KEY, type DesgloseRow,
+  computeTotals, toWireItems, indentLegal, outdentLegal, moveSubtree, GRAND_TOTAL_KEY, type DesgloseRow,
 } from '../src/lib/desgloseModel';
 import { parseDesglosePaste, parseMoney } from '../src/lib/desglosePaste';
 import { wireToRows, type DesgloseItemWire } from '../src/lib/desgloseApi';
@@ -157,6 +157,25 @@ const row = (over: Partial<DesgloseRow>): DesgloseRow => ({
   ]);
   ok(rows.map((r) => r.tempId).join(',') === '1,2,3,4', 'wireToRows: orden de hermanos restaurado desde entrada desordenada');
   ok(rows.map((r) => r.depth).join(',') === '0,1,0,1', 'wireToRows: profundidades de dos grupos raíz');
+}
+
+// ---- model: moveSubtree ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),            // 0: grupo A
+    row({ tempId: 2, depth: 1 }),                 // 1:   item A.1
+    row({ tempId: 3, depth: 1, tipo: 'grupo' }),  // 2:   grupo A.B
+    row({ tempId: 4, depth: 2 }),                 // 3:     item A.B.1
+    row({ tempId: 5, depth: 1 }),                 // 4:   item A.2
+    row({ tempId: 6, tipo: 'grupo' }),            // 5: grupo C
+  ];
+  const up = moveSubtree(rows, 2, -1); // A.B (+ child) above A.1
+  ok(up.map((r) => r.tempId).join(',') === '1,3,4,2,5,6', 'moveSubtree: sube subárbol completo');
+  const down = moveSubtree(rows, 2, 1); // A.B (+ child) below A.2
+  ok(down.map((r) => r.tempId).join(',') === '1,2,5,3,4,6', 'moveSubtree: baja subárbol completo');
+  ok(moveSubtree(rows, 1, -1) === rows, 'moveSubtree: primer hijo no sube');
+  ok(moveSubtree(rows, 4, 1) === rows, 'moveSubtree: último hijo no baja (no cruza al grupo C)');
+  ok(moveSubtree(rows, 5, 1) === rows, 'moveSubtree: última raíz no baja');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
