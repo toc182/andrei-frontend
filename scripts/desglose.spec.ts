@@ -145,6 +145,19 @@ const row = (over: Partial<DesgloseRow>): DesgloseRow => ({
   ] satisfies DesgloseItemWire[]);
   ok(rows.length === 2 && rows[1].depth === 1, 'wireToRows: profundidad reconstruida');
 }
+// ---- api: sibling order relies on the per-group orden sort (input shuffled on purpose) ----
+{
+  const wireRow = (id: number, parentId: number | null, tipo: 'grupo' | 'item', orden: number): DesgloseItemWire =>
+    ({ id, parentId, tipo, item: String(id), descripcion: '', unidad: null, cantidad: null, precioUnitario: null, orden });
+  const rows = wireToRows([
+    wireRow(4, 3, 'item', 3),
+    wireRow(1, null, 'grupo', 0),
+    wireRow(3, null, 'grupo', 2),
+    wireRow(2, 1, 'item', 1),
+  ]);
+  ok(rows.map((r) => r.tempId).join(',') === '1,2,3,4', 'wireToRows: orden de hermanos restaurado desde entrada desordenada');
+  ok(rows.map((r) => r.depth).join(',') === '0,1,0,1', 'wireToRows: profundidades de dos grupos raíz');
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
