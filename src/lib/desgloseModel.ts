@@ -152,6 +152,25 @@ export function deleteSubtree(rows: DesgloseRow[], i: number): DesgloseRow[] {
   return [...rows.slice(0, i), ...rows.slice(subtreeEnd(rows, i))];
 }
 
+/** Inserts one blank row directly after rows[i]. Depth follows the anchor:
+ *  after an 'item' the new row is a SIBLING (same depth); after a 'grupo' it
+ *  becomes that group's FIRST CHILD (depth+1) — the "insertar dentro del grupo"
+ *  semantics of the hover ＋. tempId is allocated fresh (max+1, always
+ *  positive, matching the rest of the editor). Returns the SAME reference when
+ *  i is out of range. The result always satisfies the depth invariant: the new
+ *  depth is ≤ anchor.depth+1, and the row that follows already had
+ *  depth ≤ anchor.depth+1, so neither step jumps depth by more than 1. */
+export function insertRowAfter(rows: DesgloseRow[], i: number, tipo: 'grupo' | 'item'): DesgloseRow[] {
+  if (i < 0 || i >= rows.length) return rows;
+  const anchor = rows[i];
+  const depth = anchor.tipo === 'grupo' ? anchor.depth + 1 : anchor.depth;
+  const tempId = rows.reduce((m, r) => Math.max(m, r.tempId), 0) + 1;
+  const fresh: DesgloseRow = {
+    tempId, depth, tipo, item: '', descripcion: '', unidad: null, cantidad: null, precioUnitario: null,
+  };
+  return [...rows.slice(0, i + 1), fresh, ...rows.slice(i + 1)];
+}
+
 /** Same legality as moveSubtree — an adjacent sibling subtree exists in the
  *  given direction — WITHOUT allocating a new array. */
 export function canMoveSubtree(rows: DesgloseRow[], i: number, dir: -1 | 1): boolean {

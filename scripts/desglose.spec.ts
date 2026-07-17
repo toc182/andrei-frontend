@@ -3,7 +3,7 @@
 import './desgloseSpecEnv'; // MUST be first: stubs window before desgloseApi loads @/services/api
 import {
   computeTotals, toWireItems, indentLegal, outdentLegal, moveSubtree, canMoveSubtree,
-  subtreeEnd, indentRows, indentParentIndex, outdentRows, deleteSubtree,
+  subtreeEnd, indentRows, indentParentIndex, outdentRows, deleteSubtree, insertRowAfter,
   GRAND_TOTAL_KEY, type DesgloseRow,
 } from '../src/lib/desgloseModel';
 import { parseDesglosePaste, parseMoney } from '../src/lib/desglosePaste';
@@ -255,6 +255,30 @@ const row = (over: Partial<DesgloseRow>): DesgloseRow => ({
   ok(legal, 'deleteSubtree: invariante de profundidad intacto en los seguidores');
   ok(toWireItems(del)[1].parentTempId === 1, 'deleteSubtree: el seguidor sigue bajo G');
   ok(deleteSubtree(rows, 3).length === 3, 'deleteSubtree: hoja elimina solo una fila');
+}
+// ---- model: insertRowAfter — depth sigue al ancla, invariante intacto ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo' }),  // 0: G
+    row({ tempId: 2, depth: 1 }),       // 1:   G.1 item
+    row({ tempId: 3, tipo: 'item' }),   // 2: item raíz
+  ];
+  const legal = (rs: DesgloseRow[]) => { let prev = -1, okk = true; for (const r of rs) { if (r.depth > prev + 1) okk = false; prev = r.depth; } return okk; };
+
+  const a = insertRowAfter(rows, 1, 'item');            // tras un item -> hermano
+  ok(a.length === 4 && a[2].depth === 1 && a[2].tipo === 'item', 'insert: tras item = hermano (misma profundidad)');
+  ok(a[2].tempId === 4, 'insert: tempId nuevo = max+1');
+  ok(toWireItems(a)[2].parentTempId === 1, 'insert: el hermano nuevo queda bajo el mismo grupo');
+
+  const b = insertRowAfter(rows, 0, 'item');            // tras un grupo -> primer hijo
+  ok(b[1].depth === 1 && b[1].tipo === 'item', 'insert: tras grupo = primer hijo (profundidad+1)');
+  ok(toWireItems(b)[1].parentTempId === 1, 'insert: el hijo nuevo queda dentro del grupo');
+
+  const c = insertRowAfter(rows, 2, 'grupo');           // grupo nuevo tras item raíz
+  ok(c[3].tipo === 'grupo' && c[3].depth === 0, 'insert: grupo nuevo tras item raíz al nivel del item');
+
+  ok(legal(a) && legal(b) && legal(c), 'insert: invariante de profundidad intacto');
+  ok(insertRowAfter(rows, 9, 'item') === rows, 'insert: índice fuera de rango = misma referencia');
 }
 // ---- model: canMoveSubtree coincide con la identidad de moveSubtree ----
 {

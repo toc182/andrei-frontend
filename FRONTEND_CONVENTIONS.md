@@ -39,6 +39,7 @@
 19. [What this file does NOT cover](#19-not-covered)
 20. [Feature-specific badge and row patterns](#20-feature-specific-patterns)
 21. [In-page secondary navigation](#21-in-page-secondary-navigation)
+22. [Desglose — árbol editable de precios](#22-desglose)
 
 ---
 
@@ -422,6 +423,11 @@ Badges inside nav items (e.g., pending solicitudes count) use `bg-error text-whi
   title="RFIs abiertas"
   count={7}
 />
+
+<SectionHeader
+  title="Desglose del Proyecto"
+  titleAction={<GearMenu />}
+/>
 ```
 
 ### Rules
@@ -430,6 +436,10 @@ Badges inside nav items (e.g., pending solicitudes count) use `bg-error text-whi
 - Always `text-base` (16px). Never bigger, never smaller.
 - SectionHeader must never be visually competitive with PageHeader.
 - Overline (Teal uppercase) only for category/project context, never as the primary label.
+- Two action slots, and they are not interchangeable. `action` is the right-hand slot, for controls acting on the section's **content** (Ver todas). `titleAction` sits inline right after the title, for a control belonging to the **heading itself** — an options menu, a help affordance.
+- `titleAction` must be an icon-sized, boxless control (`variant="ghost"`, `h-6 w-6`). Never a boxed or `size="sm"` button — that's what `action` is for.
+- **The header row is vertically centered, so its tallest child decides where the title sits.** Anything in `action` or `titleAction` whose height varies by state — a `size="sm"` button that appears only in edit mode, a gear rendered conditionally — re-centers the row and visibly slides the title up or down. Keep the header's contents a constant height across every state; controls that come and go belong in a toolbar row below the header, not in the header.
+- Reference implementation: `src/components/desglose/DesgloseView.tsx` — gear inline with the title in both modes, Guardar/Cancelar in the toolbar below precisely so the title never moves.
 
 ---
 
@@ -1260,31 +1270,100 @@ Urgent + reviewed on the same row is valid — the red left border signals urgen
 
 ## 21. In-page secondary navigation
 
-When a single subview needs to hold more than one distinct body of content — and that content doesn't warrant a new top-level sidebar tab — switch between them with a **left-aligned row of `size="sm"` buttons directly under the `PageHeader`**, not a nested tab component.
+When a single page or subview needs to hold more than one distinct body of content — and that content doesn't warrant a new top-level sidebar tab — switch between them with the shadcn `Tabs` component directly under the `PageHeader`.
 
 ```jsx
 <PageHeader title="Información del Proyecto" />
 
-<div className="flex items-center gap-2">
-  <Button size="sm" variant={seccion === "datos" ? "secondary" : "ghost"} onClick={() => setSeccion("datos")}>
-    Datos
-  </Button>
-  <Button size="sm" variant={seccion === "desglose" ? "secondary" : "ghost"} onClick={() => setSeccion("desglose")}>
-    Desglose
-  </Button>
-</div>
+<Tabs value={seccion} onValueChange={setSeccion}>
+  <TabsList className="mb-6 w-full justify-center">
+    <TabsTrigger value="datos">Datos</TabsTrigger>
+    {puedeVerDesglose && <TabsTrigger value="desglose">Desglose</TabsTrigger>}
+  </TabsList>
 
-{seccion === "datos" ? <DatosContent /> : <DesgloseView proyectoId={project.id} />}
+  <TabsContent value="datos" className="space-y-6">
+    <DatosContent />
+  </TabsContent>
+
+  {puedeVerDesglose && (
+    <TabsContent value="desglose">
+      <DesgloseView proyectoId={project.id} />
+    </TabsContent>
+  )}
+</Tabs>
 ```
 
 ### Rules
 
-- **Active section:** `variant="secondary"`. **Inactive sections:** `variant="ghost"`. Never any other variant pair.
-- Buttons sit in their own row, left-aligned, directly below the `PageHeader` — not inside a Card, not right-aligned, not styled as pills or underlined tabs.
+- `TabsList` is always `className="mb-6 w-full justify-center"` — full width, triggers centered, sitting directly below the `PageHeader`. Never left-aligned, never inside a Card, never a hand-rolled row of `secondary`/`ghost` buttons.
+- `TabsContent` gets `className="space-y-6"` when it holds more than one stacked section — the content is no longer a direct child of the page's `space-y-6` wrapper, so it must re-establish its own spacing.
 - Local component state only (`useState`), never a URL param and never React Router — routing in this app is manual (see `CLAUDE.md`).
-- A section may be conditionally rendered (e.g. hidden entirely for users without the relevant permission) — check the permission before adding the button, not after clicking into the section.
-- **Never** reach for a nested shadcn `Tabs` component for this — the ERP's tab metaphor is reserved for the sidebar's top-level navigation. **Never** add a new top-level sidebar tab for content that belongs inside an existing subview without explicit product approval — this pattern exists specifically so that decision doesn't get made by default.
-- Reference implementation: `src/pages/project/ProjectInformacion.tsx` (Datos | Desglose).
+- A tab may be conditionally rendered (e.g. hidden entirely for users without the relevant permission) — gate both the `TabsTrigger` and its `TabsContent` on the permission, and check it before rendering the trigger, not after clicking into it.
+- By default a `TabsContent` unmounts when you switch away, so it re-fetches and re-runs its skeleton every time you come back — a visible flash, and any unsaved edit is silently gone. Reach for `forceMount` whenever a tab holds unsaved state or a fetch worth not repeating. Radix leaves a force-mounted panel **visible**, so you must hide the inactive one by hand: `<TabsContent value="x" forceMount className={cn(active !== 'x' && 'hidden')}>`.
+- Prefer *lazy* `forceMount` for a tab that fetches: gate the panel on a "has been opened" flag set in `onValueChange`, so it mounts on first open and stays mounted afterwards. Users who never open the tab never pay for its request.
+- Don't guard a tab switch with an "unsaved changes" `AlertDialog`. That warning only exists to paper over an unmount — keep the panel mounted instead and the edits simply survive. A `beforeunload` handler still earns its keep, since closing the page is a real loss.
+- **Never** add a new top-level sidebar tab for content that belongs inside an existing page without explicit product approval — this pattern exists specifically so that decision doesn't get made by default.
+- Reference implementations: `src/pages/AdministracionPage.tsx` (Usuarios | Permisos, eager `forceMount`), `src/pages/EquiposPage.tsx` (permission-gated trigger), `src/pages/cuentas/CuentasGeneralPage.tsx` (uncontrolled `defaultValue`), `src/pages/project/ProjectInformacion.tsx` (Datos | Desglose, permission-gated + lazy `forceMount`).
+
+---
+
+## 22. Desglose — árbol editable de precios
+
+**Source:** `src/components/desglose/` (`DesgloseView`, `DesgloseTableRow`), model in `src/lib/desgloseModel.ts`, gated by `scripts/desglose.spec.ts`. The price-breakdown editor rendered in the Desglose tab (§21): a tree of grupos/items with derived subtotals. This is the reference for any future in-app hierarchical, spreadsheet-style editor.
+
+### The model is pure and spec-gated
+
+- Every tree mutation (indent, outdent, move, delete, insert) lives in `desgloseModel.ts` as a **pure** function over a flat `DesgloseRow[]` in document order with explicit `depth`. Parents, subtotals, and the wire shape are **derived** — the view holds state and dialog orchestration only, and never edits the tree inline.
+- Ops **signal illegality by returning the SAME array reference**; the view treats reference-equality as a no-op (no dirty, no history entry). Never throw for an illegal structural edit.
+- `scripts/desglose.spec.ts` is a golden gate (`npx tsx scripts/desglose.spec.ts`). **Add spec cases before** touching the model, and keep the depth invariant (`depth[k] ≤ depth[k-1] + 1`).
+
+### Two modes: read by default, edit deliberately
+
+- The desglose opens **read-only** — plain-text cells, no chrome. Editing is entered on purpose from the gear menu (**Editar**) and left via **Guardar** (writes) or **Cancelar** (reverts to the last-saved snapshot, confirming first if dirty).
+- The table card carries **no header or toolbar chrome** — like the cronograma workspace, every control lives above the card. The `SectionHeader` holds the **gear only, in both modes** (a boxless `titleAction`, §7); Guardar/Cancelar and the edit tools sit in a toolbar row **below** the header. Keeping the header's contents identical across modes is deliberate: SectionHeader centres its row, so a control that appears only while editing would re-centre and visibly move the title.
+
+### The grid (identical in both modes)
+
+- Read and edit render the **same plain-text cells** — entering edit mode must not reflow the table, only make rows selectable and cells openable.
+- **At most one cell is open at a time** (the view owns `open`). Only that cell is an `<Input>`, borderless and `h-5 leading-5 text-sm` — exactly TableCell's own line box — with `size={1}` + `min-w-0` so opening a cell never changes row height *or* column width. The focus ring is a box-shadow, so it takes no space.
+- **Auto table layout, never `table-fixed`:** short columns get `whitespace-nowrap` (fit their content, Excel-style), Descripción gets `w-full` (absorbs the slack). Because the open input is width-neutralised, columns never jump when a cell opens.
+- The card has **no `overflow-hidden`** (corners are rounded on the header `th` and the footer instead) and the grid wrapper has **no `overflow-x-auto`** — either one would clip the hover ＋. Trade-off accepted: no horizontal scroll, which is fine for a desktop editing surface.
+
+### Selection + keyboard
+
+- Click a row to select it (`bg-slate-100` + `inset 2px` navy bar). One click on a cell opens it with its text selected. The grid container is focusable (`tabIndex={-1}`) and owns the keyboard; selection drives every structural op.
+- **Cell open:** Tab commits and moves to the next editable cell (wraps across rows, skips a grupo's derived montos); Enter commits; Escape reverts.
+- **No cell open (row selected):** Tab / Shift+Tab indent / outdent; ↑/↓ move the selection; Enter opens Descripción; **Supr** deletes; Escape deselects. **Never Backspace** — in a grid you type into, Backspace is a text key, and wiring it to delete-the-row destroys work.
+- The handler is **scoped to the grid container** (`onKeyDown` on the focusable wrapper), never a `window` listener: this panel stays mounted behind the Datos tab (§21), so a global handler would let Supr remove a row nobody can see.
+
+### Structural ops live in the toolbar, not in rows
+
+- Indent, outdent, subir, bajar and eliminar are `size="icon"` buttons in the edit toolbar, acting on the **selected** row and disabled when the op is illegal for it. Legality is precomputed for every row in **one O(N) pass** and mirrors the model ops (which stay authoritative and no-op on a stale flag). **No per-row action buttons** — they widened every row and duplicated the toolbar.
+
+### Insert between rows — the hover ＋
+
+- On row hover (edit mode) a `＋` appears in the **left margin**, its centre on the table's left edge (**half in, half out**) and straddling the row's bottom border — "insertar debajo". It shows on `group-hover` or while its own menu is open (`data-[state=open]`), and clicking opens a **Fila / Grupo** menu.
+- Depth follows the anchor (`insertRowAfter`): after an **item** the new row is a **sibling** (same depth); after a **grupo heading** it becomes the group's **first child** (depth+1). The new row is auto-selected and its Descripción opened for typing.
+- The toolbar's Agregar fila / Agregar grupo remain, for appending at the end.
+
+### Undo / redo
+
+- Every mutation funnels through a single `commitRows(next)` choke point: push the current rows onto `past`, clear `future`, install `next`, mark dirty. Snapshots are **references** — rows are immutable, so nothing is cloned. This is the reason to route *all* edits through one function; a `setRows` that bypasses it is a silent history hole.
+- **Deshacer / Rehacer** toolbar buttons (disabled when the stack is empty) plus **Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y**, grid-scoped and only when no cell is open (so Ctrl+Z inside a cell is the browser's own text undo). One step per committed cell edit (drafts are local until commit) and one per structural op.
+- History **clears on save, cancel, and load** — the baseline changed, so you cannot undo across it. Undoing back to the baseline reference flips dirty off and disables Guardar on its own.
+
+### Nested-group shading
+
+- Group rows get a blue band by depth (Excel-style outline shading): **level 0 is the darkest, lighter as it nests**. Item rows stay on the card so the groups read as bands. Tokens `--color-grupo-0..3` live in `index.css` for **both** themes (dark inverts to "deeper = lighter toward the accent" so the metaphor holds); the depth→class map is `grupoBgClass` in `desglosePad.ts`, clamped past the ramp.
+- Precedence in the row className: the band applies to groups only, the slate hover applies to **items only** (a hover tint would fight the band), and selection (navy) wins over both — order the `cn()` clauses so twMerge resolves `bg-*` to selection last.
+
+### ITBMS
+
+- ITBMS is an optional, **persisted** field of the desglose (`desgloses.itbms_tasa NUMERIC(5,2)`, null = sin ITBMS), applied to the whole subtotal at display time. Totals are never stored (§ backend 138); only the rate.
+- The footer stacks Subtotal / ITBMS (editable rate + × to remove, in edit mode) / Total. The rate is held as a **string** for input ergonomics; the numeric value is derived and clamped to [0, 100].
+- It is **not** in the row undo history (Ctrl+Z steps the tree only), but it layers onto dirty: `anyDirty = dirty || itbmsDirty`, where `itbmsDirty` compares the derived rate to a `baselineItbmsRef`. Use `anyDirty` (not `dirty`) at every save/cancel/unload gate. Cancel restores the rate from baseline; save persists it in the same PUT.
+
+**Reference:** `src/components/desglose/DesgloseView.tsx` (modes, selection, history, ITBMS, toolbar), `DesgloseTableRow.tsx` (cell open/commit, hover ＋, group bands), `desgloseModel.ts` + `scripts/desglose.spec.ts` (the pure, gated tree ops), and backend `routes/desgloses.ts` + migration `141_desglose_itbms.sql`.
 
 ---
 

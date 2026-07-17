@@ -18,10 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { DesgloseView } from '@/components/desglose/DesgloseView';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
 import type { Project, Adenda } from '@/types';
@@ -85,10 +87,11 @@ export default function ProjectInformacion({
 }: ProjectInformacionProps) {
   const [deleteAdendaId, setDeleteAdendaId] = useState<number | null>(null);
   const [seccion, setSeccion] = useState<'datos' | 'desglose'>('datos');
-  // Dirty state reported by DesgloseView so switching to Datos can warn
-  // before discarding unsaved changes (the subview unmounts on switch).
-  const [desgloseDirty, setDesgloseDirty] = useState(false);
-  const [confirmDatosOpen, setConfirmDatosOpen] = useState(false);
+  // Once opened, Desglose stays mounted (forceMount + hidden) so coming back to
+  // the tab neither re-fetches nor flashes a skeleton, and unsaved edits survive
+  // a trip to Datos. Deliberately NOT mounted up-front: users who never open
+  // Desglose shouldn't pay for its fetch.
+  const [desgloseMounted, setDesgloseMounted] = useState(false);
   const { user } = useAuth();
   const puedeVerDesglose =
     user?.rol === 'admin' || user?.rol === 'co-admin' || !!user?.permissions?.desglose_ver;
@@ -99,33 +102,19 @@ export default function ProjectInformacion({
     <div className="space-y-6">
       <PageHeader title="Información del Proyecto" />
 
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant={!showDesglose ? 'secondary' : 'ghost'}
-          onClick={() => {
-            if (showDesglose && desgloseDirty) {
-              setConfirmDatosOpen(true);
-              return;
-            }
-            setSeccion('datos');
-          }}
-        >
-          Datos
-        </Button>
-        {puedeVerDesglose && (
-          <Button
-            size="sm"
-            variant={showDesglose ? 'secondary' : 'ghost'}
-            onClick={() => setSeccion('desglose')}
-          >
-            Desglose
-          </Button>
-        )}
-      </div>
+      <Tabs
+        value={showDesglose ? 'desglose' : 'datos'}
+        onValueChange={(value) => {
+          if (value === 'desglose') setDesgloseMounted(true);
+          setSeccion(value as 'datos' | 'desglose');
+        }}
+      >
+        <TabsList className="mb-6 w-full justify-center">
+          <TabsTrigger value="datos">Datos</TabsTrigger>
+          {puedeVerDesglose && <TabsTrigger value="desglose">Desglose</TabsTrigger>}
+        </TabsList>
 
-      {!showDesglose ? (
-        <>
+        <TabsContent value="datos" className="space-y-6">
           {/* Project Details */}
           <Card>
             <CardHeader>
@@ -288,35 +277,19 @@ export default function ProjectInformacion({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </>
-      ) : (
-        <DesgloseView proyectoId={project.id} onDirtyChange={setDesgloseDirty} />
-      )}
+        </TabsContent>
 
-      {/* Guard: switching to Datos discards unsaved desglose edits (the
-          subview unmounts) — confirm first. */}
-      <AlertDialog open={confirmDatosOpen} onOpenChange={setConfirmDatosOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Cambios sin guardar?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tienes cambios sin guardar en el desglose — ¿descartarlos?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setDesgloseDirty(false);
-                setSeccion('datos');
-                setConfirmDatosOpen(false);
-              }}
-            >
-              Descartar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* forceMount keeps it alive once opened; Radix leaves a force-mounted
+            panel visible, so the inactive tab must be hidden by hand.
+            mt-0 drops TabsContent's default mt-2: stacked under TabsList's
+            mb-6 it left the section title floating well below the tabs. */}
+        {puedeVerDesglose && desgloseMounted && (
+          <TabsContent value="desglose" forceMount className={cn('mt-0', !showDesglose && 'hidden')}>
+            <DesgloseView proyectoId={project.id} />
+          </TabsContent>
+        )}
+      </Tabs>
+
     </div>
   );
 }

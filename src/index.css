@@ -62,6 +62,13 @@
   --color-border:  oklch(86.9% 0.019 247);            /* Slate 300 */
   --color-input:   oklch(86.9% 0.019 247);
   --color-ring:    oklch(33.4% 0.062 254);            /* Navy focus ring */
+
+  /* Desglose nested-group bands: level 0 = darkest blue, lighter as it nests
+     (Excel-style outline shading). See FRONTEND_CONVENTIONS.md §22. */
+  --color-grupo-0: #B7C6E0;
+  --color-grupo-1: #CFDAEC;
+  --color-grupo-2: #E3EAF5;
+  --color-grupo-3: #F0F4FB;
 }
 
 /* === DARK MODE CONTENT OVERRIDE === */
@@ -95,6 +102,13 @@
   --color-warning: oklch(72.0% 0.140 56);
   --color-error:   oklch(65.0% 0.210 27);
   --color-info:    oklch(68.0% 0.130 240);
+
+  /* Desglose group bands on dark: lighter (toward the accent) as it nests, so
+     the "más anidado = más claro" reading holds in both themes. */
+  --color-grupo-0: #21355a;
+  --color-grupo-1: #294066;
+  --color-grupo-2: #324d78;
+  --color-grupo-3: #3a5a8c;
 }
 
 /* === BASE LAYER === */

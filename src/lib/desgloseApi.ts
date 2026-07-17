@@ -11,6 +11,7 @@ export interface DesgloseMeta {
   proyectoId: number;
   nombre: string;
   tipo: string;
+  itbmsTasa: number | null; // ITBMS rate % applied to the subtotal; null = sin ITBMS
   updatedAt: string; // optimistic-concurrency stamp; echo back on save
 }
 
@@ -50,9 +51,10 @@ export async function saveDesglose(
   proyectoId: number,
   baseUpdatedAt: string | null,
   items: DesgloseItemInput[],
+  itbmsTasa: number | null,
 ): Promise<DesgloseDoc> {
   try {
-    const res = await api.put(`/desgloses/proyecto/${proyectoId}`, { baseUpdatedAt, items });
+    const res = await api.put(`/desgloses/proyecto/${proyectoId}`, { baseUpdatedAt, items, itbmsTasa });
     return res.data.data;
   } catch (e) {
     const err = e as { response?: { status?: number; data?: { message?: string } } };

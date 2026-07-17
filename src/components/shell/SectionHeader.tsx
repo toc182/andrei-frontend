@@ -5,10 +5,14 @@ interface SectionHeaderProps {
   title: string;
   count?: number;
   action?: ReactNode;
+  /** Sits inline, immediately after the title — for a control that belongs to
+   *  the heading itself (e.g. an options menu), not to the section's content.
+   *  Keep it icon-sized: anything taller inflates the header row. */
+  titleAction?: ReactNode;
   overline?: string;
 }
 
-export function SectionHeader({ title, count, action, overline }: SectionHeaderProps) {
+export function SectionHeader({ title, count, action, titleAction, overline }: SectionHeaderProps) {
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center gap-2 border-l-2 border-navy pl-3">
@@ -25,6 +29,7 @@ export function SectionHeader({ title, count, action, overline }: SectionHeaderP
             {count}
           </Badge>
         )}
+        {titleAction}
       </div>
       {action}
     </div>
