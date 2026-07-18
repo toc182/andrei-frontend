@@ -12,12 +12,19 @@ export const FIELD_ORDER: DesgloseField[] = ['item', 'descripcion', 'unidad', 'c
 
 export const NUMERIC_FIELDS: DesgloseField[] = ['cantidad', 'precioUnitario'];
 
+/** The "value" columns (unit + montos). A container section (grupo WITH
+ *  children) has none — its numbers come from its children. A childless section
+ *  ("de una línea") owns them like an item does. */
+export const VALUE_FIELDS: DesgloseField[] = ['unidad', 'cantidad', 'precioUnitario'];
+
 /** Mirrors the column widths the backend enforces. */
 export const MAX_LEN: Partial<Record<DesgloseField, number>> = { item: 60, unidad: 30 };
 
-/** A grupo's montos are computed from its children, so they are never typed. */
-export const isFieldEditable = (row: DesgloseRow, field: DesgloseField) =>
-  !(row.tipo === 'grupo' && NUMERIC_FIELDS.includes(field));
+/** Whether a cell can be typed into. Item code + descripción always; the value
+ *  columns only when the row owns values — an item, or a childless section
+ *  (`pricedSection`). A container section leaves them blank. */
+export const isFieldEditable = (row: DesgloseRow, field: DesgloseField, pricedSection: boolean) =>
+  !(row.tipo === 'grupo' && !pricedSection && VALUE_FIELDS.includes(field));
 
 /** The raw text a cell starts editing from — NOT the formatted display value
  *  (you type "1500", you don't type "B/. 1,500.00"). */

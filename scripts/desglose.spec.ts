@@ -4,7 +4,7 @@ import './desgloseSpecEnv'; // MUST be first: stubs window before desgloseApi lo
 import {
   computeTotals, toWireItems, indentLegal, outdentLegal, moveSubtree, canMoveSubtree,
   subtreeEnd, indentRows, indentParentIndex, outdentRows, deleteSubtree, insertRowAfter,
-  GRAND_TOTAL_KEY, type DesgloseRow,
+  hasChildren, GRAND_TOTAL_KEY, type DesgloseRow,
 } from '../src/lib/desgloseModel';
 import { parseDesglosePaste, parseMoney } from '../src/lib/desglosePaste';
 import { wireToRows, type DesgloseItemWire } from '../src/lib/desgloseApi';
@@ -255,6 +255,34 @@ const row = (over: Partial<DesgloseRow>): DesgloseRow => ({
   ok(legal, 'deleteSubtree: invariante de profundidad intacto en los seguidores');
   ok(toWireItems(del)[1].parentTempId === 1, 'deleteSubtree: el seguidor sigue bajo G');
   ok(deleteSubtree(rows, 3).length === 3, 'deleteSubtree: hoja elimina solo una fila');
+}
+// ---- model: sección de una línea (grupo sin hijos lleva su propio monto) ----
+{
+  const rows: DesgloseRow[] = [
+    row({ tempId: 1, tipo: 'grupo', descripcion: 'Con hijos' }),          // 0: contenedor
+    row({ tempId: 2, depth: 1, cantidad: 2, precioUnitario: 10 }),        //   hijo = 20
+    row({ tempId: 3, tipo: 'grupo', descripcion: 'De una línea', cantidad: 1, precioUnitario: 5000 }), // 2: sin hijos
+  ];
+  const t = computeTotals(rows);
+  ok(t.get(3) === 5000, 'sección-línea: total = cantidad × precio propio');
+  ok(t.get(1) === 20, 'sección con hijos: total = suma del subárbol');
+  ok((t.get(GRAND_TOTAL_KEY) ?? 0) === 5020, 'gran total incluye la sección-línea');
+  ok(hasChildren(rows, 0) && !hasChildren(rows, 2), 'hasChildren: distingue contenedor de sección-línea');
+
+  // al ganar un hijo, sus montos propios se ignoran y el total pasa a la suma
+  const withChild: DesgloseRow[] = [
+    row({ tempId: 3, tipo: 'grupo', descripcion: 'Sección', cantidad: 1, precioUnitario: 5000 }),
+    row({ tempId: 4, depth: 1, cantidad: 3, precioUnitario: 100 }),       //   hijo = 300
+  ];
+  ok(computeTotals(withChild).get(3) === 300, 'sección que gana un hijo: total = suma, no su monto propio');
+
+  // round-trip: los montos de una sección-línea sobreviven el wire
+  const back = wireToRows(toWireItems(rows).map((w) => ({
+    id: w.tempId, parentId: w.parentTempId, tipo: w.tipo, item: w.item, descripcion: w.descripcion,
+    unidad: w.unidad, cantidad: w.cantidad, precioUnitario: w.precioUnitario, orden: w.orden,
+  } as DesgloseItemWire)));
+  const s = back.find((r) => r.tempId === 3)!;
+  ok(s.cantidad === 1 && s.precioUnitario === 5000, 'round-trip: la sección-línea conserva cantidad y precio');
 }
 // ---- model: insertRowAfter — depth sigue al ancla, invariante intacto ----
 {

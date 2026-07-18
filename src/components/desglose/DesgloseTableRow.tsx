@@ -12,7 +12,7 @@
 // identity-stable, so the comparator can compare them by reference.
 
 import { memo, useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TableCell, TableRow } from '@/components/ui/table';
 import {
@@ -93,6 +93,8 @@ export interface DesgloseTableRowProps {
   index: number;
   /** Precomputed in DesgloseView's single O(N) pass. */
   total: number;
+  /** Grupo without children — a "sección de una línea" that owns its montos. */
+  pricedSection: boolean;
   editable: boolean;
   selected: boolean;
   /** Which cell of THIS row is open, if any. */
@@ -103,14 +105,18 @@ export interface DesgloseTableRowProps {
   onCancelEdit: () => void;
   onTab: (i: number, field: DesgloseField, raw: string, dir: 1 | -1) => void;
   onInsert: (i: number, tipo: 'item' | 'grupo') => void;
+  onDelete: (i: number) => void;
 }
 
 function DesgloseTableRowBase({
-  row: r, index, total, editable, selected, openField,
-  onSelect, onOpen, onCommit, onCancelEdit, onTab, onInsert,
+  row: r, index, total, pricedSection, editable, selected, openField,
+  onSelect, onOpen, onCommit, onCancelEdit, onTab, onInsert, onDelete,
 }: DesgloseTableRowProps) {
+  // Value columns show for an item or a childless section; a container section
+  // leaves them blank (its numbers come from its children).
+  const showVals = r.tipo === 'item' || pricedSection;
   const cell = (field: DesgloseField, display: React.ReactNode, className?: string, extra?: React.ReactNode) => {
-    const canEdit = editable && isFieldEditable(r, field);
+    const canEdit = editable && isFieldEditable(r, field, pricedSection);
     return (
       <TableCell
         className={cn('px-4 py-2', canEdit && 'cursor-text', className)}
@@ -197,13 +203,38 @@ function DesgloseTableRowBase({
         <div className={cn(padClass(r.depth), r.tipo === 'grupo' && 'font-semibold')}>{r.descripcion}</div>,
         'break-words',
       )}
-      {cell('unidad', r.unidad ?? '', 'whitespace-nowrap')}
-      {cell('cantidad', r.tipo === 'item' ? r.cantidad ?? '-' : '', 'whitespace-nowrap text-right tabular-nums')}
-      {cell('precioUnitario', r.tipo === 'item' ? formatMoney(r.precioUnitario) : '', 'whitespace-nowrap text-right tabular-nums')}
+      {cell('unidad', showVals ? r.unidad ?? '' : '', 'whitespace-nowrap')}
+      {cell('cantidad', showVals ? r.cantidad ?? '-' : '', 'whitespace-nowrap text-right tabular-nums')}
+      {cell('precioUnitario', showVals ? formatMoney(r.precioUnitario) : '', 'whitespace-nowrap text-right tabular-nums')}
       <TableCell
-        className={cn('whitespace-nowrap px-4 py-2 text-right tabular-nums', r.tipo === 'grupo' && 'text-muted-foreground')}
+        className={cn(
+          'relative whitespace-nowrap px-4 py-2 text-right tabular-nums',
+          // Container-section total is a derived sum → muted. A childless
+          // section's total is its own value → normal weight, like an item.
+          r.tipo === 'grupo' && !pricedSection && 'text-muted-foreground',
+        )}
       >
         {formatMoney(total)}
+        {/* Delete-row ✕, mirroring the insert ＋ on the left: straddles the row's
+            right edge, revealed on row hover. Poking outside the table keeps it
+            clear of the Total number. onPointerDown stops the cell/row handlers. */}
+        {editable && (
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onDelete(index); }}
+            title="Eliminar fila"
+            aria-label="Eliminar fila"
+            className={cn(
+              'absolute -right-3 top-1/2 z-20 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full',
+              'border border-border bg-card text-muted-foreground shadow-sm transition-colors',
+              'hover:border-error hover:text-error',
+              'group-hover:flex',
+            )}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -212,6 +243,7 @@ function DesgloseTableRowBase({
 export const DesgloseTableRow = memo(DesgloseTableRowBase, (a, b) =>
   a.index === b.index &&
   a.total === b.total &&
+  a.pricedSection === b.pricedSection &&
   a.editable === b.editable &&
   a.selected === b.selected &&
   a.openField === b.openField &&
@@ -228,4 +260,5 @@ export const DesgloseTableRow = memo(DesgloseTableRowBase, (a, b) =>
   a.onCommit === b.onCommit &&
   a.onCancelEdit === b.onCancelEdit &&
   a.onTab === b.onTab &&
-  a.onInsert === b.onInsert);
+  a.onInsert === b.onInsert &&
+  a.onDelete === b.onDelete);

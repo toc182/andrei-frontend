@@ -34,7 +34,8 @@ import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/formatters';
 import {
   computeTotals, toWireItems, indentLegal, subtreeEnd, indentRows, indentParentIndex,
-  outdentRows, deleteSubtree, moveSubtree, insertRowAfter, GRAND_TOTAL_KEY, type DesgloseRow,
+  outdentRows, deleteSubtree, moveSubtree, insertRowAfter, hasChildren,
+  GRAND_TOTAL_KEY, type DesgloseRow,
 } from '@/lib/desgloseModel';
 import {
   getDesglose, saveDesglose, wireToRows, DesgloseConflictError, type DesgloseMeta,
@@ -364,7 +365,8 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
       if (fi >= FIELD_ORDER.length) { ri += 1; fi = 0; }
       else if (fi < 0) { ri -= 1; fi = FIELD_ORDER.length - 1; }
       if (ri < 0 || ri >= current.length) return; // commitCell already closed it
-      if (isFieldEditable(current[ri], FIELD_ORDER[fi])) {
+      const priced = current[ri].tipo === 'grupo' && !hasChildren(current, ri);
+      if (isFieldEditable(current[ri], FIELD_ORDER[fi], priced)) {
         setSelectedIndex(ri);
         setOpen({ index: ri, field: FIELD_ORDER[fi] });
         return;
@@ -789,6 +791,7 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
                     row={r}
                     index={i}
                     total={rowFlags[i].total}
+                    pricedSection={r.tipo === 'grupo' && !hasChildren(rows, i)}
                     editable={editing}
                     selected={editing && selectedIndex === i}
                     openField={open?.index === i ? open.field : null}
@@ -798,6 +801,7 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
                     onCancelEdit={cancelEdit}
                     onTab={tabCell}
                     onInsert={insertRow}
+                    onDelete={requestDelete}
                   />
                 ))}
               </TableBody>

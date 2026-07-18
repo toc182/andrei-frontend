@@ -1338,13 +1338,21 @@ When a single page or subview needs to hold more than one distinct body of conte
 
 ### Structural ops live in the toolbar, not in rows
 
-- Indent, outdent, subir, bajar and eliminar are `size="icon"` buttons in the edit toolbar, acting on the **selected** row and disabled when the op is illegal for it. Legality is precomputed for every row in **one O(N) pass** and mirrors the model ops (which stay authoritative and no-op on a stale flag). **No per-row action buttons** — they widened every row and duplicated the toolbar.
+- Indent, outdent, subir, bajar and eliminar are `size="icon"` buttons in the edit toolbar, acting on the **selected** row and disabled when the op is illegal for it. Legality is precomputed for every row in **one O(N) pass** and mirrors the model ops (which stay authoritative and no-op on a stale flag).
+- The rows carry **no bar of buttons** — the old 5-button trailing column is gone. The only per-row controls are two hover-revealed, single-purpose affordances that straddle the row's edges and are invisible at rest: the insert **＋** on the left and the delete **✕** on the right. Anything multi-step or selection-scoped stays in the toolbar.
 
-### Insert between rows — the hover ＋
+### Per-row hover affordances — insert ＋ and delete ✕
 
-- On row hover (edit mode) a `＋` appears in the **left margin**, its centre on the table's left edge (**half in, half out**) and straddling the row's bottom border — "insertar debajo". It shows on `group-hover` or while its own menu is open (`data-[state=open]`), and clicking opens a **Fila / Grupo** menu.
-- Depth follows the anchor (`insertRowAfter`): after an **item** the new row is a **sibling** (same depth); after a **grupo heading** it becomes the group's **first child** (depth+1). The new row is auto-selected and its Descripción opened for typing.
+- Both appear only on `group-hover` (the row is a `group` in edit mode), straddle the table edge (half in, half out), and poke past it — which is why the card carries no `overflow-hidden`. `onPointerDown`/`onClick` `stopPropagation` so the cell/row handlers don't fire underneath.
+- **Insert ＋** (left margin, straddling the bottom border → "insertar debajo") opens a **Fila / Grupo** menu. Depth follows the anchor (`insertRowAfter`): after an **item** the new row is a **sibling**; after a **grupo heading** it becomes the group's **first child**. The new row is auto-selected and its Descripción opened.
+- **Delete ✕** (right edge, vertically centred) calls the same `requestDelete` as the toolbar — it confirms first when the row has a subtree, deletes a leaf immediately. Deleting is the highest-frequency edit, which is why it earns a per-row control the other ops don't.
 - The toolbar's Agregar fila / Agregar grupo remain, for appending at the end.
+
+### Sección de una línea (childless priced section)
+
+- A grupo is a **container** when it owns children (`hasChildren`), and a **priced single-line section** when it doesn't. A container's unit/montos are blank and its total is the sum of its subtree; a childless section owns unidad/cantidad/precio like an item and its total is `cantidad × precio`. `rowTotal`/`computeTotals` encode this; the distinction is purely structural, never a stored flag.
+- The row shows/edits the value columns when `r.tipo === 'item' || pricedSection`; `isFieldEditable(row, field, pricedSection)` gates typing (and Tab traversal) the same way. A childless section's total renders at normal weight (its own value), a container's stays muted (derived).
+- Backend nulls a grupo's unit/montos **only when it parents another row**; a childless grupo keeps them. No CHECK constraint enforces this — the route computes it from the payload's `parentTempId`s.
 
 ### Undo / redo
 
@@ -1363,7 +1371,7 @@ When a single page or subview needs to hold more than one distinct body of conte
 - The footer stacks Subtotal / ITBMS (editable rate + × to remove, in edit mode) / Total. The rate is held as a **string** for input ergonomics; the numeric value is derived and clamped to [0, 100].
 - It is **not** in the row undo history (Ctrl+Z steps the tree only), but it layers onto dirty: `anyDirty = dirty || itbmsDirty`, where `itbmsDirty` compares the derived rate to a `baselineItbmsRef`. Use `anyDirty` (not `dirty`) at every save/cancel/unload gate. Cancel restores the rate from baseline; save persists it in the same PUT.
 
-**Reference:** `src/components/desglose/DesgloseView.tsx` (modes, selection, history, ITBMS, toolbar), `DesgloseTableRow.tsx` (cell open/commit, hover ＋, group bands), `desgloseModel.ts` + `scripts/desglose.spec.ts` (the pure, gated tree ops), and backend `routes/desgloses.ts` + migration `141_desglose_itbms.sql`.
+**Reference:** `src/components/desglose/DesgloseView.tsx` (modes, selection, history, ITBMS, toolbar), `DesgloseTableRow.tsx` (cell open/commit, hover ＋/✕, group bands, priced sections), `desgloseModel.ts` + `scripts/desglose.spec.ts` (the pure, gated tree ops incl. `hasChildren`/`rowTotal`), and backend `routes/desgloses.ts` + migration `141_desglose_itbms.sql`.
 
 ---
 

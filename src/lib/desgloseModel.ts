@@ -27,34 +27,48 @@ export interface DesgloseRow {
   precioUnitario: number | null;
 }
 
-export const rowTotal = (r: DesgloseRow): number =>
-  r.tipo === 'item' && r.cantidad != null && r.precioUnitario != null
-    ? r.cantidad * r.precioUnitario
-    : 0;
+/** cantidad × precio when both are present, else 0 — the raw "own" value of a
+ *  row, independent of type. */
+const montoValue = (r: DesgloseRow): number =>
+  r.cantidad != null && r.precioUnitario != null ? r.cantidad * r.precioUnitario : 0;
+
+/** True when rows[i] is a grupo that owns at least one child (the next row is
+ *  deeper). A grupo WITHOUT children is a "sección de una línea": it carries its
+ *  own cantidad/precio like an item. Depth order guarantees a child, if any, is
+ *  the immediately following row. */
+export const hasChildren = (rows: DesgloseRow[], i: number): boolean =>
+  i + 1 < rows.length && rows[i + 1].depth > rows[i].depth;
+
+/** rowTotal is the value a row contributes on its own: an item, or a childless
+ *  section, is worth cantidad × precio; a section WITH children contributes
+ *  nothing itself (its total is the sum bubbling up from below). */
+export const rowTotal = (rows: DesgloseRow[], i: number): number =>
+  rows[i].tipo === 'item' || !hasChildren(rows, i) ? montoValue(rows[i]) : 0;
 
 /** Reserved Map key for the grand total in computeTotals. tempIds are always
  *  positive (allocated from 1 upward), so -1 can never collide with a row. */
 export const GRAND_TOTAL_KEY = -1;
 
-/** Totals per tempId; groups accumulate their subtree. GRAND_TOTAL_KEY (-1) = grand total. */
+/** Totals per tempId; groups accumulate their subtree, a childless section owns
+ *  cantidad×precio. GRAND_TOTAL_KEY (-1) = grand total. */
 export function computeTotals(rows: DesgloseRow[]): Map<number, number> {
   const totals = new Map<number, number>();
   let grand = 0;
-  // ancestor stack of group tempIds by depth; every leaf total bubbles up the
+  // ancestor stack of group tempIds by depth; every own-value bubbles up the
   // stack. Items never occupy a slot, so the stack can be sparse — skip holes.
   const stack: (number | undefined)[] = [];
-  for (const r of rows) {
+  rows.forEach((r, i) => {
     stack.length = r.depth;
-    const t = rowTotal(r);
+    const t = rowTotal(rows, i);
     if (t) {
       grand += t;
       for (const anc of stack) if (anc != null) totals.set(anc, (totals.get(anc) ?? 0) + t);
-      totals.set(r.tempId, t);
+      totals.set(r.tempId, (totals.get(r.tempId) ?? 0) + t);
     } else if (!totals.has(r.tempId)) {
       totals.set(r.tempId, 0);
     }
     if (r.tipo === 'grupo') stack[r.depth] = r.tempId;
-  }
+  });
   totals.set(GRAND_TOTAL_KEY, grand);
   return totals;
 }
