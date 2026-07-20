@@ -32,7 +32,7 @@ export const PRINT_PAPERS: Record<string, [number, number]> = {
   tabloid: [279.4, 431.8],
 };
 export const PRINT_FONTS = { normal: 9, grande: 11, extra: 13 } as const;
-const PT_MM = 0.3528; // 1 pt in mm
+export const PT_MM = 0.3528; // 1 pt in mm (shared with desglosePrint.ts)
 const MIN_PT = 6; // shrink floor
 const MIN_TL_MM = 20; // minimum timeline width per page-column
 const PXD = 26; // px per day in the print chart's px space (day-zoom density; physical size is mm)
@@ -143,6 +143,59 @@ export function printColumns(fontPt: number, visible: string[]) {
   return { cols, tableW: cx, emMM, padMM, fontMM };
 }
 
+// ---- document header fit (shared with desglosePrint.ts) ----
+// Title fit: shrink toward body size, then word-wrap to ≤3 centered lines.
+// Each side's logos share one header row; with 2-3 per side each logo narrows so the
+// widest strip never claims more than ~⅓ of the page (the centered title gets the rest).
+
+export function fitPrintHeader(args: {
+  pwMM: number;
+  fontPt: number;
+  title: string;
+  subtitle: string;
+  nLogosLeft: number;
+  nLogosRight: number;
+  minDocHeaderH: number;
+}): { titleFontMM: number; titleLines: string[]; logoW: number; docHeaderH: number } {
+  const { pwMM, fontPt, title, subtitle, minDocHeaderH } = args;
+  const nLogos = Math.max(
+    Math.min(args.nLogosLeft, MAX_LOGOS_PER_SIDE),
+    Math.min(args.nLogosRight, MAX_LOGOS_PER_SIDE),
+  );
+  const logoW = nLogos > 0
+    ? Math.min(28, pwMM * 0.16, (pwMM * 0.34 - LOGO_GAP_MM * (nLogos - 1)) / nLogos)
+    : 0;
+  const logoStripW = nLogos > 0 ? nLogos * logoW + LOGO_GAP_MM * (nLogos - 1) : 0;
+  const titleAvail = pwMM - 2 * (logoStripW + 4);
+  const wmm = (s: string, fpt: number) => s.length * fpt * PT_MM * 0.6;
+  const titleStr = (title || '').trim() || ' ';
+  let tf = fontPt * 1.7;
+  while (tf > fontPt * 1.05 && wmm(titleStr, tf) > titleAvail) tf -= 0.5;
+  let titleLines: string[];
+  if (wmm(titleStr, tf) <= titleAvail) {
+    titleLines = [titleStr];
+  } else {
+    titleLines = [];
+    let line = '';
+    for (const w of titleStr.split(/\s+/)) {
+      const test = line ? line + ' ' + w : w;
+      if (line && wmm(test, tf) > titleAvail) {
+        titleLines.push(line);
+        line = w;
+      } else line = test;
+    }
+    if (line) titleLines.push(line);
+    if (titleLines.length > 3) {
+      titleLines = titleLines.slice(0, 3);
+      titleLines[2] += '…';
+    }
+  }
+  const titleLineMM = tf * PT_MM * 1.2;
+  const subMM = subtitle ? fontPt * PT_MM * 1.3 : 0;
+  const docHeaderH = Math.max(minDocHeaderH, titleLines.length * titleLineMM + subMM + 3);
+  return { titleFontMM: tf * PT_MM, titleLines, logoW, docHeaderH };
+}
+
 // ---- pure layout (gantto computePdfLayout, parameterized: no module-global state) ----
 // NOTE (gantto gotcha #2): destructure EVERY option you use — never reference `opts.x`
 // piecemeal in new code paths without adding it here first.
@@ -182,47 +235,15 @@ export function computePrintLayout(opts: PrintOptions, rowCount: number, totalDa
     }
   }
 
-  // Title fit: shrink toward body size, then word-wrap to ≤3 centered lines.
-  // Each side's logos share one header row; with 2-3 per side each logo narrows so the
-  // widest strip never claims more than ~⅓ of the page (the centered title gets the rest).
-  const nLogos = Math.max(
-    Math.min(logosLeft.length, MAX_LOGOS_PER_SIDE),
-    Math.min(logosRight.length, MAX_LOGOS_PER_SIDE),
-  );
-  const logoW = nLogos > 0
-    ? Math.min(28, pwMM * 0.16, (pwMM * 0.34 - LOGO_GAP_MM * (nLogos - 1)) / nLogos)
-    : 0;
-  const logoStripW = nLogos > 0 ? nLogos * logoW + LOGO_GAP_MM * (nLogos - 1) : 0;
-  const titleAvail = pwMM - 2 * (logoStripW + 4);
-  const wmm = (s: string, fpt: number) => s.length * fpt * PT_MM * 0.6;
-  const titleStr = (title || '').trim() || ' ';
-  let tf = L.fontPt * 1.7;
-  while (tf > L.fontPt * 1.05 && wmm(titleStr, tf) > titleAvail) tf -= 0.5;
-  let titleLines: string[];
-  if (wmm(titleStr, tf) <= titleAvail) {
-    titleLines = [titleStr];
-  } else {
-    titleLines = [];
-    let line = '';
-    for (const w of titleStr.split(/\s+/)) {
-      const test = line ? line + ' ' + w : w;
-      if (line && wmm(test, tf) > titleAvail) {
-        titleLines.push(line);
-        line = w;
-      } else line = test;
-    }
-    if (line) titleLines.push(line);
-    if (titleLines.length > 3) {
-      titleLines = titleLines.slice(0, 3);
-      titleLines[2] += '…';
-    }
-  }
-  const titleLineMM = tf * PT_MM * 1.2;
-  const subMM = subtitle ? L.fontPt * PT_MM * 1.3 : 0;
-  const docHeaderH = Math.max(L.docHeaderH, titleLines.length * titleLineMM + subMM + 3);
+  const hdr = fitPrintHeader({
+    pwMM, fontPt: L.fontPt, title, subtitle,
+    nLogosLeft: logosLeft.length, nLogosRight: logosRight.length,
+    minDocHeaderH: L.docHeaderH,
+  });
+  const docHeaderH = hdr.docHeaderH;
   const rowsPerPage = Math.max(1, Math.floor((phMM - docHeaderH - L.docFooterH - L.headerBand) / L.rowH));
   const pagesTall = Math.max(1, Math.ceil(rowCount / rowsPerPage));
-  const L2 = { ...L, docHeaderH, rowsPerPage, pagesTall, titleFontMM: tf * PT_MM, titleLines, logoW };
+  const L2 = { ...L, docHeaderH, rowsPerPage, pagesTall, titleFontMM: hdr.titleFontMM, titleLines: hdr.titleLines, logoW: hdr.logoW };
 
   const timelineW = pwMM - L2.tableW; // mm available for the chart on every page
   const chartPx = Math.ceil(totalDays * PXD);

@@ -26,8 +26,7 @@ import {
 } from '@/lib/cronogramaApi';
 import type { GanttRow } from '@/lib/cronogramaModel';
 import type { ScheduleEntry, TaskId } from '@/lib/cronogramaEngine';
-import logoPinellas from '@/assets/logo.png';
-import logoCocp from '@/assets/LogoCOCPfondoblanco.png';
+import { isLogoEntry, resolveLogoSide } from '@/lib/printLogos';
 
 const COLUMN_OPTIONS: { key: ColumnaImpresion; label: string }[] = [
   { key: 'dur', label: 'Días' },
@@ -46,10 +45,6 @@ const DEFAULT_AJUSTES: AjustesImpresion = {
 
 type LogoSide = 'logosIzq' | 'logosDer';
 
-const isLogoEntry = (c: unknown): c is LogoChoice =>
-  c === 'pinellas' || c === 'cocp' ||
-  (typeof c === 'object' && c !== null && typeof (c as { dataUrl?: unknown }).dataUrl === 'string');
-
 /** Normalize one side's logos from unvalidated JSONB: new array shape wins; a legacy
  *  single-logo key maps to a 0/1-item list ('none' → empty); otherwise the default. */
 const sideLogos = (arr: unknown, legacy: unknown, fallback: LogoChoice[]): LogoChoice[] => {
@@ -57,27 +52,6 @@ const sideLogos = (arr: unknown, legacy: unknown, fallback: LogoChoice[]): LogoC
   if (legacy !== undefined) return isLogoEntry(legacy) ? [legacy] : [];
   return fallback;
 };
-
-async function toDataUrl(url: string): Promise<string> {
-  // fetch() on a Vite-bundled same-origin asset — NOT an API call; the axios instance
-  // (baseURL /api + auth header) cannot load static assets, so the repo's no-fetch rule
-  // doesn't apply here.
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`logo asset ${res.status}`);
-  const blob = await res.blob();
-  return await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = () => reject(new Error('logo read failed'));
-    r.readAsDataURL(blob);
-  });
-}
-
-async function resolveLogo(choice: LogoChoice): Promise<string | null> {
-  if (!choice || choice === 'none') return null;
-  if (typeof choice === 'object') return choice.dataUrl;
-  return toDataUrl(choice === 'pinellas' ? logoPinellas : logoCocp);
-}
 
 interface PrintDialogProps {
   open: boolean;
@@ -236,15 +210,7 @@ export function PrintDialog({
 
     setBusy(true);
     try {
-      // Resolve each logo independently: one broken image drops only itself.
-      const resolveSide = async (arr: LogoChoice[]) => {
-        const settled = await Promise.allSettled(arr.map(resolveLogo));
-        return {
-          urls: settled.flatMap((s) => (s.status === 'fulfilled' && s.value ? [s.value] : [])),
-          failed: settled.some((s) => s.status === 'rejected'),
-        };
-      };
-      const [izq, der] = await Promise.all([resolveSide(norm.logosIzq), resolveSide(norm.logosDer)]);
+      const [izq, der] = await Promise.all([resolveLogoSide(norm.logosIzq), resolveLogoSide(norm.logosDer)]);
       const logoFailed = izq.failed || der.failed;
       const todayStr = new Date().toISOString().slice(0, 10);
       const { rangeStart, totalDays } = computeChartRange(computed.schedule, config.startDate, todayStr);

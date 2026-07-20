@@ -40,6 +40,8 @@ import {
 import {
   getDesglose, saveDesglose, wireToRows, DesgloseConflictError, type DesgloseMeta,
 } from '@/lib/desgloseApi';
+import { exportDesgloseExcel } from '@/lib/desgloseExcel';
+import { DesglosePrintDialog } from './DesglosePrintDialog';
 import { DesglosePasteDialog } from './DesglosePasteDialog';
 import { DesgloseTableRow } from './DesgloseTableRow';
 import { FIELD_ORDER, isFieldEditable, type DesgloseField } from './desgloseFields';
@@ -47,6 +49,8 @@ import { parseMoney } from '@/lib/desglosePaste';
 
 interface DesgloseViewProps {
   proyectoId: number;
+  /** Nombre del proyecto — título por defecto al exportar/imprimir. */
+  proyectoNombre?: string;
 }
 
 /** Per-row enablement + subtotal, precomputed in ONE O(N) pass below. Mirrors
@@ -71,7 +75,7 @@ interface LoadError {
 
 const HEADER_CELL = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
-export function DesgloseView({ proyectoId }: DesgloseViewProps) {
+export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) {
   const [rows, setRows] = useState<DesgloseRow[]>([]);
   const [meta, setMeta] = useState<DesgloseMeta | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +106,9 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [conflictMsg, setConflictMsg] = useState<string | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportErr, setExportErr] = useState<string | null>(null);
   const [indentConfirm, setIndentConfirm] = useState<{ index: number; parentIndex: number } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ index: number; count: number } | null>(null);
   const [reloadConfirmOpen, setReloadConfirmOpen] = useState(false);
@@ -395,8 +402,29 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
 
   // A dialog owns the keyboard while it is up — the grid must not also act on
   // Escape/Delete underneath it.
-  const dialogOpen = pasteOpen || cancelConfirmOpen || reloadConfirmOpen
+  const dialogOpen = pasteOpen || printOpen || cancelConfirmOpen || reloadConfirmOpen
     || indentConfirm !== null || deleteConfirm !== null;
+
+  // ----- export -----
+  /** Exports whatever is on screen (unsaved edits included — what you see is
+   *  what lands in the archivo). Errors surface in the same Alert strip as
+   *  save errors; success needs no message, the download IS the feedback. */
+  const handleExport = async () => {
+    setExportErr(null);
+    setExporting(true);
+    try {
+      await exportDesgloseExcel({
+        rows: rowsRef.current,
+        itbmsTasa,
+        title: proyectoNombre || `Proyecto ${proyectoId}`,
+      });
+    } catch (e) {
+      console.error('Error exportando desglose a Excel:', e);
+      setExportErr('No se pudo exportar a Excel; intenta de nuevo.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   /** Grid keyboard, scoped to the table container — never a window listener:
    *  this panel stays mounted while the Datos tab is showing, so a global
@@ -586,13 +614,13 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
         <DropdownMenuItem onClick={() => setEditing(true)} disabled={editing}>
           <Pencil className="mr-2 h-4 w-4" /> Editar
         </DropdownMenuItem>
-        {/* Exportar/Imprimir are placeholders — the menu shows where they will
-            live, but neither is built yet. */}
-        <DropdownMenuItem disabled>
-          <Download className="mr-2 h-4 w-4" /> Exportar
+        {/* Ambos actúan sobre lo que está en pantalla (ediciones sin guardar
+            incluidas) y no tienen sentido sin filas. */}
+        <DropdownMenuItem onClick={handleExport} disabled={rows.length === 0 || exporting}>
+          <Download className="mr-2 h-4 w-4" /> Exportar a Excel
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          <Printer className="mr-2 h-4 w-4" /> Imprimir
+        <DropdownMenuItem onClick={() => setPrintOpen(true)} disabled={rows.length === 0}>
+          <Printer className="mr-2 h-4 w-4" /> Imprimir / PDF
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -655,6 +683,7 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
         />
       )}
       {saveErr && <Alert variant="error" title={saveErr} />}
+      {exportErr && <Alert variant="error" title={exportErr} />}
 
       {editing && (
         <div className="flex flex-wrap items-center gap-2">
@@ -875,6 +904,14 @@ export function DesgloseView({ proyectoId }: DesgloseViewProps) {
       </Card>
 
       <DesglosePasteDialog open={pasteOpen} onOpenChange={setPasteOpen} onConfirm={handlePasteConfirm} />
+
+      <DesglosePrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        rows={rows}
+        itbmsTasa={itbmsTasa}
+        proyectoNombre={proyectoNombre}
+      />
 
       <AlertDialog open={indentConfirm !== null} onOpenChange={(o) => { if (!o) setIndentConfirm(null); }}>
         <AlertDialogContent>

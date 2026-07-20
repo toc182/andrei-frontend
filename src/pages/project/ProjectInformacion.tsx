@@ -285,7 +285,7 @@ export default function ProjectInformacion({
             mb-6 it left the section title floating well below the tabs. */}
         {puedeVerDesglose && desgloseMounted && (
           <TabsContent value="desglose" forceMount className={cn('mt-0', !showDesglose && 'hidden')}>
-            <DesgloseView proyectoId={project.id} />
+            <DesgloseView proyectoId={project.id} proyectoNombre={project.nombre} />
           </TabsContent>
         )}
       </Tabs>
