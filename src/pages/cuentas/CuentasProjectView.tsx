@@ -10,6 +10,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Plus, ArrowRight, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
 import api from '@/services/api';
@@ -17,6 +18,7 @@ import type { Cuenta } from '@/types/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import { formatMonto, formatPeriodoParts, waitColor } from './config';
 import CreateCuentaDialog from './CreateCuentaDialog';
+import CuentasDesglosesTab from './CuentasDesglosesTab';
 
 interface Props {
   projectId: number;
@@ -45,6 +47,13 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  // Vista General (la pantalla de siempre) | Desgloses (los desgloses con los
+  // que se construyen las cuentas). La acción del PageHeader cambia con la
+  // pestaña — "Nueva Cuenta" no tiene sentido parado en Desgloses.
+  const [tab, setTab] = useState<'general' | 'desgloses'>('general');
+  const [showCreateDesglose, setShowCreateDesglose] = useState(false);
+  /** Con un desglose abierto en el editor, "Nuevo Desglose" no aplica. */
+  const [desgloseAbierto, setDesgloseAbierto] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -135,12 +144,36 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
           ) : undefined
         }
       >
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Cuenta
-        </Button>
+        {tab === 'general' ? (
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Cuenta
+          </Button>
+        ) : !desgloseAbierto ? (
+          <Button onClick={() => setShowCreateDesglose(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Desglose
+          </Button>
+        ) : null}
       </PageHeader>
 
+      <Tabs value={tab} onValueChange={(v) => setTab(v as 'general' | 'desgloses')}>
+        <TabsList className="mb-6 w-full justify-center">
+          <TabsTrigger value="general">Vista General</TabsTrigger>
+          <TabsTrigger value="desgloses">Desgloses</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="desgloses" className="mt-0">
+          <CuentasDesglosesTab
+            proyectoId={projectId}
+            proyectoNombre={cuentas[0]?.proyecto_nombre}
+            createOpen={showCreateDesglose}
+            onCreateOpenChange={setShowCreateDesglose}
+            onAbiertoChange={setDesgloseAbierto}
+          />
+        </TabsContent>
+
+        <TabsContent value="general" className="mt-0 space-y-4">
       {!loading && hasAnyCuenta && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -303,6 +336,8 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
           </Table>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
 
       <CreateCuentaDialog
         open={showCreate}

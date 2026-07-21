@@ -38,7 +38,8 @@ import {
   GRAND_TOTAL_KEY, type DesgloseRow,
 } from '@/lib/desgloseModel';
 import {
-  getDesglose, saveDesglose, wireToRows, DesgloseConflictError, type DesgloseMeta,
+  getDesglose, saveDesglose, getDesgloseById, saveDesgloseById, wireToRows,
+  DesgloseConflictError, type DesgloseMeta,
 } from '@/lib/desgloseApi';
 import { exportDesgloseExcel } from '@/lib/desgloseExcel';
 import { DesglosePrintDialog } from './DesglosePrintDialog';
@@ -51,6 +52,15 @@ interface DesgloseViewProps {
   proyectoId: number;
   /** Nombre del proyecto — título por defecto al exportar/imprimir. */
   proyectoNombre?: string;
+  /** Desglose concreto a editar (pestaña Cuentas). Sin esto se carga y guarda
+   *  el desglose OFICIAL del proyecto — el comportamiento de Información, que
+   *  no cambia. */
+  desgloseId?: number;
+  /** Encabezado de la sección; por defecto el de Información. */
+  titulo?: string;
+  /** Volver al listado. Se dibuja como el botón de flecha de CuentaDetailPage:
+   *  icono al lado izquierdo del título, no un botón de texto. */
+  onBack?: () => void;
 }
 
 /** Per-row enablement + subtotal, precomputed in ONE O(N) pass below. Mirrors
@@ -75,7 +85,9 @@ interface LoadError {
 
 const HEADER_CELL = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
-export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) {
+export function DesgloseView({
+  proyectoId, proyectoNombre, desgloseId, titulo = 'Desglose del Proyecto', onBack,
+}: DesgloseViewProps) {
   const [rows, setRows] = useState<DesgloseRow[]>([]);
   const [meta, setMeta] = useState<DesgloseMeta | null>(null);
   const [loading, setLoading] = useState(true);
@@ -159,7 +171,9 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
     setLoading(true);
     setErr(null);
     try {
-      const doc = await getDesglose(proyectoId);
+      const doc = desgloseId != null
+        ? await getDesgloseById(proyectoId, desgloseId)
+        : await getDesglose(proyectoId);
       if (seq !== fetchSeq.current) return; // a newer fetch owns the state now
       const fresh = doc ? wireToRows(doc.items) : [];
       baselineRef.current = fresh;
@@ -179,7 +193,7 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
         : { message: 'No se pudo cargar el desglose.', forbidden: false });
       setLoading(false);
     }
-  }, [proyectoId, resetHistory]);
+  }, [proyectoId, desgloseId, resetHistory]);
 
   useEffect(() => {
     fetchDesglose();
@@ -500,7 +514,9 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
     setBusy(true);
     setSaveErr(null);
     try {
-      const doc = await saveDesglose(proyectoId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms);
+      const doc = desgloseId != null
+        ? await saveDesgloseById(proyectoId, desgloseId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms)
+        : await saveDesglose(proyectoId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms);
       // ALWAYS take the fresh meta: the new concurrency stamp is what makes
       // the NEXT save valid even when we keep locally-edited rows below.
       setMeta(doc.desglose);
@@ -593,6 +609,31 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
     restore(next);
   };
 
+  /** Encabezado de la sección. Al abrir un desglose desde su listado lleva la
+   *  flecha de retorno SUELTA a la izquierda del título (elegida sobre mock,
+   *  2026-07-21): sin recuadro y con el mismo realce al pasar el mouse que el
+   *  engranaje. SectionHeader trae su propio mb-4, que se anula aquí para que la
+   *  flecha quede centrada con el texto y no 8px más abajo. */
+  const HeaderRow = ({ titleAction }: { titleAction?: React.ReactNode }) => (
+    <div className="mb-4 flex items-center gap-2">
+      {onBack && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          aria-label="Volver al listado"
+          title="Volver al listado"
+          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+        >
+          <Undo2 className="h-[18px] w-[18px]" />
+        </Button>
+      )}
+      <div className="min-w-0 flex-1 [&>div]:mb-0">
+        <SectionHeader title={titulo} titleAction={titleAction} />
+      </div>
+    </div>
+  );
+
   // The heading holds the gear and NOTHING else, in both modes. SectionHeader
   // centers its row, so anything whose height changes between read and edit
   // (a size="sm" button, or even dropping the gear) re-centers the title and
@@ -648,7 +689,7 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
   if (loading) {
     return (
       <div className="space-y-4">
-        <SectionHeader title="Desglose del Proyecto" />
+        <HeaderRow />
         <Card className="overflow-hidden p-0">
           <Table>
             {headerRow}
@@ -662,7 +703,7 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
   if (err) {
     return (
       <div className="space-y-4">
-        <SectionHeader title="Desglose del Proyecto" />
+        <HeaderRow />
         <Card className="overflow-hidden p-0">
           <ErrorState title={err.message} onRetry={err.forbidden ? undefined : fetchDesglose} />
         </Card>
@@ -672,7 +713,7 @@ export function DesgloseView({ proyectoId, proyectoNombre }: DesgloseViewProps) 
 
   return (
     <div className="space-y-4">
-      <SectionHeader title="Desglose del Proyecto" titleAction={gearMenu} />
+      <HeaderRow titleAction={gearMenu} />
 
       {conflictMsg && (
         <Alert

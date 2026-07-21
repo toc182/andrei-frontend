@@ -116,6 +116,19 @@
   * {
     @apply border-border;
   }
+  /* Reserva SIEMPRE el ancho de la barra de desplazamiento. Sin esto, abrir una
+     pantalla larga (p. ej. un desglose con filas) hace aparecer la barra, el
+     viewport se angosta ~15px y todo lo centrado o pegado a la derecha —las
+     pestañas de navegación, el avatar— salta a la izquierda; al volver, salta de
+     vuelta. Con el hueco reservado el ancho no cambia nunca.
+
+     `both-edges` y no sólo `stable`: reservando el hueco de un solo lado, lo
+     centrado queda ~8px corrido a la izquierda del centro real de la ventana.
+     Con el hueco a ambos lados el eje se mantiene y las pestañas centradas se
+     ven centradas de verdad. */
+  html {
+    scrollbar-gutter: stable both-edges;
+  }
   body {
     @apply bg-background text-foreground font-body;
   }

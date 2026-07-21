@@ -47,6 +47,34 @@ export async function getDesglose(proyectoId: number): Promise<DesgloseDoc | nul
   return res.data.data;
 }
 
+/** Un desglose concreto de la pestaña Cuentas (el oficial usa getDesglose). */
+export async function getDesgloseById(proyectoId: number, desgloseId: number): Promise<DesgloseDoc> {
+  const res = await api.get(`/desgloses/proyecto/${proyectoId}/cuentas/${desgloseId}`);
+  return res.data.data;
+}
+
+export async function saveDesgloseById(
+  proyectoId: number,
+  desgloseId: number,
+  baseUpdatedAt: string | null,
+  items: DesgloseItemInput[],
+  itbmsTasa: number | null,
+): Promise<DesgloseDoc> {
+  try {
+    const res = await api.put(
+      `/desgloses/proyecto/${proyectoId}/cuentas/${desgloseId}`,
+      { baseUpdatedAt, items, itbmsTasa },
+    );
+    return res.data.data;
+  } catch (e) {
+    const err = e as { response?: { status?: number; data?: { message?: string } } };
+    if (err.response?.status === 409) {
+      throw new DesgloseConflictError(err.response?.data?.message);
+    }
+    throw e;
+  }
+}
+
 export async function saveDesglose(
   proyectoId: number,
   baseUpdatedAt: string | null,
@@ -63,6 +91,65 @@ export async function saveDesglose(
     }
     throw e;
   }
+}
+
+// ---- desgloses de la sección Cuentas (tipo='cuentas') ----
+
+export interface DesgloseComentario {
+  id: number;
+  autor: string;
+  creadoAt: string; // ISO
+  texto: string;
+}
+
+export interface DesgloseCuenta {
+  id: number;
+  descripcion: string;
+  fecha: string | null; // YYYY-MM-DD
+  /** Desglose del que se copió; null = creado en blanco. */
+  copiadoDeId: number | null;
+  comentarios: DesgloseComentario[];
+}
+
+/** Desglose del que se puede copiar: el oficial (de Información) o cualquiera
+ *  de los de Cuentas. */
+export interface DesgloseFuente {
+  id: number;
+  descripcion: string;
+  tipo: string; // 'oficial' | 'cuentas'
+  filas: number;
+}
+
+export async function getDesglosesCuentas(proyectoId: number): Promise<DesgloseCuenta[]> {
+  const res = await api.get(`/desgloses/proyecto/${proyectoId}/cuentas`);
+  return res.data.data ?? [];
+}
+
+export async function getFuentesDesglose(proyectoId: number): Promise<DesgloseFuente[]> {
+  const res = await api.get(`/desgloses/proyecto/${proyectoId}/fuentes`);
+  return res.data.data ?? [];
+}
+
+/** Crea uno nuevo y devuelve la lista completa ya actualizada. */
+export async function crearDesgloseCuenta(
+  proyectoId: number,
+  body: { descripcion: string; fecha: string | null; copiarDeId: number | null },
+): Promise<DesgloseCuenta[]> {
+  const res = await api.post(`/desgloses/proyecto/${proyectoId}/cuentas`, body);
+  return res.data.data ?? [];
+}
+
+/** Agrega un comentario y devuelve la lista completa ya actualizada. */
+export async function agregarComentarioDesglose(
+  proyectoId: number,
+  desgloseId: number,
+  texto: string,
+): Promise<DesgloseCuenta[]> {
+  const res = await api.post(
+    `/desgloses/proyecto/${proyectoId}/cuentas/${desgloseId}/comentarios`,
+    { texto },
+  );
+  return res.data.data ?? [];
 }
 
 /** DB rows (parent-indexed) -> flat editor rows in document order with depth. */
