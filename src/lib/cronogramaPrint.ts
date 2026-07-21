@@ -617,13 +617,45 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
   return { pages, layout };
 }
 
-// ---- print window (the ONLY DOM-touching function; not covered by the spec script) ----
+// ---- print document + window ----
 
 /**
- * Open a print window sized exactly to the paper; each page is a break-after:page block
- * rendered 1:1 in mm. The user saves as PDF from the preview — Scale must stay at the
- * default 100% ("Predeterminada"), NOT "Ajustar a página". Returns false if the popup
- * was blocked (caller shows the notice).
+ * The print document as a string (pure — gated by the print specs).
+ *
+ * Each page block is sized in **percentages of the real page box**, never in fixed
+ * mm. A fixed `height: <printable>mm` is a knife edge: any printer whose usable area
+ * is a hair shorter than the CSS promises (hardware margins are normal) makes every
+ * block overflow, and Chrome emits a BLANK page after each real one — reported live
+ * on the desglose (andrei-backend#67) and reproduced headlessly at 2 pages → 4.
+ * With percentages the block always equals whatever the printer actually grants, and
+ * the SVG's own viewBox letterboxes the content to fit (1:1 when the area is exactly
+ * as promised, scaled down a hair when it isn't) instead of spilling.
+ *
+ * The user saves as PDF from the preview — Scale must stay at the default 100%
+ * ("Predeterminada"), NOT "Ajustar a página".
+ */
+export function buildPrintDocument(
+  pages: string[],
+  opts: { Wmm: number; Hmm: number; marginMM: number; docTitle: string },
+): string {
+  const blocks = pages
+    .map((s, i) => `<div class="pg"${i < pages.length - 1 ? ' style="break-after:page"' : ''}>${s}</div>`)
+    .join('');
+  return `<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
+<title>${esc(opts.docTitle)}</title>
+<style>
+@page { size: ${opts.Wmm}mm ${opts.Hmm}mm; margin: ${opts.marginMM}mm; }
+html, body { margin: 0; padding: 0; height: 100%; }
+.pg { width: 100%; height: 100%; overflow: hidden; }
+.pg svg { display: block; width: 100%; height: 100%; }
+</style></head><body>${blocks}</body></html>`;
+}
+
+/**
+ * Open a print window sized exactly to the paper, one break-after:page block per
+ * page. Returns false if the popup was blocked (caller shows the notice).
+ * The ONLY DOM-touching function here; its document comes from buildPrintDocument.
  */
 export function openPrintWindow(
   pages: string[],
@@ -631,20 +663,7 @@ export function openPrintWindow(
 ): boolean {
   const win = window.open('', '_blank');
   if (!win) return false;
-  const pw = opts.Wmm - 2 * opts.marginMM;
-  const ph = opts.Hmm - 2 * opts.marginMM;
-  const blocks = pages
-    .map((s, i) => `<div class="pg"${i < pages.length - 1 ? ' style="break-after:page"' : ''}>${s}</div>`)
-    .join('');
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
-<title>${esc(opts.docTitle)}</title>
-<style>
-@page { size: ${opts.Wmm}mm ${opts.Hmm}mm; margin: ${opts.marginMM}mm; }
-html, body { margin: 0; padding: 0; }
-.pg { width: ${pw}mm; height: ${ph}mm; overflow: hidden; }
-.pg svg { display: block; width: ${pw}mm; height: ${ph}mm; }
-</style></head><body>${blocks}</body></html>`);
+  win.document.write(buildPrintDocument(pages, opts));
   win.document.close();
   win.focus();
   // Print after the document (incl. data-URL logo decode) has loaded; the plain timeout is

@@ -10,6 +10,7 @@ import {
   computePrintLayout,
   printTimeSegments,
   buildPrintPages,
+  buildPrintDocument,
   type PrintOptions,
   type PrintData,
 } from '../src/lib/cronogramaPrint';
@@ -216,6 +217,29 @@ function fixtureData(rowCount: number, totalDays: number): PrintData {
   d.rows[1].task.color = '"/><script>x</script>';
   const { pages } = buildPrintPages(baseOpts(), d);
   ok(!pages.join('').includes('<script>'), 'seguridad: color inválido cae al color por defecto');
+}
+
+// ---- buildPrintDocument: página en blanco después de cada página (andrei-backend#67) ----
+// Ivan imprimió el desglose en producción (2 páginas) y salieron 4: una en blanco
+// después de cada real. Causa: bloques .pg con ALTURA FIJA en mm — cualquier
+// impresora cuyo área imprimible sea un pelo menor que la prometida desborda cada
+// bloque y Chrome emite la página de derrame. Verificado headless con puppeteer:
+// altura fija → 2 páginas se vuelven 4 en cuanto el área se acorta 3mm; con
+// porcentajes se mantiene en 2 hasta 20mm de recorte. NO volver a poner mm fijos.
+{
+  const doc = buildPrintDocument(['<svg/>', '<svg/>'], { Wmm: 215.9, Hmm: 279.4, marginMM: 10, docTitle: 'T' });
+  ok(/\.pg\s*\{[^}]*height:\s*100%/.test(doc), '#67: el bloque de página mide 100% (no mm fijos)');
+  ok(/\.pg\s+svg\s*\{[^}]*height:\s*100%/.test(doc), '#67: el svg mide 100% del bloque');
+  ok(!/\.pg\s*\{[^}]*height:\s*[\d.]+mm/.test(doc), '#67: NUNCA altura fija en mm en .pg');
+  ok(/html,\s*body\s*\{[^}]*height:\s*100%/.test(doc), '#67: html/body con altura para que el % resuelva');
+  ok(doc.includes('@page { size: 215.9mm 279.4mm; margin: 10mm; }'), '#67: @page conserva el papel exacto');
+  const breaks = (doc.match(/break-after:page/g) || []).length;
+  ok(breaks === 1, `#67: N-1 saltos de página para N bloques (got ${breaks})`);
+}
+{
+  const doc = buildPrintDocument(['<svg/>'], { Wmm: 210, Hmm: 297, marginMM: 10, docTitle: 'A & B <x>' });
+  ok(doc.includes('<title>A &amp; B &lt;x&gt;</title>'), '#67: título escapado');
+  ok(!/break-after:page/.test(doc), '#67: una sola página no lleva salto');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
