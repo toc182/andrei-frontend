@@ -361,6 +361,8 @@ const ProjectFormNew = ({
       }
 
       if (response.data.success) {
+        // Avisar al switcher (y a cualquier lista de proyectos) que recargue.
+        window.dispatchEvent(new Event('projects-changed'));
         if (onSave) {
           onSave(response.data.proyecto);
         }

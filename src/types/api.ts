@@ -667,6 +667,7 @@ export interface Cuenta {
   periodo_fin: string | null;
   avance_porcentaje: string | null;
   estado: CuentaEstado;
+  desglose_id?: number | null; // no-null = cuenta detallada con cuadro (cuenta_lineas)
   fecha_primera_submision: string | null;
   fecha_ultima_resubmision: string | null;
   fecha_pagada: string | null;
@@ -739,9 +740,22 @@ export interface CuentaAjusteOpcion {
   es_global?: boolean;
 }
 
+// Ficha del desglose con el que se armó la cuenta — filas y total salen de la
+// foto congelada (cuenta_lineas), para listarlo entre los documentos.
+export interface CuentaDesgloseFicha {
+  id: number;
+  descripcion: string;
+  filas: number;
+  total: string;
+}
+
 export interface CuentaDetail extends Cuenta {
   eventos: CuentaEvento[];
   adjuntos: CuentaAdjunto[];
+  desglose?: CuentaDesgloseFicha | null;
+  // El desglose solo se activa o se quita desde la primera cuenta del proyecto.
+  es_primera_cuenta?: boolean;
+  desglose_oficial_id?: number | null;
   ipt: CuentaIpt | null;
   ajustes: CuentaAjuste[];
   ajuste_opciones: CuentaAjusteOpcion[];

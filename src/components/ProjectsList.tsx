@@ -145,6 +145,8 @@ const ProjectsList: React.FC<ProjectsListProps> = ({
 
       if (response.data.success) {
         loadProjects();
+        // Avisar al switcher del sidebar que el proyecto ya no existe.
+        window.dispatchEvent(new Event('projects-changed'));
         if (onStatsUpdate) {
           onStatsUpdate();
         }

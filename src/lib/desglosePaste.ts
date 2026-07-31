@@ -16,7 +16,7 @@
 // are demoted to siblings, never silently flattened later.
 
 import { parseTsv } from './cronogramaPasteTsv';
-import type { DesgloseRow } from './desgloseModel';
+import { newRowUid, type DesgloseRow } from './desgloseModel';
 
 export type DesglosePasteMode = 'codigos' | 'plano';
 
@@ -103,6 +103,7 @@ export function parseDesglosePaste(text: string, mode: DesglosePasteMode): Desgl
     const computed = tipo === 'item' && cantidad != null && precioUnitario != null ? cantidad * precioUnitario : null;
     out.push({
       tempId: tempId++,
+      rowUid: newRowUid(),
       depth,
       tipo,
       item: c0,

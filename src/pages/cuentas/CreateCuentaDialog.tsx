@@ -160,123 +160,126 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
         }
       >
         <form id="create-cuenta-form" onSubmit={(e) => { e.preventDefault(); submit(); }} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Label className="flex-1">Monto bruto (B/.)</Label>
-            <Input
-              type="number"
-              value={monto}
-              onChange={(e) => setMonto(e.target.value)}
-              className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <span className="h-9 w-9 shrink-0" aria-hidden />
-          </div>
+          {/* Panel-recibo: monto bruto + ajustes + total, alineados al mismo borde derecho.
+              El pr-8 crea el canal para la papelera, que se posiciona en el margen. */}
+          <div className="rounded-lg border border-border bg-secondary/60 py-3.5 pl-4 pr-8">
+            <div className="mb-2.5">
+              <span className="border-l-2 border-primary pl-2 text-[11px] font-bold uppercase tracking-wider leading-none text-primary">
+                Cálculo
+              </span>
+            </div>
 
-          <div className="space-y-2">
-            {ajustes.length > 0 && (
-              <div className="space-y-2">
-                {ajustes.map((aj, index) => {
-                  const selectedKey = aj.descripcion ? `${aj.tipo}|${aj.descripcion}` : '';
-                  return (
-                    <div key={index} className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          'h-9 w-9 inline-flex items-center justify-center rounded-md border font-bold text-base shrink-0',
-                          !aj.descripcion
-                            ? 'text-muted-foreground border-border'
-                            : aj.tipo === 'aumento'
-                              ? 'text-success border-success/30'
-                              : 'text-error border-error/30',
-                        )}
-                        aria-hidden
-                      >
-                        {!aj.descripcion ? '' : aj.tipo === 'aumento' ? '+' : '−'}
-                      </span>
-                      <Select
-                        value={selectedKey}
-                        onValueChange={(value) => {
-                          if (value === '__new__') {
-                            openCreateOpcion(index);
-                            return;
-                          }
-                          const sep = value.indexOf('|');
-                          const tipo = value.slice(0, sep) as CuentaAjusteTipo;
-                          const descripcion = value.slice(sep + 1);
-                          selectAjusteOpcion(index, tipo, descripcion);
-                        }}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Seleccionar ajuste" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {opciones.map((o) => (
-                            <SelectItem
-                              key={`${o.tipo}|${o.descripcion}`}
-                              value={`${o.tipo}|${o.descripcion}`}
-                            >
-                              <span
-                                className={cn(
-                                  'font-bold mr-2',
-                                  o.tipo === 'aumento' ? 'text-success' : 'text-error',
-                                )}
-                              >
-                                {o.tipo === 'aumento' ? '+' : '−'}
-                              </span>
-                              {o.descripcion}
-                            </SelectItem>
-                          ))}
-                          {opciones.length > 0 && <SelectSeparator />}
-                          <SelectItem value="__new__">
-                            <span className="inline-flex items-center">
-                              <Plus className="h-3 w-3 mr-1" />
-                              Crear nueva opción
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        value={aj.monto}
-                        onChange={(e) => updateAjusteMonto(index, e.target.value)}
-                        className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeAjuste(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* Monto bruto */}
+            <div className="grid min-h-[34px] grid-cols-[1fr_auto] items-center gap-x-2.5">
+              <Label className="font-semibold text-foreground">Monto bruto</Label>
+              <span className="flex items-baseline justify-end gap-1">
+                <span className="text-xs text-muted-foreground">B/.</span>
+                <Input
+                  type="number"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  className="h-auto w-20 border-0 bg-transparent p-0 py-1 text-right tabular-nums shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+              </span>
+            </div>
+
+            {ajustes.length > 0 && <div className="my-1.5 h-px bg-border" />}
+
+            {/* Ajustes */}
+            {ajustes.map((aj, index) => {
+              const selectedKey = aj.descripcion ? `${aj.tipo}|${aj.descripcion}` : '';
+              return (
+                <div
+                  key={index}
+                  className="group/row relative grid min-h-[34px] grid-cols-[1fr_auto] items-center gap-x-2.5"
+                >
+                  <Select
+                    value={selectedKey}
+                    onValueChange={(value) => {
+                      if (value === '__new__') {
+                        openCreateOpcion(index);
+                        return;
+                      }
+                      const sep = value.indexOf('|');
+                      const tipo = value.slice(0, sep) as CuentaAjusteTipo;
+                      const descripcion = value.slice(sep + 1);
+                      selectAjusteOpcion(index, tipo, descripcion);
+                    }}
+                  >
+                    <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-1 shadow-none focus:ring-0 focus-visible:ring-0 [&>svg]:opacity-60">
+                      <SelectValue placeholder="Seleccionar ajuste" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {opciones.map((o) => (
+                        <SelectItem
+                          key={`${o.tipo}|${o.descripcion}`}
+                          value={`${o.tipo}|${o.descripcion}`}
+                        >
+                          <span
+                            className={cn(
+                              'font-bold mr-2',
+                              o.tipo === 'aumento' ? 'text-success' : 'text-error',
+                            )}
+                          >
+                            {o.tipo === 'aumento' ? '+' : '−'}
+                          </span>
+                          {o.descripcion}
+                        </SelectItem>
+                      ))}
+                      {opciones.length > 0 && <SelectSeparator />}
+                      <SelectItem value="__new__">
+                        <span className="inline-flex items-center">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Crear nueva opción
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="flex items-baseline justify-end gap-1">
+                    <span className="text-xs text-muted-foreground">B/.</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={aj.monto}
+                      onChange={(e) => updateAjusteMonto(index, e.target.value)}
+                      className={cn(
+                        'h-auto w-20 border-0 bg-transparent p-0 py-1 text-right tabular-nums shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+                        aj.descripcion && (aj.tipo === 'aumento' ? 'text-success' : 'text-error'),
+                      )}
+                    />
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-[-26px] top-1/2 h-6 w-6 -translate-y-1/2 p-0 text-transparent group-hover/row:text-muted-foreground hover:!text-error"
+                    onClick={() => removeAjuste(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+
             <Button
               type="button"
-              variant="outline"
-              size="sm"
+              variant="ghost"
               onClick={addAjuste}
-              className="h-7 text-xs"
+              className="mt-1 h-auto w-full justify-center gap-1.5 rounded-md border border-dashed border-border bg-transparent py-2 text-xs font-semibold text-muted-foreground hover:border-primary/30 hover:bg-transparent hover:text-primary"
             >
-              <Plus className="h-3 w-3 mr-1" />
-              Agregar Ajuste
+              <Plus className="h-3 w-3" />
+              Agregar ajuste
             </Button>
-          </div>
 
-          {ajustes.length > 0 && (
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <span className="flex-1 font-semibold">Total a cobrar</span>
-              <span className="w-40 text-right font-semibold tabular-nums pr-3">
+            <div className="mt-2 grid grid-cols-[1fr_auto] items-baseline gap-x-2.5 border-t border-border pt-2.5">
+              <span className="text-sm font-semibold text-primary">Monto a pagar</span>
+              <span className="text-lg font-bold tabular-nums text-primary">
                 B/. {montoAPagarLive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-              <span className="w-9 shrink-0" aria-hidden />
             </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>

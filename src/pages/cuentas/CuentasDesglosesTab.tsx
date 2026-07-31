@@ -177,6 +177,7 @@ export default function CuentasDesglosesTab({
         proyectoId={proyectoId}
         proyectoNombre={proyectoNombre}
         desgloseId={editando.id}
+        usoCount={editando.cuentasCount}
         titulo={editando.descripcion}
         onBack={() => { setEditando(null); onAbiertoChange?.(false); load(); }}
       />

@@ -3,8 +3,8 @@
  * Router central de la aplicación con sidebar contextual
  */
 
-import { useState, useEffect, ReactNode } from 'react';
-import { AppLayout } from '../components/layout/AppLayout';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { AppLayout, type Crumb } from '../components/layout/AppLayout';
 import { AppErrorBoundary } from '@/components/shell/AppErrorBoundary';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
@@ -58,10 +58,10 @@ export default function DashboardNew() {
   const { isAdminOrCoAdmin, user } = useAuth();
   const [currentView, _setCurrentView] = useState('dashboard');
   const [navKey, setNavKey] = useState(0);
-  const setCurrentView = (view: string) => {
+  const setCurrentView = useCallback((view: string) => {
     _setCurrentView(view);
     setNavKey((k) => k + 1);
-  };
+  }, []);
   const [stats, setStats] = useState<DashboardStats>({
     proyectos: null,
     clientes: null,
@@ -70,6 +70,7 @@ export default function DashboardNew() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageTitle, setPageTitle] = useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<Crumb[] | null>(null);
   const [projectContext, setProjectContext] = useState<ProjectContext | null>(
     null,
   );
@@ -79,6 +80,7 @@ export default function DashboardNew() {
   useEffect(() => {
     if (!currentView.startsWith('project-')) {
       setPageTitle(null);
+      setBreadcrumbs(null);
       setProjectContext(null);
       setShowProjectInfo(false);
     }
@@ -144,6 +146,7 @@ export default function DashboardNew() {
             navKey={navKey}
             onNavigate={setCurrentView}
             onTitleChange={setPageTitle}
+            onBreadcrumbsChange={setBreadcrumbs}
             onProjectLoad={(ctx) => setProjectContext(ctx)}
             showInfo={showProjectInfo}
             onCloseInfo={() => setShowProjectInfo(false)}
@@ -325,6 +328,7 @@ export default function DashboardNew() {
       currentView={currentView}
       onNavigate={setCurrentView}
       pageTitle={pageTitle ?? undefined}
+      breadcrumbs={breadcrumbs ?? undefined}
     >
       <AppErrorBoundary>
         {renderContent()}

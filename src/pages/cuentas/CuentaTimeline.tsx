@@ -91,9 +91,10 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
   };
 
   return (
-    <div>
-      {/* Timeline */}
-      <div className="relative pl-6">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Timeline — scroll propio: la card vive en una fila de tres tercios y
+          no debe estirarse con el largo del historial. */}
+      <div className="relative max-h-[220px] flex-1 overflow-y-auto pl-6">
         {eventos.map((ev, i) => {
           const style = TYPE_STYLES[ev.tipo] || TYPE_STYLES.comentario;
           const isLast = i === eventos.length - 1;
@@ -151,7 +152,7 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
       </div>
 
       {/* Add update */}
-      <div className="mt-4">
+      <div className="mt-4 shrink-0">
         <div className="flex gap-2">
           <Textarea
             value={text}

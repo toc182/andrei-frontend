@@ -17,6 +17,7 @@ export interface DesgloseMeta {
 
 export interface DesgloseItemWire {
   id: number;
+  rowUid?: string; // UUID estable de fila (lo devuelve el backend; sobrevive el guardado)
   parentId: number | null;
   tipo: 'grupo' | 'item';
   item: string;
@@ -109,6 +110,8 @@ export interface DesgloseCuenta {
   /** Desglose del que se copió; null = creado en blanco. */
   copiadoDeId: number | null;
   comentarios: DesgloseComentario[];
+  /** Cuántas cuentas se armaron con este desglose; si > 0, no se puede borrar. */
+  cuentasCount: number;
 }
 
 /** Desglose del que se puede copiar: el oficial (de Información) o cualquiera
@@ -123,6 +126,11 @@ export interface DesgloseFuente {
 export async function getDesglosesCuentas(proyectoId: number): Promise<DesgloseCuenta[]> {
   const res = await api.get(`/desgloses/proyecto/${proyectoId}/cuentas`);
   return res.data.data ?? [];
+}
+
+/** Borrado suave de un desglose de Cuentas. Lanza si alguna cuenta lo usa (409). */
+export async function eliminarDesgloseCuenta(proyectoId: number, desgloseId: number): Promise<void> {
+  await api.delete(`/desgloses/proyecto/${proyectoId}/cuentas/${desgloseId}`);
 }
 
 export async function getFuentesDesglose(proyectoId: number): Promise<DesgloseFuente[]> {
@@ -164,7 +172,7 @@ export function wireToRows(items: DesgloseItemWire[]): DesgloseRow[] {
   const walk = (parentId: number | null, depth: number) => {
     for (const it of (byParent.get(parentId) ?? []).sort((a, b) => a.orden - b.orden)) {
       out.push({
-        tempId: it.id, depth, tipo: it.tipo, item: it.item, descripcion: it.descripcion,
+        tempId: it.id, rowUid: it.rowUid, depth, tipo: it.tipo, item: it.item, descripcion: it.descripcion,
         unidad: it.unidad, cantidad: it.cantidad, precioUnitario: it.precioUnitario,
       });
       walk(it.id, depth + 1);

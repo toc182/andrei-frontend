@@ -152,10 +152,14 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
   >({});
 
   // ── Fetch projects ──
+  // Trae TODOS los proyectos activos (el switcher los lista todos, sin paginar)
+  // y se recarga cuando otro lugar crea/borra un proyecto (evento global), para
+  // que el dropdown no quede desincronizado con la tabla.
   useEffect(() => {
+    if (!user) return;
     const loadProjects = async () => {
       try {
-        const res = await api.get('/projects');
+        const res = await api.get('/projects', { params: { limit: 1000 } });
         if (res.data.success) {
           setProjectsList(res.data.proyectos ?? []);
         }
@@ -163,7 +167,10 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
         /* silencio */
       }
     };
-    if (user) loadProjects();
+    loadProjects();
+    const onChanged = () => loadProjects();
+    window.addEventListener('projects-changed', onChanged);
+    return () => window.removeEventListener('projects-changed', onChanged);
   }, [user]);
 
   // ── Pending approval polling ──

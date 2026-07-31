@@ -39,6 +39,9 @@
   --color-avance-past:    #1e4ba0;
   --color-avance-current: #60a5fa;
 
+  /* Cuenta table row hover — softened navy fill (row inverts to light text) */
+  --color-row-hover: #3B5B8C;
+
   /* shadcn surface tokens — mapped to brand palette */
   --color-background:       oklch(97.6% 0.006 247);   /* canvas = Slate 50 */
   --color-foreground:       oklch(21.3% 0.034 265);   /* Ink */
@@ -96,6 +99,9 @@
   --color-border: oklch(30.5% 0.026 258);
   --color-input:  oklch(30.5% 0.026 258);
   --color-ring:   oklch(64.5% 0.084 254);
+
+  /* Cuenta table row hover — deeper navy on dark canvas */
+  --color-row-hover: #2E4A73;
 
   /* Semantic lifts — used with /10 tints for badge backgrounds */
   --color-success: oklch(68.0% 0.150 150);

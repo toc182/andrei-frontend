@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import type { Crumb } from '@/components/layout/AppLayout';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ interface ProjectDetailLayoutProps {
   navKey?: number;
   onNavigate: (view: string) => void;
   onTitleChange?: (title: string) => void;
+  onBreadcrumbsChange?: (crumbs: Crumb[]) => void;
   onProjectLoad?: (ctx: { id: number; name: string }) => void;
   showInfo?: boolean;
   onCloseInfo?: () => void;
@@ -65,6 +67,7 @@ export default function ProjectDetailLayout({
   navKey,
   onNavigate,
   onTitleChange,
+  onBreadcrumbsChange,
   onProjectLoad,
   showInfo = false,
   onCloseInfo,
@@ -73,6 +76,7 @@ export default function ProjectDetailLayout({
   const [projectAdendas, setProjectAdendas] = useState<Adenda[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [cuentaNumero, setCuentaNumero] = useState<number | null>(null);
   const [showAdendaForm, setShowAdendaForm] = useState<boolean>(false);
   const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null);
   const [adendaToDelete, setAdendaToDelete] = useState<number | null>(null);
@@ -113,29 +117,46 @@ export default function ProjectDetailLayout({
     loadProject();
   }, [projectId]);
 
-  // Update page title when project or subview changes
+  // Update page title + breadcrumbs when project or subview changes
   useEffect(() => {
-    if (project && onTitleChange) {
-      const subviewTitles: Record<string, string> = {
-        resumen: 'Resumen',
-        costos: 'Control de Costos',
-        requisiciones: 'Requisiciones',
-        'solicitudes-pago': 'Solicitudes de Pago',
-        tareas: 'Tareas',
-        bitacora: 'Bitácora',
-        avance: 'Avance Fisico',
-        equipos: 'Equipos',
-        miembros: 'Miembros',
-        adendas: 'Adendas',
-        configuracion: 'Personal',
-        cronograma: 'Cronograma',
-      };
+    if (!project) return;
+    const subviewTitles: Record<string, string> = {
+      resumen: 'Resumen',
+      informacion: 'Información',
+      costos: 'Control de Costos',
+      requisiciones: 'Requisiciones',
+      'solicitudes-pago': 'Solicitudes de Pago',
+      'caja-menuda': 'Caja Menuda',
+      cuentas: 'Cuentas',
+      tareas: 'Tareas',
+      bitacora: 'Bitácora',
+      avance: 'Avance Fisico',
+      equipos: 'Equipos',
+      miembros: 'Miembros',
+      adendas: 'Adendas',
+      configuracion: 'Personal',
+      cronograma: 'Cronograma',
+    };
 
-      const subviewLabel = subviewTitles[subview] || 'Resumen';
-      const projectName = project.nombre_corto || project.nombre;
-      onTitleChange(`${projectName} > ${subviewLabel}`);
+    const projectName = project.nombre_corto || project.nombre;
+    const crumbs: Crumb[] = [
+      { label: projectName, onClick: () => onNavigate(`project-${projectId}-resumen`) },
+    ];
+    if (subview.startsWith('cuenta-')) {
+      crumbs.push({ label: 'Cuentas', onClick: () => onNavigate(`project-${projectId}-cuentas`) });
+      crumbs.push({ label: cuentaNumero != null ? `Cuenta ${cuentaNumero}` : 'Cuenta' });
+    } else {
+      crumbs.push({ label: subviewTitles[subview] || 'Resumen' });
     }
-  }, [project, subview, onTitleChange]);
+
+    onBreadcrumbsChange?.(crumbs);
+    onTitleChange?.(crumbs.map((c) => c.label).join(' > '));
+  }, [project, subview, onTitleChange, onBreadcrumbsChange, onNavigate, projectId, cuentaNumero]);
+
+  // Reset the cuenta number when leaving a cuenta detail view (avoids stale breadcrumb)
+  useEffect(() => {
+    if (!subview.startsWith('cuenta-')) setCuentaNumero(null);
+  }, [subview]);
 
   // Reload adendas after mutations
   const reloadAdendas = async () => {
@@ -205,6 +226,7 @@ export default function ProjectDetailLayout({
           <CuentaDetailPage
             cuentaId={cuentaId}
             onBack={() => onNavigate(`project-${projectId}-cuentas`)}
+            onCuentaLoaded={setCuentaNumero}
           />
         );
       }
@@ -251,7 +273,6 @@ export default function ProjectDetailLayout({
             key={navKey}
             projectId={projectId}
             onCuentaClick={(cuentaId) => onNavigate(`project-${projectId}-cuenta-${cuentaId}`)}
-            onNavigateToGeneral={() => onNavigate('cuentas')}
           />
         );
 

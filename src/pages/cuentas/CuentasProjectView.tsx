@@ -9,21 +9,22 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Plus, ArrowRight, ChevronRight, AlertTriangle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, ArrowRight, ArrowLeft, AlertTriangle, FileText, Receipt } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
+import { EmptyState } from '@/components/shell';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
+import { getDesglosesCuentas } from '@/lib/desgloseApi';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import { formatMonto, formatPeriodoParts, waitColor } from './config';
 import CreateCuentaDialog from './CreateCuentaDialog';
+import NuevaCuentaFlowDialog from './NuevaCuentaFlowDialog';
 import CuentasDesglosesTab from './CuentasDesglosesTab';
 
 interface Props {
   projectId: number;
   onCuentaClick?: (cuentaId: number) => void;
-  onNavigateToGeneral?: () => void;
 }
 
 const PAGADA_STATES = ['pagada'];
@@ -43,14 +44,16 @@ function daysSinceSubmission(c: Cuenta): number | null {
   return Math.floor((Date.now() - new Date(c.fecha_primera_submision).getTime()) / 86400000);
 }
 
-export default function CuentasProjectView({ projectId, onCuentaClick, onNavigateToGeneral }: Props) {
+export default function CuentasProjectView({ projectId, onCuentaClick }: Props) {
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  // Vista General (la pantalla de siempre) | Desgloses (los desgloses con los
-  // que se construyen las cuentas). La acción del PageHeader cambia con la
-  // pestaña — "Nueva Cuenta" no tiene sentido parado en Desgloses.
-  const [tab, setTab] = useState<'general' | 'desgloses'>('general');
+  const [showNuevaCuenta, setShowNuevaCuenta] = useState(false);
+  const [flowStep, setFlowStep] = useState<'tipo' | 'desglose'>('tipo');
+  // Sin pestañas: la página principal es la lista de cuentas; "Desgloses de
+  // Cuenta" es una sub-página a la que se entra y se regresa (view).
+  const [view, setView] = useState<'main' | 'desgloses'>('main');
+  const [nDesgloses, setNDesgloses] = useState(0);
   const [showCreateDesglose, setShowCreateDesglose] = useState(false);
   /** Con un desglose abierto en el editor, "Nuevo Desglose" no aplica. */
   const [desgloseAbierto, setDesgloseAbierto] = useState(false);
@@ -60,6 +63,11 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
     try {
       const res = await api.get('/cuentas', { params: { proyecto_id: projectId } });
       setCuentas(res.data.data || []);
+      try {
+        setNDesgloses((await getDesglosesCuentas(projectId)).length);
+      } catch {
+        setNDesgloses(0);
+      }
     } finally {
       setLoading(false);
     }
@@ -69,20 +77,9 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
 
   const sorted = [...cuentas].sort((a, b) => a.numero - b.numero);
 
-  // Current cuenta: first borrador after last submitted
-  const lastSubmittedIdx = sorted.reduce(
-    (max, c, i) => (c.estado !== 'borrador' ? i : max),
-    -1,
-  );
-  const currentCuenta = lastSubmittedIdx < sorted.length - 1 ? sorted[lastSubmittedIdx + 1] : null;
-
   // Sections render newest-first (highest numero on top).
-  const pendientes = sorted.filter(
-    (c) => PENDING_STATES.includes(c.estado) && c.id !== currentCuenta?.id,
-  ).reverse();
-  const borradoresAdicionales = sorted.filter(
-    (c) => c.estado === 'borrador' && c.id !== currentCuenta?.id,
-  ).reverse();
+  const borradores = sorted.filter((c) => c.estado === 'borrador').reverse();
+  const pendientes = sorted.filter((c) => PENDING_STATES.includes(c.estado)).reverse();
   const pagadas = sorted.filter((c) => PAGADA_STATES.includes(c.estado)).reverse();
 
   // Compute avance_previo for each cuenta (sum of all cuentas before it)
@@ -97,11 +94,9 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   const totalPendMonto = pendientes.reduce((s, c) => s + (c.monto_total ? Number(c.monto_total) : 0), 0);
   const totalPagMonto = pagadas.reduce((s, c) => s + (c.monto_total ? Number(c.monto_total) : 0), 0);
 
-  // Resumen totals: monto by category (currentCuenta is always borrador when set).
-  const totalPorPresentar =
-    (currentCuenta ? Number(currentCuenta.monto_total || 0) : 0) +
-    borradoresAdicionales.reduce((s, c) => s + Number(c.monto_total || 0), 0);
-  const countPorPresentar = (currentCuenta ? 1 : 0) + borradoresAdicionales.length;
+  // Resumen totals: monto por categoría.
+  const totalPorPresentar = borradores.reduce((s, c) => s + Number(c.monto_total || 0), 0);
+  const countPorPresentar = borradores.length;
 
   // "Total contratado" comes from the project's monto_total field (original
   // contract + adendas). Fall back to the sum of cuenta amounts if the project
@@ -114,66 +109,108 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
   // Resumen avance (physical project progress, sum of avance_porcentaje per state).
   const sumAvancePagado = pagadas.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
   const sumAvancePendiente = pendientes.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
-  const sumAvanceBorrador =
-    (currentCuenta ? Number(currentCuenta.avance_porcentaje || 0) : 0) +
-    borradoresAdicionales.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
+  const sumAvanceBorrador = borradores.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
   const sumAvance = sumAvancePagado + sumAvancePendiente + sumAvanceBorrador;
 
   const hasAnyCuenta =
-    !!currentCuenta ||
-    borradoresAdicionales.length > 0 ||
+    borradores.length > 0 ||
     pendientes.length > 0 ||
     pagadas.length > 0;
 
   const pagadoPctOfTotal = totalContratado > 0 ? (totalPagMonto / totalContratado) * 100 : 0;
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Cuentas"
-        subtitle={
-          onNavigateToGeneral ? (
-            <button
-              type="button"
-              onClick={onNavigateToGeneral}
-              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+  // Modo del proyecto, DERIVADO de las cuentas (no hay columna): sin cuentas =
+  // se elige; con cuentas, todas son del mismo tipo, así que basta con ver si
+  // alguna tiene desglose. Cambiar de modo = borrar las cuentas → vuelve a 'empty'.
+  const modo: 'empty' | 'manual' | 'desglose' = !hasAnyCuenta
+    ? 'empty'
+    : cuentas.some((c) => c.desglose_id != null)
+      ? 'desglose'
+      : 'manual';
+
+  const handleNuevaCuenta = () => {
+    if (modo === 'empty') { setFlowStep('tipo'); setShowNuevaCuenta(true); } // primera cuenta: elegir tipo
+    else if (modo === 'desglose') { setFlowStep('desglose'); setShowNuevaCuenta(true); }
+    else setShowCreate(true);
+  };
+
+  // Sub-página: Desgloses de Cuenta (se entra y se regresa; no es pestaña par).
+  if (view === 'desgloses') {
+    return (
+      <div className="mx-auto w-full max-w-7xl space-y-4">
+        <div className="flex items-center gap-3">
+          {!desgloseAbierto && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setView('main'); load(); }}
+              aria-label="Volver a cuentas"
+              className="-ml-2 h-8 w-8 shrink-0 self-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-foreground"
             >
-              Ver cuentas de todos los proyectos
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          ) : undefined
-        }
-      >
-        {tab === 'general' ? (
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Cuenta
-          </Button>
-        ) : !desgloseAbierto ? (
-          <Button onClick={() => setShowCreateDesglose(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Desglose
-          </Button>
-        ) : null}
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <PageHeader title="Desgloses de Cuenta" />
+          {!desgloseAbierto && (
+            <Button onClick={() => setShowCreateDesglose(true)} className="ml-auto">
+              <Plus className="mr-1 h-4 w-4" strokeWidth={2.5} />
+              Desglose
+            </Button>
+          )}
+        </div>
+        <CuentasDesglosesTab
+          proyectoId={projectId}
+          proyectoNombre={cuentas[0]?.proyecto_nombre}
+          createOpen={showCreateDesglose}
+          onCreateOpenChange={setShowCreateDesglose}
+          onAbiertoChange={setDesgloseAbierto}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-7xl space-y-4">
+      <PageHeader title="Cuentas">
+        {modo !== 'empty' && (
+          <div className="flex items-center gap-2">
+            {modo === 'desglose' && (
+              <Button variant="outline" onClick={() => setView('desgloses')}>
+                <FileText className="mr-2 h-4 w-4" />
+                Desgloses de Cuenta{nDesgloses > 0 ? ` (${nDesgloses})` : ''}
+              </Button>
+            )}
+            <Button onClick={handleNuevaCuenta}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Cuenta
+            </Button>
+          </div>
+        )}
       </PageHeader>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as 'general' | 'desgloses')}>
-        <TabsList className="mb-6 w-full justify-center">
-          <TabsTrigger value="general">Vista General</TabsTrigger>
-          <TabsTrigger value="desgloses">Desgloses</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="desgloses" className="mt-0">
-          <CuentasDesglosesTab
-            proyectoId={projectId}
-            proyectoNombre={cuentas[0]?.proyecto_nombre}
-            createOpen={showCreateDesglose}
-            onCreateOpenChange={setShowCreateDesglose}
-            onAbiertoChange={setDesgloseAbierto}
+      {modo === 'empty' && !loading ? (
+        <Card>
+          <EmptyState
+            icon={Receipt}
+            title="No hay cuentas"
+            description="Crea la primera cuenta de este proyecto."
+            action={
+              <div className="flex flex-col items-center gap-2 sm:flex-row">
+                <Button onClick={handleNuevaCuenta}>
+                  Nueva Cuenta
+                </Button>
+                {nDesgloses > 0 && (
+                  <Button variant="outline" onClick={() => setView('desgloses')}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Desgloses de Cuenta ({nDesgloses})
+                  </Button>
+                )}
+              </div>
+            }
           />
-        </TabsContent>
-
-        <TabsContent value="general" className="mt-0 space-y-4">
+        </Card>
+      ) : (
+        <div className="space-y-4">
       {!loading && hasAnyCuenta && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -269,7 +306,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableHead className="w-[1%] whitespace-nowrap px-2 py-2">Cuenta</TableHead>
                 <TableHead className="w-[1%] whitespace-nowrap px-2 py-2">Período</TableHead>
                 <TableHead className="px-2 py-2">Avance</TableHead>
@@ -279,10 +316,10 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(currentCuenta || borradoresAdicionales.length > 0) && (
+              {borradores.length > 0 && (
                 <>
-                  <SectionBand label="Cuenta actual" />
-                  {borradoresAdicionales.map((c) => (
+                  {(pendientes.length > 0 || pagadas.length > 0) && <SectionBand label="Borrador" />}
+                  {borradores.map((c) => (
                     <CuentaTableRow
                       key={c.id}
                       cuenta={c}
@@ -291,14 +328,6 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
                       onClick={() => onCuentaClick?.(c.id)}
                     />
                   ))}
-                  {currentCuenta && (
-                    <CuentaTableRow
-                      cuenta={currentCuenta}
-                      avancePrevio={avancePrevioMap.get(currentCuenta.id) ?? 0}
-                      days={null}
-                      onClick={() => onCuentaClick?.(currentCuenta.id)}
-                    />
-                  )}
                 </>
               )}
 
@@ -336,8 +365,8 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
           </Table>
         </Card>
       )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       <CreateCuentaDialog
         open={showCreate}
@@ -345,9 +374,20 @@ export default function CuentasProjectView({ projectId, onCuentaClick, onNavigat
         projectId={projectId}
         onCreated={() => { setShowCreate(false); load(); }}
       />
+
+      <NuevaCuentaFlowDialog
+        open={showNuevaCuenta}
+        onOpenChange={setShowNuevaCuenta}
+        projectId={projectId}
+        initialStep={flowStep}
+        onManual={() => { setShowNuevaCuenta(false); setShowCreate(true); }}
+        onCreated={(cuentaId) => { setShowNuevaCuenta(false); load(); onCuentaClick?.(cuentaId); }}
+        onIrADesgloses={() => { setShowNuevaCuenta(false); setView('desgloses'); }}
+      />
     </div>
   );
 }
+
 
 // ── Section band ─────────────────────────────────────────────────────────
 
@@ -381,42 +421,39 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
 
   return (
     <TableRow
-      className={`cursor-pointer ${
-        obs
-          ? 'bg-error/[0.04] hover:bg-error/[0.06]'
-          : 'hover:bg-muted/30'
-      }`}
+      className={`group cursor-pointer hover:bg-row-hover ${obs ? 'bg-error/[0.04]' : ''}`}
       onClick={onClick}
     >
       <TableCell className="w-[1%] whitespace-nowrap px-2 py-3">
         <div className="flex items-center gap-2">
-          {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0" />}
-          <span className="font-semibold text-sm">Cuenta {c.numero}</span>
+          {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0 group-hover:text-white" />}
+          <span className="font-semibold text-sm group-hover:text-white">Cuenta {c.numero}</span>
           <CuentaEstadoBadge
             estado={c.estado}
             clienteLabel={c.cliente_abreviatura || c.cliente_nombre}
+            className="group-hover:bg-white/20 group-hover:text-white group-hover:border-white/40"
           />
         </div>
       </TableCell>
       <TableCell className="w-[1%] whitespace-nowrap px-2 py-3">
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground group-hover:text-white/85">
           {pp.inicio && <span>{pp.inicio}</span>}
-          {(pp.inicio || pp.fin) && <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />}
+          {(pp.inicio || pp.fin) && <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0 group-hover:text-white/70" />}
           {pp.fin && <span>{pp.fin}</span>}
           {!pp.inicio && !pp.fin && <span>—</span>}
         </span>
       </TableCell>
       <TableCell className="px-2 py-3">
-        <div className="rounded-full bg-slate-300 overflow-hidden h-3.5 flex">
+        <div className="rounded-full bg-slate-300 overflow-hidden h-3.5 flex group-hover:bg-white/25">
           {prev > 0 && <div className="h-full bg-avance-past" style={{ width: `${prev}%` }} />}
           {curr > 0 && <div className="h-full bg-avance-current" style={{ width: `${curr}%` }} />}
         </div>
       </TableCell>
-      <TableCell className="w-[1%] whitespace-nowrap text-center text-xs text-muted-foreground tabular-nums pl-2 pr-1 py-3">
+      <TableCell className="w-[1%] whitespace-nowrap text-center text-xs text-muted-foreground tabular-nums pl-2 pr-1 py-3 group-hover:text-white/85">
         {curr}%
       </TableCell>
       <TableCell
-        className={`w-[1%] whitespace-nowrap text-center text-xs tabular-nums px-1 py-3 ${
+        className={`w-[1%] whitespace-nowrap text-center text-xs tabular-nums px-1 py-3 group-hover:text-white/85 ${
           isPagada ? 'text-muted-foreground/40' : dColor
         }`}
       >
@@ -425,7 +462,7 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
           {isPagada ? '—' : (days != null ? `${days}d` : '—')}
         </span>
       </TableCell>
-      <TableCell className="w-[1%] whitespace-nowrap text-center text-sm font-semibold tabular-nums pl-1 pr-2 py-3">
+      <TableCell className="w-[1%] whitespace-nowrap text-center text-sm font-semibold tabular-nums pl-1 pr-2 py-3 group-hover:text-white">
         {formatMonto(c.monto_total)}
       </TableCell>
     </TableRow>

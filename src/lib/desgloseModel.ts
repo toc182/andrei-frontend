@@ -6,6 +6,7 @@
 /** PUT wire row (owned HERE — desgloseApi re-exports it, never redeclares). */
 export interface DesgloseItemInput {
   tempId: number;
+  rowUid?: string; // UUID estable de fila; se reenvía para conservar identidad. Ausente = fila nueva
   parentTempId: number | null;
   tipo: 'grupo' | 'item';
   item: string;
@@ -18,6 +19,7 @@ export interface DesgloseItemInput {
 
 export interface DesgloseRow {
   tempId: number;
+  rowUid?: string; // UUID estable; se conserva al cargar y se reenvía al guardar
   depth: number;
   tipo: 'grupo' | 'item';
   item: string;
@@ -26,6 +28,11 @@ export interface DesgloseRow {
   cantidad: number | null;
   precioUnitario: number | null;
 }
+
+/** UUID estable para una fila nueva. Round-trips con el backend para que el
+ *  avance por fila sobreviva el guardado wholesale del desglose. */
+export const newRowUid = (): string =>
+  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 /** cantidad × precio when both are present, else 0 — the raw "own" value of a
  *  row, independent of type. */
@@ -89,6 +96,7 @@ export function toWireItems(rows: DesgloseRow[]): DesgloseItemInput[] {
     if (r.tipo === 'grupo') stack[r.depth] = r.tempId;
     return {
       tempId: r.tempId,
+      rowUid: r.rowUid,
       parentTempId,
       tipo: r.tipo,
       item: r.item,
@@ -180,7 +188,7 @@ export function insertRowAfter(rows: DesgloseRow[], i: number, tipo: 'grupo' | '
   const depth = anchor.tipo === 'grupo' ? anchor.depth + 1 : anchor.depth;
   const tempId = rows.reduce((m, r) => Math.max(m, r.tempId), 0) + 1;
   const fresh: DesgloseRow = {
-    tempId, depth, tipo, item: '', descripcion: '', unidad: null, cantidad: null, precioUnitario: null,
+    tempId, rowUid: newRowUid(), depth, tipo, item: '', descripcion: '', unidad: null, cantidad: null, precioUnitario: null,
   };
   return [...rows.slice(0, i + 1), fresh, ...rows.slice(i + 1)];
 }

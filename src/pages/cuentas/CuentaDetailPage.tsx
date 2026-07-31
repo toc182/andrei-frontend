@@ -4,7 +4,6 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,13 +24,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft } from 'lucide-react';
+import { Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft, Check, Table2 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
-import type { CuentaDetail, CuentaEstado, CuentaAjuste, CuentaAjusteOpcion, CuentaAjusteTipo } from '@/types/api';
+import type {
+  CuentaDetail, CuentaEstado, CuentaAjuste, CuentaAjusteOpcion, CuentaAjusteTipo,
+  CuentaDesgloseFicha,
+} from '@/types/api';
 import { cn } from '@/lib/utils';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import CuentaTimeline from './CuentaTimeline';
+import CuadroCuenta from './CuadroCuenta';
 import {
   formatMonto,
   formatDateExact,
@@ -46,6 +49,7 @@ import {
 interface Props {
   cuentaId: number;
   onBack?: () => void;
+  onCuentaLoaded?: (numero: number) => void;
 }
 
 function calcMontoAPagar(monto: string, ajustes: CuentaAjuste[]): number {
@@ -70,7 +74,7 @@ function daysBetween(start: string | null | undefined, end: string | null | unde
   return Math.floor((e.getTime() - s.getTime()) / 86400000) + 1;
 }
 
-export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
+export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: Props) {
   const [cuenta, setCuenta] = useState<CuentaDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -82,6 +86,7 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
     try {
       const res = await api.get(`/cuentas/${cuentaId}`);
       setCuenta(res.data.data);
+      onCuentaLoaded?.(res.data.data.numero);
     } finally {
       setLoading(false);
     }
@@ -96,17 +101,18 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
   const LOCKED = ['aprobada', 'pagada', 'aprobada_institucion', 'aprobada_contraloria'].includes(cuenta.estado);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-7xl space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         {onBack && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             onClick={onBack}
             aria-label="Volver a cuentas"
+            className="-ml-2 h-8 w-8 shrink-0 self-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
         <PageHeader title={`Cuenta ${cuenta.numero}`} />
@@ -118,8 +124,9 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
         )}
       </div>
 
-      {/* Details + Monto cards — side by side on md+, stacked on narrow screens */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Datos + Monto + Historial — tres tercios en pantallas anchas. El
+          historial lleva su propio scroll para no estirar la fila. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-5">
             <div className="grid grid-cols-2 items-center gap-x-3 gap-y-1.5 text-sm">
@@ -160,7 +167,15 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
         <Card>
           <CardContent className="p-5">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Monto bruto:</span>
+              <span className="text-muted-foreground">
+                Monto bruto:
+                {cuenta.desglose_id != null && (
+                  <span className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-teal">
+                    <Table2 className="h-3 w-3" />
+                    Calculado del desglose
+                  </span>
+                )}
+              </span>
               <span className="tabular-nums">{formatMonto(cuenta.monto_total)}</span>
             </div>
 
@@ -184,27 +199,39 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
             )}
           </CardContent>
         </Card>
+
+        {/* Historial */}
+        <Card className="flex flex-col">
+          <CardContent className="flex min-h-0 flex-1 flex-col p-5">
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <h2 className="text-sm font-semibold">Historial</h2>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowTransition(true)}
+              >
+                Cambiar estado
+              </Button>
+            </div>
+            <CuentaTimeline cuentaId={cuentaId} eventos={cuenta.eventos} onChanged={load} />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Timeline */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">Historial</h2>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowTransition(true)}
-            >
-              Cambiar estado
-            </Button>
-          </div>
-          <CuentaTimeline cuentaId={cuentaId} eventos={cuenta.eventos} onChanged={load} />
-        </CardContent>
-      </Card>
+      {/* Cuadro de cuenta (solo cuentas detalladas armadas desde un desglose) */}
+      {cuenta.desglose_id != null && (
+        <CuadroCuenta cuentaId={cuentaId} onSaved={load} />
+      )}
 
-      {/* Adjuntos */}
-      <AdjuntosSection cuentaId={cuentaId} adjuntos={cuenta.adjuntos} onChanged={load} />
+      {/* Documentos de la cuenta */}
+      <DocumentosSection
+        cuentaId={cuentaId}
+        adjuntos={cuenta.adjuntos}
+        desglose={cuenta.desglose ?? null}
+        puedeCambiarDesglose={!LOCKED && !!cuenta.es_primera_cuenta}
+        hayDesgloseOficial={cuenta.desglose_oficial_id != null}
+        onChanged={load}
+      />
 
       {/* Edit dialog */}
       <EditCuentaDialog
@@ -226,14 +253,57 @@ export default function CuentaDetailPage({ cuentaId, onBack }: Props) {
   );
 }
 
-// ── Adjuntos Section ────────────────────────────────────────────────────
+// ── Documentos de la cuenta ─────────────────────────────────────────────
+//
+// Los soportes de la cuenta: el desglose con el que se armó (si lo tiene) y
+// los archivos subidos. La cuenta y sus soportes son cosas separadas — esta
+// sección es la de los soportes.
 
-function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
+function DocumentosSection({
+  cuentaId, adjuntos, desglose, puedeCambiarDesglose, hayDesgloseOficial, onChanged,
+}: {
   cuentaId: number;
   adjuntos: CuentaDetail['adjuntos'];
+  desglose: CuentaDesgloseFicha | null;
+  /** Activar o quitar el desglose solo se permite en la primera cuenta. */
+  puedeCambiarDesglose: boolean;
+  hayDesgloseOficial: boolean;
   onChanged: () => void;
 }) {
   const [uploading, setUploading] = useState<File | null>(null);
+  const [desgloseBusy, setDesgloseBusy] = useState(false);
+  const [confirmQuitar, setConfirmQuitar] = useState(false);
+  const [desgloseError, setDesgloseError] = useState('');
+
+  const errorDe = (err: unknown, fallback: string) =>
+    (err as { response?: { data?: { error?: string } } }).response?.data?.error || fallback;
+
+  const activarDesglose = async () => {
+    setDesgloseBusy(true);
+    setDesgloseError('');
+    try {
+      await api.post(`/cuentas/${cuentaId}/desglose`);
+      onChanged();
+    } catch (err) {
+      setDesgloseError(errorDe(err, 'No se pudo activar el desglose.'));
+    } finally {
+      setDesgloseBusy(false);
+    }
+  };
+
+  const quitarDesglose = async () => {
+    setDesgloseBusy(true);
+    setDesgloseError('');
+    try {
+      await api.delete(`/cuentas/${cuentaId}/desglose`);
+      setConfirmQuitar(false);
+      onChanged();
+    } catch (err) {
+      setDesgloseError(errorDe(err, 'No se pudo quitar el desglose.'));
+    } finally {
+      setDesgloseBusy(false);
+    }
+  };
 
   const upload = async (file: File) => {
     setUploading(file);
@@ -265,9 +335,72 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
   return (
     <Card>
       <CardContent className="p-5">
-        <h2 className="text-sm font-semibold mb-3">Adjuntos</h2>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Documentos de la cuenta</h2>
+          <div className="flex items-center gap-2">
+            {!desglose && puedeCambiarDesglose && hayDesgloseOficial && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={activarDesglose}
+                disabled={desgloseBusy}
+              >
+                {desgloseBusy
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <Plus className="mr-2 h-4 w-4" />}
+                Desglose
+              </Button>
+            )}
+            <label
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer',
+              )}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Subir archivo
+              <input
+                type="file"
+                className="hidden"
+                disabled={!!uploading}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
+              />
+            </label>
+          </div>
+        </div>
+
+        {desgloseError && (
+          <p className="mb-2 text-sm text-error">{desgloseError}</p>
+        )}
+
+        {desglose && (
+          <div className="mb-1.5 flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-navy/25 bg-navy/10 text-navy">
+              <Table2 className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate">{desglose.descripcion}</span>
+              <span className="block text-xs text-muted-foreground tabular-nums">
+                {desglose.filas} fila{desglose.filas === 1 ? '' : 's'} · {formatMonto(desglose.total)}
+              </span>
+            </span>
+            {puedeCambiarDesglose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                aria-label="Quitar desglose"
+                onClick={() => setConfirmQuitar(true)}
+                disabled={desgloseBusy}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
+
         {(adjuntos.length > 0 || uploading) && (
-          <div className="space-y-1.5 mb-3">
+          <div className="space-y-1.5">
             {adjuntos.map((a) => (
               <div key={a.id} className="flex items-center gap-3 bg-muted/40 border rounded-md px-3 py-2 text-sm">
                 <span className="flex-1 truncate">{a.nombre_original}</span>
@@ -293,23 +426,36 @@ function AdjuntosSection({ cuentaId, adjuntos, onChanged }: {
             )}
           </div>
         )}
-        <label
-          className={
-            uploading
-              ? 'flex items-center justify-center gap-2 p-3 border border-dashed rounded-md text-sm text-muted-foreground/50 cursor-not-allowed'
-              : 'flex items-center justify-center gap-2 p-3 border border-dashed rounded-md text-sm text-muted-foreground cursor-pointer hover:border-foreground/30 hover:text-foreground/60 transition-colors'
-          }
-        >
-          <Upload className="h-4 w-4" />
-          Subir archivo
-          <input
-            type="file"
-            className="hidden"
-            disabled={!!uploading}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
-          />
-        </label>
+
+        {!desglose && adjuntos.length === 0 && !uploading && (
+          <p className="py-2 text-sm text-muted-foreground">
+            Todavía no hay documentos.
+          </p>
+        )}
       </CardContent>
+
+      <AlertDialog open={confirmQuitar} onOpenChange={(o) => { if (!o) setConfirmQuitar(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar el desglose de esta cuenta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borran las cantidades registradas en el desglose y la cuenta vuelve
+              a llevar el monto escrito a mano.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={desgloseBusy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); quitarDesglose(); }}
+              disabled={desgloseBusy}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              {desgloseBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Quitar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
@@ -348,6 +494,8 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
   const [savingOpcion, setSavingOpcion] = useState(false);
 
   const canDelete = cuenta.estado === 'borrador';
+  // Con desglose activo, monto y avance son derivados de las cantidades.
+  const montoDerivado = cuenta.desglose_id != null;
 
   useEffect(() => {
     if (open) {
@@ -500,124 +648,161 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
         }
       >
         <form id="edit-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Label className="flex-1">Monto bruto (B/.)</Label>
-            <Input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-            <span className="h-9 w-9 shrink-0" aria-hidden />
-          </div>
+          {/* Panel-recibo: monto bruto + ajustes + total, alineados al mismo borde derecho.
+              El pr-8 crea el canal para la papelera, que se posiciona en el margen. */}
+          <div className="rounded-lg border border-border bg-secondary/60 py-3.5 pl-4 pr-8">
+            <div className="mb-2.5">
+              <span className="border-l-2 border-primary pl-2 text-[11px] font-bold uppercase tracking-wider leading-none text-primary">
+                Cálculo
+              </span>
+            </div>
 
-          {/* Ajustes — rows (if any) followed by the Agregar Ajuste button */}
-          <div className="space-y-2">
-            {ajustes.length > 0 && (
-              <div className="space-y-2">
-                {ajustes.map((aj, index) => {
-                  const selectedKey = aj.descripcion ? `${aj.tipo}|${aj.descripcion}` : '';
-                  return (
-                    <div key={index} className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          'h-9 w-9 inline-flex items-center justify-center rounded-md border font-bold text-base shrink-0',
-                          !aj.descripcion
-                            ? 'text-muted-foreground border-border'
-                            : aj.tipo === 'aumento'
-                              ? 'text-success border-success/30'
-                              : 'text-error border-error/30',
-                        )}
-                        aria-hidden
-                      >
-                        {!aj.descripcion ? '' : aj.tipo === 'aumento' ? '+' : '−'}
-                      </span>
-                      <Select
-                        value={selectedKey}
-                        onValueChange={(value) => {
-                          if (value === '__new__') {
-                            openCreateOpcion(index);
-                            return;
-                          }
-                          const sep = value.indexOf('|');
-                          const tipo = value.slice(0, sep) as CuentaAjusteTipo;
-                          const descripcion = value.slice(sep + 1);
-                          selectAjusteOpcion(index, tipo, descripcion);
-                        }}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Seleccionar ajuste" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allOpciones.map((o) => (
-                            <SelectItem
-                              key={`${o.tipo}|${o.descripcion}`}
-                              value={`${o.tipo}|${o.descripcion}`}
-                            >
-                              <span
-                                className={cn(
-                                  'font-bold mr-2',
-                                  o.tipo === 'aumento' ? 'text-success' : 'text-error',
-                                )}
-                              >
-                                {o.tipo === 'aumento' ? '+' : '−'}
-                              </span>
-                              {o.descripcion}
-                            </SelectItem>
-                          ))}
-                          {allOpciones.length > 0 && <SelectSeparator />}
-                          <SelectItem value="__new__">
-                            <span className="inline-flex items-center">
-                              <Plus className="h-3 w-3 mr-1" />
-                              Crear nueva opción
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        value={aj.monto}
-                        onChange={(e) => updateAjuste(index, 'monto', e.target.value)}
-                        className="w-40 tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeAjuste(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {/* Monto bruto */}
+            <div className="grid min-h-[34px] grid-cols-[1fr_auto] items-center gap-x-2.5">
+              <Label className="font-semibold text-foreground">
+                Monto bruto
+                {montoDerivado && (
+                  <span className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-teal">
+                    <Table2 className="h-3 w-3" />
+                    Calculado del desglose
+                  </span>
+                )}
+              </Label>
+              <span className="flex items-baseline justify-end gap-1">
+                <span className="text-xs text-muted-foreground">B/.</span>
+                <Input
+                  type="number"
+                  value={monto}
+                  readOnly={montoDerivado}
+                  onChange={(e) => setMonto(e.target.value)}
+                  className={cn(
+                    'h-auto w-20 border-0 bg-transparent p-0 py-1 text-right tabular-nums shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+                    montoDerivado && 'text-muted-foreground',
+                  )}
+                />
+              </span>
+            </div>
+
+            {ajustes.length > 0 && <div className="my-1.5 h-px bg-border" />}
+
+            {/* Ajustes */}
+            {ajustes.map((aj, index) => {
+              const selectedKey = aj.descripcion ? `${aj.tipo}|${aj.descripcion}` : '';
+              return (
+                <div
+                  key={index}
+                  className="group/row relative grid min-h-[34px] grid-cols-[1fr_auto] items-center gap-x-2.5"
+                >
+                  <Select
+                    value={selectedKey}
+                    onValueChange={(value) => {
+                      if (value === '__new__') {
+                        openCreateOpcion(index);
+                        return;
+                      }
+                      const sep = value.indexOf('|');
+                      const tipo = value.slice(0, sep) as CuentaAjusteTipo;
+                      const descripcion = value.slice(sep + 1);
+                      selectAjusteOpcion(index, tipo, descripcion);
+                    }}
+                  >
+                    <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-1 shadow-none focus:ring-0 focus-visible:ring-0 [&>svg]:opacity-60">
+                      <SelectValue placeholder="Seleccionar ajuste" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allOpciones.map((o) => (
+                        <SelectItem
+                          key={`${o.tipo}|${o.descripcion}`}
+                          value={`${o.tipo}|${o.descripcion}`}
+                        >
+                          <span
+                            className={cn(
+                              'font-bold mr-2',
+                              o.tipo === 'aumento' ? 'text-success' : 'text-error',
+                            )}
+                          >
+                            {o.tipo === 'aumento' ? '+' : '−'}
+                          </span>
+                          {o.descripcion}
+                        </SelectItem>
+                      ))}
+                      {allOpciones.length > 0 && <SelectSeparator />}
+                      <SelectItem value="__new__">
+                        <span className="inline-flex items-center">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Crear nueva opción
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="flex items-baseline justify-end gap-1">
+                    <span className="text-xs text-muted-foreground">B/.</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={aj.monto}
+                      onChange={(e) => updateAjuste(index, 'monto', e.target.value)}
+                      className={cn(
+                        'h-auto w-20 border-0 bg-transparent p-0 py-1 text-right tabular-nums shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+                        aj.descripcion && (aj.tipo === 'aumento' ? 'text-success' : 'text-error'),
+                      )}
+                    />
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-[-26px] top-1/2 h-6 w-6 -translate-y-1/2 p-0 text-transparent group-hover/row:text-muted-foreground hover:!text-error"
+                    onClick={() => removeAjuste(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+
             <Button
               type="button"
-              variant="outline"
-              size="sm"
+              variant="ghost"
               onClick={addAjuste}
-              className="h-7 text-xs"
+              className="mt-1 h-auto w-full justify-center gap-1.5 rounded-md border border-dashed border-border bg-transparent py-2 text-xs font-semibold text-muted-foreground hover:border-primary/30 hover:bg-transparent hover:text-primary"
             >
-              <Plus className="h-3 w-3 mr-1" />
-              Agregar Ajuste
+              <Plus className="h-3 w-3" />
+              Agregar ajuste
             </Button>
-          </div>
 
-          {/* Auto-calculated total */}
-          <div className="flex items-center gap-2 pb-3 border-b border-border">
-            <span className="flex-1 font-semibold">Total a cobrar</span>
-            <span className="w-40 text-right font-semibold tabular-nums pr-3">
-              B/. {montoAPagarLive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="w-9 shrink-0" aria-hidden />
+            <div className="mt-2 grid grid-cols-[1fr_auto] items-baseline gap-x-2.5 border-t border-border pt-2.5">
+              <span className="text-sm font-semibold text-primary">Monto a pagar</span>
+              <span className="text-lg font-bold tabular-nums text-primary">
+                B/. {montoAPagarLive.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Periodo inicio</Label><DatePicker value={inicio} onChange={setInicio} /></div>
             <div><Label>Periodo fin</Label><DatePicker value={fin} onChange={setFin} /></div>
           </div>
-          <div><Label>Avance (%)</Label><Input type="number" step="0.01" min="0" max="100" value={avance} onChange={(e) => setAvance(e.target.value)} /></div>
+          <div>
+            <Label>Avance (%)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={avance}
+              readOnly={montoDerivado}
+              onChange={(e) => setAvance(e.target.value)}
+              className={cn(montoDerivado && 'text-muted-foreground')}
+            />
+            {montoDerivado && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Sale de las cantidades del desglose.
+              </p>
+            )}
+          </div>
         </form>
       </AppDialog>
 
@@ -747,7 +932,7 @@ function TransitionDialog({ open, onOpenChange, cuenta, onDone }: {
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      size="simple"
+      size="confirm"
       title="Cambiar estado"
       footer={
         <>
@@ -760,40 +945,45 @@ function TransitionDialog({ open, onOpenChange, cuenta, onDone }: {
       }
     >
       <form id="transition-cuenta-form" onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-3">
-        <RadioGroup
-          value={selected}
-          onValueChange={(v) => setSelected(v as Bucket)}
-          className="space-y-2"
-        >
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Nuevo estado</p>
           {buckets.map((b) => {
             const isCurrent = b === currentBucket;
+            const isSel = selected === b;
             return (
-              <label
+              <button
+                type="button"
                 key={b}
-                htmlFor={`bucket-${b}`}
-                className={`flex items-center gap-3 border rounded-md p-3 transition-colors ${
+                disabled={isCurrent}
+                onClick={() => setSelected(b)}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-lg border px-3.5 py-2.5 text-left transition-colors',
                   isCurrent
-                    ? 'border-border bg-muted/40 cursor-not-allowed opacity-60'
-                    : selected === b
-                      ? 'border-foreground bg-muted/50 cursor-pointer'
-                      : 'cursor-pointer hover:border-border'
-                }`}
-              >
-                <RadioGroupItem
-                  id={`bucket-${b}`}
-                  value={b}
-                  disabled={isCurrent}
-                />
-                <span className="text-sm flex-1">{bucketLabel(b, clienteLabel)}</span>
-                {isCurrent && (
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Estado actual
-                  </span>
+                    ? 'cursor-default border-border bg-secondary/60'
+                    : isSel
+                      ? 'border-primary bg-primary/[0.06]'
+                      : 'border-border hover:border-primary/35',
                 )}
-              </label>
+              >
+                <span
+                  className={cn(
+                    'h-2.5 w-2.5 shrink-0 rounded-full',
+                    isCurrent ? 'bg-muted-foreground' : 'bg-info',
+                  )}
+                  aria-hidden
+                />
+                <span className="flex-1 text-sm font-medium">{bucketLabel(b, clienteLabel)}</span>
+                {isCurrent ? (
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Actual
+                  </span>
+                ) : isSel ? (
+                  <Check className="h-[18px] w-[18px] text-primary" />
+                ) : null}
+              </button>
             );
           })}
-        </RadioGroup>
+        </div>
         <div>
           <Label>Comentario (opcional)</Label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />

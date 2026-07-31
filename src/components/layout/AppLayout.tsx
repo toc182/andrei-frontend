@@ -22,11 +22,17 @@ import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { getInitials } from '../../utils/formatters';
 
+export interface Crumb {
+  label: string;
+  onClick?: () => void;
+}
+
 interface AppLayoutProps {
   children: ReactNode;
   currentView: string;
   onNavigate: (view: string) => void;
   pageTitle?: string;
+  breadcrumbs?: Crumb[];
 }
 
 const viewTitles: Record<string, string> = {
@@ -57,6 +63,7 @@ export function AppLayout({
   currentView,
   onNavigate,
   pageTitle,
+  breadcrumbs,
 }: AppLayoutProps) {
   const { user, logout } = useAuth();
 
@@ -67,10 +74,34 @@ export function AppLayout({
         {/* Topbar */}
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
           <SidebarTrigger />
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold truncate">
-              {getViewTitle(currentView, pageTitle)}
-            </h2>
+          <div className="min-w-0 flex-1">
+            {breadcrumbs && breadcrumbs.length > 0 ? (
+              <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 truncate text-lg font-semibold">
+                {breadcrumbs.map((crumb, i) => {
+                  const isLast = i === breadcrumbs.length - 1;
+                  return (
+                    <span key={i} className="flex items-center gap-1.5 min-w-0">
+                      {i > 0 && <span className="text-muted-foreground/50">›</span>}
+                      {crumb.onClick && !isLast ? (
+                        <button
+                          type="button"
+                          onClick={crumb.onClick}
+                          className="truncate text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {crumb.label}
+                        </button>
+                      ) : (
+                        <span className={isLast ? 'truncate' : 'truncate text-muted-foreground'}>{crumb.label}</span>
+                      )}
+                    </span>
+                  );
+                })}
+              </nav>
+            ) : (
+              <h2 className="text-lg font-semibold truncate">
+                {getViewTitle(currentView, pageTitle)}
+              </h2>
+            )}
           </div>
 
           {/* User Menu */}

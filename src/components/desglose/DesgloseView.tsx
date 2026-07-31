@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, ClipboardPaste, Loader2, Pencil, Settings, Download, Printer,
-  IndentIncrease, IndentDecrease, ChevronUp, ChevronDown, Trash2, Undo2, Redo2, X,
+  IndentIncrease, IndentDecrease, ChevronUp, ChevronDown, Trash2, Undo2, Redo2, X, Info,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Alert } from '@/components/shell/Alert';
 import { SectionHeader } from '@/components/shell/SectionHeader';
@@ -35,11 +35,11 @@ import { formatMoney } from '@/utils/formatters';
 import {
   computeTotals, toWireItems, indentLegal, subtreeEnd, indentRows, indentParentIndex,
   outdentRows, deleteSubtree, moveSubtree, insertRowAfter, hasChildren,
-  GRAND_TOTAL_KEY, type DesgloseRow,
+  newRowUid, GRAND_TOTAL_KEY, type DesgloseRow,
 } from '@/lib/desgloseModel';
 import {
   getDesglose, saveDesglose, getDesgloseById, saveDesgloseById, wireToRows,
-  DesgloseConflictError, type DesgloseMeta,
+  eliminarDesgloseCuenta, DesgloseConflictError, type DesgloseMeta,
 } from '@/lib/desgloseApi';
 import { exportDesgloseExcel } from '@/lib/desgloseExcel';
 import { DesglosePrintDialog } from './DesglosePrintDialog';
@@ -56,6 +56,8 @@ interface DesgloseViewProps {
    *  el desglose OFICIAL del proyecto — el comportamiento de Información, que
    *  no cambia. */
   desgloseId?: number;
+  /** Cuántas cuentas usan este desglose; si > 0, no se puede borrar. */
+  usoCount?: number;
   /** Encabezado de la sección; por defecto el de Información. */
   titulo?: string;
   /** Volver al listado. Se dibuja como el botón de flecha de CuentaDetailPage:
@@ -86,7 +88,7 @@ interface LoadError {
 const HEADER_CELL = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
 export function DesgloseView({
-  proyectoId, proyectoNombre, desgloseId, titulo = 'Desglose del Proyecto', onBack,
+  proyectoId, proyectoNombre, desgloseId, usoCount = 0, titulo = 'Desglose del Proyecto', onBack,
 }: DesgloseViewProps) {
   const [rows, setRows] = useState<DesgloseRow[]>([]);
   const [meta, setMeta] = useState<DesgloseMeta | null>(null);
@@ -498,7 +500,7 @@ export function DesgloseView({
     const cur = rowsRef.current;
     const nextId = Math.max(0, ...cur.map((r) => r.tempId)) + 1;
     commitRows([...cur, {
-      tempId: nextId, depth: 0, tipo, item: '', descripcion: '', unidad: null, cantidad: null, precioUnitario: null,
+      tempId: nextId, rowUid: newRowUid(), depth: 0, tipo, item: '', descripcion: '', unidad: null, cantidad: null, precioUnitario: null,
     }]);
   };
 
@@ -638,6 +640,29 @@ export function DesgloseView({
   // centers its row, so anything whose height changes between read and edit
   // (a size="sm" button, or even dropping the gear) re-centers the title and
   // visibly moves it. Every mode-dependent control lives in the toolbar below.
+  // Eliminar el desglose completo (solo desgloses de Cuentas; el oficial no).
+  const [showDeleteDesglose, setShowDeleteDesglose] = useState(false);
+  const [deletingDesglose, setDeletingDesglose] = useState(false);
+  const [deleteDesgloseError, setDeleteDesgloseError] = useState('');
+  const canDelete = desgloseId != null;
+  const enUso = usoCount > 0;
+
+  const handleDeleteDesglose = async () => {
+    if (desgloseId == null) return;
+    setDeletingDesglose(true);
+    setDeleteDesgloseError('');
+    try {
+      await eliminarDesgloseCuenta(proyectoId, desgloseId);
+      setShowDeleteDesglose(false);
+      onBack?.();
+    } catch (e) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setDeleteDesgloseError(err.response?.data?.message || 'No se pudo eliminar el desglose');
+    } finally {
+      setDeletingDesglose(false);
+    }
+  };
+
   const gearMenu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -663,6 +688,31 @@ export function DesgloseView({
         <DropdownMenuItem onClick={() => setPrintOpen(true)} disabled={rows.length === 0}>
           <Printer className="mr-2 h-4 w-4" /> Imprimir / PDF
         </DropdownMenuItem>
+        {canDelete && (
+          <>
+            <DropdownMenuSeparator />
+            {enUso ? (
+              <>
+                <DropdownMenuItem disabled className="text-muted-foreground">
+                  <Trash2 className="mr-2 h-4 w-4" /> Eliminar desglose
+                </DropdownMenuItem>
+                <div className="flex items-start gap-1.5 px-2 py-1.5 text-xs text-muted-foreground">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    No se puede borrar: {usoCount} {usoCount === 1 ? 'cuenta usa' : 'cuentas usan'} este desglose.
+                  </span>
+                </div>
+              </>
+            ) : (
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDesglose(true)}
+                className="text-error focus:text-error"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Eliminar desglose
+              </DropdownMenuItem>
+            )}
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -953,6 +1003,29 @@ export function DesgloseView({
         itbmsTasa={itbmsTasa}
         proyectoNombre={proyectoNombre}
       />
+
+      <AlertDialog open={showDeleteDesglose} onOpenChange={(o) => { if (!o) { setShowDeleteDesglose(false); setDeleteDesgloseError(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este desglose?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará “{titulo}” y sus filas. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteDesgloseError && <p className="text-sm text-error">{deleteDesgloseError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingDesglose}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteDesglose(); }}
+              disabled={deletingDesglose}
+              className="bg-error text-white hover:bg-error/90"
+            >
+              {deletingDesglose && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={indentConfirm !== null} onOpenChange={(o) => { if (!o) setIndentConfirm(null); }}>
         <AlertDialogContent>
