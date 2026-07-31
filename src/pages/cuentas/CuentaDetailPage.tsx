@@ -24,7 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft, Check, Table2 } from 'lucide-react';
+import {
+  Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft, Check, Table2, ChevronRight,
+} from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type {
@@ -80,6 +82,9 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
 
   const [showEdit, setShowEdit] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
+  /** El desglose de cuenta es una pantalla propia, no una sección del detalle:
+   *  hay desgloses de cientos de filas. Se entra desde su documento. */
+  const [verCuadro, setVerCuadro] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -99,6 +104,22 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
   }
 
   const LOCKED = ['aprobada', 'pagada', 'aprobada_institucion', 'aprobada_contraloria'].includes(cuenta.estado);
+
+  if (verCuadro && cuenta.desglose_id != null) {
+    // Sin tope de ancho: el cuadro son 18 columnas y aquí toda la pantalla
+    // sirve para reducir el desplazamiento horizontal.
+    return (
+      <div className="w-full">
+        <CuadroCuenta
+          cuentaId={cuentaId}
+          cuentaNumero={cuenta.numero}
+          proyectoNombre={cuenta.proyecto_nombre}
+          onBack={() => { setVerCuadro(false); load(); }}
+          onSaved={load}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-4">
@@ -218,18 +239,16 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
         </Card>
       </div>
 
-      {/* Cuadro de cuenta (solo cuentas detalladas armadas desde un desglose) */}
-      {cuenta.desglose_id != null && (
-        <CuadroCuenta cuentaId={cuentaId} onSaved={load} />
-      )}
-
       {/* Documentos de la cuenta */}
       <DocumentosSection
         cuentaId={cuentaId}
         adjuntos={cuenta.adjuntos}
         desglose={cuenta.desglose ?? null}
+        avancePeriodo={cuenta.monto_total}
+        avancePorcentaje={cuenta.avance_porcentaje}
         puedeCambiarDesglose={!LOCKED && !!cuenta.es_primera_cuenta}
         hayDesgloseOficial={cuenta.desglose_oficial_id != null}
+        onAbrirDesglose={() => setVerCuadro(true)}
         onChanged={load}
       />
 
@@ -260,14 +279,19 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
 // sección es la de los soportes.
 
 function DocumentosSection({
-  cuentaId, adjuntos, desglose, puedeCambiarDesglose, hayDesgloseOficial, onChanged,
+  cuentaId, adjuntos, desglose, avancePeriodo, avancePorcentaje,
+  puedeCambiarDesglose, hayDesgloseOficial, onAbrirDesglose, onChanged,
 }: {
   cuentaId: number;
   adjuntos: CuentaDetail['adjuntos'];
   desglose: CuentaDesgloseFicha | null;
+  /** Lo ya registrado en el desglose para este periodo, para el resumen. */
+  avancePeriodo: string;
+  avancePorcentaje: string | null;
   /** Activar o quitar el desglose solo se permite en la primera cuenta. */
   puedeCambiarDesglose: boolean;
   hayDesgloseOficial: boolean;
+  onAbrirDesglose: () => void;
   onChanged: () => void;
 }) {
   const [uploading, setUploading] = useState<File | null>(null);
@@ -374,7 +398,13 @@ function DocumentosSection({
         )}
 
         {desglose && (
-          <div className="mb-1.5 flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={onAbrirDesglose}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrirDesglose(); } }}
+            className="mb-1.5 flex cursor-pointer items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm transition-colors hover:border-primary/35"
+          >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-navy/25 bg-navy/10 text-navy">
               <Table2 className="h-3.5 w-3.5" />
             </span>
@@ -382,6 +412,10 @@ function DocumentosSection({
               <span className="block truncate">{desglose.descripcion}</span>
               <span className="block text-xs text-muted-foreground tabular-nums">
                 {desglose.filas} fila{desglose.filas === 1 ? '' : 's'} · {formatMonto(desglose.total)}
+                {' · avance del periodo '}{formatMonto(avancePeriodo)}
+                {avancePorcentaje != null && avancePorcentaje !== ''
+                  ? ` (${Number(avancePorcentaje).toFixed(2)}%)`
+                  : ''}
               </span>
             </span>
             {puedeCambiarDesglose && (
@@ -390,12 +424,13 @@ function DocumentosSection({
                 size="icon"
                 className="h-7 w-7"
                 aria-label="Quitar desglose"
-                onClick={() => setConfirmQuitar(true)}
+                onClick={(e) => { e.stopPropagation(); setConfirmQuitar(true); }}
                 disabled={desgloseBusy}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           </div>
         )}
 

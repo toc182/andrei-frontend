@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { DesgloseView } from '@/components/desglose/DesgloseView';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -178,6 +179,7 @@ export default function CuentasDesglosesTab({
         proyectoNombre={proyectoNombre}
         desgloseId={editando.id}
         usoCount={editando.cuentasCount}
+        puedeEliminar={editando.tipo !== 'oficial'}
         titulo={editando.descripcion}
         onBack={() => { setEditando(null); onAbiertoChange?.(false); load(); }}
       />
@@ -228,6 +230,16 @@ export default function CuentasDesglosesTab({
                 >
                   <TableCell className="px-4 py-2.5 font-medium">
                     {d.descripcion}
+                    {d.tipo === 'oficial' && (
+                      <Badge className="ml-2 border border-navy/30 bg-navy/10 text-navy">
+                        Oficial
+                      </Badge>
+                    )}
+                    {d.cuentasCount > 0 && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {d.cuentasCount} {d.cuentasCount === 1 ? 'cuenta lo usa' : 'cuentas lo usan'}
+                      </span>
+                    )}
                     {d.copiadoDeId != null && (
                       <span className="ml-2 text-xs font-normal text-muted-foreground">
                         copiado de {fuentes.find((o) => o.id === d.copiadoDeId)?.descripcion

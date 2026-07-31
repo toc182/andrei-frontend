@@ -88,6 +88,28 @@ export function calcLinea(l: CuadroLinea, contenedor: boolean, depth: number): L
   };
 }
 
+// ── Límites de la cantidad del periodo ──────────────────────────────────
+// No se puede registrar más de lo que falta por ejecutar (presupuesto menos
+// lo de periodos anteriores) ni cantidades negativas. La regla vive aquí,
+// pura, y el backend la repite antes de guardar.
+
+/** Lo que todavía cabe registrar en este periodo. Nunca negativa. */
+export const cantidadDisponible = (l: CuadroLinea): number =>
+  Math.max(0, (l.cantidadPresupuesto ?? 0) - l.cantidadAnterior);
+
+export type CantidadError = 'invalida' | 'negativa' | 'excede';
+
+/** Tolerancia por el redondeo binario al teclear decimales. */
+const EPS = 1e-9;
+
+/** Motivo por el que la cantidad no sirve, o null si está bien. */
+export function validarCantidad(valor: number, l: CuadroLinea): CantidadError | null {
+  if (!Number.isFinite(valor)) return 'invalida';
+  if (valor < 0) return 'negativa';
+  if (valor > cantidadDisponible(l) + EPS) return 'excede';
+  return null;
+}
+
 export interface CuadroTotales {
   presupuesto: number;
   anterior: number;

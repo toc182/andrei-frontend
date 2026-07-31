@@ -58,6 +58,9 @@ interface DesgloseViewProps {
   desgloseId?: number;
   /** Cuántas cuentas usan este desglose; si > 0, no se puede borrar. */
   usoCount?: number;
+  /** El OFICIAL se abre desde Cuentas pero no se borra desde ahí: pertenece a
+   *  Información. */
+  puedeEliminar?: boolean;
   /** Encabezado de la sección; por defecto el de Información. */
   titulo?: string;
   /** Volver al listado. Se dibuja como el botón de flecha de CuentaDetailPage:
@@ -88,7 +91,8 @@ interface LoadError {
 const HEADER_CELL = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
 export function DesgloseView({
-  proyectoId, proyectoNombre, desgloseId, usoCount = 0, titulo = 'Desglose del Proyecto', onBack,
+  proyectoId, proyectoNombre, desgloseId, usoCount = 0, puedeEliminar = true,
+  titulo = 'Desglose del Proyecto', onBack,
 }: DesgloseViewProps) {
   const [rows, setRows] = useState<DesgloseRow[]>([]);
   const [meta, setMeta] = useState<DesgloseMeta | null>(null);
@@ -644,7 +648,7 @@ export function DesgloseView({
   const [showDeleteDesglose, setShowDeleteDesglose] = useState(false);
   const [deletingDesglose, setDeletingDesglose] = useState(false);
   const [deleteDesgloseError, setDeleteDesgloseError] = useState('');
-  const canDelete = desgloseId != null;
+  const canDelete = desgloseId != null && puedeEliminar;
   const enUso = usoCount > 0;
 
   const handleDeleteDesglose = async () => {

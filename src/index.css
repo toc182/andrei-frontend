@@ -72,6 +72,12 @@
   --color-grupo-1: #CFDAEC;
   --color-grupo-2: #E3EAF5;
   --color-grupo-3: #F0F4FB;
+
+  /* Cuadro de cuenta: las DOS únicas líneas de su retícula. `grid` es la
+     línea fina entre celdas; `line` es la fuerte del encabezado, el marco
+     exterior y el cierre contra los totales. Ver §23. */
+  --color-cuadro-grid: #DDE3EA;
+  --color-cuadro-line: #94A3B8;
 }
 
 /* === DARK MODE CONTENT OVERRIDE === */
@@ -115,6 +121,9 @@
   --color-grupo-1: #294066;
   --color-grupo-2: #324d78;
   --color-grupo-3: #3a5a8c;
+
+  --color-cuadro-grid: oklch(30.5% 0.026 258);
+  --color-cuadro-line: oklch(48.0% 0.030 258);
 }
 
 /* === BASE LAYER === */

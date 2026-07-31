@@ -1,7 +1,8 @@
 // Gate del cálculo del Cuadro de Cuenta (avance por fila).
 // cd andrei-frontend && npx tsx scripts/cuadro.spec.ts
 import {
-  calcLinea, calcTotales, depthMap, parentsSet, esContenedor, type CuadroLinea,
+  calcLinea, calcTotales, depthMap, parentsSet, esContenedor,
+  cantidadDisponible, validarCantidad, type CuadroLinea,
 } from '../src/lib/cuadroModel';
 
 let passed = 0; let failed = 0;
@@ -65,6 +66,32 @@ const L = (over: Partial<CuadroLinea>): CuadroLinea => ({
   ok(t.presupuesto === 25000 && t.este === 15000, 'totales: presupuesto y este periodo');
   ok(Math.abs(t.pctPeriodo - 0.6) < 1e-9, 'totales: % periodo = 15000/25000');
   ok(t.fecha === 15000 && Math.abs(t.pctTotal - 0.6) < 1e-9, 'totales: total a la fecha y su %');
+}
+
+// ---- límites de la cantidad del periodo ----
+{
+  const l = L({ cantidadPresupuesto: 50, precioUnitario: 1, cantidadAnterior: 30 });
+  ok(cantidadDisponible(l) === 20, 'disponible = presupuesto − anterior');
+  ok(validarCantidad(20, l) === null, 'cabe exactamente lo disponible');
+  ok(validarCantidad(20.0001, l) === 'excede', 'no cabe más de lo disponible');
+  ok(validarCantidad(-1, l) === 'negativa', 'no se aceptan negativos');
+  ok(validarCantidad(NaN, l) === 'invalida', 'texto que no es número es inválido');
+  ok(validarCantidad(0, l) === null, 'cero es válido');
+}
+{
+  // Fila ya completada en periodos anteriores: no cabe nada más.
+  const l = L({ cantidadPresupuesto: 10, cantidadAnterior: 10 });
+  ok(cantidadDisponible(l) === 0 && validarCantidad(0.01, l) === 'excede', 'fila completa no admite más');
+}
+{
+  // Sobre-ejecución heredada: disponible se queda en 0, nunca negativo.
+  const l = L({ cantidadPresupuesto: 10, cantidadAnterior: 12 });
+  ok(cantidadDisponible(l) === 0, 'disponible nunca es negativo');
+}
+{
+  // El redondeo binario no debe disparar el error: 0.1+0.2 === 0.30000000000000004
+  const l = L({ cantidadPresupuesto: 0.3, cantidadAnterior: 0 });
+  ok(validarCantidad(0.1 + 0.2, l) === null, 'la tolerancia absorbe el redondeo binario');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

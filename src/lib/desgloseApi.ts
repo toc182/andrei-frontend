@@ -106,6 +106,8 @@ export interface DesgloseComentario {
 export interface DesgloseCuenta {
   id: number;
   descripcion: string;
+  /** 'oficial' = el desglose del proyecto (Información); no se borra desde Cuentas. */
+  tipo: 'oficial' | 'cuentas';
   fecha: string | null; // YYYY-MM-DD
   /** Desglose del que se copió; null = creado en blanco. */
   copiadoDeId: number | null;

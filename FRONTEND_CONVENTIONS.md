@@ -40,6 +40,7 @@
 20. [Feature-specific badge and row patterns](#20-feature-specific-patterns)
 21. [In-page secondary navigation](#21-in-page-secondary-navigation)
 22. [Desglose — árbol editable de precios](#22-desglose)
+23. [Cuadro de cuenta — tabla-documento ancha](#23-cuadro-de-cuenta)
 
 ---
 
@@ -1389,6 +1390,44 @@ When a single page or subview needs to hold more than one distinct body of conte
 - Saving is shared: `replaceItems()` in the route is the single definition of "save a desglose" for both kinds.
 
 **Reference:** `src/components/desglose/DesgloseView.tsx` (modes, selection, history, ITBMS, toolbar), `DesgloseTableRow.tsx` (cell open/commit, hover ＋/✕, group bands, priced sections), `desgloseModel.ts` + `scripts/desglose.spec.ts` (the pure, gated tree ops incl. `hasChildren`/`rowTotal`), `desglosePrint.ts` + `scripts/desglose-print.spec.ts` (print pages), `desgloseExcel.ts` (xlsx export), `src/pages/cuentas/CuentasDesglosesTab.tsx` (listado + comentarios), and backend `routes/desgloses.ts` + migrations `141_desglose_itbms.sql`, `142_desgloses_cuentas.sql`.
+
+---
+
+## 23. Cuadro de cuenta
+
+**Source:** `src/pages/cuentas/CuadroCuenta.tsx`. El "Desglose de cuenta": el Cuadro de Presentación de Cuenta (tipo ETESA) — 18 columnas, cinco bloques de avance, cientos de filas posibles. Es el patrón de referencia para cualquier **tabla-documento ancha** que haya que reproducir dentro de la app.
+
+### Pantalla propia, no sección
+
+- Se abre desde la fila de su documento en "Documentos de la cuenta" y se sale con la flecha suelta (`ArrowLeft`, ghost redonda, igual que `CuentaDetailPage`). Nunca desplegada dentro del detalle: con cientos de filas aplasta la página y obliga a bajar hasta el final para llegar a la barra horizontal.
+- Encabezado `PageHeader` + acción primaria ("Guardar avance") a la derecha; debajo, una fila de herramientas con los KPI a la izquierda y los controles a la derecha.
+
+### El panel se lleva los dos scrolls
+
+- La tabla vive dentro de la Card en un `ScrollArea` de altura `max-h-[min(68vh,620px)]`. **La barra horizontal queda al pie del panel**, siempre alcanzable — ésa es la razón de ser del panel, no la estética.
+- Se compone con las **primitivas de Radix** (`ScrollAreaPrimitive.Root` / `.Viewport` + los dos `<ScrollBar>` de `ui/scroll-area`), no con el `<ScrollArea>` de shadcn: ése solo monta la barra vertical y aquí hacen falta las dos. `type="always"` mantiene la horizontal a la vista.
+- **No tocar el envoltorio `display:table` que Radix inyecta dentro del Viewport.** Es lo que hace que el ancho real de la tabla llegue al viewport; forzarlo a `block` deja el envoltorio del ancho de la ventana y **la barra horizontal desaparece**.
+- Las dos barras (y el `Corner`) van con `z-50`: el encabezado y el pie fijos viven en `z-30`/`z-40` dentro del viewport y, sin eso, las barras quedan escondidas detrás de ellos.
+- Encabezado pegado arriba (`sticky`, dos filas: `top-0` y `top-[30px]`). La altura de la primera fila es exacta por construcción (16 de línea + 12 de padding + 1 de borde = 29 ≤ `h-[30px]`); si se cambia el padding o el tamaño de letra hay que rehacer ese `top`, o quedan rendijas de un píxel.
+- **Los totales van pegados al pie** (`sticky bottom-[30px]` / `bottom-0`), con las mismas líneas fuertes del encabezado. Las dos filas miden exactamente 30px por construcción, igual que el encabezado; ése es el único motivo por el que los `bottom` pueden ser literales. La última fila del cuerpo va con `border-b-0`: la línea que cierra el cuerpo la dibuja el borde superior del pie, que siempre está a la vista — si la dibujaran las dos, se verían pegadas.
+- **La pantalla no lleva tope de ancho.** Son 18 columnas; todo el ancho disponible es menos desplazamiento horizontal.
+- Columnas congeladas: N° (`left-0`, 68px) y Actividades (`left-[68px]`, 300px), con anchos fijos — `sticky` necesita un `left` conocido. Nada de sombra sobre la orilla: una sombra difusa junto a una línea de 1px se lee como borde doble y borroso.
+
+### La retícula: una regla, dos colores
+
+1. **Cada línea la dibuja UNA sola celda**: la vertical es el `border-r`, la horizontal el `border-b`. Ninguna celda dibuja la del vecino, así que nunca hay dos líneas pegadas.
+2. **Última columna sin `border-r` y última fila sin `border-b`** (`[&>*:last-child]:border-r-0`): el marco exterior lo pone la Card.
+3. **Solo dos colores**, ambos tokens de `index.css`: `--color-cuadro-grid` para la retícula fina y `--color-cuadro-line` para las líneas fuertes — encabezado, marco de la Card y el cierre del cuerpo contra los totales. La orilla de las columnas congeladas usa la fina en el cuerpo y la fuerte solo en el encabezado.
+4. **Dentro de una banda de grupo no hay líneas verticales** (`[&>td]:border-r-transparent`): la banda es un bloque limpio. Se conserva la celda (no `colSpan`) para que las dos columnas congeladas sigan ancladas.
+5. `border-separate border-spacing-0` — nunca `border-collapse`, que rompe el pintado de bordes en celdas `sticky`.
+
+Bandas de grupo: los mismos `grupoBgClass`/`padClass` de §22, para que el cuadro y el desglose se lean como el mismo documento.
+
+### Precisión
+
+- El único dato de entrada por fila es la **cantidad** del periodo; % y valores se calculan (ver `cuadroModel.ts`).
+- **Límites de esa cantidad**: nunca negativa y nunca mayor que lo disponible (presupuesto − ejecutado hasta el periodo anterior). La regla es una función pura (`validarCantidad`, gate en `scripts/cuadro.spec.ts`), la celda inválida se marca con `border-error` y bloquea Guardar, y **el backend la repite** en `PUT /cuentas/:id/cuadro` — la validación de pantalla es cortesía, la del servidor es la que protege el dato.
+- Los decimales del % se suben y bajan con un stepper **− / +**, mínimo 2 y máximo 10. Nunca una lista de valores fijos: la entidad pide la precisión que le da la gana y lo que importa es que las sumas cuadren a la vista.
 
 ---
 
