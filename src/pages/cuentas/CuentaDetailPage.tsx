@@ -267,8 +267,9 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
           </CardContent>
         </Card>
 
-        {/* Historial — lista compacta con scroll propio; las acciones viven en
-            los menús, no en botones sueltos. */}
+        {/* Historial — lista compacta con scroll propio. El ⋯ de la card es el
+            único de la sección: lo de cada evento vive dentro de la línea
+            abierta (ver CuentaTimeline). */}
         <Card className="flex flex-col">
           <CardContent className="flex min-h-0 flex-1 flex-col p-5">
             <CardHead titulo="Historial">

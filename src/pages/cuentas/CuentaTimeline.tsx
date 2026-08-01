@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
@@ -21,14 +22,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CuentaEstado, CuentaEvento } from '@/types/api';
 import api from '@/services/api';
@@ -69,6 +64,33 @@ function toDateInputValue(iso: string): string {
   // The created_at string is "YYYY-MM-DD HH:MM:SS" (TIMESTAMP without TZ).
   // Take its first 10 chars so we don't shift days via timezone math.
   return iso.slice(0, 10);
+}
+
+/** Acción de una línea abierta del historial: texto pequeño, sin relleno,
+ *  para que no compita con el titular del evento. Frena el clic porque la
+ *  fila entera es un botón que abre y cierra. */
+function EventoAccion({
+  icon: Icon, destructiva, onClick, children,
+}: {
+  icon: LucideIcon;
+  destructiva?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={cn(
+        'h-auto gap-1.5 px-0 py-0 text-xs font-medium text-muted-foreground hover:bg-transparent',
+        destructiva ? 'hover:text-error' : 'hover:text-navy',
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {children}
+    </Button>
+  );
 }
 
 export default function CuentaTimeline({
@@ -120,7 +142,7 @@ export default function CuentaTimeline({
             <div
               key={ev.id}
               className={cn(
-                'group grid grid-cols-[auto_1fr_auto] items-start gap-x-2.5 rounded-md py-1.5 pl-1 pr-0.5',
+                'grid grid-cols-[auto_1fr] items-start gap-x-2.5 rounded-md py-1.5 pl-1 pr-1.5',
                 'cursor-pointer transition-colors hover:bg-slate-50',
                 abierto && 'bg-slate-50',
               )}
@@ -159,30 +181,21 @@ export default function CuentaTimeline({
                     {ev.comentario && <p className="whitespace-pre-line">{ev.comentario}</p>}
                   </div>
                 )}
-              </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Acciones del evento"
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-6 w-6 text-muted-foreground opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
-                  >
-                    <MoreVertical className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenuItem onSelect={() => setEditing(ev)}>
-                    <Pencil className="mr-2 h-3.5 w-3.5" /> Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-error" onSelect={() => setDeletingId(ev.id)}>
-                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                {/* Editar y eliminar viven dentro de la línea abierta: la card
+                    ya tiene su propio menú ⋯ arriba y un segundo disparador
+                    idéntico por fila se leía como un error. */}
+                {abierto && (
+                  <div className="mt-2 flex gap-3.5 pl-2.5">
+                    <EventoAccion icon={Pencil} onClick={() => setEditing(ev)}>
+                      Editar
+                    </EventoAccion>
+                    <EventoAccion icon={Trash2} destructiva onClick={() => setDeletingId(ev.id)}>
+                      Eliminar
+                    </EventoAccion>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
