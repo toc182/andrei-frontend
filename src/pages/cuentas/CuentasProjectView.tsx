@@ -9,13 +9,14 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Plus, ArrowRight, ArrowLeft, AlertTriangle, FileText, Receipt } from 'lucide-react';
+import { Plus, ArrowRight, ArrowLeft, AlertTriangle, FileText, Receipt, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
 import { EmptyState } from '@/components/shell';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
 import { getDesglosesCuentas } from '@/lib/desgloseApi';
+import { crearCuentaDetalle } from '@/lib/cuadroApi';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import { formatMonto, formatPeriodoParts, waitColor } from './config';
 import CreateCuentaDialog from './CreateCuentaDialog';
@@ -50,6 +51,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   const [showCreate, setShowCreate] = useState(false);
   const [showNuevaCuenta, setShowNuevaCuenta] = useState(false);
   const [flowStep, setFlowStep] = useState<'tipo' | 'desglose'>('tipo');
+  const [creando, setCreando] = useState(false);
   // Sin pestañas: la página principal es la lista de cuentas; "Desgloses de
   // Cuenta" es una sub-página a la que se entra y se regresa (view).
   const [view, setView] = useState<'main' | 'desgloses'>('main');
@@ -128,10 +130,31 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
       ? 'desglose'
       : 'manual';
 
-  const handleNuevaCuenta = () => {
-    if (modo === 'empty') { setFlowStep('tipo'); setShowNuevaCuenta(true); } // primera cuenta: elegir tipo
-    else if (modo === 'desglose') { setFlowStep('desglose'); setShowNuevaCuenta(true); }
-    else setShowCreate(true);
+  // El desglose con el que se viene llevando el proyecto: el de la última
+  // cuenta que lo tenga. Todas comparten el mismo (un proyecto no mezcla), así
+  // que sirve de origen para la siguiente.
+  const desgloseEnUso = [...sorted].reverse().find((c) => c.desglose_id != null)?.desglose_id ?? null;
+
+  const handleNuevaCuenta = async () => {
+    if (modo === 'empty') { setFlowStep('tipo'); setShowNuevaCuenta(true); return; } // primera cuenta: elegir tipo
+    if (modo === 'manual') { setShowCreate(true); return; }
+
+    // Modo desglose: el proyecto ya decidió con cuál se llevan las cuentas, así
+    // que la siguiente arranca del mismo sin preguntar. El "hasta anterior" se
+    // encadena por row_uid, de modo que las cantidades acumuladas cuadran.
+    if (desgloseEnUso == null) { setFlowStep('desglose'); setShowNuevaCuenta(true); return; }
+    setCreando(true);
+    try {
+      const { id } = await crearCuentaDetalle({ proyecto_id: projectId, desglose_id: desgloseEnUso });
+      if (onCuentaClick) onCuentaClick(id);
+      else load();
+    } catch {
+      // El desglose pudo desactivarse desde la última cuenta: que lo elija.
+      setFlowStep('desglose');
+      setShowNuevaCuenta(true);
+    } finally {
+      setCreando(false);
+    }
   };
 
   // Sub-página: Desgloses de Cuenta (se entra y se regresa; no es pestaña par).
@@ -180,9 +203,11 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
                 Desgloses de Cuenta{nDesgloses > 0 ? ` (${nDesgloses})` : ''}
               </Button>
             )}
-            <Button onClick={handleNuevaCuenta}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva Cuenta
+            <Button onClick={handleNuevaCuenta} disabled={creando}>
+              {creando
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <Plus className="mr-2 h-4 w-4" />}
+              Cuenta
             </Button>
           </div>
         )}
