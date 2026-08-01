@@ -331,13 +331,13 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[1%] whitespace-nowrap px-2 py-2">Cuenta</TableHead>
-                <TableHead className="w-[1%] whitespace-nowrap px-2 py-2">Período</TableHead>
-                <TableHead className="px-2 py-2">Avance</TableHead>
-                <TableHead className="w-[1%] whitespace-nowrap text-center pl-2 pr-1 py-2">%</TableHead>
-                <TableHead className="w-[1%] whitespace-nowrap text-center px-1 py-2">Días</TableHead>
-                <TableHead className="w-[1%] whitespace-nowrap text-center pl-1 pr-2 py-2">Monto</TableHead>
+              <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                <TableHead className="w-[1%] whitespace-nowrap py-2.5 pl-4 pr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cuenta</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Período</TableHead>
+                <TableHead className="px-2 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Avance</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap py-2.5 pl-2 pr-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">%</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap px-1 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Días</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap py-2.5 pl-1 pr-4 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Monto</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -421,7 +421,7 @@ function SectionBand({ label }: { label: string }) {
     <TableRow className="bg-muted/50 hover:bg-muted/50">
       <TableCell
         colSpan={6}
-        className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground py-2 px-2"
+        className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground py-2 px-4"
       >
         {label}
       </TableCell>
@@ -449,7 +449,7 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
       className={`group cursor-pointer hover:bg-row-hover ${obs ? 'bg-error/[0.04]' : ''}`}
       onClick={onClick}
     >
-      <TableCell className="w-[1%] whitespace-nowrap px-2 py-3">
+      <TableCell className="w-[1%] whitespace-nowrap py-3 pl-4 pr-2">
         <div className="flex items-center gap-2">
           {obs && <AlertTriangle className="h-3.5 w-3.5 text-error shrink-0 group-hover:text-white" />}
           <span className="font-semibold text-sm group-hover:text-white">Cuenta {c.numero}</span>
@@ -487,7 +487,7 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
           {isPagada ? '—' : (days != null ? `${days}d` : '—')}
         </span>
       </TableCell>
-      <TableCell className="w-[1%] whitespace-nowrap text-center text-sm font-semibold tabular-nums pl-1 pr-2 py-3 group-hover:text-white">
+      <TableCell className="w-[1%] whitespace-nowrap text-center text-sm font-semibold tabular-nums pl-1 pr-4 py-3 group-hover:text-white">
         {formatMonto(c.monto_total)}
       </TableCell>
     </TableRow>
