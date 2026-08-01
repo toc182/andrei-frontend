@@ -25,8 +25,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft, Check, Table2, ChevronRight,
+  Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft, ArrowRight, Check, Table2,
+  ChevronRight, MoreVertical, RefreshCw,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { PageHeader } from '@/components/shell/PageHeader';
 import api from '@/services/api';
 import type {
@@ -39,7 +47,6 @@ import CuentaTimeline from './CuentaTimeline';
 import CuadroCuenta from './CuadroCuenta';
 import {
   formatMonto,
-  formatDateExact,
   getFlow,
   getBuckets,
   bucketLabel,
@@ -60,6 +67,36 @@ function calcMontoAPagar(monto: string, ajustes: CuentaAjuste[]): number {
     const m = Number(aj.monto) || 0;
     return acc + (aj.tipo === 'aumento' ? m : -m);
   }, base);
+}
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/** "01 jul" — el año va aparte porque casi siempre es el mismo en los dos extremos. */
+function formatDiaMes(s: string | null | undefined): string {
+  const m = s ? /^(\d{4})-(\d{2})-(\d{2})/.exec(s) : null;
+  if (!m) return '—';
+  return `${m[3]} ${MESES[Number(m[2]) - 1]}`;
+}
+
+/** El año del periodo: uno solo, o "2026–2027" si cruza de año. */
+function anioPeriodo(inicio: string | null | undefined, fin: string | null | undefined): string {
+  const a = inicio ? inicio.slice(0, 4) : '';
+  const b = fin ? fin.slice(0, 4) : '';
+  if (!a && !b) return '';
+  if (!a || !b || a === b) return a || b;
+  return `${a}–${b}`;
+}
+
+/** Encabezado común de todas las cards del detalle: eyebrow en teal a la
+ *  izquierda y una acción o etiqueta a la derecha. Mantenerlo idéntico en las
+ *  cinco cards es lo que hace que la página se lea como una sola pieza. */
+function CardHead({ titulo, children }: { titulo: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex min-h-6 items-center justify-between gap-3">
+      <span className="text-[11px] font-bold uppercase tracking-[0.09em] text-teal">{titulo}</span>
+      {children}
+    </div>
+  );
 }
 
 function parseLocalDate(s: string | null | undefined): Date | null {
@@ -85,6 +122,8 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
   /** El desglose de cuenta es una pantalla propia, no una sección del detalle:
    *  hay desgloses de cientos de filas. Se entra desde su documento. */
   const [verCuadro, setVerCuadro] = useState(false);
+  /** El campo de "Agregar actualización" del historial, abierto desde su menú. */
+  const [agregandoEvento, setAgregandoEvento] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -148,109 +187,139 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
       {/* Datos + Monto + Historial — tres tercios en pantallas anchas. El
           historial lleva su propio scroll para no estirar la fila. */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-5">
-            <div className="grid grid-cols-2 items-center gap-x-3 gap-y-1.5 text-sm">
-              <span className="text-right text-muted-foreground">Estado:</span>
+        {/* Periodo — el rango es el dato principal; lo demás cuelga debajo. */}
+        <Card className="flex flex-col">
+          <CardContent className="flex flex-1 flex-col p-5">
+            <CardHead titulo="Periodo de la cuenta">
               <CuentaEstadoBadge
                 estado={cuenta.estado}
                 clienteLabel={cuenta.cliente_abreviatura || cuenta.cliente_nombre}
-                className="justify-self-start"
               />
+            </CardHead>
 
-              <span className="text-right text-muted-foreground">Periodo inicio:</span>
-              <span className="tabular-nums">{formatDateExact(cuenta.periodo_inicio) || '—'}</span>
+            <div className="mt-2 flex items-baseline gap-2.5 text-xl font-semibold tabular-nums tracking-tight">
+              <span>{formatDiaMes(cuenta.periodo_inicio)}</span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 self-center text-slate-400" aria-hidden />
+              <span>{formatDiaMes(cuenta.periodo_fin)}</span>
+              {anioPeriodo(cuenta.periodo_inicio, cuenta.periodo_fin) && (
+                <span className="text-[13px] font-normal text-muted-foreground">
+                  {anioPeriodo(cuenta.periodo_inicio, cuenta.periodo_fin)}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              {(() => {
+                const d = daysBetween(cuenta.periodo_inicio, cuenta.periodo_fin);
+                return d != null ? `${d} días` : 'Sin periodo definido';
+              })()}
+            </p>
 
-              <span className="text-right text-muted-foreground">Periodo fin:</span>
-              <span className="tabular-nums">{formatDateExact(cuenta.periodo_fin) || '—'}</span>
+            <div className="my-3.5 h-px bg-border" />
 
-              <span className="text-right text-muted-foreground">Cantidad de días:</span>
-              <span className="tabular-nums">
-                {(() => {
-                  const d = daysBetween(cuenta.periodo_inicio, cuenta.periodo_fin);
-                  return d != null ? `${d}` : '—';
-                })()}
-              </span>
-
-              <span className="text-right text-muted-foreground">Avance:</span>
-              <span className="tabular-nums">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-muted-foreground">Avance de esta cuenta</span>
+              <span className="font-semibold tabular-nums text-navy">
                 {cuenta.avance_porcentaje != null && cuenta.avance_porcentaje !== ''
                   ? `${Number(cuenta.avance_porcentaje).toFixed(2)}%`
                   : '—'}
               </span>
-
-              <span className="text-right text-muted-foreground">Avance total hasta esta cuenta:</span>
-              <span className="tabular-nums">{Number(cuenta.avance_acumulado).toFixed(2)}%</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Monto bruto:
-                {cuenta.desglose_id != null && (
-                  <span className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-teal">
-                    <Table2 className="h-3 w-3" />
-                    Calculado del desglose
+        {/* Cálculo — mismo lenguaje del panel-recibo del diálogo de edición.
+            El Monto neto es el número héroe y se muestra SIEMPRE, con o sin
+            ajustes: es el que de verdad se cobra. */}
+        <Card className="flex flex-col">
+          <CardContent className="flex flex-1 flex-col p-5">
+            <CardHead titulo="Cálculo" />
+
+            <div className="mt-3 space-y-0.5">
+              <div className="flex items-baseline justify-between gap-3 py-0.5 text-sm">
+                <span className="text-muted-foreground">
+                  Monto bruto
+                  {cuenta.desglose_id != null && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 align-baseline text-[10.5px] font-bold uppercase tracking-wide text-teal">
+                      <Table2 className="h-3 w-3" />
+                      del desglose
+                    </span>
+                  )}
+                </span>
+                <span className="tabular-nums">{formatMonto(cuenta.monto_total)}</span>
+              </div>
+
+              {cuenta.ajustes.map((aj) => (
+                <div key={aj.id} className="flex items-baseline justify-between gap-3 py-0.5 text-sm">
+                  <span className="text-muted-foreground">{aj.descripcion}</span>
+                  <span className={cn('tabular-nums', aj.tipo === 'disminucion' ? 'text-error' : 'text-success')}>
+                    {aj.tipo === 'disminucion' ? '−' : '+'}{formatMonto(aj.monto)}
                   </span>
-                )}
-              </span>
-              <span className="tabular-nums">{formatMonto(cuenta.monto_total)}</span>
+                </div>
+              ))}
             </div>
 
-            {cuenta.ajustes.length > 0 && (
-              <>
-                <div className="mt-2 space-y-1.5">
-                  {cuenta.ajustes.map((aj) => (
-                    <div key={aj.id} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{aj.descripcion}:</span>
-                      <span className={cn('tabular-nums', aj.tipo === 'disminucion' && 'text-error')}>
-                        {aj.tipo === 'disminucion' ? '-' : ''}{formatMonto(aj.monto)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-3">
-                  <span>Monto a pagar:</span>
-                  <span className="tabular-nums">{formatMonto(calcMontoAPagar(cuenta.monto_total, cuenta.ajustes))}</span>
-                </div>
-              </>
-            )}
+            <div className="mt-auto flex items-baseline justify-between gap-3 border-t border-border pt-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-navy">Monto neto</span>
+              <span className="text-2xl font-bold tabular-nums tracking-tight text-navy">
+                {formatMonto(calcMontoAPagar(cuenta.monto_total, cuenta.ajustes))}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Historial */}
+        {/* Historial — lista compacta con scroll propio; las acciones viven en
+            los menús, no en botones sueltos. */}
         <Card className="flex flex-col">
           <CardContent className="flex min-h-0 flex-1 flex-col p-5">
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <h2 className="text-sm font-semibold">Historial</h2>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowTransition(true)}
-              >
-                Cambiar estado
-              </Button>
-            </div>
-            <CuentaTimeline cuentaId={cuentaId} eventos={cuenta.eventos} onChanged={load} />
+            <CardHead titulo="Historial">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Acciones del historial"
+                    className="-mr-1 h-6 w-6 text-muted-foreground"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setShowTransition(true)}>
+                    <RefreshCw className="mr-2 h-3.5 w-3.5" /> Cambiar estado
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setAgregandoEvento(true)}>
+                    <Plus className="mr-2 h-3.5 w-3.5" /> Agregar actualización
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHead>
+
+            <CuentaTimeline
+              cuentaId={cuentaId}
+              eventos={cuenta.eventos}
+              onChanged={load}
+              agregando={agregandoEvento}
+              onAgregandoChange={setAgregandoEvento}
+            />
           </CardContent>
         </Card>
       </div>
 
-      {/* Documentos de la cuenta */}
-      <DocumentosSection
-        cuentaId={cuentaId}
-        adjuntos={cuenta.adjuntos}
-        desglose={cuenta.desglose ?? null}
-        avancePeriodo={cuenta.monto_total}
-        avancePorcentaje={cuenta.avance_porcentaje}
-        puedeCambiarDesglose={!LOCKED && !!cuenta.es_primera_cuenta}
-        hayDesgloseOficial={cuenta.desglose_oficial_id != null}
-        onAbrirDesglose={() => setVerCuadro(true)}
-        onChanged={load}
-      />
+      {/* Documentos + avance del proyecto, a mitad y mitad */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <DocumentosSection
+          cuentaId={cuentaId}
+          adjuntos={cuenta.adjuntos}
+          desglose={cuenta.desglose ?? null}
+          avancePeriodo={cuenta.monto_total}
+          avancePorcentaje={cuenta.avance_porcentaje}
+          puedeCambiarDesglose={!LOCKED && !!cuenta.es_primera_cuenta}
+          hayDesgloseOficial={cuenta.desglose_oficial_id != null}
+          onAbrirDesglose={() => setVerCuadro(true)}
+          onChanged={load}
+        />
+        <AvanceProyectoCard cuenta={cuenta} />
+      </div>
 
       {/* Edit dialog */}
       <EditCuentaDialog
@@ -269,6 +338,81 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
         onDone={() => { setShowTransition(false); load(); }}
       />
     </div>
+  );
+}
+
+// ── Avance del proyecto ─────────────────────────────────────────────────
+//
+// El acumulado hasta esta cuenta, en dos tramos: lo que traían las cuentas
+// anteriores y lo que aporta ésta. Es el número que antes se perdía como una
+// fila más en la card de información.
+
+function AvanceProyectoCard({ cuenta }: { cuenta: CuentaDetail }) {
+  const total = Number(cuenta.avance_acumulado) || 0;
+  const esta = Number(cuenta.avance_porcentaje) || 0;
+  const previo = Math.max(0, total - esta);
+  // Las barras se recortan a 100 por si el acumulado se pasa (redondeos o
+  // una cuenta final que ajusta): el ancho no puede desbordar la pista.
+  const anchoPrevio = Math.min(100, previo);
+  const anchoEsta = Math.max(0, Math.min(100 - anchoPrevio, esta));
+
+  const ejecutado = cuenta.monto_acumulado;
+  const contrato = cuenta.proyecto_monto_total;
+
+  return (
+    <Card className="flex flex-col">
+      <CardContent className="flex flex-1 flex-col p-5">
+        <CardHead titulo="Avance del proyecto">
+          <Badge className="border border-navy/30 bg-navy/10 text-navy">Cuenta {cuenta.numero}</Badge>
+        </CardHead>
+
+        <div className="mt-2.5 flex items-baseline gap-2.5">
+          <span className="text-[32px] font-bold leading-none tabular-nums tracking-tight text-navy">
+            {total.toFixed(2)}%
+          </span>
+          <span className="text-[13px] text-muted-foreground">ejecutado a la fecha</span>
+        </div>
+
+        <div className="mt-3.5 flex h-3.5 overflow-hidden rounded-full bg-slate-300">
+          {anchoPrevio > 0 && (
+            <div className="h-full bg-avance-past" style={{ width: `${anchoPrevio}%` }} />
+          )}
+          {anchoEsta > 0 && (
+            <div className="h-full bg-avance-current" style={{ width: `${anchoEsta}%` }} />
+          )}
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-avance-past" aria-hidden />
+            Hasta la cuenta anterior
+            <span className="font-semibold tabular-nums text-foreground">{previo.toFixed(2)}%</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-avance-current" aria-hidden />
+            Esta cuenta
+            <span className="font-semibold tabular-nums text-foreground">{esta.toFixed(2)}%</span>
+          </span>
+        </div>
+
+        {(ejecutado != null || contrato != null) && (
+          <div className="mt-auto flex justify-between gap-3 border-t border-border pt-3 text-[13px] text-muted-foreground">
+            <span>
+              Cobrado{' '}
+              <span className="font-semibold tabular-nums text-foreground">
+                {ejecutado != null ? formatMonto(ejecutado) : '—'}
+              </span>
+            </span>
+            <span>
+              Contrato{' '}
+              <span className="font-semibold tabular-nums text-foreground">
+                {contrato != null ? formatMonto(contrato) : '—'}
+              </span>
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -359,8 +503,7 @@ function DocumentosSection({
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Documentos de la cuenta</h2>
+        <CardHead titulo="Documentos de la cuenta">
           <div className="flex items-center gap-2">
             {!desglose && puedeCambiarDesglose && hayDesgloseOficial && (
               <Button
@@ -391,10 +534,10 @@ function DocumentosSection({
               />
             </label>
           </div>
-        </div>
+        </CardHead>
 
         {desgloseError && (
-          <p className="mb-2 text-sm text-error">{desgloseError}</p>
+          <p className="mt-2 text-sm text-error">{desgloseError}</p>
         )}
 
         {desglose && (
@@ -403,7 +546,7 @@ function DocumentosSection({
             tabIndex={0}
             onClick={onAbrirDesglose}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrirDesglose(); } }}
-            className="mb-1.5 flex cursor-pointer items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm transition-colors hover:border-primary/35"
+            className="mt-3 flex cursor-pointer items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm transition-colors hover:border-primary/35"
           >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-navy/25 bg-navy/10 text-navy">
               <Table2 className="h-3.5 w-3.5" />
@@ -435,7 +578,7 @@ function DocumentosSection({
         )}
 
         {(adjuntos.length > 0 || uploading) && (
-          <div className="space-y-1.5">
+          <div className={cn('space-y-1.5', desglose ? 'mt-1.5' : 'mt-3')}>
             {adjuntos.map((a) => (
               <div key={a.id} className="flex items-center gap-3 bg-muted/40 border rounded-md px-3 py-2 text-sm">
                 <span className="flex-1 truncate">{a.nombre_original}</span>
@@ -463,7 +606,7 @@ function DocumentosSection({
         )}
 
         {!desglose && adjuntos.length === 0 && !uploading && (
-          <p className="py-2 text-sm text-muted-foreground">
+          <p className="mt-3 py-2 text-sm text-muted-foreground">
             Todavía no hay documentos.
           </p>
         )}

@@ -77,6 +77,10 @@ export function DatePicker({
             }
           }}
           defaultMonth={selected}
+          // Todos los meses con 6 semanas: sin esto el calendario cambia de
+          // alto según el mes (5 o 6 filas) y el popover se reacomoda solo al
+          // pasar de mes, saltando arriba y abajo bajo el cursor.
+          fixedWeeks
           className="bg-transparent"
         />
       </PopoverContent>

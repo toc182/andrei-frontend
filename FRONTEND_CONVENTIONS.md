@@ -41,6 +41,7 @@
 21. [In-page secondary navigation](#21-in-page-secondary-navigation)
 22. [Desglose — árbol editable de precios](#22-desglose)
 23. [Cuadro de cuenta — tabla-documento ancha](#23-cuadro-de-cuenta)
+24. [Cards de una página de detalle](#24-cards-de-detalle)
 
 ---
 
@@ -1428,6 +1429,20 @@ Bandas de grupo: los mismos `grupoBgClass`/`padClass` de §22, para que el cuadr
 - El único dato de entrada por fila es la **cantidad** del periodo; % y valores se calculan (ver `cuadroModel.ts`).
 - **Límites de esa cantidad**: nunca negativa y nunca mayor que lo disponible (presupuesto − ejecutado hasta el periodo anterior). La regla es una función pura (`validarCantidad`, gate en `scripts/cuadro.spec.ts`), la celda inválida se marca con `border-error` y bloquea Guardar, y **el backend la repite** en `PUT /cuentas/:id/cuadro` — la validación de pantalla es cortesía, la del servidor es la que protege el dato.
 - Los decimales del % se suben y bajan con un stepper **− / +**, mínimo 2 y máximo 10. Nunca una lista de valores fijos: la entidad pide la precisión que le da la gana y lo que importa es que las sumas cuadren a la vista.
+
+---
+
+## 24. Cards de detalle
+
+**Reference:** `src/pages/cuentas/CuentaDetailPage.tsx`. Una página de detalle es una rejilla de cards que se lee de un vistazo, no una lista de pares etiqueta-valor. Reglas para que no se vea apagada:
+
+- **Un solo encabezado para todas las cards**: eyebrow de 11px, `font-bold uppercase tracking-[0.09em] text-teal` a la izquierda, y a la derecha una sola cosa — la acción de la card, o una etiqueta de estado. Nada de `<h2>` en unas cards y eyebrow en otras: tres estilos de título en una pantalla es lo que la hace ver desordenada. `SectionHeader` (§7) sigue siendo para las secciones de la página, no para el interior de una card.
+- **Cada card tiene un dato principal y lo muestra grande**: el rango del periodo, el monto neto, el porcentaje de avance. Lo demás va debajo en `text-sm`. Si todos los valores de la card son del mismo tamaño, no hay card — hay una tabla.
+- **El número que importa se muestra siempre**, aunque su cálculo esté vacío: el Monto neto se pinta con cero ajustes igual que con cuatro. Esconderlo cuando no hay ajustes obliga a hacer la cuenta de cabeza.
+- **Cards de la misma fila con `flex flex-col`** y el bloque de cierre con `mt-auto`: así los totales de dos cards vecinas quedan a la misma altura aunque su contenido difiera.
+- **Barras de progreso acumulado**: pista `bg-slate-300`, tramo previo `bg-avance-past`, tramo de este periodo `bg-avance-current`, con leyenda de puntos. Los anchos se recortan a 100 entre los dos — un acumulado que se pase por redondeo no puede desbordar la pista.
+- **Acciones repetidas por fila van en un `DropdownMenu`**, no en una hilera de botones-icono: el disparador es un `MoreVertical` `h-6 w-6` invisible hasta el hover (`opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100`), y lleva `stopPropagation` si la fila entera es clicable. Los campos que solo se usan a veces (escribir una actualización) se abren desde ese menú en vez de ocupar sitio permanentemente.
+- **Filas expandibles**: la fila completa es `role="button"` con `aria-expanded`, abre solo una a la vez y el detalle aparece debajo con un borde izquierdo de 2px. El titular va truncado cuando está cerrada y completo cuando se abre.
 
 ---
 

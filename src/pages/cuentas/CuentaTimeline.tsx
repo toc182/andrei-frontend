@@ -21,7 +21,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AppDialog } from '@/components/shell/AppDialog';
-import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { CuentaEstado, CuentaEvento } from '@/types/api';
 import api from '@/services/api';
 import { ESTADO_CONFIG } from './config';
@@ -37,14 +45,18 @@ interface Props {
   cuentaId: number;
   eventos: CuentaEvento[];
   onChanged: () => void;
+  /** El campo para escribir se abre desde el menú de la card, no vive aquí. */
+  agregando?: boolean;
+  onAgregandoChange?: (v: boolean) => void;
 }
 
-const TYPE_STYLES: Record<string, { dot: string }> = {
-  creacion: { dot: 'border-teal' },
-  transicion: { dot: 'border-info' },
-  comentario: { dot: 'border-slate-300' },
-  edicion: { dot: 'border-warning' },
-};
+/** Titular de una línea del historial: lo que se lee sin abrirla. */
+function tituloEvento(ev: CuentaEvento): string {
+  if (ev.tipo === 'transicion') return estadoLabel(ev.estado_hacia);
+  if (ev.tipo === 'creacion') return ev.comentario?.split('\n')[0] || 'Cuenta creada';
+  if (ev.tipo === 'edicion') return ev.comentario?.split('\n')[0] || 'Cuenta editada';
+  return ev.comentario?.split('\n')[0] || 'Actualización';
+}
 
 function formatEventDate(s: string): string {
   const d = new Date(s);
@@ -59,12 +71,16 @@ function toDateInputValue(iso: string): string {
   return iso.slice(0, 10);
 }
 
-export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) {
+export default function CuentaTimeline({
+  cuentaId, eventos, onChanged, agregando = false, onAgregandoChange,
+}: Props) {
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
   const [editing, setEditing] = useState<CuentaEvento | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  /** Evento abierto; solo uno a la vez. */
+  const [expandido, setExpandido] = useState<number | null>(null);
 
   const postUpdate = async () => {
     if (!text.trim()) return;
@@ -72,6 +88,7 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
     try {
       await api.post(`/cuentas/${cuentaId}/comentario`, { comentario: text });
       setText('');
+      onAgregandoChange?.(false);
       onChanged();
     } finally {
       setPosting(false);
@@ -92,81 +109,108 @@ export default function CuentaTimeline({ cuentaId, eventos, onChanged }: Props) 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* Timeline — scroll propio: la card vive en una fila de tres tercios y
-          no debe estirarse con el largo del historial. */}
-      <div className="relative max-h-[220px] flex-1 overflow-y-auto pl-6">
+      {/* Lista compacta con scroll propio: la card vive en una fila de tres
+          tercios y no debe estirarse con el largo del historial. Cada línea
+          se abre al hacer clic para ver el detalle completo. */}
+      <div className="-mr-1.5 max-h-[200px] flex-1 space-y-0.5 overflow-y-auto pr-1.5">
         {eventos.map((ev, i) => {
-          const style = TYPE_STYLES[ev.tipo] || TYPE_STYLES.comentario;
-          const isLast = i === eventos.length - 1;
+          const abierto = expandido === ev.id;
+          const detalle = ev.tipo === 'transicion' || !!ev.comentario;
           return (
-            <div key={ev.id} className="relative pb-5 last:pb-0">
-              {/* Dot */}
-              <div className={`absolute -left-6 top-1 w-4 h-4 rounded-full border-2 bg-white ${style.dot}`} />
-              {/* Connector line to next event */}
-              {!isLast && (
-                <div className="absolute -left-[17px] top-5 -bottom-1 w-0.5 bg-border" />
+            <div
+              key={ev.id}
+              className={cn(
+                'group grid grid-cols-[auto_1fr_auto] items-start gap-x-2.5 rounded-md py-1.5 pl-1 pr-0.5',
+                'cursor-pointer transition-colors hover:bg-slate-50',
+                abierto && 'bg-slate-50',
               )}
+              role="button"
+              tabIndex={0}
+              aria-expanded={abierto}
+              onClick={() => setExpandido(abierto ? null : ev.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandido(abierto ? null : ev.id); }
+              }}
+            >
+              <span
+                className={cn(
+                  'mt-[7px] h-2.5 w-2.5 shrink-0 rounded-full',
+                  i === 0 ? 'bg-navy' : 'bg-slate-300',
+                )}
+                aria-hidden
+              />
 
-              {/* Meta */}
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-sm font-medium">{ev.creado_por_nombre}</span>
-                <span className="text-xs text-muted-foreground">{formatEventDate(ev.created_at)}</span>
-                <div className="ml-auto flex items-center gap-0.5">
+              <div className="min-w-0">
+                <p className={cn('text-[13px] font-medium leading-5', !abierto && 'truncate')}>
+                  {tituloEvento(ev)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatEventDate(ev.created_at)} · {ev.creado_por_nombre}
+                </p>
+
+                {abierto && detalle && (
+                  <div className="mt-1.5 space-y-1 border-l-2 border-border pl-2.5 text-xs text-muted-foreground">
+                    {ev.tipo === 'transicion' && (
+                      <p>
+                        {estadoLabel(ev.estado_desde)} →{' '}
+                        <strong className="font-medium text-foreground">{estadoLabel(ev.estado_hacia)}</strong>
+                      </p>
+                    )}
+                    {ev.comentario && <p className="whitespace-pre-line">{ev.comentario}</p>}
+                  </div>
+                )}
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Editar evento"
-                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                    onClick={() => setEditing(ev)}
+                    aria-label="Acciones del evento"
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-6 w-6 text-muted-foreground opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
                   >
-                    <Pencil className="h-3 w-3" />
+                    <MoreVertical className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Eliminar evento"
-                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeletingId(ev.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="text-sm text-muted-foreground leading-relaxed">
-                {ev.tipo === 'transicion' && (
-                  <span>
-                    {estadoLabel(ev.estado_desde)} → <strong className="text-foreground">{estadoLabel(ev.estado_hacia)}</strong>
-                  </span>
-                )}
-                {ev.comentario && (
-                  <span className={`whitespace-pre-line ${ev.tipo === 'transicion' ? 'block mt-1' : ''}`}>
-                    {ev.comentario}
-                  </span>
-                )}
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onSelect={() => setEditing(ev)}>
+                    <Pencil className="mr-2 h-3.5 w-3.5" /> Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-error" onSelect={() => setDeletingId(ev.id)}>
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           );
         })}
       </div>
 
-      {/* Add update */}
-      <div className="mt-4 shrink-0">
-        <div className="flex gap-2">
+      {/* Agregar actualización — el campo aparece solo cuando se pide, desde
+          el menú de la card; con la lista siempre visible no cabe. */}
+      {agregando && (
+        <div className="mt-2.5 shrink-0 border-t border-border pt-2.5">
           <Textarea
             value={text}
+            autoFocus
             onChange={(e) => setText(e.target.value)}
-            placeholder="Agregar actualización..."
+            placeholder="Escribe una actualización…"
             rows={2}
-            className="flex-1 text-sm"
+            className="text-sm"
           />
-          <Button onClick={postUpdate} disabled={!text.trim() || posting} size="sm" className="self-end">
-            {posting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-            Enviar
-          </Button>
+          <div className="mt-2 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setText(''); onAgregandoChange?.(false); }}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={postUpdate} disabled={!text.trim() || posting}>
+              {posting && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+              Agregar
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Edit dialog */}
       <EditEventoDialog

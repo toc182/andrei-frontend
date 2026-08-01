@@ -760,6 +760,8 @@ export interface CuentaDetail extends Cuenta {
   ajustes: CuentaAjuste[];
   ajuste_opciones: CuentaAjusteOpcion[];
   avance_acumulado: string;
+  /** Suma de los montos brutos de las cuentas hasta esta (inclusive). */
+  monto_acumulado?: string;
   cliente_nombre?: string | null;
   cliente_abreviatura?: string | null;
 }
