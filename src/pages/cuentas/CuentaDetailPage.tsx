@@ -310,10 +310,9 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DocumentosSection
           cuentaId={cuentaId}
+          cuentaNumero={cuenta.numero}
           adjuntos={cuenta.adjuntos}
           desglose={cuenta.desglose ?? null}
-          avancePeriodo={cuenta.monto_total}
-          avancePorcentaje={cuenta.avance_porcentaje}
           puedeCambiarDesglose={!LOCKED && !!cuenta.es_primera_cuenta}
           hayDesgloseOficial={cuenta.desglose_oficial_id != null}
           onAbrirDesglose={() => setVerCuadro(true)}
@@ -349,8 +348,11 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
 // fila más en la card de información.
 
 function AvanceProyectoCard({ cuenta }: { cuenta: CuentaDetail }) {
-  const total = Number(cuenta.avance_acumulado) || 0;
-  const esta = Number(cuenta.avance_porcentaje) || 0;
+  // Con desglose los porcentajes salen del cuadro, no de la columna escalar
+  // avance_porcentaje: esa guarda 2 decimales por cuenta y sumar varias ya
+  // redondeadas se desvía del total que muestra el desglose.
+  const total = cuenta.avance_desglose?.acumulado ?? (Number(cuenta.avance_acumulado) || 0);
+  const esta = cuenta.avance_desglose?.periodo ?? (Number(cuenta.avance_porcentaje) || 0);
   const previo = Math.max(0, total - esta);
   // Las barras se recortan a 100 por si el acumulado se pasa (redondeos o
   // una cuenta final que ajusta): el ancho no puede desbordar la pista.
@@ -424,15 +426,13 @@ function AvanceProyectoCard({ cuenta }: { cuenta: CuentaDetail }) {
 // sección es la de los soportes.
 
 function DocumentosSection({
-  cuentaId, adjuntos, desglose, avancePeriodo, avancePorcentaje,
+  cuentaId, cuentaNumero, adjuntos, desglose,
   puedeCambiarDesglose, hayDesgloseOficial, onAbrirDesglose, onChanged,
 }: {
   cuentaId: number;
+  cuentaNumero: number;
   adjuntos: CuentaDetail['adjuntos'];
   desglose: CuentaDesgloseFicha | null;
-  /** Lo ya registrado en el desglose para este periodo, para el resumen. */
-  avancePeriodo: string;
-  avancePorcentaje: string | null;
   /** Activar o quitar el desglose solo se permite en la primera cuenta. */
   puedeCambiarDesglose: boolean;
   hayDesgloseOficial: boolean;
@@ -552,16 +552,9 @@ function DocumentosSection({
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-navy/25 bg-navy/10 text-navy">
               <Table2 className="h-3.5 w-3.5" />
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate">{desglose.descripcion}</span>
-              <span className="block text-xs text-muted-foreground tabular-nums">
-                {desglose.filas} fila{desglose.filas === 1 ? '' : 's'} · {formatMonto(desglose.total)}
-                {' · avance del periodo '}{formatMonto(avancePeriodo)}
-                {avancePorcentaje != null && avancePorcentaje !== ''
-                  ? ` (${Number(avancePorcentaje).toFixed(2)}%)`
-                  : ''}
-              </span>
-            </span>
+            {/* El desglose es el oficial del proyecto, pero dentro de una cuenta
+                se nombra por la cuenta que se está armando con él. */}
+            <span className="min-w-0 flex-1 truncate">Desglose Cuenta {cuentaNumero}</span>
             {puedeCambiarDesglose && (
               <Button
                 variant="ghost"

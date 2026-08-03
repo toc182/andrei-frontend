@@ -760,6 +760,9 @@ export interface CuentaDetail extends Cuenta {
   ajustes: CuentaAjuste[];
   ajuste_opciones: CuentaAjusteOpcion[];
   avance_acumulado: string;
+  /** Avance leído del cuadro, a precisión completa. Solo cuando la cuenta
+   *  lleva desglose; es el mismo número que muestra el desglose. */
+  avance_desglose?: { acumulado: number; periodo: number } | null;
   /** Suma de los montos brutos de las cuentas hasta esta (inclusive). */
   monto_acumulado?: string;
   cliente_nombre?: string | null;
