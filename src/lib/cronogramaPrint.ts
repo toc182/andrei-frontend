@@ -148,6 +148,25 @@ export function printColumns(fontPt: number, visible: string[]) {
 // Each side's logos share one header row; with 2-3 per side each logo narrows so the
 // widest strip never claims more than ~⅓ of the page (the centered title gets the rest).
 
+/** Ancho de cada logo y de la tira completa del lado más cargado. Extraída de
+ *  fitPrintHeader para que cuadroPrint.ts la reuse: ese documento coloca los
+ *  logos igual pero dimensiona su título con otras reglas. */
+export function fitLogoWidth(
+  pwMM: number,
+  nLogosLeft: number,
+  nLogosRight: number,
+): { logoW: number; logoStripW: number } {
+  const nLogos = Math.max(
+    Math.min(nLogosLeft, MAX_LOGOS_PER_SIDE),
+    Math.min(nLogosRight, MAX_LOGOS_PER_SIDE),
+  );
+  const logoW = nLogos > 0
+    ? Math.min(28, pwMM * 0.16, (pwMM * 0.34 - LOGO_GAP_MM * (nLogos - 1)) / nLogos)
+    : 0;
+  const logoStripW = nLogos > 0 ? nLogos * logoW + LOGO_GAP_MM * (nLogos - 1) : 0;
+  return { logoW, logoStripW };
+}
+
 export function fitPrintHeader(args: {
   pwMM: number;
   fontPt: number;
@@ -158,14 +177,7 @@ export function fitPrintHeader(args: {
   minDocHeaderH: number;
 }): { titleFontMM: number; titleLines: string[]; logoW: number; docHeaderH: number } {
   const { pwMM, fontPt, title, subtitle, minDocHeaderH } = args;
-  const nLogos = Math.max(
-    Math.min(args.nLogosLeft, MAX_LOGOS_PER_SIDE),
-    Math.min(args.nLogosRight, MAX_LOGOS_PER_SIDE),
-  );
-  const logoW = nLogos > 0
-    ? Math.min(28, pwMM * 0.16, (pwMM * 0.34 - LOGO_GAP_MM * (nLogos - 1)) / nLogos)
-    : 0;
-  const logoStripW = nLogos > 0 ? nLogos * logoW + LOGO_GAP_MM * (nLogos - 1) : 0;
+  const { logoW, logoStripW } = fitLogoWidth(pwMM, args.nLogosLeft, args.nLogosRight);
   const titleAvail = pwMM - 2 * (logoStripW + 4);
   const wmm = (s: string, fpt: number) => s.length * fpt * PT_MM * 0.6;
   const titleStr = (title || '').trim() || ' ';

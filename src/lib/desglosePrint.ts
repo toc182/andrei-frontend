@@ -132,11 +132,13 @@ export function toPrintRows(rows: DesgloseRow[]): { printRows: DesglosePrintRow[
 
 // ---- helpers ----
 
-function esc(s: string): string {
+/** Escapa texto que entra en un atributo o nodo SVG. Compartida con cuadroPrint.ts. */
+export function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-const f2 = (n: number) => n.toFixed(2);
+/** Coordenada en mm con dos decimales — el SVG no necesita más. */
+export const f2 = (n: number) => n.toFixed(2);
 
 /** Greedy word-wrap by estimated char width (em ≈ 0.62·font, the pipeline's
  *  metric). Overlong single words hard-break; past maxLines the tail joins the
