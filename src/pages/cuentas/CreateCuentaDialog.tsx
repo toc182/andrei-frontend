@@ -32,7 +32,6 @@ interface AjusteFormItem {
 
 export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCreated }: Props) {
   const [monto, setMonto] = useState('');
-  const [periodoInicio, setPeriodoInicio] = useState('');
   const [periodoFin, setPeriodoFin] = useState('');
   const [avance, setAvance] = useState('');
   const [esFinal, setEsFinal] = useState(false);
@@ -49,7 +48,6 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
   useEffect(() => {
     if (!open) return;
     setMonto('');
-    setPeriodoInicio('');
     setPeriodoFin('');
     setAvance('');
     setEsFinal(false);
@@ -113,6 +111,7 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
   const submit = async () => {
     setError('');
     if (!monto) { setError('Monto es requerido'); return; }
+    if (!periodoFin) { setError('La fecha de fin del periodo es requerida'); return; }
     setSaving(true);
     try {
       const ajustesPayload = ajustes
@@ -126,8 +125,7 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
       await api.post('/cuentas', {
         proyecto_id: projectId,
         monto_total: Number(monto),
-        periodo_inicio: periodoInicio || undefined,
-        periodo_fin: periodoFin || undefined,
+        periodo_fin: periodoFin,
         avance_porcentaje: avance ? Number(avance) : undefined,
         es_final: esFinal,
         ajustes: ajustesPayload.length > 0 ? ajustesPayload : undefined,
@@ -281,15 +279,15 @@ export default function CreateCuentaDialog({ open, onOpenChange, projectId, onCr
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Periodo inicio</Label>
-              <DatePicker value={periodoInicio} onChange={setPeriodoInicio} />
-            </div>
-            <div>
-              <Label>Periodo fin</Label>
-              <DatePicker value={periodoFin} onChange={setPeriodoFin} />
-            </div>
+          {/* El inicio del periodo no se escribe: la cuenta 1 arranca el día
+              de la Orden de Proceder del proyecto y cada siguiente al día
+              siguiente del fin de la anterior. */}
+          <div>
+            <Label>Fin del periodo</Label>
+            <DatePicker value={periodoFin} onChange={setPeriodoFin} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              El inicio lo calcula el sistema.
+            </p>
           </div>
           <div>
             <Label>Avance (%)</Label>

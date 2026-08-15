@@ -49,6 +49,7 @@ const projectSchema = z
     ingeniero_residente: z.string().optional(),
     fecha_inicio: z.string().optional(),
     fecha_fin_estimada: z.string().optional(),
+    orden_proceder: z.string().optional(),
     estado: z.enum([
       'planificacion',
       'en_curso',
@@ -157,6 +158,7 @@ const ProjectFormNew = ({
       ingeniero_residente: '',
       fecha_inicio: '',
       fecha_fin_estimada: '',
+      orden_proceder: '',
       estado: 'planificacion',
       monto_contrato_original: '',
       presupuesto_base: '',
@@ -243,6 +245,9 @@ const ProjectFormNew = ({
             : '',
           fecha_fin_estimada: project.fecha_fin_estimada
             ? project.fecha_fin_estimada.split('T')[0]
+            : '',
+          orden_proceder: project.orden_proceder
+            ? project.orden_proceder.split('T')[0]
             : '',
           estado: project.estado || 'planificacion',
           monto_contrato_original: project.monto_contrato_original
@@ -677,6 +682,22 @@ const ProjectFormNew = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fecha de Terminación</FormLabel>
+                      <FormControl>
+                        <DatePicker value={field.value} onChange={field.onChange} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Orden de Proceder — de esta fecha arranca el periodo de
+                    la cuenta 1 (ver hoja del Cuadro de Cuenta). */}
+                <FormField
+                  control={form.control}
+                  name="orden_proceder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Orden de Proceder</FormLabel>
                       <FormControl>
                         <DatePicker value={field.value} onChange={field.onChange} disabled={loading} />
                       </FormControl>

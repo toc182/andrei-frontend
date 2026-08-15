@@ -5,19 +5,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/shell/DatePicker';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ChevronRight, FileText, Table2, Loader2 } from 'lucide-react';
 import { EmptyState } from '@/components/shell';
 import { getDesglosesCuentas, type DesgloseCuenta } from '@/lib/desgloseApi';
 import { crearCuentaDetalle } from '@/lib/cuadroApi';
 
-type Step = 'tipo' | 'desglose';
+type Step = 'tipo' | 'desglose' | 'fin';
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   projectId: number;
   initialStep?: Step;
+  /** Desglose ya elegido por el proyecto: se salta el paso de elegirlo. */
+  desgloseEnUso?: number | null;
+  /** Fin de la cuenta anterior; con él se explica dónde arranca esta. */
+  finAnterior?: string | null;
   onManual: () => void;
   onCreated: (cuentaId: number) => void;
   onIrADesgloses: () => void;
@@ -28,6 +34,8 @@ export default function NuevaCuentaFlowDialog({
   onOpenChange,
   projectId,
   initialStep = 'tipo',
+  desgloseEnUso,
+  finAnterior,
   onManual,
   onCreated,
   onIrADesgloses,
@@ -38,6 +46,9 @@ export default function NuevaCuentaFlowDialog({
   const [selected, setSelected] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  /** El fin del periodo es obligatorio: sin él la cuenta siguiente no sabría
+   *  cuándo empieza. El inicio no se pregunta — lo calcula el servidor. */
+  const [fin, setFin] = useState('');
 
   // Altura animada del contenido: al cambiar de paso el recuadro crece/encoge
   // suave en vez de saltar (el dialog está centrado y recolocarse se nota).
@@ -67,6 +78,7 @@ export default function NuevaCuentaFlowDialog({
     if (!open) return;
     setSelected('');
     setError('');
+    setFin('');
     setLoading(true);
     getDesglosesCuentas(projectId)
       .then((d) => {
@@ -77,12 +89,18 @@ export default function NuevaCuentaFlowDialog({
       .finally(() => setLoading(false));
   }, [open, projectId]);
 
+  const desgloseId = desgloseEnUso ?? Number(selected);
+
   const crear = async () => {
-    if (!selected) return;
+    if (!desgloseId || !fin) return;
     setSaving(true);
     setError('');
     try {
-      const { id } = await crearCuentaDetalle({ proyecto_id: projectId, desglose_id: Number(selected) });
+      const { id } = await crearCuentaDetalle({
+        proyecto_id: projectId,
+        desglose_id: desgloseId,
+        periodo_fin: fin,
+      });
       onCreated(id);
     } catch {
       setError('No se pudo crear la cuenta');
@@ -96,19 +114,30 @@ export default function NuevaCuentaFlowDialog({
   const description =
     step === 'tipo'
       ? 'Elige cómo se llevarán las cuentas de este proyecto. Queda fijo; cambiar de tipo después implica borrar las cuentas.'
-      : sinDesgloses
-        ? undefined
-        : 'Elige el desglose con el que se arma la cuenta. Se copian sus filas y registras el avance por fila.';
+      : step === 'fin'
+        ? 'Hasta qué fecha llega esta cuenta.'
+        : sinDesgloses
+          ? undefined
+          : 'Elige el desglose con el que se arma la cuenta. Se copian sus filas y registras el avance por fila.';
 
   const footer =
-    step === 'desglose' && !sinDesgloses ? (
+    step === 'fin' ? (
       <>
         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
           Cancelar
         </Button>
-        <Button onClick={crear} disabled={!selected || saving}>
+        <Button onClick={crear} disabled={!fin || saving}>
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Crear cuenta
+        </Button>
+      </>
+    ) : step === 'desglose' && !sinDesgloses ? (
+      <>
+        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          Cancelar
+        </Button>
+        <Button onClick={() => setStep('fin')} disabled={!selected}>
+          Continuar
         </Button>
       </>
     ) : undefined;
@@ -124,7 +153,18 @@ export default function NuevaCuentaFlowDialog({
     >
       <div className="overflow-hidden transition-[height] duration-200 ease-out" style={{ height: contentH || undefined }}>
         <div ref={setContentNode}>
-      {step === 'tipo' ? (
+      {step === 'fin' ? (
+        <div className="space-y-2">
+          <Label>Fin del periodo</Label>
+          <DatePicker value={fin} onChange={setFin} />
+          <p className="text-xs text-muted-foreground">
+            {finAnterior
+              ? 'Empieza al día siguiente del fin de la cuenta anterior.'
+              : 'Empieza el día de la Orden de Proceder del proyecto.'}
+          </p>
+          {error && <p className="text-xs text-error">{error}</p>}
+        </div>
+      ) : step === 'tipo' ? (
         <div className="grid auto-rows-fr gap-3">
           <button
             type="button"

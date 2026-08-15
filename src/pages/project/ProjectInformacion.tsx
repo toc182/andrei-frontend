@@ -141,6 +141,10 @@ export default function ProjectInformacion({
                 <InfoRow label="Fecha de Terminación:">{formatDate(project.fecha_fin_estimada)}</InfoRow>
               )}
 
+              {project.orden_proceder && (
+                <InfoRow label="Orden de Proceder:">{formatDate(project.orden_proceder)}</InfoRow>
+              )}
+
               {project.presupuesto_base && (
                 <InfoRow label="Presupuesto Base:">{formatMoney(project.presupuesto_base)}</InfoRow>
               )}

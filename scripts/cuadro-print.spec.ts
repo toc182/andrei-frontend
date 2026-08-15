@@ -142,10 +142,10 @@ const baseOpts = (over: Partial<CuadroPrintOptions> = {}): CuadroPrintOptions =>
     ],
   ],
   firmas: [
-    { nombre: 'Ing. Moisés Méndez', cargo: 'CONTRATISTA — PINELLAS S.A.' },
-    { nombre: 'VoBo. ETESA', cargo: 'Gerencia de Mantenimiento y Control de Servidumbre' },
-    { nombre: 'VoBo. ETESA', cargo: 'Dirección de Operaciones y Mantenimiento' },
-    { nombre: 'Fiscalización', cargo: 'Contraloría General de la República' },
+    { lineas: ['Ing. Moisés Méndez', 'CONTRATISTA — PINELLAS S.A.'] },
+    { lineas: ['VoBo. ETESA', 'Gerencia de Mantenimiento y Control de Servidumbre'] },
+    { lineas: ['VoBo. ETESA', 'Dirección de Operaciones y Mantenimiento'] },
+    { lineas: ['Fiscalización', 'Contraloría General de la República'] },
   ],
   logosLeft: [], logosRight: [],
   ...over,
@@ -396,7 +396,7 @@ const ids = campos.map((c) => c.id);
 eq(new Set(ids).size, ids.length, 'no hay dos campos con el mismo id');
 eq(ids.filter((i) => i.startsWith('titulo:')).length, 3, 'un campo por línea de título');
 eq(ids.filter((i) => i.startsWith('col:')).length, (4 + 4 + 6) * 2, 'etiqueta y valor por cada línea del encabezado');
-eq(ids.filter((i) => i.startsWith('firma:')).length, 4 * 2, 'nombre y cargo por cada firma');
+eq(ids.filter((i) => i.startsWith('firma:')).length, 4 * 2, 'nombre y pie por cada firma');
 ok(campos.every((c) => c.wMM > 0 && c.hMM > 0), 'ningún campo mide cero');
 ok(
   campos.every((c) => c.xMM >= -0.01 && c.yMM >= -0.01 && c.xMM + c.wMM <= layout.pwMM + 0.01),
@@ -418,6 +418,33 @@ ok(proyecto.valor.length > 100, 'sin truncar por el ajuste de línea');
 ok(proyecto.auto, 'el nombre del proyecto viene marcado como automático');
 ok(!campos.find((c) => c.id === 'col:1:1:valor')!.auto, 'la orden de proceder se escribe a mano');
 eq(campos.find((c) => c.id === 'titulo:2')!.valor, 'Cuenta No. 2', 'el título conserva su línea');
+
+// El título ya no lleva ninguna línea en negrita: el peso lo daba la última,
+// y desde que «Cuenta No. N» puede ir en cualquier posición eso dejó de tener
+// sentido. Las únicas negritas de la primera página son las del encabezado de
+// tres columnas y las de la tabla.
+const svgTitulo = buildCuadroPrintPages(
+  baseOpts({ titulo: ['UNO', 'DOS', 'Cuenta No. 2'] }), { lineas: ETESA_C2 },
+).pages[0];
+const negritasConTitulo = (svgTitulo.match(/font-weight="700"/g) || []).length;
+const svgSinTitulo = buildCuadroPrintPages(
+  baseOpts({ titulo: [] }), { lineas: ETESA_C2 },
+).pages[0];
+eq(
+  negritasConTitulo,
+  (svgSinTitulo.match(/font-weight="700"/g) || []).length,
+  'ninguna línea del título va en negrita',
+);
+
+// Seis renglones de título caben; el séptimo se recorta.
+const seisTitulos = computeCuadroPrintLayout(
+  baseOpts({ titulo: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] }), { lineas: ETESA_C2 },
+);
+eq(seisTitulos.titleLines.length, 6, 'el título se recorta a seis renglones');
+const tresTitulos = computeCuadroPrintLayout(
+  baseOpts({ titulo: ['A', 'B', 'C'] }), { lineas: ETESA_C2 },
+);
+ok(seisTitulos.topH > tresTitulos.topH, 'y cada renglón de más sube el alto del encabezado');
 eq(campos.find((c) => c.id === 'col:2:0:valor')!.align, 'right', 'la columna derecha alinea a la derecha');
 eq(campos.find((c) => c.id === 'col:1:0:etiqueta')!.align, 'right', 'la etiqueta del centro alinea a la derecha');
 eq(campos.find((c) => c.id === 'col:2:0:etiqueta')!.align, 'right', 'la etiqueta de la derecha también');
@@ -431,16 +458,60 @@ ok(colDer.labelW >= colDer.w * 0.4, 'y la etiqueta llega hasta pegarse a él');
 // ── 8 · firmas de 1 a 8 ─────────────────────────────────────────────────
 
 const firmasDe = (n: number) =>
-  Array.from({ length: n }, (_, i) => ({ nombre: `Firma ${i + 1}`, cargo: `Cargo ${i + 1}` }));
+  Array.from({ length: n }, (_, i) => ({ lineas: [`Firma ${i + 1}`, `Cargo ${i + 1}`] }));
+
+// La hilera REPARTE el ancho de la hoja — con dos firmas, una a la izquierda y
+// otra a la derecha — pero la RAYA tiene ancho propio y va centrada en su
+// hueco. Antes la raya se estiraba con el hueco y una firma sola cruzaba la
+// hoja entera, que es justo lo que no parece una línea de firma.
+const FIRMA_ANCHO_MM = 70;
 
 for (let n = 1; n <= 8; n++) {
   const l = computeCuadroPrintLayout(baseOpts({ firmas: firmasDe(n) }), { lineas: ETESA_C2 });
   ok(l.firmas.boxes.length === n, `${n} firma(s): se dibujan todas`);
   ok(l.firmas.filas === (n <= 5 ? 1 : 2), `${n} firma(s): ${n <= 5 ? 'una' : 'dos'} hilera(s)`);
   ok(l.firmas.h > 0, `${n} firma(s): el bloque ocupa alto`);
-  const anchoFila0 = l.firmas.boxes.filter((b) => b.fila === 0).reduce((s, b) => s + b.w, 0);
-  ok(Math.abs(anchoFila0 - l.pwMM) < 0.01, `${n} firma(s): la primera hilera cubre el ancho`);
+  const fila0 = l.firmas.boxes.filter((b) => b.fila === 0);
+  const anchoFila0 = fila0.reduce((s, b) => s + b.w, 0);
+  ok(Math.abs(anchoFila0 - l.pwMM) < 0.01, `${n} firma(s): la hilera reparte el ancho`);
+  ok(
+    fila0.every((b) => Math.abs(b.lineW - fila0[0].lineW) < 0.01),
+    `${n} firma(s): todas las rayas del mismo largo`,
+  );
+  ok(fila0[0].lineW <= FIRMA_ANCHO_MM + 0.01, `${n} firma(s): la raya no pasa de 7 cm`);
+  ok(
+    fila0.every((b) => b.lineW <= b.w + 0.01),
+    `${n} firma(s): la raya cabe en su hueco`,
+  );
 }
+
+// El caso que motivó el cambio.
+const firmaUnica = computeCuadroPrintLayout(baseOpts({ firmas: firmasDe(1) }), { lineas: ETESA_C2 });
+ok(
+  firmaUnica.firmas.boxes[0].lineW < firmaUnica.pwMM * 0.5,
+  'una firma sola no se lleva la hoja entera',
+);
+eq(firmaUnica.firmas.boxes[0].lineW, FIRMA_ANCHO_MM, 'y su raya mide los 7 cm');
+
+// Con dos, una queda en la mitad izquierda y la otra en la derecha.
+const dos = computeCuadroPrintLayout(baseOpts({ firmas: firmasDe(2) }), { lineas: ETESA_C2 });
+const centro = (b: { x: number; w: number }) => b.x + b.w / 2;
+ok(centro(dos.firmas.boxes[0]) < dos.pwMM / 2, 'con dos firmas, la primera va a la izquierda');
+ok(centro(dos.firmas.boxes[1]) > dos.pwMM / 2, 'y la segunda a la derecha');
+
+// Hasta cuatro líneas por firma; de la quinta en adelante se recortan.
+const dosLineas = computeCuadroPrintLayout(
+  baseOpts({ firmas: [{ lineas: ['Nombre', 'Cargo'] }] }), { lineas: ETESA_C2 },
+);
+const cuatroLineas = computeCuadroPrintLayout(
+  baseOpts({ firmas: [{ lineas: ['Nombre', 'Cargo', 'Empresa', 'Cédula'] }] }), { lineas: ETESA_C2 },
+);
+ok(cuatroLineas.firmas.h > dosLineas.firmas.h, 'cuatro líneas ocupan más alto que dos');
+eq(cuatroLineas.firmas.boxes[0].pieLines.length, 3, 'tres líneas debajo del nombre');
+const seisLineas = computeCuadroPrintLayout(
+  baseOpts({ firmas: [{ lineas: ['A', 'B', 'C', 'D', 'E', 'F'] }] }), { lineas: ETESA_C2 },
+);
+eq(seisLineas.firmas.boxes[0].pieLines.length, 3, 'de la quinta línea en adelante se recorta');
 
 const nueve = computeCuadroPrintLayout(baseOpts({ firmas: firmasDe(9) }), { lineas: ETESA_C2 });
 eq(nueve.firmas.boxes.length, 8, 'más de ocho firmas se recortan a ocho');

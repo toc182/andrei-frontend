@@ -12,7 +12,7 @@ import { ScrollBar } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Minus, Plus } from 'lucide-react';
 import { PageHeader, TableSkeleton, ErrorState } from '@/components/shell';
 import { grupoBgClass, padClass } from '@/components/desglose/desglosePad';
 import { cn } from '@/lib/utils';
@@ -61,9 +61,13 @@ interface Props {
   proyectoNombre?: string | null;
   onBack?: () => void;
   onSaved?: () => void;
+  /** Abre la hoja que se imprime y se entrega. */
+  onVistaPrevia?: () => void;
 }
 
-export default function CuadroCuenta({ cuentaId, cuentaNumero, proyectoNombre, onBack, onSaved }: Props) {
+export default function CuadroCuenta({
+  cuentaId, cuentaNumero, proyectoNombre, onBack, onSaved, onVistaPrevia,
+}: Props) {
   const [doc, setDoc] = useState<CuadroDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -178,19 +182,25 @@ export default function CuadroCuenta({ cuentaId, cuentaNumero, proyectoNombre, o
         </Button>
       )}
       <PageHeader title="Desglose de cuenta" subtitle={subtitulo || undefined} />
-      {!locked && doc && (
-        <div className="ml-auto flex items-center gap-3">
-          {errores.size > 0 && (
-            <span className="text-xs text-error">
-              {errores.size} cantidad{errores.size === 1 ? '' : 'es'} fuera de rango
-            </span>
-          )}
+      <div className="ml-auto flex items-center gap-3">
+        {!locked && doc && errores.size > 0 && (
+          <span className="text-xs text-error">
+            {errores.size} cantidad{errores.size === 1 ? '' : 'es'} fuera de rango
+          </span>
+        )}
+        {onVistaPrevia && (
+          <Button variant="outline" size="sm" onClick={onVistaPrevia}>
+            <FileText className="mr-2 h-4 w-4" />
+            Vista previa
+          </Button>
+        )}
+        {!locked && doc && (
           <Button size="sm" onClick={guardar} disabled={!dirty || saving || errores.size > 0}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar avance
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 

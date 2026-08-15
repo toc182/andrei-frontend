@@ -9,19 +9,19 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Plus, ArrowRight, ArrowLeft, AlertTriangle, FileText, Receipt, Loader2 } from 'lucide-react';
+import { Plus, ArrowRight, ArrowLeft, AlertTriangle, FileText, Receipt, Settings } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
 import { EmptyState } from '@/components/shell';
 import api from '@/services/api';
 import type { Cuenta } from '@/types/api';
 import { getDesglosesCuentas } from '@/lib/desgloseApi';
-import { crearCuentaDetalle } from '@/lib/cuadroApi';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import { formatMonto, formatPeriodoParts, waitColor } from './config';
 import CreateCuentaDialog from './CreateCuentaDialog';
 import NuevaCuentaFlowDialog from './NuevaCuentaFlowDialog';
 import CuentasDesglosesTab from './CuentasDesglosesTab';
+import ConfigCuentaPage from './ConfigCuentaPage';
 
 interface Props {
   projectId: number;
@@ -50,11 +50,10 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showNuevaCuenta, setShowNuevaCuenta] = useState(false);
-  const [flowStep, setFlowStep] = useState<'tipo' | 'desglose'>('tipo');
-  const [creando, setCreando] = useState(false);
+  const [flowStep, setFlowStep] = useState<'tipo' | 'desglose' | 'fin'>('tipo');
   // Sin pestañas: la página principal es la lista de cuentas; "Desgloses de
   // Cuenta" es una sub-página a la que se entra y se regresa (view).
-  const [view, setView] = useState<'main' | 'desgloses'>('main');
+  const [view, setView] = useState<'main' | 'desgloses' | 'config'>('main');
   const [nDesgloses, setNDesgloses] = useState(0);
   const [showCreateDesglose, setShowCreateDesglose] = useState(false);
   /** Con un desglose abierto en el editor, "Nuevo Desglose" no aplica. */
@@ -135,7 +134,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   // que sirve de origen para la siguiente.
   const desgloseEnUso = [...sorted].reverse().find((c) => c.desglose_id != null)?.desglose_id ?? null;
 
-  const handleNuevaCuenta = async () => {
+  const handleNuevaCuenta = () => {
     if (modo === 'empty') { setFlowStep('tipo'); setShowNuevaCuenta(true); return; } // primera cuenta: elegir tipo
     if (modo === 'manual') { setShowCreate(true); return; }
 
@@ -143,19 +142,25 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
     // que la siguiente arranca del mismo sin preguntar. El "hasta anterior" se
     // encadena por row_uid, de modo que las cantidades acumuladas cuadran.
     if (desgloseEnUso == null) { setFlowStep('desglose'); setShowNuevaCuenta(true); return; }
-    setCreando(true);
-    try {
-      const { id } = await crearCuentaDetalle({ proyecto_id: projectId, desglose_id: desgloseEnUso });
-      if (onCuentaClick) onCuentaClick(id);
-      else load();
-    } catch {
-      // El desglose pudo desactivarse desde la última cuenta: que lo elija.
-      setFlowStep('desglose');
-      setShowNuevaCuenta(true);
-    } finally {
-      setCreando(false);
-    }
+    // Con el desglose ya decidido solo falta hasta qué fecha llega la cuenta:
+    // el fin del periodo es obligatorio y el inicio lo calcula el servidor.
+    setFlowStep('fin');
+    setShowNuevaCuenta(true);
   };
+
+  // Sub-página: Configurar Cuenta — el montaje de la hoja impresa, que se
+  // llena una vez y vale para todas las cuentas del proyecto.
+  if (view === 'config') {
+    return (
+      <div className="mx-auto w-full max-w-7xl">
+        <ConfigCuentaPage
+          projectId={projectId}
+          ejemploCuentaId={sorted[sorted.length - 1]?.id}
+          onBack={() => setView('main')}
+        />
+      </div>
+    );
+  }
 
   // Sub-página: Desgloses de Cuenta (se entra y se regresa; no es pestaña par).
   if (view === 'desgloses') {
@@ -197,16 +202,18 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
       <PageHeader title="Cuentas">
         {modo !== 'empty' && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setView('config')}>
+              <Settings className="h-4 w-4" />
+              Configurar Cuenta
+            </Button>
             {modo === 'desglose' && (
               <Button variant="outline" onClick={() => setView('desgloses')}>
-                <FileText className="mr-2 h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Desgloses de Cuenta{nDesgloses > 0 ? ` (${nDesgloses})` : ''}
               </Button>
             )}
-            <Button onClick={handleNuevaCuenta} disabled={creando}>
-              {creando
-                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                : <Plus className="mr-2 h-4 w-4" />}
+            <Button onClick={handleNuevaCuenta}>
+              <Plus className="h-4 w-4" />
               Cuenta
             </Button>
           </div>
@@ -407,6 +414,8 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
         initialStep={flowStep}
         onManual={() => { setShowNuevaCuenta(false); setShowCreate(true); }}
         onCreated={(cuentaId) => { setShowNuevaCuenta(false); load(); onCuentaClick?.(cuentaId); }}
+        desgloseEnUso={desgloseEnUso}
+        finAnterior={sorted[sorted.length - 1]?.periodo_fin ?? null}
         onIrADesgloses={() => { setShowNuevaCuenta(false); setView('desgloses'); }}
       />
     </div>

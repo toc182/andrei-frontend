@@ -64,6 +64,7 @@ export interface ProjectFormData {
   estado: string;
   fecha_inicio: string;
   fecha_fin_estimada: string;
+  orden_proceder: string;
   presupuesto_base: string;
   contrato: string;
   acto_publico: string;

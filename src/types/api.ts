@@ -107,6 +107,8 @@ export interface Project {
   estado: 'planificacion' | 'en_curso' | 'pausado' | 'completado' | 'cancelado';
   fecha_inicio?: string;
   fecha_fin_estimada?: string;
+  /** Fecha de la Orden de Proceder — de ella arranca el periodo de la cuenta 1. */
+  orden_proceder?: string;
   presupuesto_base?: number;
   itbms?: number;
   monto_total?: number;

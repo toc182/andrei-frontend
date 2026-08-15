@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import {
   Pencil, Plus, Upload, Download, Trash2, Loader2, ArrowLeft, ArrowRight, Check, Table2,
-  ChevronRight, MoreVertical, RefreshCw,
+  ChevronRight, MoreVertical, RefreshCw, FileText,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import CuentaTimeline from './CuentaTimeline';
 import CuadroCuenta from './CuadroCuenta';
+import VistaPreviaCuenta from './VistaPreviaCuenta';
 import {
   formatMonto,
   getFlow,
@@ -122,6 +123,8 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
   /** El desglose de cuenta es una pantalla propia, no una sección del detalle:
    *  hay desgloses de cientos de filas. Se entra desde su documento. */
   const [verCuadro, setVerCuadro] = useState(false);
+  /** La hoja que se imprime y se entrega: también pantalla propia. */
+  const [verPrevia, setVerPrevia] = useState(false);
   /** El campo de "Agregar actualización" del historial, abierto desde su menú. */
   const [agregandoEvento, setAgregandoEvento] = useState(false);
 
@@ -144,6 +147,14 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
 
   const LOCKED = ['aprobada', 'pagada', 'aprobada_institucion', 'aprobada_contraloria'].includes(cuenta.estado);
 
+  if (verPrevia && cuenta.desglose_id != null) {
+    return (
+      <div className="w-full">
+        <VistaPreviaCuenta cuentaId={cuentaId} onBack={() => { setVerPrevia(false); load(); }} />
+      </div>
+    );
+  }
+
   if (verCuadro && cuenta.desglose_id != null) {
     // Sin tope de ancho: el cuadro son 18 columnas y aquí toda la pantalla
     // sirve para reducir el desplazamiento horizontal.
@@ -155,6 +166,7 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
           proyectoNombre={cuenta.proyecto_nombre}
           onBack={() => { setVerCuadro(false); load(); }}
           onSaved={load}
+          onVistaPrevia={() => { setVerCuadro(false); setVerPrevia(true); }}
         />
       </div>
     );
@@ -176,12 +188,22 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
           </Button>
         )}
         <PageHeader title={`Cuenta ${cuenta.numero}`} />
-        {!LOCKED && (
-          <Button variant="outline" size="sm" onClick={() => setShowEdit(true)} className="ml-auto">
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar cuenta
-          </Button>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {/* La hoja que se entrega solo existe si la cuenta va con desglose:
+              es el cuadro lo que se imprime. */}
+          {cuenta.desglose_id != null && (
+            <Button variant="outline" size="sm" onClick={() => setVerPrevia(true)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Vista previa
+            </Button>
+          )}
+          {!LOCKED && (
+            <Button variant="outline" size="sm" onClick={() => setShowEdit(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar cuenta
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Datos + Monto + Historial — tres tercios en pantallas anchas. El
@@ -755,6 +777,7 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
     );
 
   const save = async () => {
+    if (!fin) return;
     setSaving(true);
     try {
       const ajustesPayload = ajustes
@@ -767,8 +790,7 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
         }));
       await api.put(`/cuentas/${cuenta.id}`, {
         monto_total: Number(monto),
-        periodo_inicio: inicio || null,
-        periodo_fin: fin || null,
+        periodo_fin: fin,
         avance_porcentaje: avance ? Number(avance) : null,
         ajustes: ajustesPayload,
       });
@@ -812,7 +834,7 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
               <span className="mr-auto" />
             )}
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving || deleting}>Cancelar</Button>
-            <Button form="edit-cuenta-form" type="submit" disabled={saving || deleting}>
+            <Button form="edit-cuenta-form" type="submit" disabled={saving || deleting || !fin}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Guardar
             </Button>
@@ -953,10 +975,24 @@ function EditCuentaDialog({ open, onOpenChange, cuenta, onSaved, onDeleted }: {
             </div>
           </div>
 
+          {/* El inicio no se edita: la cuenta 1 arranca el día de la Orden de
+              Proceder del proyecto y cada siguiente al día siguiente del fin de
+              la anterior. Mover el fin corre el inicio de la que sigue. */}
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Periodo inicio</Label><DatePicker value={inicio} onChange={setInicio} /></div>
-            <div><Label>Periodo fin</Label><DatePicker value={fin} onChange={setFin} /></div>
+            <div>
+              <Label>Inicio del periodo</Label>
+              <p className="flex h-9 items-center text-sm text-muted-foreground">
+                {inicio ? formatDiaMes(inicio) : '—'}
+              </p>
+            </div>
+            <div>
+              <Label>Fin del periodo</Label>
+              <DatePicker value={fin} onChange={setFin} />
+            </div>
           </div>
+          {!fin && (
+            <p className="text-xs text-error">La fecha de fin del periodo es obligatoria.</p>
+          )}
           <div>
             <Label>Avance (%)</Label>
             <Input

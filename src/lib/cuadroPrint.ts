@@ -76,6 +76,13 @@ const INFO_LV_GAP_MM = 1.6; // aire entre la etiqueta y su valor
 const TABLE_GAP_MM = 4; // aire entre el encabezado del documento y la tabla
 const FIRMAS_GAP_MM = 16; // aire entre la tabla y las firmas
 const MAX_FIRMAS = 8;
+export const MAX_LINEAS_FIRMA = 4;
+/** Cada renglón de título le come alto a la tabla que va debajo. */
+export const MAX_TITULO_LINEAS = 6;
+/** Ancho de la raya sobre la que se firma. Es fijo a propósito: repartir el
+ *  ancho de la hoja entre las firmas hacía que una sola firma se llevara la
+ *  página entera, que es justo lo que no parece una línea de firma. */
+const FIRMA_ANCHO_MM = 70;
 
 // ---- tipos ----
 
@@ -90,9 +97,10 @@ export interface CuadroPrintLinea {
   auto?: boolean;
 }
 
+/** Una firma: de 1 a MAX_LINEAS_FIRMA líneas. La primera es el nombre y va en
+ *  negrita; las de abajo (cargo, empresa, cédula…) van tenues. */
 export interface CuadroPrintFirma {
-  nombre: string;
-  cargo: string;
+  lineas: string[];
 }
 
 export interface CuadroPrintOptions {
@@ -103,7 +111,10 @@ export interface CuadroPrintOptions {
   /** Máx. páginas de alto (0 = auto). Si no cabe, la letra baja de 0.5 en
    *  0.5 pt hasta MIN_PT; si aun así no cabe, `warn` lo dice. */
   maxTall: number;
-  /** Título central, hasta tres líneas. La última se pinta en negrita. */
+  /** Título central, hasta MAX_TITULO_LINEAS renglones. Ninguno va en negrita:
+   *  el peso lo daba la última línea, y desde que el renglón automático
+   *  «Cuenta No. N» puede ir en cualquier posición, esa regla dejó de tener
+   *  sentido. */
   titulo: string[];
   /** Las tres columnas del encabezado: izquierda, centro, derecha. */
   columnas: [CuadroPrintLinea[], CuadroPrintLinea[], CuadroPrintLinea[]];
@@ -317,38 +328,53 @@ function layoutInfo(
 // ---- firmas ----
 
 interface FirmaBox {
+  /** El hueco que le toca a la firma: la hilera reparte el ancho útil. */
   x: number;
   w: number;
+  /** La raya sobre la que se firma, centrada dentro del hueco. */
+  lineW: number;
   fila: number;
   nombre: string;
-  cargoLines: string[];
+  /** Lo que va debajo del nombre, ya envuelto: cargo, empresa, cédula… */
+  pieLines: string[];
 }
 
 /** Hasta cinco firmas van en una hilera; de seis en adelante se parten en dos
- *  para que ninguna baje de unos 4 cm y el cargo siga siendo legible. */
+ *  para que ninguna quede apretada contra la de al lado.
+ *
+ *  La hilera reparte el ancho de la hoja — con dos firmas, una queda a la
+ *  izquierda y la otra a la derecha —, pero la RAYA tiene ancho propio y va
+ *  centrada en su hueco. Antes la raya se estiraba con el hueco y una firma
+ *  sola cruzaba la página entera. */
 function layoutFirmas(
   firmas: CuadroPrintFirma[],
   pwMM: number,
   fontMM: number,
 ): { boxes: FirmaBox[]; filas: number; h: number } {
-  const usables = firmas.slice(0, MAX_FIRMAS);
+  const usables = firmas
+    .map((f) => (f.lineas ?? []).slice(0, MAX_LINEAS_FIRMA))
+    .slice(0, MAX_FIRMAS);
   if (!usables.length) return { boxes: [], filas: 0, h: 0 };
   const porFila = usables.length <= 5 ? usables.length : Math.ceil(usables.length / 2);
   const filas = Math.ceil(usables.length / porFila);
   const lineH = fontMM * 1.25;
 
-  let maxCargo = 1;
-  const boxes = usables.map((fi, i): FirmaBox => {
+  let maxPie = 1;
+  const boxes = usables.map((lineas, i): FirmaBox => {
     const fila = Math.floor(i / porFila);
     const enFila = Math.min(porFila, usables.length - fila * porFila);
     const w = pwMM / enFila;
-    const cargoLines = fi.cargo ? wrapTextMM(fi.cargo, w * 0.92, fontMM * 0.92, 2) : [''];
-    maxCargo = Math.max(maxCargo, cargoLines.length);
-    return { x: (i - fila * porFila) * w, w, fila, nombre: fi.nombre, cargoLines };
+    const lineW = Math.min(FIRMA_ANCHO_MM, w * 0.84);
+    const pieLines = lineas.slice(1)
+      .flatMap((t) => (t ? wrapTextMM(t, lineW, fontMM * 0.92, 2) : ['']));
+    maxPie = Math.max(maxPie, pieLines.length || 1);
+    return {
+      x: (i - fila * porFila) * w, w, lineW, fila, nombre: lineas[0] ?? '', pieLines,
+    };
   });
 
-  // Alto de UNA hilera: la línea de firma, el nombre y el cargo.
-  const filaH = lineH * (1 + maxCargo) + fontMM * 0.8;
+  // Alto de UNA hilera: la raya de la firma, el nombre y lo que va debajo.
+  const filaH = lineH * (1 + maxPie) + fontMM * 0.8;
   return { boxes, filas, h: filas * filaH + (filas - 1) * FIRMAS_GAP_MM * 0.5 };
 }
 
@@ -385,7 +411,7 @@ export function computeCuadroPrintLayout(opts: CuadroPrintOptions, data: CuadroP
     // Una línea de entrada = una línea impresa (se trunca con '…' si no cabe),
     // y las vacías se conservan como '': así el índice de cada campo editable
     // coincide con el del título que escribió el usuario.
-    const titleLines = titulo.map((t) =>
+    const titleLines = titulo.slice(0, MAX_TITULO_LINEAS).map((t) =>
       t && t.trim() ? wrapTextMM(t.trim(), titleAvail, titleFontMM, 1)[0] : '',
     );
     const nTitle = titleLines.filter(Boolean).length;
@@ -591,11 +617,10 @@ export function buildCuadroPrintPages(
         `width="${f2(logoW)}" height="${f2(topH - 1.5)}" preserveAspectRatio="xMidYMid meet"/>`;
     });
 
-    const ultima = titleLines.reduce((acc, ln, i) => (ln ? i : acc), -1);
     let ty = Math.max(titleFontMM, (topH - nTitle * titleLineMM) / 2 + titleFontMM);
     titleLines.forEach((ln, i) => {
       if (!ln) return;
-      svg += text(pwMM / 2, ty, ln, { size: titleFontMM, anchor: 'middle', bold: i === ultima });
+      svg += text(pwMM / 2, ty, ln, { size: titleFontMM, anchor: 'middle' });
       if (pageNo === 0) {
         campos.push({
           id: `titulo:${i}`, pagina: 0,
@@ -758,24 +783,25 @@ export function buildCuadroPrintPages(
     firmas.boxes.forEach((b, i) => {
       const y0 = yTop + b.fila * (filaH + FIRMAS_GAP_MM * 0.5);
       const cx = b.x + b.w / 2;
-      svg += line(b.x + b.w * 0.08, y0, b.x + b.w * 0.92, y0, COL.frame, GRID_W * 1.6);
+      const x0 = cx - b.lineW / 2;
+      svg += line(x0, y0, x0 + b.lineW, y0, COL.frame, GRID_W * 1.6);
       const nomY = y0 + lineH;
       svg += text(cx, nomY, b.nombre, { anchor: 'middle', bold: true });
-      b.cargoLines.forEach((cl, ci) => {
+      b.pieLines.forEach((cl, ci) => {
         svg += text(cx, nomY + (ci + 1) * lineH, cl, {
           size: fontMM * 0.92, anchor: 'middle', fill: COL.textDim,
         });
       });
       campos.push({
         id: `firma:${i}:nombre`, pagina: tailPage,
-        xMM: b.x + b.w * 0.08, yMM: docHeaderH + TABLE_GAP_MM + nomY - fontMM,
-        wMM: b.w * 0.84, hMM: lineH, align: 'center', valor: b.nombre, auto: false,
+        xMM: x0, yMM: docHeaderH + TABLE_GAP_MM + nomY - fontMM,
+        wMM: b.lineW, hMM: lineH, align: 'center', valor: b.nombre, auto: false,
       });
       campos.push({
-        id: `firma:${i}:cargo`, pagina: tailPage,
-        xMM: b.x + b.w * 0.08, yMM: docHeaderH + TABLE_GAP_MM + nomY,
-        wMM: b.w * 0.84, hMM: lineH * b.cargoLines.length, align: 'center',
-        valor: b.cargoLines.join(' '), auto: false,
+        id: `firma:${i}:pie`, pagina: tailPage,
+        xMM: x0, yMM: docHeaderH + TABLE_GAP_MM + nomY,
+        wMM: b.lineW, hMM: lineH * Math.max(1, b.pieLines.length), align: 'center',
+        valor: b.pieLines.join(' '), auto: false,
       });
     });
     return svg;
