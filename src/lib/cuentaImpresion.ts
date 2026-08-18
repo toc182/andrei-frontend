@@ -16,6 +16,9 @@ import {
   CUADRO_FONTS, MAX_LINEAS_FIRMA, MAX_TITULO_LINEAS, type CuadroPrintOptions,
 } from './cuadroPrint';
 import { fmt2 } from './desglosePrint';
+import {
+  COLOR_HOJA_DEFECTO, NIVELES_BLANCOS_DEFECTO, NIVELES_BLANCOS_MAX,
+} from './cuadroColor';
 import type { CuadroTotales } from './cuadroModel';
 
 /** De dónde sale un valor que NO se escribe a mano. */
@@ -120,6 +123,11 @@ export interface AjustesImpresion {
   firmas: FirmaImpresion[];
   logosIzq: LogoChoice[];
   logosDer: LogoChoice[];
+  /** Color base de la hoja; de él sale toda la paleta (cuadroColor.ts). */
+  color: string;
+  /** Cuántas bandas van con letra blanca, contando desde arriba: 0 ninguna,
+   *  1 el encabezado y el nivel 1, 2 hasta el nivel 2, y así. */
+  nivelesBlancos: number;
   papel: string;
   orientacion: 'vertical' | 'horizontal';
   letra: keyof typeof CUADRO_FONTS;
@@ -229,6 +237,8 @@ export function ajustesPorDefecto(ctx: CtxImpresion): AjustesImpresion {
     firmas: [{ lineas: ['', 'CONTRATISTA — PINELLAS S.A.'] }],
     logosIzq: ['pinellas'],
     logosDer: [],
+    color: COLOR_HOJA_DEFECTO,
+    nivelesBlancos: NIVELES_BLANCOS_DEFECTO,
     papel: PAPEL_HOJA.papel,
     orientacion: PAPEL_HOJA.orientacion,
     letra: 'normal',
@@ -243,6 +253,10 @@ export interface AutoFaltante {
   col: number;
   pos: number;
 }
+
+/** Un color guardado tiene que ser hex de verdad antes de llegar al SVG. */
+const esHex = (v: unknown): v is string =>
+  typeof v === 'string' && /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v.trim());
 
 /** Mueve un elemento de sitio dentro de una lista. Fuera de rango devuelve la
  *  misma lista, así el llamador no tiene que comprobar los extremos. */
@@ -317,6 +331,10 @@ export function normalizarAjustes(raw: unknown, ctx: CtxImpresion): AjustesImpre
     firmas: Array.isArray(a.firmas) ? a.firmas.map(firmaDeCrudo) : d.firmas,
     logosIzq: Array.isArray(a.logosIzq) ? a.logosIzq : d.logosIzq,
     logosDer: Array.isArray(a.logosDer) ? a.logosDer : d.logosDer,
+    color: esHex(a.color) ? a.color : d.color,
+    nivelesBlancos: Number.isFinite(a.nivelesBlancos)
+      ? Math.min(NIVELES_BLANCOS_MAX, Math.max(0, Math.floor(Number(a.nivelesBlancos))))
+      : d.nivelesBlancos,
     papel: typeof a.papel === 'string' ? a.papel : d.papel,
     orientacion: a.orientacion === 'vertical' ? 'vertical' : 'horizontal',
     letra: a.letra && a.letra in CUADRO_FONTS ? a.letra : d.letra,
@@ -348,6 +366,8 @@ export function aOpcionesImpresion(
       })),
     ) as CuadroPrintOptions['columnas'],
     firmas: a.firmas,
+    color: a.color,
+    nivelesBlancos: a.nivelesBlancos,
     logosLeft: logos.izq,
     logosRight: logos.der,
   };

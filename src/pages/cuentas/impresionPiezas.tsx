@@ -6,7 +6,7 @@
 // ninguna otra parte del sistema.
 
 import { useRef, type ChangeEvent } from 'react';
-import { ChevronDown, ChevronUp, ImageOff, Plus, Trash2, Upload, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, ImageOff, Plus, Trash2, Upload, X } from 'lucide-react';
 import logoPinellas from '@/assets/logo.png';
 import logoCocp from '@/assets/LogoCOCPfondoblanco.png';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,12 @@ import { cn } from '@/lib/utils';
 import { MAX_LOGOS_PER_SIDE } from '@/lib/cronogramaPrint';
 import { MAX_LINEAS_FIRMA } from '@/lib/cuadroPrint';
 import { MAX_FIRMAS, mover, type FirmaImpresion } from '@/lib/cuentaImpresion';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  COLORES_HOJA, COLOR_HOJA_DEFECTO, NIVELES_BLANCOS_MAX, paletaCuadro, tintaDeNivel,
+} from '@/lib/cuadroColor';
 import type { LogoChoice } from '@/lib/cronogramaApi';
 
 /** Un logo subido a mano no puede engordar la fila del proyecto: el JSONB
@@ -252,6 +258,126 @@ export function EditorFirmas({
         </Button>
       )}
     </>
+  );
+}
+
+/** El color de la hoja. Uno solo: de él se generan la banda del encabezado, su
+ *  texto, el pie y un tono por cada nivel de anidamiento del desglose. Por eso
+ *  no hay tres selectores — con tonos escogidos a mano, un desglose de ocho
+ *  niveles se queda sin tonos y los últimos se ven todos iguales. */
+export function EditorColor({
+  valor, onChange, nivelesBlancos, onNivelesBlancos,
+}: {
+  valor: string;
+  onChange: (hex: string) => void;
+  nivelesBlancos: number;
+  onNivelesBlancos: (n: number) => void;
+}) {
+  const activo = valor.trim().toLowerCase();
+  // La escala de ejemplo: cuatro niveles bastan para ver cómo aclara el color,
+  // sin depender del desglose que tenga el proyecto. Si se piden más bandas
+  // blancas que eso, la muestra crece para que se vea dónde corta — y siempre
+  // sobra una oscura debajo.
+  const nivelesMuestra = Math.max(4, nivelesBlancos + 1);
+  const paleta = paletaCuadro(valor || COLOR_HOJA_DEFECTO, nivelesMuestra, nivelesBlancos);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {COLORES_HOJA.map((c) => {
+          // Con 1 fijo: el visto de este botón tiene que leerse siempre, no
+          // sigue el ajuste de bandas blancas de la hoja.
+          const p = paletaCuadro(c.hex, 1, 1);
+          const puesto = c.hex.toLowerCase() === activo;
+          return (
+            <button
+              key={c.hex}
+              type="button"
+              title={c.nombre}
+              aria-label={c.nombre}
+              aria-pressed={puesto}
+              onClick={() => onChange(c.hex)}
+              className={cn(
+                'relative flex h-9 w-9 flex-col overflow-hidden rounded-md border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                puesto ? 'border-foreground ring-1 ring-foreground' : 'border-border',
+              )}
+            >
+              <span className="flex-1" style={{ backgroundColor: p.headFill }} />
+              {puesto && (
+                <Check
+                  className="absolute inset-0 m-auto h-4 w-4"
+                  style={{ color: p.headText }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* El color libre: para el consorcio que trae el suyo exacto. */}
+        <Input
+          type="color"
+          value={/^#[0-9a-fA-F]{6}$/.test(valor) ? valor : COLOR_HOJA_DEFECTO}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-7 w-12 cursor-pointer p-1"
+          aria-label="Color propio"
+        />
+        <span className="text-xs text-muted-foreground">Color propio</span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Hasta qué banda va la letra blanca, contando desde arriba. Lo pone
+            el proyecto: el punto en que el sistema la volteaba solo casi nunca
+            caía donde se quería. */}
+        <Select
+          value={String(nivelesBlancos)}
+          onValueChange={(v) => onNivelesBlancos(Number(v))}
+        >
+          <SelectTrigger className="h-7 w-14" aria-label="Niveles con letra blanca">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: NIVELES_BLANCOS_MAX + 1 }, (_, n) => (
+              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground">
+          Niveles con letra blanca
+        </span>
+      </div>
+
+      {/* Cómo queda: la banda del encabezado, los niveles y el pie, con los
+          mismos tonos que se imprimen. */}
+      <div className="overflow-hidden rounded-md border border-border">
+        <div
+          className="px-2 py-1 text-[11px] font-semibold"
+          style={{ backgroundColor: paleta.headFill, color: paleta.headText }}
+        >
+          Encabezado de la tabla
+        </div>
+        {paleta.niveles.map((tono, i) => (
+          <div
+            key={i}
+            className="py-0.5 pr-2 text-[11px]"
+            style={{
+              backgroundColor: tono,
+              color: tintaDeNivel(paleta, i),
+              paddingLeft: `${8 + i * 10}px`,
+            }}
+          >
+            Nivel {i + 1}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 text-[11px] font-semibold text-foreground"
+          style={{ backgroundColor: paleta.totalFill }}
+        >
+          Sub-total
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -28,7 +28,10 @@
 // a las clases de Tailwind.
 
 import { PT_MM, MAX_LOGOS_PER_SIDE, fitLogoWidth } from './cronogramaPrint';
-import { esc, f2, fmt2, fmtCantidad, grupoFill, wrapTextMM } from './desglosePrint';
+import { esc, f2, fmt2, fmtCantidad, wrapTextMM } from './desglosePrint';
+import {
+  paletaCuadro, tonoDeNivel, tintaDeNivel, COLOR_HOJA_DEFECTO, NIVELES_BLANCOS_DEFECTO,
+} from './cuadroColor';
 import {
   calcLinea, calcTotales, depthMap, esContenedor, parentsSet,
   type CuadroLinea, type CuadroTotales,
@@ -36,18 +39,23 @@ import {
 
 // Retícula tipo Excel: la hoja que recibe la institución lleva líneas en todas
 // las celdas. Fina para el cuerpo, fuerte para el marco, la cabecera y el pie.
+// La banda del encabezado, su texto y el pie NO están aquí: salen del color
+// que elige el proyecto (cuadroColor.ts). Estos son los que no dependen de él.
 const COL = {
   text: '#1c1f24',
   textDim: '#6b7280',
   grid: '#2b3140',
   frame: '#111827',
-  headFill: '#dfe5ee',
-  headText: '#16233a',
-  totalFill: '#e9edf2',
 };
 
 const GRID_W = 0.18;
-const FRAME_W = 0.35;
+/** Alto de una mayúscula o un dígito, en fracción del cuerpo de la letra. Sirve
+ *  para centrar una caja en el número que lleva dentro. */
+const CAP_HEIGHT = 0.72;
+// Todo el rayado va al mismo grosor. El marco, la raya bajo el encabezado y el
+// recuadro de «Cuenta N°» iban al doble: en la hoja pequeña no se notaba, pero
+// vista grande la retícula quedaba desigual.
+const FRAME_W = GRID_W;
 
 // El viewBox es EXACTAMENTE el área útil (0..pwMM), así que un trazo centrado
 // sobre el borde pierde su mitad de fuera: el marco y el recuadro de «Cuenta N°»
@@ -122,6 +130,11 @@ export interface CuadroPrintOptions {
   firmas: CuadroPrintFirma[];
   logosLeft: string[]; // data URLs
   logosRight: string[];
+  /** Color base de la hoja: de él salen la banda del encabezado, su texto,
+   *  el pie y un tono por nivel de anidamiento (ver cuadroColor.ts). */
+  color?: string;
+  /** Cuántas bandas llevan letra blanca, desde arriba. Sin valor, una. */
+  nivelesBlancos?: number;
   /** Decimales del % de cada fila. La hoja de ETESA los lleva enteros. */
   decimalesFila?: number;
   /** Decimales del % de la fila PORCENTAJE del pie. */
@@ -559,6 +572,14 @@ export function buildCuadroPrintPages(
       .map((s) => (s && s.startsWith('data:image/') ? esc(s) : null))
       .filter((s): s is string => s != null)
       .slice(0, MAX_LOGOS_PER_SIDE);
+  // La paleta sale del color base y de cuántos niveles trae el desglose: con
+  // ocho niveles hay ocho tonos, no cuatro repetidos.
+  const paleta = paletaCuadro(
+    opts.color || COLOR_HOJA_DEFECTO,
+    Math.max(1, ...toCuadroPrintRows(data.lineas, 0).printRows.map((r) => r.depth + 1)),
+    opts.nivelesBlancos ?? NIVELES_BLANCOS_DEFECTO,
+  );
+
   const logosL = safeLogos(opts.logosLeft);
   const logosR = safeLogos(opts.logosRight);
 
@@ -593,15 +614,16 @@ export function buildCuadroPrintPages(
    *  que se entrega. */
   const celdaNum = (
     ci: number, v: string, baseY: number,
-    o: { bold?: boolean; tipo?: 'cant' | 'pct' | 'money' } = {},
+    o: { bold?: boolean; tipo?: 'cant' | 'pct' | 'money'; fill?: string } = {},
   ): string => {
     if (!v) return '';
     const c = cols[3 + ci];
     const bold = !!o.bold;
+    const fill = o.fill;
     const tipo = o.tipo ?? CELDA_TIPO[ci];
-    if (tipo === 'pct') return text(c.x + c.w / 2, baseY, v, { anchor: 'middle', bold });
-    let out = text(c.x + c.w - padNumMM, baseY, v, { anchor: 'end', bold });
-    if (tipo === 'money') out = text(c.x + padNumMM, baseY, MONEDA, { bold }) + out;
+    if (tipo === 'pct') return text(c.x + c.w / 2, baseY, v, { anchor: 'middle', bold, fill });
+    let out = text(c.x + c.w - padNumMM, baseY, v, { anchor: 'end', bold, fill });
+    if (tipo === 'money') out = text(c.x + padNumMM, baseY, MONEDA, { bold, fill }) + out;
     return out;
   };
 
@@ -649,17 +671,31 @@ export function buildCuadroPrintPages(
         const valX = c.modo === 'der'
           ? clampRight(c.x + c.w, pwMM)
           : c.x + c.labelW + INFO_LV_GAP_MM;
+        // El recuadro de «Cuenta N°»: el valor va centrado dentro de la caja,
+        // no pegado a su filo derecho — es un número corto dentro de un marco
+        // y descentrado se lee como si se hubiera desplazado.
+        const caja = l.recuadro && l.valorLines[0]
+          ? {
+            w: Math.max(fontMM * 4, l.valorLines[0].length * fontMM * 0.62 + fontMM),
+            right: clampRight(c.x + c.w, pwMM),
+          }
+          : null;
         l.valorLines.forEach((vl, vi) => {
-          svg += text(valX, baseY + vi * fontMM * 1.35, vl, {
-            anchor: c.modo === 'der' ? 'end' : 'start',
+          const enCaja = caja != null && vi === 0;
+          svg += text(enCaja ? caja.right - caja.w / 2 : valX, baseY + vi * fontMM * 1.35, vl, {
+            anchor: enCaja ? 'middle' : c.modo === 'der' ? 'end' : 'start',
             bold: c.modo === 'der',
           });
         });
-        if (l.recuadro && l.valorLines[0]) {
-          const bw = Math.max(fontMM * 4, l.valorLines[0].length * fontMM * 0.62 + fontMM);
-          const bRight = clampRight(c.x + c.w, pwMM);
-          svg += `<rect x="${f2(bRight - bw)}" y="${f2(y0 + fontMM * 0.15)}" ` +
-            `width="${f2(bw)}" height="${f2(fontMM * 1.25)}" fill="none" ` +
+        if (caja) {
+          // La caja se centra en el NÚMERO, no en el renglón: un dígito crece
+          // hacia arriba desde la línea de base, así que su centro óptico está
+          // por encima de ella. Colgando la caja del alto del renglón, el
+          // número quedaba pegado al techo y todo el aire caía debajo.
+          const cajaH = fontMM * 1.25;
+          const centroNum = baseY - fontMM * CAP_HEIGHT / 2;
+          svg += `<rect x="${f2(caja.right - caja.w)}" y="${f2(centroNum - cajaH / 2)}" ` +
+            `width="${f2(caja.w)}" height="${f2(cajaH)}" fill="none" ` +
             `stroke="${COL.frame}" stroke-width="${FRAME_W}"/>`;
         }
         if (pageNo === 0) {
@@ -672,7 +708,11 @@ export function buildCuadroPrintPages(
             id: `col:${ci}:${li}:valor`, pagina: 0,
             xMM: c.modo === 'der' ? c.x + c.w - c.valW : c.x + c.labelW + INFO_LV_GAP_MM,
             yMM: y0, wMM: c.valW, hMM: l.h,
-            align: c.modo === 'der' ? 'right' : 'left', valor: l.valorRaw, auto: l.auto,
+            // Dentro del recuadro el valor va centrado, así que el campo que se
+            // edita encima tiene que ir centrado también o el número salta de
+            // sitio al soltarlo.
+            align: caja ? 'center' : c.modo === 'der' ? 'right' : 'left',
+            valor: l.valorRaw, auto: l.auto,
           });
         }
       });
@@ -682,7 +722,7 @@ export function buildCuadroPrintPages(
 
   // ---- cabecera de columnas (dos filas), dibujada en el espacio de la tabla ----
   const columnHeader = (): string => {
-    let svg = `<rect x="0" y="0" width="${f2(pwMM)}" height="${f2(colHeaderH)}" fill="${COL.headFill}"/>`;
+    let svg = `<rect x="0" y="0" width="${f2(pwMM)}" height="${f2(colHeaderH)}" fill="${paleta.headFill}"/>`;
     const [cNum, cDesc, cUni] = cols;
     const fijas = [cNum, cDesc, cUni];
 
@@ -691,11 +731,11 @@ export function buildCuadroPrintPages(
       const lines = wrapTextMM(c.label, c.w - padNumMM * 0.5, fHdr, 2);
       let y = (colHeaderH - lines.length * hdrLineH) / 2 + fHdr;
       lines.forEach((ln) => {
-        svg += text(c.x + c.w / 2, y, ln, { size: fHdr, anchor: 'middle', bold: true, fill: COL.headText });
+        svg += text(c.x + c.w / 2, y, ln, { size: fHdr, anchor: 'middle', bold: true, fill: paleta.headText });
         y += hdrLineH;
       });
       const sx = clampRight(c.x + c.w, pwMM);
-      svg += line(sx, 0, sx, colHeaderH, COL.frame, GRID_W * 1.6);
+      svg += line(sx, 0, sx, colHeaderH, COL.frame, GRID_W);
     });
 
     // Bloques arriba, sub-etiquetas abajo.
@@ -707,22 +747,22 @@ export function buildCuadroPrintPages(
       const lines = grupoHdrLines[bi];
       let y = (grupoHdrH - lines.length * hdrLineH) / 2 + fHdr;
       lines.forEach((ln) => {
-        svg += text(spanX + spanW / 2, y, ln, { size: fHdr, anchor: 'middle', bold: true, fill: COL.headText });
+        svg += text(spanX + spanW / 2, y, ln, { size: fHdr, anchor: 'middle', bold: true, fill: paleta.headText });
         y += hdrLineH;
       });
       const bx = clampRight(spanX + spanW, pwMM);
-      svg += line(bx, 0, bx, colHeaderH, COL.frame, GRID_W * 1.6);
+      svg += line(bx, 0, bx, colHeaderH, COL.frame, GRID_W);
     });
     // La línea que separa las dos filas de la cabecera arranca en el primer
     // bloque: N°, Actividades y Unidad ocupan las dos filas y una raya a media
     // altura las partiría en dos celdas que no existen.
-    svg += line(cols[3].x, grupoHdrH, pwMM, grupoHdrH, COL.frame, GRID_W * 1.6);
+    svg += line(cols[3].x, grupoHdrH, pwMM, grupoHdrH, COL.frame, GRID_W);
 
     cols.slice(3).forEach((c, i) => {
       const lines = subHdrLines[i];
       let y = grupoHdrH + (subHdrH - lines.length * hdrLineH) / 2 + fHdr;
       lines.forEach((ln) => {
-        svg += text(c.x + c.w / 2, y, ln, { size: fHdr, anchor: 'middle', bold: true, fill: COL.headText });
+        svg += text(c.x + c.w / 2, y, ln, { size: fHdr, anchor: 'middle', bold: true, fill: paleta.headText });
         y += hdrLineH;
       });
       if ((i + 1) % 3 !== 0) svg += line(c.x + c.w, grupoHdrH, c.x + c.w, colHeaderH, COL.grid, GRID_W);
@@ -741,6 +781,10 @@ export function buildCuadroPrintPages(
       .map((c) => line(c.x + c.w, yTop, c.x + c.w, yBot, COL.grid, GRID_W))
       .join('');
 
+  /** El filo derecho de la columna N°. Es la única vertical que también llevan
+   *  las bandas de sección, para que esa columna no se corte nunca. */
+  const xFinNum = cols[0].x + cols[0].w;
+
   /** SUB-TOTAL y PORCENTAJE (%): las dos filas del pie. Las etiquetas ocupan
    *  las tres columnas fijas más las dos primeras del presupuesto; los montos
    *  caen bajo la columna Total/Valor de cada bloque. */
@@ -753,7 +797,7 @@ export function buildCuadroPrintPages(
       { i: 11, v: fmt2(totales.fecha), p: fmtPct(totales.pctTotal, decTotal) },
       { i: 14, v: fmt2(totales.falta), p: fmtPct(totales.pctFalta, decTotal) },
     ];
-    let svg = `<rect x="0" y="${f2(yTop)}" width="${f2(pwMM)}" height="${f2(2 * rowLineH)}" fill="${COL.totalFill}"/>`;
+    let svg = `<rect x="0" y="${f2(yTop)}" width="${f2(pwMM)}" height="${f2(2 * rowLineH)}" fill="${paleta.totalFill}"/>`;
     svg += line(0, yTop, pwMM, yTop, COL.frame, FRAME_W);
     svg += line(0, yTop + rowLineH, pwMM, yTop + rowLineH, COL.grid, GRID_W);
 
@@ -838,21 +882,31 @@ export function buildCuadroPrintPages(
     for (let i = start; i < end; i++) {
       const r = printRows[i];
       const h = rowHeights[i];
+      // El color escogido es el nivel 1, así que una banda puede quedar
+      // oscura: el proyecto dice hasta qué nivel va la letra blanca.
+      let tinta = COL.text;
       if (r.grupo) {
+        const fondo = tonoDeNivel(paleta, r.depth);
+        tinta = tintaDeNivel(paleta, r.depth);
         // La banda de grupo va limpia, sin verticales — igual que en pantalla
         // (§22/§23): es un bloque, no una fila de datos.
-        body += `<rect x="0" y="${f2(y)}" width="${f2(pwMM)}" height="${f2(h)}" fill="${grupoFill(r.depth)}"/>`;
+        body += `<rect x="0" y="${f2(y)}" width="${f2(pwMM)}" height="${f2(h)}" fill="${fondo}"/>`;
+        // Salvo la de N°: esa columna es una rejilla continua de arriba abajo y
+        // si en las secciones se corta, la hoja se lee como si le faltara la
+        // línea. Va en la tinta de la banda porque el gris de la retícula
+        // desaparece sobre los tonos oscuros.
+        body += line(xFinNum, y, xFinNum, y + h, tinta, GRID_W);
       } else {
         body += verticales(y, y + h);
       }
       const baseY = y + rowLineH * 0.7;
       const [cNum, cDesc, cUni] = cols;
-      body += text(cNum.x + cNum.w / 2, baseY, r.num, { anchor: 'middle', bold: r.grupo });
+      body += text(cNum.x + cNum.w / 2, baseY, r.num, { anchor: 'middle', bold: r.grupo, fill: tinta });
       rowLines[i].forEach((ln, li) => {
-        body += text(cDesc.x + padMM / 2 + r.depth * indentMM, baseY + li * lineAdvance, ln, { bold: r.grupo });
+        body += text(cDesc.x + padMM / 2 + r.depth * indentMM, baseY + li * lineAdvance, ln, { bold: r.grupo, fill: tinta });
       });
-      body += text(cUni.x + cUni.w / 2, baseY, r.unidad, { anchor: 'middle' });
-      r.celdas.forEach((v, ci) => { body += celdaNum(ci, v, baseY); });
+      body += text(cUni.x + cUni.w / 2, baseY, r.unidad, { anchor: 'middle', fill: tinta });
+      r.celdas.forEach((v, ci) => { body += celdaNum(ci, v, baseY, { fill: tinta }); });
       y += h;
       body += line(0, y, pwMM, y, COL.grid, GRID_W);
     }

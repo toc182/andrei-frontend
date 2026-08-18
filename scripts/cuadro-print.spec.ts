@@ -17,6 +17,7 @@ import {
   BLOQUES, CELDA_TIPO, type CuadroPrintOptions,
 } from '../src/lib/cuadroPrint';
 import { calcTotales, type CuadroLinea } from '../src/lib/cuadroModel';
+import { paletaCuadro, hexAHsl, tintaDeNivel } from '../src/lib/cuadroColor';
 
 let passed = 0;
 let failed = 0;
@@ -519,6 +520,112 @@ eq(nueve.firmas.boxes.length, 8, 'más de ocho firmas se recortan a ocho');
 const sinFirmas = buildCuadroPrintPages(baseOpts({ firmas: [] }), { lineas: ETESA_C2 });
 ok(sinFirmas.pages.length > 0, 'sin firmas también se imprime');
 ok(!sinFirmas.campos.some((c) => c.id.startsWith('firma:')), 'y no quedan campos de firma');
+
+// ── 8.5 · el color de la hoja ───────────────────────────────────────────
+
+// De UN color salen la banda del encabezado, su texto, el pie y un tono por
+// nivel: cambiarlo tiene que mover la hoja entera, no una parte.
+const azul = buildCuadroPrintPages(baseOpts(), { lineas: ETESA_C2 }).pages[0];
+const verde = buildCuadroPrintPages(
+  baseOpts({ color: '#1F5F3A' }), { lineas: ETESA_C2 },
+).pages[0];
+ok(azul !== verde, 'cambiar el color cambia la hoja');
+ok(!verde.includes('#dfe5ee'), 'y no queda ningún tono del azul viejo');
+
+// La escala tiene tantos pasos como niveles tenga el desglose, y todos son
+// distintos: con una lista fija, del cuarto nivel en adelante se repetían.
+const p4 = paletaCuadro('#1F375F', 4);
+const p8 = paletaCuadro('#1F375F', 8);
+eq(p4.niveles.length, 4, 'cuatro niveles, cuatro tonos');
+eq(p8.niveles.length, 8, 'ocho niveles, ocho tonos');
+eq(new Set(p8.niveles).size, 8, 'y los ocho son distintos entre sí');
+ok(
+  hexAHsl(p8.niveles[0]).l < hexAHsl(p8.niveles[7]).l,
+  'la escala va de más oscuro a más claro',
+);
+
+// El color escogido aparece TAL CUAL: es la banda del encabezado y el primer
+// nivel. Antes solo se usaban versiones aclaradas y el color elegido no salía
+// por ningún lado — un amarillo brillante terminaba en tonos crema.
+eq(p4.headFill, '#1f375f', 'la banda del encabezado es el color escogido');
+eq(p4.niveles[0], '#1f375f', 'y el nivel 1 también');
+
+// La letra blanca la pone el proyecto, no el cálculo: es acumulativa desde
+// arriba y el encabezado va con el nivel 1.
+const blancos0 = paletaCuadro('#1F375F', 4, 0);
+eq(blancos0.headText, '#1c1f24', 'en 0 el encabezado va con letra oscura');
+eq(new Set(blancos0.tintas).size, 1, 'y ningún nivel lleva letra blanca');
+eq(blancos0.tintas[0], '#1c1f24', 'ni siquiera el primero');
+
+const blancos1 = paletaCuadro('#1F375F', 4, 1);
+eq(blancos1.headText, '#ffffff', 'en 1 el encabezado va con letra blanca');
+eq(blancos1.tintas.join(), '#ffffff,#1c1f24,#1c1f24,#1c1f24', 'y solo el nivel 1');
+
+const blancos3 = paletaCuadro('#1F375F', 4, 3);
+eq(
+  blancos3.tintas.join(),
+  '#ffffff,#ffffff,#ffffff,#1c1f24',
+  'en 3 los tres primeros niveles van en blanco: es acumulativo',
+);
+
+// Pedir más bandas blancas que niveles tiene el desglose no rompe nada.
+eq(
+  paletaCuadro('#1F375F', 2, 8).tintas.join(),
+  '#ffffff,#ffffff',
+  'pedir más blancos que niveles deja todos en blanco',
+);
+eq(tintaDeNivel(blancos1, 9), '#1c1f24', 'más allá del último nivel, la tinta se queda en la del último');
+
+// El ajuste manda sobre el tono: un amarillo brillante con letra blanca queda
+// ilegible, y aun así sale, porque lo pidió el proyecto.
+const amarillo = paletaCuadro('#FFE600', 4, 1);
+eq(amarillo.headFill, '#ffe600', 'un amarillo brillante se usa tal cual');
+eq(amarillo.headText, '#ffffff', 'y el ajuste manda aunque el tono sea claro');
+ok(
+  hexAHsl(amarillo.niveles[3]).h > 40 && hexAHsl(amarillo.niveles[3]).h < 70,
+  'los niveles del amarillo siguen siendo amarillos, no marrones',
+);
+
+// Y el ajuste tiene que llegar hasta la hoja armada, no quedarse en la paleta.
+const hoja3 = buildCuadroPrintPages(baseOpts({ nivelesBlancos: 3 }), { lineas: ETESA_C2 }).pages[0];
+const hoja0 = buildCuadroPrintPages(baseOpts({ nivelesBlancos: 0 }), { lineas: ETESA_C2 }).pages[0];
+ok(hoja3 !== hoja0, 'cambiar los niveles con letra blanca cambia la hoja');
+ok(hoja0.length > 0 && hoja3.length > 0, 'y en los dos extremos la hoja sigue saliendo');
+
+// La columna N° es una rejilla continua: las bandas de sección también llevan
+// su filo derecho. Va en la tinta de la banda, si no se pierde sobre el tono
+// oscuro del nivel 1.
+const conBandas = buildCuadroPrintPages(baseOpts(), { lineas: ETESA_C2 }).pages[0];
+const filosBlancos = [...conBandas.matchAll(
+  /<line x1="([\d.]+)" y1="[\d.]+" x2="([\d.]+)" y2="[\d.]+" stroke="#ffffff"/g,
+)].filter((m) => m[1] === m[2]);
+ok(filosBlancos.length > 0, 'las bandas de sección llevan el filo de la columna N°');
+const xNum = filosBlancos[0][1];
+ok(
+  new RegExp(`<line x1="${xNum}" y1="[\\d.]+" x2="${xNum}" y2="[\\d.]+" stroke="#2b3140"`).test(conBandas),
+  'y cae justo donde va esa misma vertical en las filas normales',
+);
+ok(
+  !hoja0.includes('stroke="#ffffff"'),
+  'con la letra en oscuro, ese filo también sale oscuro y no queda ninguna línea blanca',
+);
+
+// El «Cuenta N°» va dentro de un recuadro, y el número centrado en la caja.
+const caja = conBandas.match(
+  /<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="[\d.]+" fill="none" stroke="#111827"/,
+);
+ok(caja != null, 'el valor de Cuenta N° sale dentro de un recuadro');
+const centroCaja = (Number(caja![1]) + Number(caja![2]) / 2).toFixed(2);
+ok(
+  conBandas.includes(`<text x="${centroCaja}"`),
+  'y el número va centrado en la caja, no pegado a su filo derecho',
+);
+
+// Un color inservible no puede tumbar la hoja.
+ok(
+  buildCuadroPrintPages(baseOpts({ color: 'no-es-color' }), { lineas: ETESA_C2 }).pages.length > 0,
+  'un color inválido cae al azul de la casa en vez de romper',
+);
 
 // ── 9 · casos límite ────────────────────────────────────────────────────
 

@@ -10,7 +10,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-type DialogSize = "confirm" | "simple" | "standard" | "complex" | "detail";
+type DialogSize = "confirm" | "simple" | "standard" | "complex" | "detail" | "viewer";
 
 interface AppDialogProps {
   open: boolean;
@@ -28,6 +28,9 @@ const dialogWidths: Record<DialogSize, string> = {
   standard: "sm:max-w-2xl",
   complex:  "sm:max-w-4xl",
   detail:   "sm:max-w-4xl",
+  // Ver algo a tamaño grande — una hoja imprimible, un plano. No es un
+  // formulario: el ancho lo manda la pantalla, no la escala.
+  viewer:   "sm:max-w-[96vw]",
 };
 
 export function AppDialog({

@@ -653,6 +653,12 @@ Props: `open`, `onOpenChange`, `size` (default `"simple"`), `title`, `descriptio
 | Standard form (5–15 fields) | `standard` | `sm:max-w-2xl` |
 | Complex / multi-column | `complex` | `sm:max-w-4xl` |
 | Read-mostly detail view | `detail` | `sm:max-w-4xl` |
+| Enlarged viewer (printable sheet, drawing) | `viewer` | `sm:max-w-[96vw]` |
+
+`viewer` is the one size not driven by field count. Use it only to show
+something at the largest size the screen allows — a print preview, a
+drawing — never for a form. It has no footer: the dialog is closed with
+Esc or the corner X.
 
 **All sizes except `confirm` get header/footer dividers.** The `confirm` size is the only one without dividers — it's a short yes/no decision, not a form.
 

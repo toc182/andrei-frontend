@@ -15,8 +15,8 @@
 // El papel no se elige: la hoja va siempre en legal horizontal.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Plus, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
-import { PageHeader, ErrorState, TableSkeleton } from '@/components/shell';
+import { ArrowLeft, Maximize2, Plus, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
+import { AppDialog, PageHeader, ErrorState, TableSkeleton } from '@/components/shell';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,7 @@ import {
   getCuadro, getProyectoImpresion, guardarAjustesImpresion,
 } from '@/lib/cuadroApi';
 import {
-  campoPlano, CampoOrdenable, ChipAuto, EditorFirmas, EditorLogos, EstadoGuardado,
+  campoPlano, CampoOrdenable, ChipAuto, EditorColor, EditorFirmas, EditorLogos, EstadoGuardado,
   FilaAuto, Titulo,
   type Guardado,
 } from './impresionPiezas';
@@ -75,6 +75,8 @@ export default function ConfigCuentaPage({ projectId, ejemploCuentaId, onBack }:
   const [guardado, setGuardado] = useState<Guardado>('limpio');
   const [aviso, setAviso] = useState<string | null>(null);
   const [paginas, setPaginas] = useState<{ svgs: string[]; err: string | null } | null>(null);
+  /** La hoja de ejemplo abierta a tamaño grande. Solo se mira; no se guarda. */
+  const [expandido, setExpandido] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -518,7 +520,48 @@ export default function ConfigCuentaPage({ projectId, ejemploCuentaId, onBack }:
           </p>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="space-y-2.5 p-3">
+          <Titulo texto="Color" />
+          <p className="text-xs text-muted-foreground">
+            De este color salen la banda del encabezado, el pie y los tonos de
+            cada nivel del desglose.
+          </p>
+          <EditorColor
+            valor={ajustes.color}
+            onChange={(hex) => editar((a) => ({ ...a, color: hex }), true)}
+            nivelesBlancos={ajustes.nivelesBlancos}
+            onNivelesBlancos={(n) => editar((a) => ({ ...a, nivelesBlancos: n }), true)}
+          />
+        </CardContent>
+      </Card>
     </div>
+  );
+
+  // Las páginas de la hoja. Salen igual en la columna de la derecha y dentro
+  // del diálogo de Expandir; lo único que cambia es el ancho que las contiene.
+  const hoja = paginas == null ? (
+    <p className="py-16 text-center text-sm text-slate-600">Armando la hoja…</p>
+  ) : paginas.err ? (
+    <Alert variant="error" title={paginas.err} />
+  ) : (
+    paginas.svgs.map((p, i) => (
+      <figure key={i} className="m-0">
+        {/* El papel COMPLETO: el margen real se dibuja como padding
+            (porcentaje del ancho — valor dinámico, no expresable en
+            Tailwind) y adentro va el mismo SVG que se imprime. */}
+        <div className="bg-white shadow-md" style={{ padding: `${marginPct}%` }}>
+          <div
+            className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+            dangerouslySetInnerHTML={{ __html: p }}
+          />
+        </div>
+        <figcaption className="mt-1.5 text-center text-xs text-slate-700">
+          Página {i + 1} de {paginas.svgs.length}
+        </figcaption>
+      </figure>
+    ))
   );
 
   return (
@@ -551,34 +594,34 @@ export default function ConfigCuentaPage({ projectId, ejemploCuentaId, onBack }:
           </Card>
         ) : (
           <div className="min-w-0 space-y-3 rounded-xl bg-slate-300 p-4 xl:h-full xl:overflow-y-auto">
-            <p className="text-xs text-slate-700">
-              Ejemplo con la Cuenta {base.ejemploNumero}. Aquí solo se mira.
-            </p>
-            {paginas == null ? (
-              <p className="py-16 text-center text-sm text-slate-600">Armando la hoja…</p>
-            ) : paginas.err ? (
-              <Alert variant="error" title={paginas.err} />
-            ) : (
-              paginas.svgs.map((p, i) => (
-                <figure key={i} className="m-0">
-                  {/* El papel COMPLETO: el margen real se dibuja como padding
-                      (porcentaje del ancho — valor dinámico, no expresable en
-                      Tailwind) y adentro va el mismo SVG que se imprime. */}
-                  <div className="bg-white shadow-md" style={{ padding: `${marginPct}%` }}>
-                    <div
-                      className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
-                      dangerouslySetInnerHTML={{ __html: p }}
-                    />
-                  </div>
-                  <figcaption className="mt-1.5 text-center text-xs text-slate-700">
-                    Página {i + 1} de {paginas.svgs.length}
-                  </figcaption>
-                </figure>
-              ))
-            )}
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-slate-700">
+                Ejemplo con la Cuenta {base.ejemploNumero}. Aquí solo se mira.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 flex-shrink-0"
+                onClick={() => setExpandido(true)}
+              >
+                <Maximize2 className="h-3.5 w-3.5" /> Expandir
+              </Button>
+            </div>
+            {hoja}
           </div>
         )}
       </div>
+
+      {/* La misma hoja, al ancho que dé la pantalla. Solo se mira: se cierra
+          con Esc o con la equis, y por eso no lleva pie de botones. */}
+      <AppDialog
+        open={expandido}
+        onOpenChange={setExpandido}
+        size="viewer"
+        title={`Cuenta ${base.ejemploNumero ?? ''} — ejemplo de la hoja`}
+      >
+        <div className="space-y-3 rounded-lg bg-slate-300 p-4">{hoja}</div>
+      </AppDialog>
     </div>
   );
 }
