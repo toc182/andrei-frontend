@@ -42,6 +42,10 @@ export interface SolicitudPago {
   numero_cuenta: string | null;
   urgente: boolean;
   pinellas_paga: boolean;
+  // Categoría de gasto (issue #71). Never required — a solicitud can stay
+  // unclassified and be labelled later by whoever does cost control.
+  categoria_id?: number | null;
+  categoria_nombre?: string | null;
   revisada?: boolean;
   es_mi_turno?: boolean;
   aprobadores_estado?: { nombre: string; estado: string }[];

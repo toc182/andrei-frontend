@@ -331,6 +331,11 @@ export default function ProjectSolicitudesPago({
 
   const uniqueProveedores = [...new Set(getFilteredExcluding('proveedor').map((s) => s.proveedor).filter(Boolean))].sort();
   const uniqueEstados = ALL_ESTADOS;
+  // '' is "Sin categoría" — kept in the list (not filtered out like the others)
+  // because being unclassified is exactly what you filter for, and sorted last
+  // so it reads as the tail of the list. Issue #71.
+  const uniqueCategorias = [...new Set(getFilteredExcluding('categoria_nombre').map((s) => s.categoria_nombre || ''))]
+    .sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)));
 
   // Apply all column header filters + sort
   const afterColumnFilters = applyColumnFilters(preFiltered, columnFilters);
@@ -723,6 +728,7 @@ export default function ProjectSolicitudesPago({
         uniqueProveedores={uniqueProveedores}
         uniqueProyectos={[]}
         uniqueEstados={uniqueEstados}
+        uniqueCategorias={uniqueCategorias}
         onRowClick={openDetail}
         onMarkMensajeRead={(id) =>
           marcarMensajeLeido({
@@ -847,6 +853,18 @@ export default function ProjectSolicitudesPago({
                   mensaje_autor_id: updated?.mensaje_autor_id ?? null,
                   mensaje_autor_nombre: updated?.mensaje_autor_nombre ?? null,
                   mensaje_updated_at: updated?.mensaje_updated_at ?? null,
+                }
+              : prev,
+          );
+          loadSolicitudes();
+        }}
+        onCategoriaSaved={(updated) => {
+          setDetailSolicitud((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  categoria_id: updated.categoria_id,
+                  categoria_nombre: updated.categoria_nombre,
                 }
               : prev,
           );

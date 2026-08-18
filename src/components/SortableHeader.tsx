@@ -17,6 +17,12 @@ interface SortableHeaderProps {
   onFilterChange?: (column: string, values: string[]) => void;
   className?: string;
   align?: 'left' | 'right';
+  /**
+   * Label for the blank value in the filter list. Defaults to "(vacío)".
+   * Columns where blank is a meaningful answer rather than missing data
+   * pass their own wording — e.g. "Sin categoría" (issue #71).
+   */
+  emptyLabel?: string;
 }
 
 export function SortableHeader({
@@ -30,6 +36,7 @@ export function SortableHeader({
   onFilterChange,
   className = '',
   align = 'left',
+  emptyLabel = '(vacío)',
 }: SortableHeaderProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -170,7 +177,11 @@ export function SortableHeader({
                       checked={activeFilters.includes(value)}
                       onCheckedChange={(checked) => handleFilterToggle(value, !!checked)}
                     />
-                    <span className="text-sm">{value || '(vacío)'}</span>
+                    <span
+                      className={`text-sm ${value ? '' : 'italic text-muted-foreground'}`}
+                    >
+                      {value || emptyLabel}
+                    </span>
                   </label>
                 ))}
               </div>

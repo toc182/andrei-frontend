@@ -13,6 +13,7 @@ import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/shell/DatePicker';
+import { CategoriaSelect } from '@/components/CategoriaSelect';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -75,6 +76,7 @@ interface SolicitudPago {
   numero_cuenta: string | null;
   urgente: boolean;
   pinellas_paga?: boolean;
+  categoria_id?: number | null;
   mensaje?: string | null;
 }
 
@@ -157,6 +159,9 @@ const solicitudFormSchema = z.object({
   observaciones: z.string(),
   urgente: z.boolean(),
   pinellas_paga: z.boolean(),
+  // Never required — a solicitud can stay unclassified and be labelled later
+  // by whoever does cost control. Issue #71.
+  categoria_id: z.number().nullable(),
   beneficiario: z.string(),
   banco: z.string(),
   tipo_cuenta: z.string(),
@@ -175,6 +180,7 @@ const defaultFormValues = (userId?: number): SolicitudFormData => ({
   observaciones: '',
   urgente: false,
   pinellas_paga: false,
+  categoria_id: null,
   beneficiario: '',
   banco: '',
   tipo_cuenta: 'none',
@@ -238,6 +244,7 @@ export default function SolicitudPagoForm({
         observaciones: editingSolicitud.observaciones ?? '',
         urgente: !!editingSolicitud.urgente,
         pinellas_paga: !!editingSolicitud.pinellas_paga,
+        categoria_id: editingSolicitud.categoria_id ?? null,
         beneficiario: editingSolicitud.beneficiario ?? '',
         banco: editingSolicitud.banco ?? '',
         tipo_cuenta: editingSolicitud.tipo_cuenta ?? 'none',
@@ -439,6 +446,7 @@ export default function SolicitudPagoForm({
         observaciones: data.observaciones.trim() || null,
         urgente: data.urgente,
         pinellas_paga: data.pinellas_paga,
+        categoria_id: data.categoria_id,
         beneficiario: data.beneficiario.trim() || null,
         banco: data.banco.trim() || null,
         tipo_cuenta:
@@ -658,7 +666,22 @@ export default function SolicitudPagoForm({
                   </FormItem>
                 )}
               />
-              {/* Requisicion vinculada — oculto temporalmente; siempre se envia null. */}
+              {/* Requisicion vinculada — oculto temporalmente; siempre se envia null.
+                  Su hueco lo ocupa ahora la categoria de gasto (issue #71). */}
+              <FormField
+                control={form.control}
+                name="categoria_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Categoría</FormLabel>
+                    <CategoriaSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <FormField

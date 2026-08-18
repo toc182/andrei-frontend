@@ -49,6 +49,7 @@ interface SolicitudesTableProps {
   uniqueProveedores: string[];
   uniqueProyectos: string[];
   uniqueEstados: string[];
+  uniqueCategorias: string[];
   onRowClick: (sol: SolicitudPago) => void;
   onMarkMensajeRead: (id: number) => void;
 }
@@ -63,6 +64,7 @@ export function SolicitudesTable({
   uniqueProveedores,
   uniqueProyectos,
   uniqueEstados,
+  uniqueCategorias,
   onRowClick,
   onMarkMensajeRead,
 }: SolicitudesTableProps) {
@@ -130,8 +132,14 @@ export function SolicitudesTable({
                   <div className="text-lg font-bold mb-1">
                     {formatMoney(sol.monto_total)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatDate(sol.fecha)}
+                  <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <span>{formatDate(sol.fecha)}</span>
+                    {sol.categoria_nombre && (
+                      <>
+                        <span>·</span>
+                        <span>{sol.categoria_nombre}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -186,6 +194,19 @@ export function SolicitudesTable({
                     onFilterChange={onFilterChange}
                   />
                   <SortableHeader
+                    columnKey="categoria_nombre"
+                    label="Categoría"
+                    type="discrete"
+                    sortState={sortState}
+                    onSortChange={onSortChange}
+                    uniqueValues={uniqueCategorias}
+                    activeFilters={
+                      columnFilters.categoria_nombre ?? uniqueCategorias
+                    }
+                    onFilterChange={onFilterChange}
+                    emptyLabel="Sin categoría"
+                  />
+                  <SortableHeader
                     columnKey="monto_total"
                     label="Monto Total"
                     type="numeric"
@@ -209,7 +230,7 @@ export function SolicitudesTable({
                 {solicitudes.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={showProyectoColumn ? 7 : 6}
+                      colSpan={showProyectoColumn ? 8 : 7}
                       className="p-0"
                     >
                       <EmptyState
@@ -255,6 +276,11 @@ export function SolicitudesTable({
                             />
                           )}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {sol.categoria_nombre || (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
                         {formatMoney(sol.monto_total)}

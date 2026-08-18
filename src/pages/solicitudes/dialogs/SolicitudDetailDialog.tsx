@@ -21,7 +21,10 @@ import type {
   Aprobacion,
   AprobadorProyecto,
 } from '../types';
-import type { MensajeUpdated } from '../utils/solicitudActions';
+import type {
+  MensajeUpdated,
+  CategoriaUpdated,
+} from '../utils/solicitudActions';
 import { SolicitudBankDataCard } from './detail/SolicitudBankDataCard';
 import { SolicitudBasicInfoSection } from './detail/SolicitudBasicInfoSection';
 import { SolicitudItemsAndTotals } from './detail/SolicitudItemsAndTotals';
@@ -109,6 +112,7 @@ interface SolicitudDetailDialogProps {
   onReenviar: (id: number) => void;
   onOpenDeleteDialog: (id: number) => void;
   onMensajeSaved?: (updated: MensajeUpdated | null) => void;
+  onCategoriaSaved?: (updated: CategoriaUpdated) => void;
 }
 
 export function SolicitudDetailDialog({
@@ -154,6 +158,7 @@ export function SolicitudDetailDialog({
   onReenviar,
   onOpenDeleteDialog,
   onMensajeSaved,
+  onCategoriaSaved,
 }: SolicitudDetailDialogProps) {
   return (
     <AppDialog
@@ -199,6 +204,7 @@ export function SolicitudDetailDialog({
           <SolicitudBasicInfoSection
             solicitud={solicitud}
             showProyectoField={showProyectoField}
+            onCategoriaSaved={onCategoriaSaved}
           />
 
           {/* Items + Totals */}

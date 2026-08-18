@@ -163,6 +163,52 @@ export async function saveMensajeSolicitud(args: {
   }
 }
 
+export interface CategoriaUpdated {
+  categoria_id: number | null;
+  categoria_nombre: string | null;
+}
+
+/**
+ * Sets the categoría de gasto on a solicitud (issue #71).
+ *
+ * Uses its own endpoint rather than the normal edit: editing a solicitud that
+ * already carries approvals wipes the approval chain, and pagada/facturada
+ * solicitudes can only be touched through the corrección flow, which demands
+ * a written motivo. Neither is acceptable for classifying an expense after
+ * the fact. The categoría is a reporting label, not part of what is paid, so
+ * it moves in any estado without disturbing approvals, estado or amounts.
+ */
+export async function saveCategoriaSolicitud(args: {
+  solicitudId: number;
+  categoriaId: number | null;
+  setSaving: (loading: boolean) => void;
+  onSuccess: (updated: CategoriaUpdated) => void;
+  onError?: (msg: string) => void;
+}): Promise<void> {
+  try {
+    args.setSaving(true);
+    const response = await api.patch<{
+      success: boolean;
+      categoria_id: number | null;
+      categoria_nombre: string | null;
+    }>(`/solicitudes-pago/${args.solicitudId}/categoria`, {
+      categoria_id: args.categoriaId,
+    });
+    args.onSuccess({
+      categoria_id: response.data.categoria_id ?? null,
+      categoria_nombre: response.data.categoria_nombre ?? null,
+    });
+  } catch (err) {
+    console.error('Error saving categoria:', err);
+    const apiError = err as { response?: { data?: { message?: string } } };
+    args.onError?.(
+      apiError.response?.data?.message || 'Error al guardar la categoría',
+    );
+  } finally {
+    args.setSaving(false);
+  }
+}
+
 /**
  * Marks the mensaje of a solicitud as "read" for the current user.
  * Optimistically updates the row in the list so the dot disappears
