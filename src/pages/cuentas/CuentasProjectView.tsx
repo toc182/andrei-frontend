@@ -152,7 +152,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   // llena una vez y vale para todas las cuentas del proyecto.
   if (view === 'config') {
     return (
-      <div className="mx-auto w-full max-w-7xl">
+      <div>
         <ConfigCuentaPage
           projectId={projectId}
           ejemploCuentaId={sorted[sorted.length - 1]?.id}
@@ -165,7 +165,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   // Sub-página: Desgloses de Cuenta (se entra y se regresa; no es pestaña par).
   if (view === 'desgloses') {
     return (
-      <div className="mx-auto w-full max-w-7xl space-y-4">
+      <div className="space-y-4">
         <div className="flex items-center gap-3">
           {!desgloseAbierto && (
             <Button
@@ -198,7 +198,7 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4">
+    <div className="space-y-4">
       <PageHeader title="Cuentas">
         {modo !== 'empty' && (
           <div className="flex items-center gap-2">

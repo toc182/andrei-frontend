@@ -173,7 +173,7 @@ export default function CuentaDetailPage({ cuentaId, onBack, onCuentaLoaded }: P
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         {onBack && (

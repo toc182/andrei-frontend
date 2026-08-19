@@ -105,13 +105,7 @@ export default function ProjectInformacion({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Información del Proyecto">
-        {hasPermission('proyectos_editar') && (
-          <Button variant="outline" onClick={onEditProject}>
-            <Pencil className="h-4 w-4" /> Editar
-          </Button>
-        )}
-      </PageHeader>
+      <PageHeader title="Información del Proyecto" />
 
       <Tabs
         value={showDesglose ? 'desglose' : 'datos'}
@@ -134,8 +128,21 @@ export default function ProjectInformacion({
         >
           {/* Project Details */}
           <Card>
-            <CardHeader>
+            {/* El lápiz vive en la tarjeta que edita, no en la cabecera de la
+                página: desde arriba no se veía qué era lo que iba a cambiar. */}
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Detalles</CardTitle>
+              {hasPermission('proyectos_editar') && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Editar los datos del proyecto"
+                  onClick={onEditProject}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <InfoRow label="Nombre:">{project.nombre}</InfoRow>
