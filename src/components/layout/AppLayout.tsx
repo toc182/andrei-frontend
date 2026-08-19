@@ -144,8 +144,15 @@ export function AppLayout({
         </header>
 
         {/* Page Content */}
+        {/* El tope de ancho vive AQUI y no en cada pantalla: es una sola regla
+            para toda la aplicación y así ninguna se queda fuera. El que
+            scrollea y pinta el fondo es el de afuera, para que la barra de
+            scroll quede en el filo de la ventana y el fondo llegue hasta los
+            bordes; el de adentro es el que centra el contenido. */}
         <div className="flex-1 overflow-auto bg-background px-8 pt-6 pb-8">
-          {children}
+          <div className="mx-auto w-full max-w-[1440px]">
+            {children}
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -34,6 +34,9 @@ interface ProjectInformacionProps {
   onOpenAdendaForm: () => void;
   onEditAdenda: (adenda: Adenda) => void;
   onDeleteAdenda: (adendaId: number) => void;
+  /** Abre la ventana de edición del proyecto. La dueña del proyecto es la
+   *  pantalla de arriba, así que el botón solo avisa. */
+  onEditProject: () => void;
 }
 
 const getEstadoBadge = (estado: string) => {
@@ -84,6 +87,7 @@ export default function ProjectInformacion({
   onOpenAdendaForm,
   onEditAdenda,
   onDeleteAdenda,
+  onEditProject,
 }: ProjectInformacionProps) {
   const [deleteAdendaId, setDeleteAdendaId] = useState<number | null>(null);
   const [seccion, setSeccion] = useState<'datos' | 'desglose'>('datos');
@@ -92,7 +96,7 @@ export default function ProjectInformacion({
   // a trip to Datos. Deliberately NOT mounted up-front: users who never open
   // Desglose shouldn't pay for its fetch.
   const [desgloseMounted, setDesgloseMounted] = useState(false);
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const puedeVerDesglose =
     user?.rol === 'admin' || user?.rol === 'co-admin' || !!user?.permissions?.desglose_ver;
   // Render guard: desglose only when BOTH selected and permitted.
@@ -100,7 +104,13 @@ export default function ProjectInformacion({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Información del Proyecto" />
+      <PageHeader title="Información del Proyecto">
+        {hasPermission('proyectos_editar') && (
+          <Button variant="outline" onClick={onEditProject}>
+            <Pencil className="h-4 w-4" /> Editar
+          </Button>
+        )}
+      </PageHeader>
 
       <Tabs
         value={showDesglose ? 'desglose' : 'datos'}
@@ -114,7 +124,13 @@ export default function ProjectInformacion({
           {puedeVerDesglose && <TabsTrigger value="desglose">Desglose</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="datos" className="space-y-6">
+        {/* Detalles y Adendas van lado a lado: los datos del proyecto son filas
+            de etiqueta y valor, cortas, y solas ocupaban todo el ancho dejando
+            medio monitor vacío. Debajo de lg vuelven a apilarse. */}
+        <TabsContent
+          value="datos"
+          className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[5fr_7fr]"
+        >
           {/* Project Details */}
           <Card>
             <CardHeader>

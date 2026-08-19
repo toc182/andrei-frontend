@@ -298,7 +298,14 @@ Rule of thumb: **named brand tokens (`navy`, `teal`, `success`, etc.) for semant
 
 ### Max-width constraints
 
-- Tables, dashboards, list pages: **no max-width** — fill available content area.
+- **Every page is capped at 1440px, centered.** The cap lives in one place —
+  the content wrapper in `src/components/layout/AppLayout.tsx` — so pages
+  inherit it and must not set their own page-level width. Without it, label/value
+  rows and table cells stretch edge to edge on a wide monitor and become hard to
+  scan. Pages that genuinely need more room (a print preview at paper scale)
+  break out deliberately and say why in a comment.
+- Tables, dashboards, list pages: **no max-width of their own** — fill the
+  capped content area.
 - Forms and reading-centric content: `max-w-3xl` (≈768px).
 - Dialogs: self-cap per section 11.
 - Minimum supported screen: **1024px**. Mobile card list fallback below `md` (768px) — already in place.

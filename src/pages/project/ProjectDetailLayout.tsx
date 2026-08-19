@@ -31,6 +31,7 @@ import CuentasProjectView from '../cuentas/CuentasProjectView';
 import CuentaDetailPage from '../cuentas/CuentaDetailPage';
 import CronogramaWorkspace from '../cronogramas/CronogramaWorkspace';
 import AdendaForm from '../../components/forms/AdendaForm';
+import ProjectFormNew from '../../components/forms/ProjectFormNew';
 import api from '../../services/api';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
@@ -80,6 +81,7 @@ export default function ProjectDetailLayout({
   const [showAdendaForm, setShowAdendaForm] = useState<boolean>(false);
   const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null);
   const [adendaToDelete, setAdendaToDelete] = useState<number | null>(null);
+  const [editingProject, setEditingProject] = useState<boolean>(false);
 
   // Load project data
   useEffect(() => {
@@ -157,6 +159,22 @@ export default function ProjectDetailLayout({
   useEffect(() => {
     if (!subview.startsWith('cuenta-')) setCuentaNumero(null);
   }, [subview]);
+
+  // Reload the project after editing it. Se vuelve a pedir en vez de coger lo
+  // que devuelve el formulario: la ficha muestra campos que salen de un join
+  // (el nombre del cliente) y la respuesta del guardado no los trae.
+  const reloadProject = async () => {
+    try {
+      const response = await api.get(`/projects/${projectId}`);
+      if (response.data.success) {
+        const proj = response.data.proyecto;
+        setProject(proj);
+        onProjectLoad?.({ id: projectId, name: proj.nombre_corto || proj.nombre });
+      }
+    } catch (err) {
+      console.error('Error reloading project:', err);
+    }
+  };
 
   // Reload adendas after mutations
   const reloadAdendas = async () => {
@@ -244,6 +262,7 @@ export default function ProjectDetailLayout({
               setShowAdendaForm(true);
             }}
             onDeleteAdenda={handleDeleteAdenda}
+            onEditProject={() => setEditingProject(true)}
           />
         );
 
@@ -686,6 +705,19 @@ export default function ProjectDetailLayout({
         }}
         onSave={handleAdendaSave}
         editingAdenda={editingAdenda}
+      />
+
+      {/* Editar el proyecto desde la ficha. Es el mismo formulario de la tabla
+          de Proyectos, pero SIN onDelete: borrar el proyecto estando parado
+          dentro de él dejaría al usuario en una pantalla sin datos. */}
+      <ProjectFormNew
+        projectId={projectId}
+        isOpen={editingProject}
+        onClose={() => setEditingProject(false)}
+        onSave={() => {
+          setEditingProject(false);
+          reloadProject();
+        }}
       />
     </>
   );
