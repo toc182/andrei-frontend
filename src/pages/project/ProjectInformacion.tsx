@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { DesgloseView } from '@/components/desglose/DesgloseView';
+import ProyectoDocumentos from './ProyectoDocumentos';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { formatDate } from '../../utils/dateUtils';
@@ -187,6 +188,11 @@ export default function ProjectInformacion({
             </CardContent>
           </Card>
 
+          {/* Adendas y Documentos comparten la columna derecha. Van juntos en un
+              contenedor para que se apilen entre ellos y no cada uno como celda
+              suelta de la retícula: si no, Documentos se iría al lado de
+              Detalles en cuanto Adendas midiera poco. */}
+          <div className="space-y-6">
           {/* Adendas */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -272,6 +278,9 @@ export default function ProjectInformacion({
               )}
             </CardContent>
           </Card>
+
+          <ProyectoDocumentos projectId={project.id} />
+          </div>
 
           <AlertDialog open={deleteAdendaId !== null} onOpenChange={(open) => { if (!open) setDeleteAdendaId(null); }}>
             <AlertDialogContent>
