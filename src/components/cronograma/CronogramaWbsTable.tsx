@@ -15,7 +15,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import type { ScheduleEntry, TaskId } from '@/lib/cronogramaEngine';
+import { calDays, type ScheduleEntry, type TaskId } from '@/lib/cronogramaEngine';
 import type { GanttRow } from '@/lib/cronogramaModel';
 import { formatPredecessors } from '@/lib/cronogramaModel';
 import { ROW_H, HEADER_H } from '@/lib/cronogramaGeometry';
@@ -443,7 +443,15 @@ export function CronogramaWbsTable({
                   beginEdit(t.id, 'dur', String(t.duration ?? 0));
                 }}
               >
-                {editHere('dur') ? renderInput() : isTask ? t.duration : ''}
+                {editHere('dur')
+                  ? renderInput()
+                  : isTask
+                    ? t.duration
+                    : // Groups roll up a CALENDAR-day span (inclusive) — the unit the contract is
+                      // written in. Milestones stay blank (0 days by definition).
+                      isGroup && sc?.s && sc?.f
+                      ? calDays(sc.s, sc.f) + 1
+                      : ''}
               </div>
 
               {/* inicio */}

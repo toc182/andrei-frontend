@@ -604,7 +604,15 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
         const viol = data.violations.has(String(t.id));
         svg += cellMM('num', String(data.rowNum.get(t.id) ?? ''), { y, fill: COL.textDim });
         svg += cellMM('name', truncMM(nm, cw('name'), indentUsed), { y, indent: indentUsed, bold: isGroup, fill: viol ? COL.violation : COL.text });
-        svg += cellMM('dur', t.type === 'task' ? String(t.duration || 0) : '', { y, fill: COL.textDim });
+        // Same rule as the on-screen table: tasks print work days, groups print the inclusive
+        // CALENDAR-day span rolled up from their children, milestones print nothing.
+        const dur =
+          t.type === 'task'
+            ? String(t.duration || 0)
+            : isGroup && !data.cycle && sc?.s && sc?.f
+              ? String(calDays(sc.s, sc.f) + 1)
+              : '';
+        svg += cellMM('dur', dur, { y, fill: COL.textDim });
         svg += cellMM('inicio', data.cycle ? '—' : fmtHuman(sc?.s), { y });
         svg += cellMM('fin', data.cycle || t.type === 'milestone' ? '' : fmtHuman(sc?.f), { y });
         svg += cellMM('pct', t.type === 'milestone' ? '' : pct + '%', { y, fill: COL.textDim });
