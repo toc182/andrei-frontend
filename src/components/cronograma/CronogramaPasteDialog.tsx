@@ -36,7 +36,7 @@ interface Props {
   onInsert: (rows: ResolvedPasteRow[]) => void; // workspace commits the batch
 }
 
-type Role = 'name' | 'dias' | 'inicio' | 'fin' | 'nivel' | 'ignore';
+type Role = 'name' | 'dias' | 'inicio' | 'fin' | 'nivel' | 'pred' | 'ignore';
 
 const ROLE_LABELS: Record<Role, string> = {
   name: 'Nombre',
@@ -44,6 +44,7 @@ const ROLE_LABELS: Record<Role, string> = {
   inicio: 'Inicio',
   fin: 'Fin',
   nivel: 'Nivel',
+  pred: 'Predecesoras',
   ignore: 'Ignorar',
 };
 
@@ -66,6 +67,7 @@ function guessRole(header: string): Role {
   if (/inicio|comien|start|desde/.test(h)) return 'inicio';
   if (/\bfin\b|t[eé]rmino|end|hasta/.test(h)) return 'fin';
   if (/nivel|wbs|level/.test(h)) return 'nivel';
+  if (/predec|antecesor|\bpred\b/.test(h)) return 'pred';
   return 'ignore';
 }
 
@@ -89,7 +91,7 @@ function deriveMapping(roles: Role[]): PasteMapping {
     const i = roles.indexOf(r);
     return i >= 0 ? i : null;
   };
-  return { name: at('name'), dias: at('dias'), inicio: at('inicio'), fin: at('fin'), nivel: at('nivel') };
+  return { name: at('name'), dias: at('dias'), inicio: at('inicio'), fin: at('fin'), nivel: at('nivel'), pred: at('pred') };
 }
 
 function nextTempBelow(tasks: EngineTask[]): number {
@@ -203,7 +205,7 @@ export function CronogramaPasteDialog({ open, onOpenChange, tasks, proj, afterId
       onOpenChange={onOpenChange}
       size="complex"
       title="Pegar filas"
-      description="Pega un rango de Excel (Nombre, Días, Inicio, Fin, Nivel). Nada se inserta hasta confirmar."
+      description="Pega un rango de Excel (Nombre, Días, Inicio, Fin, Nivel, Predecesoras). Las predecesoras van por número de fila de lo pegado, como en Project (4FS+2). Nada se inserta hasta confirmar."
       footer={
         <>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -403,6 +405,8 @@ export function CronogramaPasteDialog({ open, onOpenChange, tasks, proj, afterId
                         <TableCell className="px-3 py-2 text-xs text-muted-foreground">
                           {row.issues.map((i) => i.message).join(' · ')}
                           {collapsed && ' · Fin antes del inicio: duración 1'}
+                          {!!meta?.predsDropped &&
+                            ` · ${meta.predsDropped} predecesora${meta.predsDropped === 1 ? '' : 's'} descartada${meta.predsDropped === 1 ? '' : 's'} (fila omitida)`}
                         </TableCell>
                       </TableRow>
                     );

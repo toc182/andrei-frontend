@@ -17,7 +17,7 @@ import { parseSingleDate, parseDateColumn } from '../src/lib/cronogramaPasteDate
 import { parsePaste, type PasteMapping } from '../src/lib/cronogramaPaste';
 import { opInsertPasteBatch, previewPasteBatch, childrenOf } from '../src/lib/cronogramaTaskOps';
 import { buildRows } from '../src/lib/cronogramaModel';
-import type { EngineProject, EngineTask, TaskId } from '../src/lib/cronogramaEngine';
+import { computeSchedule, type EngineProject, type EngineTask, type TaskId } from '../src/lib/cronogramaEngine';
 
 let passed = 0;
 let failed = 0;
@@ -36,7 +36,7 @@ function eq(got: unknown, want: unknown, label: string) {
 }
 
 const PROJ: EngineProject = { startDate: '2026-01-05', workWeek: '5', holidays: [] }; // 2026-01-05 = Monday
-const map = (m: Partial<PasteMapping>): PasteMapping => ({ name: null, dias: null, inicio: null, fin: null, nivel: null, ...m });
+const map = (m: Partial<PasteMapping>): PasteMapping => ({ name: null, dias: null, inicio: null, fin: null, nivel: null, pred: null, ...m });
 function minter() {
   let n = -1;
   return () => n--;
@@ -203,6 +203,56 @@ eq(parsePaste('Nombre\tDías\n', { mapping: map({ name: 0, dias: 1 }), headerRow
   eq(undoStack.length, 1, 'commit: exactly one undo snapshot for the whole batch');
   eq(markDirtyCount, 1, 'commit: exactly one markDirty for the whole batch');
   ok(live.length === 2, 'commit: batch inserted');
+}
+
+// ---- 12. Predecesoras: block-relative row numbers -> real ids ---------------
+{
+  // 1 = group (has children), so rows 2..4 are the tasks; 3 depends on 2, 4 on 3 with SS+2.
+  const text = 'Nombre\tNivel\tDías\tPred\nÁrea\t1\t\t\nA\t2\t5\t\nB\t2\t5\t2\nC\t2\t5\t3SS+2';
+  const r = included(text, { mapping: map({ name: 0, nivel: 1, dias: 2, pred: 3 }), headerRow: true, dateFormat: 'dmy' });
+  eq(r.length, 4, 'pred: no row blocked');
+  eq(r[2].preds, [{ row: 2, type: 'FS', lag: 0 }], 'pred: bare number -> FS lag 0');
+  eq(r[3].preds, [{ row: 3, type: 'SS', lag: 2 }], 'pred: type + positive lag parsed');
+
+  const live: EngineTask[] = [];
+  const ids = opInsertPasteBatch(r, { afterId: null }, PROJ, live, minter());
+  const byId = new Map(live.map((t) => [t.id, t]));
+  eq(byId.get(ids[2])!.predecessors, [{ taskId: ids[1], type: 'FS', lag: 0 }], 'pred: wired to the minted id of its block row');
+  eq(byId.get(ids[3])!.predecessors, [{ taskId: ids[2], type: 'SS', lag: 2 }], 'pred: SS+2 wired');
+  eq(byId.get(ids[0])!.predecessors, [], 'pred: promoted group keeps no predecessors');
+  // The engine must actually honour them: B starts the work day after A finishes (FS quirk Q3).
+  const sched = computeSchedule(live, PROJ);
+  ok(sched.get(ids[2])!.s > sched.get(ids[1])!.f, 'pred: FS successor starts after its predecessor finishes');
+}
+
+// ---- 13. Predecesoras: every unusable reference BLOCKS its row --------------
+{
+  const bad = (cell: string) =>
+    parsePaste(`Nombre\tNivel\tPred\nÁrea\t1\t\nA\t2\t\nB\t2\t${cell}`, {
+      mapping: map({ name: 0, nivel: 1, pred: 2 }),
+      headerRow: true,
+      dateFormat: 'dmy',
+    }).rows[2];
+  ok(bad('9').blocked, 'pred: row number outside the pasted block blocks');
+  ok(bad('3').blocked, 'pred: self-reference blocks');
+  ok(bad('1').blocked, 'pred: a group as predecessor blocks');
+  ok(bad('2XX').blocked, 'pred: unknown link type blocks');
+  ok(bad('2FS+').blocked, 'pred: dangling lag blocks');
+  ok(bad('2, hola').blocked, 'pred: one bad token rejects the whole cell');
+  ok(!bad('2').blocked, 'pred: a valid reference does not block');
+  eq(bad('9').issues.filter((i) => i.level === 'blocking').length, 1, 'pred: exactly one blocking issue');
+}
+
+// ---- 14. Predecesoras pointing at an EXCLUDED row are dropped, not silent ---
+{
+  const text = 'Nombre\tNivel\tPred\nÁrea\t1\t\nA\t2\t\nB\t2\t2';
+  const parsed = parsePaste(text, { mapping: map({ name: 0, nivel: 1, pred: 2 }), headerRow: true, dateFormat: 'dmy' });
+  const withoutA = parsed.rows.filter((r) => r.sourceRow !== 2); // user ticked "Ignorar" on row 2
+  const live: EngineTask[] = [];
+  const report = previewPasteBatch(withoutA, { afterId: null }, PROJ, live, minter());
+  const metaB = report.meta.find((m) => m.sourceRow === 3)!;
+  eq(metaB.predsDropped, 1, 'pred: link to an omitted row is dropped and counted');
+  eq(live.find((t) => t.id === metaB.id)!.predecessors, [], 'pred: no dangling reference reaches the tree');
 }
 
 console.log(`\n${passed}/${passed + failed} paste fixtures passed`);

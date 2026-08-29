@@ -13,7 +13,7 @@
 // Every fallback (blank Inicio, assumed default 5, Días-wins-over-Fin, group-promotion date drop,
 // depth clamp, row-cap truncation) emits a per-row flag AND bumps an aggregate counter.
 
-import type { EngineTask, TaskId } from './cronogramaEngine';
+import type { DepType, EngineTask, Predecessor, TaskId } from './cronogramaEngine';
 import { parseTsv } from './cronogramaPasteTsv';
 import { parseDateColumn, type DateOrder, type DateResult, type DateColumnResult } from './cronogramaPasteDates';
 import { analyzeHierarchy, parseDias, type HierMode, type ModeDetection } from './cronogramaPasteHierarchy';
@@ -37,7 +37,22 @@ export interface PasteMapping {
   inicio: number | null;
   fin: number | null;
   nivel: number | null;
+  pred: number | null;
 }
+
+/**
+ * One predecessor token of the Predecesoras column, still addressed by the row number the USER
+ * sees in the pasted block (1-based over the data rows, exactly like Project's ID column) — ids
+ * do not exist until buildPasteCandidate mints them. Same syntax as the inline Pred column:
+ * "4", "4FS+2", "7SS-1".
+ */
+export interface PastePredToken {
+  row: number; // 1-based row inside the pasted block
+  type: DepType;
+  lag: number;
+}
+
+const PRED_TOKEN = /^(\d+)\s*(FS|SS|FF|SF)?\s*([+-]\s*\d+)?$/i;
 
 export interface ParsePasteOptions {
   mapping: PasteMapping;
@@ -56,6 +71,7 @@ export interface ResolvedPasteRow {
   durationSource: DurationSource;
   manualDateResult: DateResult | null;
   finResult: DateResult | null;
+  preds: PastePredToken[]; // block-relative predecessors (empty when the column is unmapped)
   issues: PasteIssue[];
   blocked: boolean; // has at least one blocking issue
 }
@@ -69,6 +85,7 @@ export interface PasteCounters {
   badDate: number;
   depthClamped: number;
   emptyName: number;
+  badPred: number;
 }
 
 export interface ParsePasteResult {
@@ -90,7 +107,38 @@ function emptyCounters(): PasteCounters {
     badDate: 0,
     depthClamped: 0,
     emptyName: 0,
+    badPred: 0,
   };
+}
+
+/**
+ * Parse one Predecesoras cell into block-relative tokens. Rejects the WHOLE cell on any bad token
+ * (same all-or-nothing rule as the inline Pred column in cronogramaModel), and also rejects the
+ * three references the engine can never honour: out of range, self, and a row that the hierarchy
+ * turns into a group. Returns the reason instead of tokens so the caller can block the row.
+ */
+function parsePredCell(
+  raw: string,
+  selfRow: number, // 1-based
+  totalRows: number,
+  groupRows: Set<number>, // 1-based rows that will become groups
+): { ok: true; preds: PastePredToken[] } | { ok: false; reason: string } {
+  const parts = raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+  const preds: PastePredToken[] = [];
+  for (const part of parts) {
+    const m = part.match(PRED_TOKEN);
+    if (!m) return { ok: false, reason: `"${part}" no es una predecesora válida` };
+    const row = parseInt(m[1], 10);
+    if (row < 1 || row > totalRows) return { ok: false, reason: `la fila ${row} no está en lo pegado` };
+    if (row === selfRow) return { ok: false, reason: 'una fila no puede depender de sí misma' };
+    if (groupRows.has(row)) return { ok: false, reason: `la fila ${row} es un grupo` };
+    preds.push({
+      row,
+      type: ((m[2] || 'FS').toUpperCase()) as DepType,
+      lag: m[3] ? parseInt(m[3].replace(/\s/g, ''), 10) : 0,
+    });
+  }
+  return { ok: true, preds };
 }
 
 // Early-return narrowing (reliable under this repo's strictNullChecks:false) — a non-blank invalid
@@ -134,9 +182,13 @@ export function parsePaste(text: string, opts: ParsePasteOptions): ParsePasteRes
   }
 
   const nameCol = mapping.name ?? 0;
-  const { nivel, inicio, fin, dias } = mapping;
+  const { nivel, inicio, fin, dias, pred } = mapping;
 
   const hier = analyzeHierarchy(dataGrid, nameCol, nivel, mode);
+  // Rows that gain a child become groups on insert; the engine refuses group predecessors, so we
+  // need this set BEFORE resolving the Predecesoras column (1-based, to match what the user typed).
+  const groupRows = new Set<number>();
+  for (let i = 0; i + 1 < hier.depths.length; i++) if (hier.depths[i + 1] > hier.depths[i]) groupRows.add(i + 1);
   const dateInicio = inicio != null ? parseDateColumn(dataGrid.map((r) => r[inicio] ?? ''), dateFormat) : null;
   const dateFin = fin != null ? parseDateColumn(dataGrid.map((r) => r[fin] ?? ''), dateFormat) : null;
 
@@ -188,6 +240,29 @@ export function parsePaste(text: string, opts: ParsePasteOptions): ParsePasteRes
       counters.assumedDefault++;
     }
 
+    // Predecesoras: parsed here (syntax + reachability), wired to real ids in buildPasteCandidate.
+    // A row that becomes a group drops its links on promotion, so don't even resolve them.
+    let preds: PastePredToken[] = [];
+    const predRaw = pred != null ? (r[pred] ?? '').trim() : '';
+    if (predRaw && !groupRows.has(i + 1)) {
+      const res = parsePredCell(predRaw, i + 1, dataGrid.length, groupRows);
+      if (res.ok) {
+        preds = res.preds;
+        if (manualDate) {
+          issues.push({
+            level: 'info',
+            code: 'pred-and-date',
+            message: 'Tiene Inicio y predecesoras: el Inicio actúa como fecha mínima.',
+          });
+        }
+      } else {
+        // strictNullChecks:false won't narrow the boolean-discriminated union; pin it (see badDateIssue).
+        const fail = res as Extract<ReturnType<typeof parsePredCell>, { ok: false }>;
+        issues.push({ level: 'blocking', code: 'bad-pred', message: `Predecesora inválida: ${fail.reason}.` });
+        counters.badPred++;
+      }
+    }
+
     const blocked = issues.some((x) => x.level === 'blocking');
     if (blocked) counters.blocked++;
 
@@ -201,6 +276,7 @@ export function parsePaste(text: string, opts: ParsePasteOptions): ParsePasteRes
       durationSource,
       manualDateResult: iniRes,
       finResult: finRes,
+      preds,
       issues,
       blocked,
     };
@@ -218,6 +294,7 @@ export interface PasteCandidateMeta {
   promotedToGroup: boolean;
   datePushedDown: boolean; // the promoted node's Inicio moved onto its first child
   finDerived: boolean;
+  predsDropped: number; // links whose target row was left out of this insert (never silent)
 }
 
 export interface PasteCandidate {
@@ -300,7 +377,7 @@ export function buildPasteCandidate(
     tasks.push(t);
     ids.push(id);
     byId.set(id, t);
-    meta.push({ sourceRow: r.sourceRow, id, depth: r.depth, promotedToGroup: false, datePushedDown: false, finDerived: r.durationSource === 'derived-from-fin' });
+    meta.push({ sourceRow: r.sourceRow, id, depth: r.depth, promotedToGroup: false, datePushedDown: false, finDerived: r.durationSource === 'derived-from-fin', predsDropped: 0 });
     stack.push({ id, depth: r.depth });
   });
 
@@ -345,6 +422,28 @@ export function buildPasteCandidate(
     } else if (r.durationSource === 'derived-from-fin' && r.fin) {
       finToInvert.set(id, r.fin); // only leaves get Fin->duration inversion
     }
+  });
+
+  // Pass 4: wire Predecesoras. The user addressed rows by their position in the pasted block, so
+  // resolve through sourceRow -> minted id. Rows the user excluded upstream are simply absent from
+  // that map: drop those links and COUNT them (the dialog surfaces the count; never silent). Runs
+  // after promotion so a target that turned into a group is dropped too, never fed to the engine.
+  const idBySourceRow = new Map<number, TaskId>();
+  rows.forEach((r, idx) => idBySourceRow.set(r.sourceRow, ids[idx]));
+  rows.forEach((r, idx) => {
+    if (!r.preds.length || meta[idx].promotedToGroup) return;
+    const t = byId.get(ids[idx])!;
+    const wired: Predecessor[] = [];
+    for (const p of r.preds) {
+      const target = idBySourceRow.get(p.row);
+      const tt = target != null ? byId.get(target) : null;
+      if (!tt || tt.type === 'group') {
+        meta[idx].predsDropped++;
+        continue;
+      }
+      wired.push({ taskId: target, type: p.type, lag: p.lag });
+    }
+    t.predecessors = wired;
   });
 
   const touchedParents: (TaskId | null)[] = [rootParent, ...newParentIds];
