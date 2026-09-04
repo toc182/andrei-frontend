@@ -40,6 +40,19 @@ export interface Partida {
   rowUid: string;
   item: string;
   descripcion: string;
+  /** Lo que el presupuesto oficial le puso. Es el peso con el que se reparte un
+   *  gasto general; null = sin costo escrito, y entonces no entra en el reparto. */
+  presupuestado: number | null;
+  /** El grupo del que cuelga; null si va suelta en la raiz del desglose. */
+  seccionUid: string | null;
+}
+
+/** Un grupo del desglose, para repartir un gasto solo dentro de el. */
+export interface Seccion {
+  rowUid: string;
+  item: string;
+  descripcion: string;
+  partidas: number;
 }
 
 /** Una fila del cuadro de presupuestado contra gastado. presupuestado null = el
@@ -82,7 +95,7 @@ export async function getResumenCostos(proyectoId: number): Promise<ResumenCosto
  *  proyecto no tiene desglose, y entonces no hay nada que asignar. */
 export async function getPartidas(
   proyectoId: number,
-): Promise<{ desgloseId: number | null; partidas: Partida[] }> {
+): Promise<{ desgloseId: number | null; partidas: Partida[]; secciones: Seccion[] }> {
   const res = await api.get(`/costs/projects/${proyectoId}/partidas`);
   return res.data.data;
 }

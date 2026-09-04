@@ -12,7 +12,7 @@
 // legitimo hacia "8.05"— y se convierten a numero solo para sumar y guardar.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { ChevronDown, Plus, Split, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -21,7 +21,8 @@ import { formatMoney } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 import { ListaPartidas } from './SelectorPartida';
-import type { Partida, PartidaAsignada, ResumenSolicitud } from '@/lib/costosApi';
+import { repartirProporcional } from '@/lib/repartoPartidas';
+import type { Partida, PartidaAsignada, ResumenSolicitud, Seccion } from '@/lib/costosApi';
 
 interface Linea {
   rowUid: string | null;
@@ -33,6 +34,7 @@ interface RepartoPartidasDialogProps {
   onOpenChange: (open: boolean) => void;
   pago: ResumenSolicitud | null;
   partidas: Partida[];
+  secciones: Seccion[];
   onGuardar: (lineas: { rowUid: string; monto: number }[]) => Promise<void>;
 }
 
@@ -45,13 +47,14 @@ const aNumero = (s: string) => {
 };
 
 export default function RepartoPartidasDialog({
-  open, onOpenChange, pago, partidas, onGuardar,
+  open, onOpenChange, pago, partidas, secciones, onGuardar,
 }: RepartoPartidasDialogProps) {
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Que linea tiene el buscador abierto; escoger una partida lo cierra. */
   const [buscandoEn, setBuscandoEn] = useState<number | null>(null);
+  const [escogiendoSeccion, setEscogiendoSeccion] = useState(false);
 
   // Al abrirlo se parte de lo que el pago ya tenia. Si no tenia nada, una linea
   // vacia con el monto entero: el caso mas comun es "todo esto es de una sola
@@ -90,6 +93,19 @@ export default function RepartoPartidasDialog({
     setLineas((prev) => [...prev, { rowUid: null, monto: (Math.max(diferencia, 0) / 100).toFixed(2) }]);
 
   const quitar = (i: number) => setLineas((prev) => prev.filter((_, j) => j !== i));
+
+  /** Un gasto que no es de ninguna partida —un extintor— se reparte entre las
+   *  del grupo que se escoja, cada una segun lo que tenga presupuestado. */
+  const repartirEntre = (alcance: Partida[], donde: string) => {
+    if (!pago) return;
+    const hechas = repartirProporcional(alcance, pago.monto);
+    if (hechas.length === 0) {
+      setError(`Ninguna partida de ${donde} tiene costo escrito en el presupuesto, así que no hay con qué calcular su parte.`);
+      return;
+    }
+    setError(null);
+    setLineas(hechas.map((h) => ({ rowUid: h.rowUid, monto: h.monto.toFixed(2) })));
+  };
 
   const guardar = async () => {
     try {
@@ -211,10 +227,60 @@ export default function RepartoPartidasDialog({
           })}
         </div>
 
-        <Button variant="outline" size="sm" onClick={anadir}>
-          <Plus className="mr-2 h-4 w-4" />
-          Añadir otra partida
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={anadir}>
+            <Plus className="mr-2 h-4 w-4" />
+            Añadir otra partida
+          </Button>
+
+          {/* La salida para un gasto que no es de ninguna partida: se reparte
+              entre todas, o entre las de una seccion, segun lo presupuestado. */}
+          <span className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Repartir entre</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => repartirEntre(partidas, 'el proyecto')}
+            >
+              <Split className="mr-2 h-4 w-4" />
+              Todo el proyecto
+            </Button>
+            <Popover open={escogiendoSeccion} onOpenChange={setEscogiendoSeccion}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" disabled={secciones.length === 0}>
+                  Una sección
+                  <ChevronDown className="ml-2 h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[320px] p-0">
+                <div className="max-h-[240px] overflow-y-auto">
+                  {secciones.map((s) => (
+                    <button
+                      key={s.rowUid}
+                      type="button"
+                      onClick={() => {
+                        setEscogiendoSeccion(false);
+                        repartirEntre(
+                          partidas.filter((p) => p.seccionUid === s.rowUid),
+                          `la sección ${s.item}`,
+                        );
+                      }}
+                      className="flex w-full items-baseline gap-2.5 border-t border-slate-100 px-3 py-2 text-left first:border-t-0 hover:bg-primary/5"
+                    >
+                      <span className="min-w-[42px] shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {s.item}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm">{s.descripcion}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {s.partidas}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </span>
+        </div>
       </div>
     </AppDialog>
   );

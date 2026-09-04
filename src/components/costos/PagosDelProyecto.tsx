@@ -28,7 +28,7 @@ import RepartoPartidasDialog from './RepartoPartidasDialog';
 import DetallePagoDialog from './DetallePagoDialog';
 import {
   getPartidas, getResumenCostos, guardarPartidasDePago,
-  type Partida, type ResumenSolicitud,
+  type Partida, type ResumenSolicitud, type Seccion,
 } from '@/lib/costosApi';
 
 const TH = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
@@ -47,6 +47,7 @@ interface PagosDelProyectoProps {
 export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: PagosDelProyectoProps) {
   const [pagos, setPagos] = useState<ResumenSolicitud[]>([]);
   const [partidas, setPartidas] = useState<Partida[]>([]);
+  const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [hayDesglose, setHayDesglose] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
       ]);
       setPagos(resumen.solicitudes);
       setPartidas(disponibles.partidas);
+      setSecciones(disponibles.secciones ?? []);
       setHayDesglose(disponibles.desgloseId != null);
     } catch (err) {
       console.error('Error cargando los pagos del proyecto:', err);
@@ -254,6 +256,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
         onOpenChange={(o) => { if (!o) setRepartiendo(null); }}
         pago={repartiendo}
         partidas={partidas}
+        secciones={secciones}
         onGuardar={async (lineas) => {
           if (repartiendo) await guardar(repartiendo.id, lineas);
         }}
