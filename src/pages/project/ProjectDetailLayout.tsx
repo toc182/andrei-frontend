@@ -19,7 +19,7 @@ import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import ProjectInformacion from './ProjectInformacion';
 import ProjectSummary from './ProjectSummary';
-import ProjectCostos from './ProjectCostos';
+import ProjectControlCostos from './ProjectControlCostos';
 import ProjectRequisiciones from './ProjectRequisiciones';
 import ProjectMembers from './ProjectMembers';
 import ProjectTodos from './ProjectTodos';
@@ -125,6 +125,7 @@ export default function ProjectDetailLayout({
     const subviewTitles: Record<string, string> = {
       resumen: 'Resumen',
       informacion: 'Información',
+      presupuesto: 'Presupuesto',
       costos: 'Control de Costos',
       requisiciones: 'Requisiciones',
       'solicitudes-pago': 'Solicitudes de Pago',
@@ -269,8 +270,20 @@ export default function ProjectDetailLayout({
       case 'resumen':
         return <ProjectSummary project={project} onNavigate={onNavigate} />;
 
+      // 'presupuesto' ya no esta en el menu: Presupuestos es una pestana de
+      // Control de Costos. Se mantiene como atajo para que un enlace viejo
+      // caiga en la pestana correcta y no en una pantalla en blanco.
+      case 'presupuesto':
+        return (
+          <ProjectControlCostos
+            projectId={projectId}
+            tabInicial="presupuestos"
+            onNavigate={onNavigate}
+          />
+        );
+
       case 'costos':
-        return <ProjectCostos projectId={projectId} onNavigate={onNavigate} />;
+        return <ProjectControlCostos projectId={projectId} onNavigate={onNavigate} />;
 
       case 'requisiciones':
         return <ProjectRequisiciones projectId={projectId} />;

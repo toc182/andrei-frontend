@@ -82,7 +82,10 @@ const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
 const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
   { key: 'resumen', label: 'Resumen', icon: LayoutDashboard },
   { key: 'informacion', label: 'Información', icon: Info },
-  { key: 'costos', label: 'Costos', icon: DollarSign },
+  // Presupuesto y Costos comparten entrada: los presupuestos son la vara contra
+  // la que se mide el gasto, y separarlos obligaba a saltar de una a otra.
+  // Dentro van como pestañas.
+  { key: 'costos', label: 'Control de Costos', icon: DollarSign },
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
   { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
   { key: 'caja-menuda', label: 'Caja Menuda', icon: Wallet },
