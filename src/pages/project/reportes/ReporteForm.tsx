@@ -225,7 +225,14 @@ export default function ReporteForm({
         );
         const datos = new FormData();
         tanda.forEach((f) => datos.append('fotos', f.archivo));
-        await api.post(`/proyecto-reportes/${projectId}/${id}/fotos`, datos);
+        // El multipart es OBLIGATORIO aquí. La instancia de api trae
+        // 'application/json' por defecto, y axios, al ver un FormData con ese
+        // encabezado, lo convierte a JSON en vez de mandarlo como archivo: el
+        // backend no recibe nada y responde "No se recibió ninguna foto".
+        // Todas las demás subidas de la app lo pasan igual.
+        await api.post(`/proyecto-reportes/${projectId}/${id}/fotos`, datos, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
       }
 
       // El correo sale al final, cuando el reporte ya está completo. Si se
