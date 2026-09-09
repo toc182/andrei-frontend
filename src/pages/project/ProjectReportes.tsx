@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, MapPin, ChevronLeft } from 'lucide-react';
+import { Plus, MapPin, ArrowLeft } from 'lucide-react';
 import api from '@/services/api';
 import {
   EmptyState, ErrorState, PageHeader, TableSkeleton,
@@ -67,6 +67,7 @@ export default function ProjectReportes({ projectId }: Props) {
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(25);
   const [areasAbierto, setAreasAbierto] = useState(false);
+  const [numeroPrevisto, setNumeroPrevisto] = useState<string | null>(null);
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -110,29 +111,31 @@ export default function ProjectReportes({ projectId }: Props) {
     const editando = vista.modo === 'editar' ? vista.reporte : undefined;
     const volver = () =>
       setVista(editando ? { modo: 'detalle', id: editando.id } : { modo: 'lista' });
+    const titulo = editando
+      ? `Corregir ${editando.numero}`
+      : numeroPrevisto
+        ? `Nuevo reporte diario - ${numeroPrevisto}`
+        : 'Nuevo reporte diario';
     return (
       <div className="space-y-6">
-        <button
-          type="button"
-          onClick={volver}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary"
-        >
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          {editando ? 'Volver al reporte' : 'Reportes diarios'}
-        </button>
-        <PageHeader
-          title={editando ? `Corregir ${editando.numero}` : 'Nuevo reporte diario'}
-          subtitle={
-            editando
-              ? 'Todo lo que cambies queda registrado con tu nombre y la hora'
-              : 'La fecha viene con la de hoy; cámbiala si estás mandando uno atrasado'
-          }
-        />
+        <div className="flex items-start gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={volver}
+            aria-label={editando ? 'Volver al reporte' : 'Volver a reportes'}
+            className="-ml-2 h-8 w-8 shrink-0 self-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <PageHeader title={titulo} />
+        </div>
         <ReporteForm
           projectId={projectId}
           reporte={editando}
           onCancelar={volver}
           onListo={volver}
+          onNumeroPrevisto={setNumeroPrevisto}
         />
       </div>
     );

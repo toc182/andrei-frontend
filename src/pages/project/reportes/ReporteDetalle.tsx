@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, Download, Pencil, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Pencil, Send, Loader2 } from 'lucide-react';
 import api from '@/services/api';
 import {
   Alert, ErrorState, PageHeader, SectionHeader, TableSkeleton,
@@ -105,18 +105,21 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
 
   return (
     <div className="space-y-6">
-      <div>
-        <button
-          type="button"
+      <div className="flex items-start gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onVolver}
-          className="mb-2 inline-flex items-center text-sm text-muted-foreground hover:text-primary"
+          aria-label="Volver a reportes"
+          className="-ml-2 h-8 w-8 shrink-0 self-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-foreground"
         >
-          <ChevronLeft className="mr-1 h-4 w-4" /> Reportes diarios
-        </button>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <PageHeader
           title={fechaLarga(reporte.fecha)}
           subtitle={`${reporte.numero} · ${reporte.creador_nombre} · ${total} en obra · ${reporte.fotos.length} fotos`}
-        >
+        />
+        <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={descargar} disabled={bajando}>
             {bajando
               ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -128,7 +131,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
               <Pencil className="mr-2 h-4 w-4" /> Corregir
             </Button>
           )}
-        </PageHeader>
+        </div>
       </div>
 
       {/* Si el navegador se cerró a media subida, el reporte quedó guardado

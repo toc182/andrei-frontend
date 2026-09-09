@@ -40,6 +40,8 @@ interface Props {
   reporte?: Reporte;
   onListo: () => void;
   onCancelar: () => void;
+  /** El codigo que le tocaria al reporte; lo pinta el titulo de la pagina. */
+  onNumeroPrevisto?: (numero: string | null) => void;
 }
 
 interface FotoPendiente {
@@ -77,7 +79,9 @@ function TextareaCrece({
   );
 }
 
-export default function ReporteForm({ projectId, reporte, onListo, onCancelar }: Props) {
+export default function ReporteForm({
+  projectId, reporte, onListo, onCancelar, onNumeroPrevisto,
+}: Props) {
   const editando = !!reporte;
 
   const [fecha, setFecha] = useState(reporte?.fecha.slice(0, 10) ?? hoyYMD());
@@ -105,7 +109,6 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
   const [progreso, setProgreso] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [yaReportado, setYaReportado] = useState<string | null>(null);
-  const [numeroPrevisto, setNumeroPrevisto] = useState<string | null>(null);
   const [sugerencias, setSugerencias] = useState<string[]>([]);
 
   useEffect(() => {
@@ -137,7 +140,7 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
   useEffect(() => {
     if (editando || !fecha) {
       setYaReportado(null);
-      setNumeroPrevisto(null);
+      onNumeroPrevisto?.(null);
       return;
     }
     let vigente = true;
@@ -146,13 +149,13 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
       .then((r) => {
         if (!vigente) return;
         setYaReportado(r.data.data?.ya_reportado ? fechaCorta(fecha) : null);
-        setNumeroPrevisto(r.data.data?.numero_siguiente ?? null);
+        onNumeroPrevisto?.(r.data.data?.numero_siguiente ?? null);
       })
       .catch(() => undefined);
     return () => {
       vigente = false;
     };
-  }, [projectId, fecha, editando]);
+  }, [projectId, fecha, editando, onNumeroPrevisto]);
 
   useEffect(
     () => () => fotos.forEach((f) => URL.revokeObjectURL(f.url)),
@@ -249,13 +252,6 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
 
   return (
     <div className="space-y-6 pb-28 md:pb-0">
-      {!editando && numeroPrevisto && (
-        <div className="flex items-baseline gap-2 text-sm">
-          <span className="text-muted-foreground">Este reporte será el</span>
-          <span className="font-semibold tabular-nums text-primary">{numeroPrevisto}</span>
-        </div>
-      )}
-
       {error && <Alert variant="error" title={error} />}
       {yaReportado && (
         <Alert
