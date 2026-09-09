@@ -16,7 +16,7 @@ interface SortableHeaderProps {
   activeFilters?: string[];
   onFilterChange?: (column: string, values: string[]) => void;
   className?: string;
-  align?: 'left' | 'right';
+  align?: 'left' | 'right' | 'center';
   /**
    * Label for the blank value in the filter list. Defaults to "(vacío)".
    * Columns where blank is a meaningful answer rather than missing data
@@ -39,6 +39,11 @@ export function SortableHeader({
   emptyLabel = '(vacío)',
 }: SortableHeaderProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Reportes centra sus columnas; Solicitudes no. El valor por defecto
+  // ('left') deja a los llamadores existentes exactamente como estaban.
+  const justify =
+    align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : '';
 
   const isActive = sortState.column === columnKey;
   const direction = isActive ? sortState.direction : null;
@@ -88,7 +93,7 @@ export function SortableHeader({
         className={`cursor-pointer select-none group ${isActive ? 'bg-primary/[0.04]' : ''} ${className}`}
         onClick={cycleSort}
       >
-        <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
+        <div className={`flex items-center gap-1 ${justify}`}>
           {label}
           <span className={`${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'} transition-opacity`}>
             {isActive && direction ? (
@@ -108,7 +113,7 @@ export function SortableHeader({
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <div
-            className={`flex items-center gap-1 cursor-pointer select-none group px-4 py-2 ${align === 'right' ? 'justify-end' : ''}`}
+            className={`flex items-center gap-1 cursor-pointer select-none group px-4 py-2 ${justify}`}
           >
             {label}
             <span className={`${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'} transition-opacity`}>
