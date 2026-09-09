@@ -54,6 +54,10 @@ interface PermUser {
   cronogramas_ver: boolean | null;
   desglose_ver: boolean | null;
   reportes: boolean | null;
+  solicitudes_ver: boolean | null;
+  requisiciones_ver: boolean | null;
+  clientes_ver: boolean | null;
+  costos_ver: boolean | null;
 }
 
 interface ProjectOption {
@@ -92,6 +96,10 @@ const DEFAULT_PERMS: UserPermissions = {
   cronogramas_ver: false,
   desglose_ver: false,
   reportes: false,
+  solicitudes_ver: false,
+  requisiciones_ver: false,
+  clientes_ver: false,
+  costos_ver: false,
 };
 
 export default function PermisosPage() {
@@ -539,6 +547,36 @@ export default function PermisosPage() {
                     label="Editar asignaciones"
                     checked={perms.equipos_editar_asignacion}
                     onChange={() => togglePerm('equipos_editar_asignacion')}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Secciones que se le muestran. Sin estas llaves el usuario no
+                  ve la seccion en el menu ni puede pedir su listado. */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Secciones</Label>
+                <div className="space-y-2">
+                  <PermCheckbox
+                    label="Ver solicitudes de pago"
+                    checked={perms.solicitudes_ver}
+                    onChange={() => togglePerm('solicitudes_ver')}
+                  />
+                  <PermCheckbox
+                    label="Ver requisiciones"
+                    checked={perms.requisiciones_ver}
+                    onChange={() => togglePerm('requisiciones_ver')}
+                  />
+                  <PermCheckbox
+                    label="Ver control de costos y presupuestos"
+                    checked={perms.costos_ver}
+                    onChange={() => togglePerm('costos_ver')}
+                  />
+                  <PermCheckbox
+                    label="Ver lista de clientes"
+                    checked={perms.clientes_ver}
+                    onChange={() => togglePerm('clientes_ver')}
                   />
                 </div>
               </div>

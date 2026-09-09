@@ -311,6 +311,8 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               <SidebarMenu className="gap-0.5 [&_button]:h-7">
                 {todosMenuItems
                   .filter((item) => {
+                    if (item.view === 'solicitudes-pago') return hasPermission('solicitudes_ver');
+                    if (item.view === 'requisiciones') return hasPermission('requisiciones_ver');
                     if (item.view === 'cajas-menudas') return showCajasMenudas;
                     if (item.view === 'cuentas') return showCuentas;
                     if (item.view === 'cotizaciones') return showCotizaciones;
@@ -346,6 +348,11 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               <SidebarMenu className="gap-0.5 [&_button]:h-7">
                 {projectMenuItems
                   .filter((item) => {
+                    if (item.key === 'solicitudes-pago') return hasPermission('solicitudes_ver');
+                    if (item.key === 'requisiciones') return hasPermission('requisiciones_ver');
+                    // Costos ensena el dinero del proyecto y enlaza a las
+                    // solicitudes: se esconde con su propia llave.
+                    if (item.key === 'costos') return hasPermission('costos_ver');
                     if (item.key === 'caja-menuda') return hasPermission('caja_menuda');
                     if (item.key === 'cuentas') return hasPermission('cuentas');
                     if (item.key === 'reportes') return hasPermission('reportes');
@@ -405,6 +412,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               </SidebarMenuItem>
 
               {/* Clientes */}
+              {hasPermission('clientes_ver') && (
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={currentView === 'clientes'}
@@ -415,6 +423,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   <span>Clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
 
               {/* Cronogramas — shown here only inside a project (top menu carries it otherwise) */}
               {selectedProjectId !== null && canUseCronogramas(user) && (
