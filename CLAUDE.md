@@ -122,6 +122,11 @@ user.permissions: individual boolean permissions (for rol === 'usuario')
 ## Critical rules
 
 - NEVER use fetch() — always use api from services/api.ts
+- ALWAYS pass `{ headers: { 'Content-Type': 'multipart/form-data' } }` when posting a
+  FormData. The `api` instance defaults to `application/json`, and axios silently
+  converts a FormData to JSON when that header is set, so the file never arrives and the
+  backend answers "no se recibió ningún archivo". It fails quietly — nothing in the
+  browser console says why.
 - NEVER use window.confirm — always use AlertDialog
 - NEVER add React Router
 - NEVER create new CSS files — use Tailwind classes only
