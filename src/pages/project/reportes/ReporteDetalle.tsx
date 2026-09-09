@@ -1,0 +1,264 @@
+/**
+ * Un reporte diario ya guardado. Solo lectura.
+ *
+ * No lleva hilo de comentarios: se decidió que los reportes se leen, no se
+ * discuten dentro del sistema.
+ */
+
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronLeft, Download, Pencil, Send, Loader2 } from 'lucide-react';
+import api from '@/services/api';
+import {
+  Alert, ErrorState, PageHeader, SectionHeader, TableSkeleton,
+} from '@/components/shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import {
+  type Reporte, clasesClima, fechaCorta, fechaLarga,
+} from './tipos';
+
+interface Props {
+  projectId: number;
+  reporteId: number;
+  onVolver: () => void;
+  onEditar: (r: Reporte) => void;
+}
+
+function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{etiqueta}</div>
+      <div className="mt-0.5 text-base font-semibold tabular-nums">{children}</div>
+    </div>
+  );
+}
+
+function Texto({ etiqueta, valor, vacio }: { etiqueta: string; valor: string | null; vacio: string }) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground">{etiqueta}</div>
+      {valor ? (
+        <p className="mt-0.5 whitespace-pre-wrap text-[15px] leading-relaxed">{valor}</p>
+      ) : (
+        <p className="mt-0.5 text-[15px] italic text-muted-foreground">{vacio}</p>
+      )}
+    </div>
+  );
+}
+
+export default function ReporteDetalle({ projectId, reporteId, onVolver, onEditar }: Props) {
+  const [reporte, setReporte] = useState<Reporte | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [bajando, setBajando] = useState(false);
+
+  const cargar = useCallback(() => {
+    setCargando(true);
+    setError(false);
+    api
+      .get(`/proyecto-reportes/${projectId}/${reporteId}`)
+      .then((r) => setReporte(r.data.data))
+      .catch(() => setError(true))
+      .finally(() => setCargando(false));
+  }, [projectId, reporteId]);
+
+  useEffect(cargar, [cargar]);
+
+  // El PDF se pide con el token puesto y se abre desde memoria: un enlace
+  // pelado llegaría sin autenticación y el servidor lo rechazaría.
+  const descargar = async () => {
+    setBajando(true);
+    try {
+      const r = await api.get(`/proyecto-reportes/${projectId}/${reporteId}/pdf`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(r.data as Blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error('No se pudo generar el PDF');
+    } finally {
+      setBajando(false);
+    }
+  };
+
+  const enviar = async () => {
+    setEnviando(true);
+    try {
+      await api.post(`/proyecto-reportes/${projectId}/${reporteId}/emitir`);
+      toast.success('Reporte enviado por correo');
+      cargar();
+    } catch {
+      toast.error('No se pudo enviar el reporte');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (cargando) return <TableSkeleton rows={6} columns={4} />;
+  if (error || !reporte) return <ErrorState onRetry={cargar} />;
+
+  const total = reporte.personal_calificado + reporte.ayudantes;
+  const horas = reporte.horas_perdidas ? Number(reporte.horas_perdidas) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <button
+          type="button"
+          onClick={onVolver}
+          className="mb-2 inline-flex items-center text-sm text-muted-foreground hover:text-primary"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" /> Reportes diarios
+        </button>
+        <PageHeader
+          title={fechaLarga(reporte.fecha)}
+          subtitle={`${reporte.numero} · ${reporte.creador_nombre} · ${total} en obra · ${reporte.fotos.length} fotos`}
+        >
+          <Button variant="outline" size="sm" onClick={descargar} disabled={bajando}>
+            {bajando
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Download className="mr-2 h-4 w-4" />}
+            PDF
+          </Button>
+          {reporte.puede_editar && (
+            <Button variant="outline" size="sm" onClick={() => onEditar(reporte)}>
+              <Pencil className="mr-2 h-4 w-4" /> Corregir
+            </Button>
+          )}
+        </PageHeader>
+      </div>
+
+      {/* Si el navegador se cerró a media subida, el reporte quedó guardado
+          pero sin salir por correo. Aquí se ve y se puede mandar. */}
+      {!reporte.enviado_at && reporte.puede_editar && (
+        <Alert
+          variant="warning"
+          title="Este reporte no se ha enviado por correo"
+          description="Puede haber pasado si se cerró la página mientras subían las fotos."
+          actions={
+            <Button size="sm" onClick={enviar} disabled={enviando}>
+              {enviando
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <Send className="mr-2 h-4 w-4" />}
+              Enviar ahora
+            </Button>
+          }
+        />
+      )}
+
+      <div className="rounded-lg border border-border bg-card">
+        <div className="space-y-4 p-4">
+          <SectionHeader title="Del día" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <div className="text-xs text-muted-foreground">Clima</div>
+              <Badge variant="outline" className={`mt-1 ${clasesClima(reporte.clima)}`}>
+                {reporte.clima}
+              </Badge>
+            </div>
+            <Dato etiqueta="Horas perdidas">
+              {horas > 0 ? <span className="text-warning">{horas}</span> : '0'}
+            </Dato>
+            <Dato etiqueta="Personal calificado">{reporte.personal_calificado}</Dato>
+            <Dato etiqueta="Ayudantes">{reporte.ayudantes}</Dato>
+          </div>
+          {reporte.motivo && (
+            <Texto etiqueta="Motivo" valor={reporte.motivo} vacio="" />
+          )}
+        </div>
+
+        <div className="space-y-3 border-t border-border p-4">
+          <SectionHeader title="Equipo" />
+          {reporte.equipo.length ? (
+            <div className="flex flex-wrap gap-2">
+              {reporte.equipo.map((e) => (
+                <span
+                  key={e}
+                  className="rounded-full border border-border bg-muted px-3 py-1 text-sm font-medium text-slate-700"
+                >
+                  {e}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[15px] italic text-muted-foreground">No se registró equipo</p>
+          )}
+        </div>
+
+        <div className="space-y-4 border-t border-border p-4">
+          <SectionHeader title="Trabajo ejecutado" />
+          {reporte.areas.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {reporte.areas.map((a) => (
+                <span
+                  key={a.id}
+                  className="rounded-full border border-primary bg-primary px-3 py-1 text-sm font-medium text-primary-foreground"
+                >
+                  {a.nombre}
+                </span>
+              ))}
+            </div>
+          )}
+          <Texto etiqueta="¿Qué se hizo hoy?" valor={reporte.que_se_hizo} vacio="—" />
+          <Texto etiqueta="Atrasos o impedimentos" valor={reporte.atrasos} vacio="Sin atrasos reportados" />
+          <Texto etiqueta="Novedades del día" valor={reporte.novedades} vacio="Sin novedades" />
+        </div>
+
+        {reporte.fotos.length > 0 && (
+          <div className="space-y-3 border-t border-border p-4">
+            <SectionHeader title={`Fotos · ${reporte.fotos.length}`} />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {reporte.fotos.map((f) => (
+                <a
+                  key={f.id} href={f.url} target="_blank" rel="noreferrer"
+                  className="block overflow-hidden rounded border border-border"
+                >
+                  <img
+                    src={f.url} alt={f.nombre_archivo} loading="lazy"
+                    className="aspect-[4/3] w-full object-cover transition-transform hover:scale-105"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {reporte.correcciones.length > 0 && (
+          <div className="space-y-3 border-t border-border p-4">
+            <SectionHeader title="Correcciones" />
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {reporte.correcciones.map((c) => (
+                    <tr key={c.id} className="border-b border-slate-100 last:border-0">
+                      <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground tabular-nums">
+                        {fechaCorta(c.created_at)}
+                      </td>
+                      <td className="whitespace-nowrap py-2 pr-4 font-medium">
+                        {c.usuario_nombre}
+                      </td>
+                      <td className="py-2 text-slate-700">
+                        {Object.values(c.detalles?.cambios ?? {})
+                          .map((v) =>
+                            v.antes === null
+                              ? `se agregó ${v.label}`
+                              : v.despues === null
+                                ? `se quitó ${v.label}`
+                                : `${v.label} de ${v.antes} a ${v.despues}`,
+                          )
+                          .join(' · ') || 'Cambio registrado'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -60,6 +60,7 @@ export interface UserPermissions {
   cotizaciones: boolean;
   cronogramas_ver: boolean;
   desglose_ver: boolean;
+  reportes: boolean;
 }
 
 export interface User {

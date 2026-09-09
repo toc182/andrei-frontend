@@ -91,7 +91,7 @@ const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
   { key: 'caja-menuda', label: 'Caja Menuda', icon: Wallet },
   { key: 'cuentas', label: 'Cuentas', icon: ReceiptText },
   { key: 'tareas', label: 'Tareas', icon: CheckSquare },
-  { key: 'bitacora', label: 'Bitacora', icon: BookOpen },
+  { key: 'reportes', label: 'Reportes', icon: BookOpen },
   { key: 'miembros', label: 'Miembros', icon: Users },
   { key: 'equipos', label: 'Equipos', icon: Truck },
   { key: 'cronograma', label: 'Cronograma', icon: CalendarRange },
@@ -348,6 +348,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   .filter((item) => {
                     if (item.key === 'caja-menuda') return hasPermission('caja_menuda');
                     if (item.key === 'cuentas') return hasPermission('cuentas');
+                    if (item.key === 'reportes') return hasPermission('reportes');
                     if (item.key === 'cronograma') return canUseCronogramas(user);
                     return true;
                   })

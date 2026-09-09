@@ -53,6 +53,7 @@ interface PermUser {
   cotizaciones: boolean | null;
   cronogramas_ver: boolean | null;
   desglose_ver: boolean | null;
+  reportes: boolean | null;
 }
 
 interface ProjectOption {
@@ -90,6 +91,7 @@ const DEFAULT_PERMS: UserPermissions = {
   cotizaciones: false,
   cronogramas_ver: false,
   desglose_ver: false,
+  reportes: false,
 };
 
 export default function PermisosPage() {
@@ -566,6 +568,11 @@ export default function PermisosPage() {
                     label="Desglose de precios"
                     checked={perms.desglose_ver}
                     onChange={() => togglePerm('desglose_ver')}
+                  />
+                  <PermCheckbox
+                    label="Reportes diarios de obra"
+                    checked={perms.reportes}
+                    onChange={() => togglePerm('reportes')}
                   />
                 </div>
               </div>

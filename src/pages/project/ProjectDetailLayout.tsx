@@ -23,7 +23,7 @@ import ProjectControlCostos from './ProjectControlCostos';
 import ProjectRequisiciones from './ProjectRequisiciones';
 import ProjectMembers from './ProjectMembers';
 import ProjectTodos from './ProjectTodos';
-import ProjectBitacora from './ProjectBitacora';
+import ProjectReportes from './ProjectReportes';
 import ProjectSolicitudesPago from './ProjectSolicitudesPago';
 import ProjectAdendas from './ProjectAdendas';
 import CajasMenudasPage from '../CajasMenudasPage';
@@ -132,7 +132,7 @@ export default function ProjectDetailLayout({
       'caja-menuda': 'Caja Menuda',
       cuentas: 'Cuentas',
       tareas: 'Tareas',
-      bitacora: 'Bitácora',
+      reportes: 'Reportes',
       avance: 'Avance Fisico',
       equipos: 'Equipos',
       miembros: 'Miembros',
@@ -311,8 +311,8 @@ export default function ProjectDetailLayout({
       case 'tareas':
         return <ProjectTodos projectId={projectId} />;
 
-      case 'bitacora':
-        return <ProjectBitacora projectId={projectId} />;
+      case 'reportes':
+        return <ProjectReportes projectId={projectId} />;
 
       case 'avance':
         return (
