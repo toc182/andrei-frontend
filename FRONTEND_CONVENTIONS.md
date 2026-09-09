@@ -536,6 +536,15 @@ Props: `label`, `value`, `icon`, `trend` (`{ value, direction: "up"|"down"|"flat
 
 **Canonical list page pattern: table-in-card with integrated toolbar and footer.** This is THE pattern for every index page. No exceptions without a documented reason.
 
+> **Documented divergence — read before "fixing" a list page.** As of 2026-09-09 the
+> shipped list pages do NOT follow the integrated toolbar/footer above. `SolicitudesPagoGeneral`,
+> `RequisicionesGeneral` and `ProjectReportes` all put the **filters above the card**, keep
+> the **card for the table alone**, and render **pagination outside and below the card**
+> (`SolicitudesPagination` is the shared piece). This is deliberate and was confirmed by
+> Ivan for Reportes; the in-card toolbar and footer described in this section is
+> aspirational, not what any page does. Follow the shipped pattern on new list pages until
+> this section is rewritten, and do not "correct" an existing page toward it.
+
 ### Component pattern
 
 ```jsx
