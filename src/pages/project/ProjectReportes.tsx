@@ -151,11 +151,11 @@ export default function ProjectReportes({ projectId }: Props) {
     const editando = vista.modo === 'editar' ? vista.reporte : undefined;
     const volver = () =>
       setVista(editando ? { modo: 'detalle', id: editando.id } : { modo: 'lista' });
-    const titulo = editando
-      ? `Corregir ${editando.numero}`
-      : numeroPrevisto
-        ? `Nuevo reporte diario - ${numeroPrevisto}`
-        : 'Nuevo reporte diario';
+    // El numero va de subtitulo y no pegado al titulo: el h1 de PageHeader
+    // recorta con truncate, asi que en un telefono "Nuevo reporte diario -
+    // RD-PP300-260908" se cortaba a media palabra en vez de bajar de linea.
+    const titulo = editando ? 'Corregir reporte' : 'Nuevo reporte diario';
+    const subtitulo = editando ? editando.numero : numeroPrevisto;
     return (
       <div className="space-y-6">
         <div className="flex items-start gap-2">
@@ -168,7 +168,7 @@ export default function ProjectReportes({ projectId }: Props) {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <PageHeader title={titulo} />
+          <PageHeader title={titulo} subtitle={subtitulo} />
         </div>
         <ReporteForm
           projectId={projectId}

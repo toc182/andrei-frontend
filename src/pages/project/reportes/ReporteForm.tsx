@@ -10,8 +10,10 @@
  *   dos líneas no deje su casilla a distinta altura que la de al lado.
  * - Las áreas son fichas, no una lista de casillas: ocupan mucho menos.
  * - Los campos de texto crecen hacia abajo mientras se escribe.
- * - En móvil el botón de guardar queda fijo abajo, con el espacio inferior
- *   suficiente para no tapar la última sección.
+ * - En móvil el botón de guardar se queda abajo mientras haya formulario. Es
+ *   `sticky`, no `fixed`: en Safari de iPhone una barra `fixed` se ancla a una
+ *   ventana que sigue por debajo de la barra del navegador, tapa contenido y
+ *   salta cuando Safari esconde su barra al bajar.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -258,7 +260,7 @@ export default function ReporteForm({
   ]);
 
   return (
-    <div className="space-y-6 pb-28 md:pb-0">
+    <div className="space-y-6">
       {error && <Alert variant="error" title={error} />}
       {yaReportado && (
         <Alert
@@ -488,9 +490,18 @@ export default function ReporteForm({
         </div>
       </div>
 
-      {/* En móvil los botones quedan fijos abajo, para no tener que bajar
-          hasta el final del formulario cada vez que se quiere guardar. */}
-      <div className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
+      {/* En móvil los botones se quedan abajo mientras haya formulario, para no
+          tener que bajar hasta el final cada vez que se quiere guardar.
+          Es `sticky` y no `fixed`: en Safari de iPhone una barra `fixed` se
+          ancla a una ventana que sigue por debajo de la barra del navegador, y
+          entonces tapa contenido, se monta sobre la barra de Safari y todo
+          salta cuando Safari la esconde al bajar. En `sticky` la barra ocupa su
+          lugar real en la página y deja de pelear con el navegador — por eso
+          tampoco hace falta ya el relleno inferior que la compensaba.
+          El -mx-8 la hace sangrar hasta los bordes: el contenedor con scroll
+          de AppLayout lleva px-8, y sin eso quedarían dos franjas por donde se
+          vería pasar el contenido por debajo. */}
+      <div className="sticky bottom-0 z-20 -mx-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
         <Button variant="outline" onClick={onCancelar} disabled={guardando}>
           Cancelar
         </Button>
