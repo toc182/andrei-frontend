@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, MapPin } from 'lucide-react';
+import { Plus, MapPin, ChevronLeft } from 'lucide-react';
 import api from '@/services/api';
 import {
   EmptyState, ErrorState, PageHeader, TableSkeleton,
@@ -108,8 +108,18 @@ export default function ProjectReportes({ projectId }: Props) {
 
   if (vista.modo === 'nuevo' || vista.modo === 'editar') {
     const editando = vista.modo === 'editar' ? vista.reporte : undefined;
+    const volver = () =>
+      setVista(editando ? { modo: 'detalle', id: editando.id } : { modo: 'lista' });
     return (
       <div className="space-y-6">
+        <button
+          type="button"
+          onClick={volver}
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-primary"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          {editando ? 'Volver al reporte' : 'Reportes diarios'}
+        </button>
         <PageHeader
           title={editando ? `Corregir ${editando.numero}` : 'Nuevo reporte diario'}
           subtitle={
@@ -121,12 +131,8 @@ export default function ProjectReportes({ projectId }: Props) {
         <ReporteForm
           projectId={projectId}
           reporte={editando}
-          onCancelar={() =>
-            setVista(editando ? { modo: 'detalle', id: editando.id } : { modo: 'lista' })
-          }
-          onListo={() =>
-            setVista(editando ? { modo: 'detalle', id: editando.id } : { modo: 'lista' })
-          }
+          onCancelar={volver}
+          onListo={volver}
         />
       </div>
     );

@@ -105,6 +105,7 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
   const [progreso, setProgreso] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [yaReportado, setYaReportado] = useState<string | null>(null);
+  const [numeroPrevisto, setNumeroPrevisto] = useState<string | null>(null);
   const [sugerencias, setSugerencias] = useState<string[]>([]);
 
   useEffect(() => {
@@ -129,18 +130,23 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
       .catch(() => setSugerencias([]));
   }, [projectId]);
 
-  // Aviso suave, nunca bloqueo: a propósito no hay límite de un reporte por
-  // día, porque alguien tiene que poder cubrir a quien está de vacaciones.
+  // Dos cosas de una: el codigo que le tocaria al reporte, y el aviso suave
+  // de fecha repetida. El aviso nunca bloquea — a proposito no hay limite de
+  // un reporte por dia, porque alguien tiene que poder cubrir a quien esta
+  // de vacaciones.
   useEffect(() => {
     if (editando || !fecha) {
       setYaReportado(null);
+      setNumeroPrevisto(null);
       return;
     }
     let vigente = true;
     api
       .get(`/proyecto-reportes/${projectId}/existe`, { params: { fecha } })
       .then((r) => {
-        if (vigente) setYaReportado(r.data.data ? fechaCorta(fecha) : null);
+        if (!vigente) return;
+        setYaReportado(r.data.data?.ya_reportado ? fechaCorta(fecha) : null);
+        setNumeroPrevisto(r.data.data?.numero_siguiente ?? null);
       })
       .catch(() => undefined);
     return () => {
@@ -243,6 +249,13 @@ export default function ReporteForm({ projectId, reporte, onListo, onCancelar }:
 
   return (
     <div className="space-y-6 pb-28 md:pb-0">
+      {!editando && numeroPrevisto && (
+        <div className="flex items-baseline gap-2 text-sm">
+          <span className="text-muted-foreground">Este reporte será el</span>
+          <span className="font-semibold tabular-nums text-primary">{numeroPrevisto}</span>
+        </div>
+      )}
+
       {error && <Alert variant="error" title={error} />}
       {yaReportado && (
         <Alert
