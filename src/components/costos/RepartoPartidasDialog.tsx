@@ -21,7 +21,7 @@ import { formatMoney } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 import { ListaPartidas } from './SelectorPartida';
-import { repartirProporcional } from '@/lib/repartoPartidas';
+import { repartirEntre } from '@/lib/repartoPartidas';
 import type { Partida, PartidaAsignada, ResumenSolicitud, Seccion } from '@/lib/costosApi';
 
 interface Linea {
@@ -52,6 +52,9 @@ export default function RepartoPartidasDialog({
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Lo que hay que contarle al usuario sobre el reparto que se acaba de hacer,
+   *  cuando no salio como lo pidio. No es un error: el reparto esta puesto. */
+  const [nota, setNota] = useState<string | null>(null);
   /** Que linea tiene el buscador abierto; escoger una partida lo cierra. */
   const [buscandoEn, setBuscandoEn] = useState<number | null>(null);
   const [escogiendoSeccion, setEscogiendoSeccion] = useState(false);
@@ -62,6 +65,7 @@ export default function RepartoPartidasDialog({
   useEffect(() => {
     if (!open || !pago) return;
     setError(null);
+    setNota(null);
     setLineas(
       pago.partidas.length > 0
         ? pago.partidas.map((p: PartidaAsignada) => ({
@@ -95,15 +99,26 @@ export default function RepartoPartidasDialog({
   const quitar = (i: number) => setLineas((prev) => prev.filter((_, j) => j !== i));
 
   /** Un gasto que no es de ninguna partida —un extintor— se reparte entre las
-   *  del grupo que se escoja, cada una segun lo que tenga presupuestado. */
-  const repartirEntre = (alcance: Partida[], donde: string) => {
+   *  del grupo que se escoja, cada una segun lo que tenga presupuestado. Si
+   *  alguna esta en cero no se la deja fuera: el reparto entero pasa a partes
+   *  iguales, y se dice. */
+  const repartir = (grupo: Partida[], donde: string) => {
     if (!pago) return;
-    const hechas = repartirProporcional(alcance, pago.monto);
+    if (grupo.length === 0) {
+      setError(`No hay partidas en ${donde}.`);
+      return;
+    }
+    const { lineas: hechas, enPartesIguales } = repartirEntre(grupo, pago.monto);
     if (hechas.length === 0) {
-      setError(`Ninguna partida de ${donde} tiene costo escrito en el presupuesto, así que no hay con qué calcular su parte.`);
+      setError(`No se pudo repartir entre las partidas de ${donde}.`);
       return;
     }
     setError(null);
+    setNota(
+      enPartesIguales
+        ? `Alguna partida de ${donde} no tiene costo escrito en el presupuesto. Para no dejarla fuera, se repartió en partes iguales.`
+        : null,
+    );
     setLineas(hechas.map((h) => ({ rowUid: h.rowUid, monto: h.monto.toFixed(2) })));
   };
 
@@ -159,6 +174,7 @@ export default function RepartoPartidasDialog({
     >
       <div className="space-y-3">
         {error && <Alert variant="error" title={error} />}
+        {nota && <Alert variant="info" title={nota} />}
         {repetidas && (
           <Alert
             variant="warning"
@@ -240,7 +256,7 @@ export default function RepartoPartidasDialog({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => repartirEntre(partidas, 'el proyecto')}
+              onClick={() => repartir(partidas, 'el proyecto')}
             >
               <Split className="mr-2 h-4 w-4" />
               Todo el proyecto
@@ -260,7 +276,7 @@ export default function RepartoPartidasDialog({
                       type="button"
                       onClick={() => {
                         setEscogiendoSeccion(false);
-                        repartirEntre(
+                        repartir(
                           partidas.filter((p) => p.seccionUid === s.rowUid),
                           `la sección ${s.item}`,
                         );

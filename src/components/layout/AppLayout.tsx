@@ -68,7 +68,7 @@ export function AppLayout({
   const { user, logout } = useAuth();
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <AppSidebar currentView={currentView} onNavigate={onNavigate} />
       <SidebarInset className="min-w-0">
         {/* Topbar */}
@@ -146,10 +146,14 @@ export function AppLayout({
         {/* Page Content */}
         {/* El tope de ancho vive AQUI y no en cada pantalla: es una sola regla
             para toda la aplicación y así ninguna se queda fuera. El que
-            scrollea y pinta el fondo es el de afuera, para que la barra de
-            scroll quede en el filo de la ventana y el fondo llegue hasta los
-            bordes; el de adentro es el que centra el contenido. */}
-        <div className="flex-1 overflow-auto bg-background px-8 pt-6 pb-8">
+            scrollea y pinta el fondo es el de afuera; el de adentro es el que
+            centra el contenido.
+            El que scrollea es ESTE, no la ventana: la ventana se queda del alto
+            de la pantalla (h-svh arriba) y el contenido se mueve por dentro.
+            Así la barra de arriba no se va al subir, y una pantalla puede dejar
+            algo pegado mientras el resto baja —el asistente de partidas, por
+            ejemplo—, que es imposible cuando quien scrollea es la ventana. */}
+        <div className="min-h-0 flex-1 overflow-auto bg-background px-8 pt-6 pb-8">
           <div className="mx-auto w-full max-w-[1440px]">
             {children}
           </div>

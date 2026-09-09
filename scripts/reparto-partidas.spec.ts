@@ -1,6 +1,6 @@
 // Red de seguridad del reparto proporcional de un gasto general.
 // cd andrei-frontend && npx tsx scripts/reparto-partidas.spec.ts
-import { repartirProporcional, type PartidaConPeso } from '../src/lib/repartoPartidas';
+import { repartirEntre, repartirProporcional, type PartidaConPeso } from '../src/lib/repartoPartidas';
 
 let passed = 0; let failed = 0;
 function ok(cond: boolean, label: string) {
@@ -66,6 +66,27 @@ const suma = (l: { monto: number }[]) => Math.round(l.reduce((s, x) => s + x.mon
     'sin costo: si ninguna tiene costo, no se reparte nada');
   ok(repartirProporcional([], 50).length === 0, 'sin costo: sin partidas no hay reparto');
   ok(repartirProporcional([p('a', 100)], 0).length === 0, 'monto cero: no hay nada que repartir');
+}
+
+// ---- una partida en cero nunca queda fuera ----
+{
+  // Con una sola en cero, el grupo entero pasa a partes iguales.
+  const conCero = repartirEntre([p('a', 100), p('b', null), p('c', 300)], 90);
+  ok(conCero.enPartesIguales === true, 'nunca fuera: avisa que cambio a partes iguales');
+  ok(conCero.lineas.length === 3, 'nunca fuera: entran las tres', conCero.lineas.length);
+  ok(conCero.lineas.every((x) => x.monto === 30), 'nunca fuera: 30 a cada una');
+  ok(suma(conCero.lineas) === 9000, 'nunca fuera: la suma cierra');
+
+  // Todas en cero: tambien reparte, no se queda sin hacer nada.
+  const todasCero = repartirEntre([p('a', null), p('b', 0)], 10);
+  ok(todasCero.lineas.length === 2 && todasCero.enPartesIguales,
+    'nunca fuera: todas en cero se reparte igual', todasCero.lineas);
+
+  // Con todas costeadas, manda la proporcion.
+  const todasConCosto = repartirEntre([p('a', 300), p('b', 100)], 100);
+  ok(todasConCosto.enPartesIguales === false, 'nunca fuera: si todas tienen costo, no se cambia nada');
+  const porUid = new Map(todasConCosto.lineas.map((x) => [x.rowUid, x.monto]));
+  ok(porUid.get('a') === 75 && porUid.get('b') === 25, 'nunca fuera: y reparte en proporcion', todasConCosto.lineas);
 }
 
 // ---- repartir dos veces lo mismo da lo mismo ----

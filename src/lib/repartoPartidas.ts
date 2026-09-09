@@ -23,8 +23,30 @@ export interface LineaReparto {
   monto: number;
 }
 
-/** Reparte `monto` entre `partidas` en proporcion a lo presupuestado.
- *  Devuelve [] si ninguna tiene costo escrito: no hay como repartir. */
+/** Reparte `monto` entre todas las partidas dadas, sin dejar ninguna fuera.
+ *
+ *  UNA PARTIDA EN CERO NUNCA SE DESCARTA. Que no tenga costo escrito no
+ *  significa que ahi no pueda ir gasto: significa que todavia no se costeo, y
+ *  el gasto que reciba la dejara pasada, que es justo lo que hay que ver.
+ *
+ *  Lo unico que el cero no sabe decir es que proporcion le toca, porque esa
+ *  proporcion se calcula sobre esa misma cifra. Asi que si en el grupo hay
+ *  aunque sea una en cero, el reparto entero va en PARTES IGUALES. */
+export function repartirEntre(
+  partidas: PartidaConPeso[],
+  monto: number,
+): { lineas: LineaReparto[]; enPartesIguales: boolean } {
+  const algunaEnCero = partidas.some((p) => p.presupuestado == null || p.presupuestado <= 0);
+  if (algunaEnCero) {
+    const iguales = partidas.map((p) => ({ rowUid: p.rowUid, presupuestado: 1 }));
+    return { lineas: repartirProporcional(iguales, monto), enPartesIguales: true };
+  }
+  return { lineas: repartirProporcional(partidas, monto), enPartesIguales: false };
+}
+
+/** La aritmetica sola: reparte en proporcion al peso de cada partida.
+ *  Devuelve [] si ninguna tiene peso. Quien decide que peso usar es
+ *  `repartirEntre`. */
 export function repartirProporcional(
   partidas: PartidaConPeso[],
   monto: number,

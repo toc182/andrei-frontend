@@ -19,17 +19,23 @@ import { Card } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, EmptyState, ErrorState, TableSkeleton } from '@/components/shell';
 import { formatMoney } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
-import SelectorPartida, { EtiquetaPartida } from './SelectorPartida';
+import SelectorPartida, { DiferenciaPartida, EtiquetaPartida } from './SelectorPartida';
 import RepartoPartidasDialog from './RepartoPartidasDialog';
 import DetallePagoDialog from './DetallePagoDialog';
+import AsistentePagos from './AsistentePagos';
+import BarraPropuesta from './BarraPropuesta';
 import {
   getPartidas, getResumenCostos, guardarPartidasDePago,
   type Partida, type ResumenSolicitud, type Seccion,
 } from '@/lib/costosApi';
+import {
+  aplicarPropuesta, getEstadoAsistente, type Propuesta,
+} from '@/lib/asistentePagosApi';
 
 const TH = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
@@ -57,6 +63,14 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
   const [repartiendo, setRepartiendo] = useState<ResumenSolicitud | null>(null);
   const [mirando, setMirando] = useState<number | null>(null);
 
+  // El asistente. La propuesta vive AQUI, no en el panel: lo que se marca son
+  // las filas de esta tabla, y el boton de aplicar esta encima de ella.
+  const [hayAsistente, setHayAsistente] = useState(false);
+  const [propuesta, setPropuesta] = useState<Propuesta | null>(null);
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
+  const [aplicando, setAplicando] = useState(false);
+  const [errorPropuesta, setErrorPropuesta] = useState<string | null>(null);
+
   const cargar = useCallback(async () => {
     try {
       setLoading(true);
@@ -78,6 +92,50 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
   }, [projectId]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Si no hay llave puesta en el servidor, el panel no se ensena: mejor que no
+  // aparezca a que aparezca y falle al primer intento.
+  useEffect(() => {
+    getEstadoAsistente().then(setHayAsistente).catch(() => setHayAsistente(false));
+  }, []);
+
+  /** Una propuesta nueva llega con todos sus cambios marcados. Soltar los que
+   *  no convencen es el caso raro, no el normal. */
+  const recibirPropuesta = useCallback((p: Propuesta | null) => {
+    setPropuesta(p);
+    setErrorPropuesta(null);
+    setSeleccionados(new Set(p ? p.cambios.map((c) => c.solicitudId) : []));
+  }, []);
+
+  const cambiosPorPago = useMemo(() => {
+    const m = new Map<number, Propuesta['cambios'][number]>();
+    for (const c of propuesta?.cambios ?? []) m.set(c.solicitudId, c);
+    return m;
+  }, [propuesta]);
+
+  const aplicar = async () => {
+    if (!propuesta) return;
+    const marcados = propuesta.cambios.filter((c) => seleccionados.has(c.solicitudId));
+    if (marcados.length === 0) return;
+    try {
+      setAplicando(true);
+      setErrorPropuesta(null);
+      const aplicados = await aplicarPropuesta(projectId, propuesta.id, marcados);
+      // Las filas se ponen al dia en su sitio, sin recargar la lista entera:
+      // asi se ve lo que acaba de cambiar sin perder donde estabas.
+      setPagos((prev) => prev.map((p) => {
+        const hecho = aplicados.find((a) => a.solicitudId === p.id);
+        return hecho ? { ...p, partidas: hecho.partidas } : p;
+      }));
+      setPropuesta(null);
+      setSeleccionados(new Set());
+    } catch (err) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setErrorPropuesta(e.response?.data?.message ?? 'No se pudieron aplicar los cambios.');
+    } finally {
+      setAplicando(false);
+    }
+  };
 
   const pendientes = useMemo(() => pagos.filter(sinPartida).length, [pagos]);
   const visibles = useMemo(
@@ -109,6 +167,21 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
 
   return (
     <>
+      {/* La tabla manda; el asistente va al lado. Debajo de lg el panel baja,
+          que en una pantalla angosta la tabla no cabe partida en dos. */}
+      <div className={cn('grid items-start gap-4', hayAsistente && 'lg:grid-cols-[1fr_360px]')}>
+      <div className="min-w-0 space-y-3">
+      {propuesta && (
+        <BarraPropuesta
+          cambios={propuesta.cambios}
+          seleccionados={seleccionados}
+          aplicando={aplicando}
+          onAplicar={aplicar}
+          onDescartar={() => recibirPropuesta(null)}
+        />
+      )}
+      {errorPropuesta && <Alert variant="error" title={errorPropuesta} />}
+
       <Card className="overflow-hidden p-0">
         {loading ? (
           <Table><TableSkeleton columns={5} /></Table>
@@ -189,6 +262,9 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
               <Table className="table-fixed">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                    {/* La columna de casillas solo existe mientras hay una
+                        propuesta en pantalla. */}
+                    {propuesta && <TableHead className="w-[38px] px-0" />}
                     {/* La partida es la columna con la que se trabaja aqui, y
                         los nombres del desglose son largos: se lleva el ancho
                         que sobraba en las demas. */}
@@ -200,14 +276,34 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibles.map((p) => (
+                  {visibles.map((p) => {
+                    const cambio = cambiosPorPago.get(p.id);
+                    const marcado = cambio != null && seleccionados.has(p.id);
+                    return (
                     <TableRow
                       key={p.id}
                       onClick={() => setMirando(p.id)}
                       className={cn(
                         'cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60',
+                        marcado && 'bg-info/[0.06] shadow-[inset_3px_0_0_var(--color-info)] hover:bg-info/[0.09]',
+                        cambio && !marcado && 'opacity-50',
                       )}
                     >
+                      {propuesta && (
+                        <TableCell className="px-0 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                          {cambio && (
+                            <Checkbox
+                              checked={marcado}
+                              onCheckedChange={(v) => setSeleccionados((prev) => {
+                                const s = new Set(prev);
+                                if (v) s.add(p.id); else s.delete(p.id);
+                                return s;
+                              })}
+                              aria-label={`Aplicar el cambio de ${p.numero ?? p.id}`}
+                            />
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell className="truncate px-4 py-2 text-sm font-medium text-foreground">
                         {p.numero ?? '—'}
                       </TableCell>
@@ -224,7 +320,9 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                           detalle: la fila entera navega y esta celda no puede
                           arrastrarla consigo. */}
                       <TableCell className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
-                        {hayDesglose ? (
+                        {cambio ? (
+                          <DiferenciaPartida antes={cambio.antes} despues={cambio.despues} />
+                        ) : hayDesglose ? (
                           <SelectorPartida
                             partidas={partidas}
                             asignadas={p.partidas}
@@ -238,7 +336,8 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -250,6 +349,20 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
           </>
         )}
       </Card>
+      </div>
+
+      {hayAsistente && (
+        /* Se queda pegado arriba mientras bajas por la tabla: la conversacion
+           y las filas que va marcando se miran a la vez. */
+        <div className="lg:sticky lg:top-4">
+          <AsistentePagos
+            projectId={projectId}
+            propuesta={propuesta}
+            onPropuesta={recibirPropuesta}
+          />
+        </div>
+      )}
+      </div>
 
       <RepartoPartidasDialog
         open={repartiendo !== null}

@@ -161,6 +161,43 @@ export default function SelectorPartida({
   );
 }
 
+/** Un cambio propuesto sobre una fila: lo que tenia, tachado, y lo que quedaria
+ *  debajo. No se pincha — para tocar esta fila hay que descartar la propuesta o
+ *  soltarla con su casilla. */
+export function DiferenciaPartida({
+  antes, despues,
+}: {
+  antes: { rowUid: string; item: string | null; descripcion: string | null; monto: number }[];
+  despues: { rowUid: string; item: string | null; descripcion: string | null; monto: number }[];
+}) {
+  return (
+    <div className="space-y-1 px-1.5 py-1">
+      <div className="text-xs text-muted-foreground line-through">
+        {antes.length === 0
+          ? 'Sin partida'
+          : antes.map((l) => `${l.item ?? '—'} ${formatMoney(l.monto)}`).join(' · ')}
+      </div>
+      {despues.length === 0 ? (
+        <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">
+          Sin partida
+        </span>
+      ) : (
+        despues.map((l) => (
+          <div key={l.rowUid} className="flex min-w-0 items-baseline gap-2 text-sm">
+            <span className="w-[42px] shrink-0 text-xs tabular-nums text-muted-foreground">
+              {l.item ?? '—'}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{l.descripcion ?? ''}</span>
+            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+              {formatMoney(l.monto)}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 /** Lo que se lee en la casilla cuando el desplegable esta cerrado. */
 export function EtiquetaPartida({ asignadas }: { asignadas: PartidaAsignada[] }) {
   if (asignadas.length === 0) {
