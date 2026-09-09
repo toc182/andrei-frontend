@@ -349,6 +349,9 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                     if (item.key === 'caja-menuda') return hasPermission('caja_menuda');
                     if (item.key === 'cuentas') return hasPermission('cuentas');
                     if (item.key === 'reportes') return hasPermission('reportes');
+                    // Miembros administra quien esta en el proyecto y quien
+                    // aprueba sus pagos: solo admin y co-admin.
+                    if (item.key === 'miembros') return isAdminOrCoAdmin;
                     if (item.key === 'cronograma') return canUseCronogramas(user);
                     return true;
                   })
