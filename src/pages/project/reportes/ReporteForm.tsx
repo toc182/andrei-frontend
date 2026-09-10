@@ -33,8 +33,10 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  CLIMAS, type Area, type Reporte, fechaCorta, hoyYMD,
+  CLIMAS, type Area, type FilaEntrega, type Listas, type Reporte,
+  fechaCorta, hoyYMD,
 } from './tipos';
+import { SeccionEntregas, SeccionEquipo, SeccionPersonal } from './SeccionesFilas';
 
 interface Props {
   projectId: number;
@@ -90,15 +92,33 @@ export default function ReporteForm({
   const [clima, setClima] = useState<string>(reporte?.clima ?? '');
   const [horas, setHoras] = useState(reporte?.horas_perdidas ?? '');
   const [motivo, setMotivo] = useState(reporte?.motivo ?? '');
-  const [calificado, setCalificado] = useState(
-    reporte ? String(reporte.personal_calificado) : '',
+  // Las tres secciones que son filas. Las listas del proyecto se cargan de
+  // /proyecto-listas; los valores son lo que se teclea hoy.
+  const [listas, setListas] = useState<Listas | null>(null);
+  const [personal, setPersonal] = useState<Record<number, string>>(
+    () => Object.fromEntries(
+      (reporte?.personal ?? []).map((f) => [f.puesto_id, String(f.cantidad)]),
+    ),
   );
-  const [ayudantes, setAyudantes] = useState(
-    reporte ? String(reporte.ayudantes) : '',
+  const [equiposUso, setEquiposUso] = useState<
+    Record<number, { unidades: string; horas: string }>
+  >(
+    () => Object.fromEntries(
+      (reporte?.equipos ?? []).map((f) => [
+        f.equipo_id,
+        { unidades: String(f.unidades), horas: String(f.horas) },
+      ]),
+    ),
   );
-  const [equipo, setEquipo] = useState<string[]>(reporte?.equipo ?? []);
-  const [agregandoEquipo, setAgregandoEquipo] = useState(false);
-  const [equipoNuevo, setEquipoNuevo] = useState('');
+  const [entregas, setEntregas] = useState<FilaEntrega[]>(
+    () => (reporte?.entregas ?? []).map((f) => ({
+      categoria_id: f.categoria_id,
+      descripcion: f.descripcion,
+      cantidad: f.cantidad ?? '',
+      unidad: f.unidad ?? '',
+      notas: f.notas ?? '',
+    })),
+  );
   const [areas, setAreas] = useState<Area[]>([]);
   const [areasElegidas, setAreasElegidas] = useState<number[]>(
     reporte?.areas.map((a) => a.id) ?? [],
@@ -111,7 +131,6 @@ export default function ReporteForm({
   const [progreso, setProgreso] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [yaReportado, setYaReportado] = useState<string | null>(null);
-  const [sugerencias, setSugerencias] = useState<string[]>([]);
 
   useEffect(() => {
     api
@@ -120,20 +139,41 @@ export default function ReporteForm({
       .catch(() => setAreas([]));
   }, [projectId]);
 
-  // Las sugerencias de equipo son lo que ya se escribió en este proyecto:
-  // la lista se va armando sola.
-  useEffect(() => {
+  // Las cuatro listas vienen de un solo viaje: el formulario las necesita
+  // todas y se llena en obra, donde cada petición de más es otra manera de
+  // fallar.
+  const cargarListas = useCallback(() => {
     api
-      .get(`/proyecto-reportes/${projectId}`, { params: { limit: 60 } })
-      .then((r) => {
-        const vistos = new Set<string>();
-        for (const fila of (r.data.data ?? []) as { equipo: string[] }[]) {
-          for (const e of fila.equipo ?? []) vistos.add(e);
-        }
-        setSugerencias([...vistos].sort());
-      })
-      .catch(() => setSugerencias([]));
+      .get(`/proyecto-listas/${projectId}`)
+      .then((r) => setListas(r.data.data))
+      .catch(() => setListas(null));
   }, [projectId]);
+
+  useEffect(cargarListas, [cargarListas]);
+
+  // Las listas son del proyecto, no del día: se guardan en cuanto se tocan,
+  // igual que las áreas, y no esperan a que se guarde el reporte.
+  const tocarLista = useCallback(
+    async (peticion: Promise<unknown>) => {
+      try {
+        await peticion;
+        cargarListas();
+      } catch (e) {
+        const msg = (e as { response?: { data?: { message?: string } } })
+          ?.response?.data?.message;
+        setError(msg ?? 'No se pudo actualizar la lista');
+      }
+    },
+    [cargarListas],
+  );
+
+  const agregarA = (lista: string, nombre: string, empresaId?: number | null) =>
+    tocarLista(api.post(`/proyecto-listas/${projectId}/${lista}`, {
+      nombre, empresa_id: empresaId ?? null,
+    }));
+
+  const quitarDe = (lista: string, id: number) =>
+    tocarLista(api.delete(`/proyecto-listas/${projectId}/${lista}/${id}`));
 
   // Dos cosas de una: el codigo que le tocaria al reporte, y el aviso suave
   // de fecha repetida. El aviso nunca bloquea — a proposito no hay limite de
@@ -169,13 +209,6 @@ export default function ReporteForm({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
-  const agregarEquipo = () => {
-    const nombre = equipoNuevo.trim();
-    if (nombre && !equipo.includes(nombre)) setEquipo([...equipo, nombre]);
-    setEquipoNuevo('');
-    setAgregandoEquipo(false);
-  };
-
   const elegirFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nuevas = Array.from(e.target.files ?? [])
       .filter((f) => f.type.startsWith('image/'))
@@ -203,13 +236,29 @@ export default function ReporteForm({
         clima,
         horas_perdidas: horas === '' ? null : Number(horas),
         motivo: motivo.trim() || null,
-        personal_calificado: Number(calificado || 0),
-        ayudantes: Number(ayudantes || 0),
-        equipo,
         areas: areasElegidas,
         que_se_hizo: queSeHizo.trim(),
         atrasos: atrasos.trim() || null,
         novedades: novedades.trim() || null,
+        // Se mandan todas las filas, incluidas las que quedaron en cero: el
+        // servidor descarta los ceros, y mandarlas es lo que le dice que la
+        // sección sí se está tocando. Omitirlas significaría "no tocar".
+        personal: (listas?.puestos ?? []).map((p) => ({
+          puesto_id: p.id,
+          cantidad: Number(personal[p.id] || 0),
+        })),
+        equipos: (listas?.equipos ?? []).map((q) => ({
+          equipo_id: q.id,
+          unidades: Number(equiposUso[q.id]?.unidades || 0),
+          horas: Number(equiposUso[q.id]?.horas || 0),
+        })),
+        entregas: entregas.map((f) => ({
+          categoria_id: f.categoria_id,
+          descripcion: f.descripcion,
+          cantidad: f.cantidad === '' ? null : Number(f.cantidad),
+          unidad: f.unidad,
+          notas: f.notas,
+        })),
       };
 
       setProgreso('Guardando el reporte…');
@@ -255,7 +304,7 @@ export default function ReporteForm({
       setProgreso('');
     }
   }, [
-    fecha, clima, horas, motivo, calificado, ayudantes, equipo, areasElegidas,
+    fecha, clima, horas, motivo, listas, personal, equiposUso, entregas, areasElegidas,
     queSeHizo, atrasos, novedades, fotos, editando, reporte, projectId, onListo,
   ]);
 
@@ -311,80 +360,10 @@ export default function ReporteForm({
         </div>
 
         <div className="space-y-4 border-t border-border p-4">
-          <SectionHeader title="Personal y equipo" />
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-[8rem_8rem_1fr]">
-            <div className="flex flex-col justify-end gap-1.5">
-              <Label htmlFor="calificado">Personal calificado</Label>
-              <Input
-                id="calificado" type="number" inputMode="numeric" min="0" placeholder="0"
-                value={calificado} onChange={(e) => setCalificado(e.target.value)}
-                className="tabular-nums"
-              />
-            </div>
-            <div className="flex flex-col justify-end gap-1.5">
-              <Label htmlFor="ayudantes">Ayudantes</Label>
-              <Input
-                id="ayudantes" type="number" inputMode="numeric" min="0" placeholder="0"
-                value={ayudantes} onChange={(e) => setAyudantes(e.target.value)}
-                className="tabular-nums"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Equipo que se utilizó</Label>
-            <div className="flex flex-wrap gap-2">
-              {equipo.map((e) => (
-                <span
-                  key={e}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-sm font-medium text-slate-700"
-                >
-                  {e}
-                  <button
-                    type="button"
-                    aria-label={`Quitar ${e}`}
-                    onClick={() => setEquipo(equipo.filter((x) => x !== e))}
-                    className="text-muted-foreground hover:text-error"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            {agregandoEquipo ? (
-              <div className="flex gap-2">
-                <Input
-                  autoFocus
-                  list="equipo-sugerencias"
-                  value={equipoNuevo}
-                  placeholder="Escoger o escribir…"
-                  onChange={(e) => setEquipoNuevo(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); agregarEquipo(); }
-                    if (e.key === 'Escape') { setEquipoNuevo(''); setAgregandoEquipo(false); }
-                  }}
-                />
-                <datalist id="equipo-sugerencias">
-                  {sugerencias.map((s) => <option key={s} value={s} />)}
-                </datalist>
-                <Button type="button" onClick={agregarEquipo}>Agregar</Button>
-              </div>
-            ) : (
-              <Button
-                type="button" variant="outline" size="sm"
-                onClick={() => setAgregandoEquipo(true)}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Agregar equipo
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-4 border-t border-border p-4">
           <SectionHeader title="Trabajo ejecutado" />
 
           <div className="space-y-2">
-            <Label>Áreas donde se trabajó hoy</Label>
+            <Label>Áreas de trabajo</Label>
             {areas.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Este proyecto todavía no tiene áreas definidas.
@@ -415,7 +394,7 @@ export default function ReporteForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="que">¿Qué se hizo hoy? *</Label>
+            <Label htmlFor="que">Trabajo ejecutado *</Label>
             <TextareaCrece
               id="que" value={queSeHizo} onChange={setQueSeHizo}
               placeholder="Vaciado de losa en área de chorros, armado de acero en torre péndulo…"
@@ -434,11 +413,54 @@ export default function ReporteForm({
               <Label htmlFor="novedades">Novedades del día</Label>
               <TextareaCrece
                 id="novedades" rows={2} value={novedades} onChange={setNovedades}
-                placeholder="Visitas, instrucciones, entregas, incidentes"
+                placeholder="Visitas, instrucciones, incidentes"
               />
             </div>
           </div>
         </div>
+
+        {/* Personal, Equipo y Entregas. Las listas del proyecto salen solas;
+            lo que se teclea aquí son los números de hoy. */}
+        {listas && (
+          <>
+            <div className="space-y-4 border-t border-border p-4">
+              <SectionHeader title="Personal" />
+              <SeccionPersonal
+                listas={listas}
+                valores={personal}
+                onCantidad={(id, v) => setPersonal((p) => ({ ...p, [id]: v }))}
+                onAgregarPuesto={(nombre, empresaId) => agregarA('puestos', nombre, empresaId)}
+                onQuitarPuesto={(id) => quitarDe('puestos', id)}
+                onAgregarEmpresa={(nombre) => agregarA('empresas', nombre)}
+                onQuitarEmpresa={(id) => quitarDe('empresas', id)}
+              />
+            </div>
+
+            <div className="space-y-4 border-t border-border p-4">
+              <SectionHeader title="Equipo" />
+              <SeccionEquipo
+                listas={listas}
+                valores={equiposUso}
+                onValor={(id, campo, v) => setEquiposUso((q) => ({
+                  ...q,
+                  [id]: { unidades: '', horas: '', ...q[id], [campo]: v },
+                }))}
+                onAgregar={(nombre) => agregarA('equipos', nombre)}
+                onQuitar={(id) => quitarDe('equipos', id)}
+              />
+            </div>
+
+            <div className="space-y-4 border-t border-border p-4">
+              <SectionHeader title="Entregas" />
+              <SeccionEntregas
+                listas={listas}
+                filas={entregas}
+                onFilas={setEntregas}
+                onAgregarCategoria={(nombre) => agregarA('categorias', nombre)}
+              />
+            </div>
+          </>
+        )}
 
         <div className="space-y-3 border-t border-border p-4">
           <SectionHeader title="Fotos" />

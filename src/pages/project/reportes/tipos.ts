@@ -9,6 +9,49 @@ export const CLIMAS = [
 
 export type Clima = (typeof CLIMAS)[number];
 
+/** Una fila de cualquiera de las listas del proyecto. */
+export interface ItemLista {
+  id: number;
+  nombre: string;
+  orden: number;
+  /** Solo en puestos: null es el bloque propio, con valor es el de esa empresa. */
+  empresa_id?: number | null;
+  /** Solo en puestos: los cuatro de arranque, que no se quitan. */
+  fijo?: boolean;
+}
+
+/** Las cuatro listas del proyecto, como las devuelve /proyecto-listas. */
+export interface Listas {
+  empresas: ItemLista[];
+  puestos: ItemLista[];
+  equipos: ItemLista[];
+  categorias: ItemLista[];
+}
+
+/** Lo que se llena cada día. */
+export interface FilaPersonal { puesto_id: number; cantidad: number | string; }
+export interface FilaEquipo {
+  equipo_id: number;
+  unidades: number | string;
+  horas: number | string;
+}
+export interface FilaEntrega {
+  categoria_id: number;
+  descripcion: string;
+  cantidad: number | string | null;
+  unidad: string | null;
+  notas: string | null;
+}
+
+/** Las mismas filas como vuelven del detalle, ya con sus nombres. */
+export interface PersonalGuardado extends FilaPersonal {
+  nombre: string;
+  empresa_id: number | null;
+  empresa_nombre: string | null;
+}
+export interface EquipoGuardado extends FilaEquipo { nombre: string; }
+export interface EntregaGuardada extends FilaEntrega { categoria: string; }
+
 export interface Area {
   id: number;
   proyecto_id: number;
@@ -80,6 +123,9 @@ export interface Reporte {
   areas: { id: number; nombre: string }[];
   fotos: Foto[];
   correcciones: Correccion[];
+  personal: PersonalGuardado[];
+  equipos: EquipoGuardado[];
+  entregas: EntregaGuardada[];
 }
 
 const MESES = [

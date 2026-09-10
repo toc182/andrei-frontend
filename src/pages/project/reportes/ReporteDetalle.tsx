@@ -34,6 +34,41 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
   );
 }
 
+/**
+ * Las filas de Personal o Equipo en solo lectura, agrupadas por empresa.
+ * El titulo del grupo solo aparece cuando hay mas de uno: con una sola
+ * cuadrilla, "Pinellas" seria una etiqueta de mas.
+ */
+function FilasLeidas({
+  filas,
+}: {
+  filas: { clave: string; grupo: string | null; nombre: string; valor: string }[];
+}) {
+  const grupos = [...new Set(filas.map((f) => f.grupo))];
+  return (
+    <div className="space-y-3">
+      {grupos.map((g) => (
+        <div key={g ?? 'propio'}>
+          {grupos.length > 1 && (
+            <div className="pb-1 text-xs font-bold uppercase tracking-wide text-primary">
+              {g ?? 'Pinellas'}
+            </div>
+          )}
+          {filas.filter((f) => f.grupo === g).map((f) => (
+            <div
+              key={f.clave}
+              className="flex items-baseline justify-between border-b border-slate-100 py-1.5 last:border-0"
+            >
+              <span className="text-[15px]">{f.nombre}</span>
+              <span className="text-[15px] font-medium tabular-nums">{f.valor}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Texto({ etiqueta, valor, vacio }: { etiqueta: string; valor: string | null; vacio: string }) {
   return (
     <div>
@@ -100,7 +135,11 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
   if (cargando) return <TableSkeleton rows={6} columns={4} />;
   if (error || !reporte) return <ErrorState onRetry={cargar} />;
 
-  const total = reporte.personal_calificado + reporte.ayudantes;
+  // Los reportes nuevos suman sus filas; los viejos, que no tienen ninguna,
+  // siguen contando con los dos números de antes.
+  const total = reporte.personal.length
+    ? reporte.personal.reduce((n, f) => n + Number(f.cantidad), 0)
+    : reporte.personal_calificado + reporte.ayudantes;
   const horas = reporte.horas_perdidas ? Number(reporte.horas_perdidas) : 0;
 
   return (
@@ -165,29 +204,10 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
             <Dato etiqueta="Horas perdidas">
               {horas > 0 ? <span className="text-warning">{horas}</span> : '0'}
             </Dato>
-            <Dato etiqueta="Personal calificado">{reporte.personal_calificado}</Dato>
-            <Dato etiqueta="Ayudantes">{reporte.ayudantes}</Dato>
+            <Dato etiqueta="Personal">{total}</Dato>
           </div>
           {reporte.motivo && (
             <Texto etiqueta="Motivo" valor={reporte.motivo} vacio="" />
-          )}
-        </div>
-
-        <div className="space-y-3 border-t border-border p-4">
-          <SectionHeader title="Equipo" />
-          {reporte.equipo.length ? (
-            <div className="flex flex-wrap gap-2">
-              {reporte.equipo.map((e) => (
-                <span
-                  key={e}
-                  className="rounded-full border border-border bg-muted px-3 py-1 text-sm font-medium text-slate-700"
-                >
-                  {e}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[15px] italic text-muted-foreground">No se registró equipo</p>
           )}
         </div>
 
@@ -205,10 +225,81 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
               ))}
             </div>
           )}
-          <Texto etiqueta="¿Qué se hizo hoy?" valor={reporte.que_se_hizo} vacio="—" />
+          <Texto etiqueta="Trabajo ejecutado" valor={reporte.que_se_hizo} vacio="—" />
           <Texto etiqueta="Atrasos o impedimentos" valor={reporte.atrasos} vacio="Sin atrasos reportados" />
           <Texto etiqueta="Novedades del día" valor={reporte.novedades} vacio="Sin novedades" />
         </div>
+
+        {/* Personal, Equipo y Entregas. Solo se pinta lo que el reporte
+            tiene: un reporte sin entregas no ensena una seccion vacia. */}
+        {reporte.personal.length > 0 && (
+          <div className="space-y-3 border-t border-border p-4">
+            <SectionHeader title="Personal" />
+            <FilasLeidas
+              filas={reporte.personal.map((f) => ({
+                clave: `p${f.puesto_id}`,
+                grupo: f.empresa_nombre,
+                nombre: f.nombre,
+                valor: String(f.cantidad),
+              }))}
+            />
+            <div className="flex items-baseline justify-between border-t border-border pt-2 text-sm">
+              <span className="text-muted-foreground">Total en obra</span>
+              <span className="font-bold tabular-nums">{total}</span>
+            </div>
+          </div>
+        )}
+
+        {reporte.equipos.length > 0 && (
+          <div className="space-y-3 border-t border-border p-4">
+            <SectionHeader title="Equipo" />
+            <FilasLeidas
+              filas={reporte.equipos.map((f) => ({
+                clave: `e${f.equipo_id}`,
+                grupo: null,
+                nombre: f.nombre,
+                valor: `${Number(f.unidades)} u · ${Number(f.horas)} h`,
+              }))}
+            />
+          </div>
+        )}
+
+        {reporte.entregas.length > 0 && (
+          <div className="space-y-3 border-t border-border p-4">
+            <SectionHeader title="Entregas" />
+            {reporte.entregas.map((f, i) => (
+              <div
+                key={`${f.descripcion}-${i}`}
+                className="flex items-baseline gap-2 border-b border-slate-100 py-1.5 last:border-0"
+              >
+                <span className="text-[15px] font-medium">{f.descripcion}</span>
+                <span className="text-xs text-muted-foreground">
+                  {f.categoria.toLowerCase()}
+                </span>
+                <span className="ml-auto text-sm tabular-nums text-muted-foreground">
+                  {[f.cantidad, f.unidad].filter(Boolean).join(' ')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Los reportes de antes de las filas conservan su lista de texto. */}
+        {reporte.personal.length === 0 && reporte.equipo.length > 0 && (
+          <div className="space-y-3 border-t border-border p-4">
+            <SectionHeader title="Equipo" />
+            <div className="flex flex-wrap gap-2">
+              {reporte.equipo.map((e) => (
+                <span
+                  key={e}
+                  className="rounded-full border border-border bg-muted px-3 py-1 text-sm font-medium text-slate-700"
+                >
+                  {e}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {reporte.fotos.length > 0 && (
           <div className="space-y-3 border-t border-border p-4">
