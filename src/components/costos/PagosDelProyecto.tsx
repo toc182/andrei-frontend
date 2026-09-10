@@ -165,6 +165,17 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
     }
   };
 
+  /** Devolver el pago a cero. Lista vacia = sin clasificar, que es un estado
+   *  bueno: el pago vuelve a la bandeja de pendientes y alguien decide luego. */
+  const eliminarTodas = async (pago: ResumenSolicitud) => {
+    try {
+      await guardar(pago.id, []);
+    } catch (err) {
+      console.error('Error quitando las partidas del pago:', err);
+      setError('No se pudieron quitar las partidas de ese pago.');
+    }
+  };
+
   return (
     <>
       {/* La tabla manda; el asistente va al lado. Debajo de lg el panel baja,
@@ -252,6 +263,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                       disabled={!hayDesglose}
                       onEscoger={(rowUid) => escogerUna(p, rowUid)}
                       onRepartir={() => setRepartiendo(p)}
+                      onEliminarTodas={() => eliminarTodas(p)}
                     />
                   </div>
                 </div>
@@ -328,6 +340,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                             asignadas={p.partidas}
                             onEscoger={(rowUid) => escogerUna(p, rowUid)}
                             onRepartir={() => setRepartiendo(p)}
+                            onEliminarTodas={() => eliminarTodas(p)}
                           />
                         ) : (
                           <div className="px-1.5 py-1">

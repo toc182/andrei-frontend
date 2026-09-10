@@ -11,7 +11,7 @@
 // flechas y Enter atendidas a mano.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Search, Split } from 'lucide-react';
+import { ChevronDown, Search, Split, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,9 @@ interface SelectorPartidaProps {
   asignadas: PartidaAsignada[];
   onEscoger: (rowUid: string) => void;
   onRepartir: () => void;
+  /** Devolver el pago a cero: se le quitan todas las partidas de un golpe.
+   *  Guarda al momento, igual que escoger una de la lista. */
+  onEliminarTodas: () => void;
   disabled?: boolean;
 }
 
@@ -119,7 +122,7 @@ export function ListaPartidas({
 }
 
 export default function SelectorPartida({
-  partidas, asignadas, onEscoger, onRepartir, disabled,
+  partidas, asignadas, onEscoger, onRepartir, onEliminarTodas, disabled,
 }: SelectorPartidaProps) {
   const [abierto, setAbierto] = useState(false);
 
@@ -146,14 +149,30 @@ export default function SelectorPartida({
           partidas={partidas}
           onEscoger={(rowUid) => { onEscoger(rowUid); setAbierto(false); }}
           pie={
-            <button
-              type="button"
-              onClick={() => { setAbierto(false); onRepartir(); }}
-              className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-primary hover:bg-muted"
-            >
-              <Split className="h-3.5 w-3.5" />
-              Repartir entre varias partidas…
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => { setAbierto(false); onRepartir(); }}
+                className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-primary hover:bg-muted"
+              >
+                <Split className="h-3.5 w-3.5" />
+                Repartir entre varias partidas…
+              </button>
+
+              {/* Solo cuando hay algo que quitar. En un pago que ya esta sin
+                  clasificar esta linea no haria nada, y una opcion que no hace
+                  nada se lee como que esta rota. */}
+              {asignadas.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setAbierto(false); onEliminarTodas(); }}
+                  className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-error hover:bg-error/5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Eliminar todas
+                </button>
+              )}
+            </>
           }
         />
       </PopoverContent>
