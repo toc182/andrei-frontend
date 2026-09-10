@@ -1,4 +1,4 @@
-// RepartoPartidasDialog — repartir UN pago entre varias partidas del desglose.
+// RepartoPartidasDialog — repartir UN pago entre varias partidas del presupuesto.
 //
 // Una factura de un proveedor no siempre es de una sola partida: el mismo
 // camion trae acero de dos renglones distintos. Aqui se escribe cuanto va a

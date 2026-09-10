@@ -23,6 +23,9 @@ export interface PresupuestoLista {
   costo: number;
   precio: number;
   renglones: number;
+  /** Cuántos pagos tienen su gasto clasificado contra este presupuesto. Es lo
+   *  que se avisa antes de mover la estrella. */
+  pagosClasificados: number;
 }
 
 /** El desglose oficial del proyecto. null = no hay, y armar a partir de el sale

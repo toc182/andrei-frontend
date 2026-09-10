@@ -54,7 +54,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
   const [pagos, setPagos] = useState<ResumenSolicitud[]>([]);
   const [partidas, setPartidas] = useState<Partida[]>([]);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
-  const [hayDesglose, setHayDesglose] = useState(true);
+  const [hayPresupuesto, setHayPresupuesto] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Se entra viendo TODOS los pagos: la lista completa es la que se mira a
@@ -82,7 +82,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
       setPagos(resumen.solicitudes);
       setPartidas(disponibles.partidas);
       setSecciones(disponibles.secciones ?? []);
-      setHayDesglose(disponibles.desgloseId != null);
+      setHayPresupuesto(disponibles.presupuestoId != null);
     } catch (err) {
       console.error('Error cargando los pagos del proyecto:', err);
       setError('No se pudieron cargar los pagos.');
@@ -225,12 +225,12 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
               </Button>
             </div>
 
-            {!hayDesglose && (
+            {!hayPresupuesto && (
               <div className="border-b border-border px-4 py-3">
                 <Alert
                   variant="info"
-                  title="Este proyecto todavía no tiene desglose"
-                  description="Las partidas salen del desglose del proyecto, así que hasta que exista no hay nada que asignar."
+                  title="Este proyecto todavía no tiene presupuesto oficial"
+                  description="Las partidas salen del presupuesto marcado con la estrella, así que hasta que exista no hay nada que asignar."
                 />
               </div>
             )}
@@ -260,7 +260,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                     <SelectorPartida
                       partidas={partidas}
                       asignadas={p.partidas}
-                      disabled={!hayDesglose}
+                      disabled={!hayPresupuesto}
                       onEscoger={(rowUid) => escogerUna(p, rowUid)}
                       onRepartir={() => setRepartiendo(p)}
                       onEliminarTodas={() => eliminarTodas(p)}
@@ -278,7 +278,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                         propuesta en pantalla. */}
                     {propuesta && <TableHead className="w-[38px] px-0" />}
                     {/* La partida es la columna con la que se trabaja aqui, y
-                        los nombres del desglose son largos: se lleva el ancho
+                        los nombres de las partidas son largos: se lleva el ancho
                         que sobraba en las demas. */}
                     <TableHead className={`${TH} w-[110px] whitespace-nowrap`}>Número</TableHead>
                     <TableHead className={TH}>A quién</TableHead>
@@ -334,7 +334,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                       <TableCell className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
                         {cambio ? (
                           <DiferenciaPartida antes={cambio.antes} despues={cambio.despues} />
-                        ) : hayDesglose ? (
+                        ) : hayPresupuesto ? (
                           <SelectorPartida
                             partidas={partidas}
                             asignadas={p.partidas}

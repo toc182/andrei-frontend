@@ -1,4 +1,4 @@
-// SelectorPartida — escoger, EN LA MISMA FILA, a que partida del desglose va un
+// SelectorPartida — escoger, EN LA MISMA FILA, a que partida del presupuesto va un
 // pago. Se abre pinchando la casilla de la columna Partida: se escriben dos
 // letras, se escoge, y se puede seguir con la fila de abajo sin que se abra
 // nada encima.
@@ -285,7 +285,7 @@ export function EtiquetaPartida({
               {a.item ?? '—'}
             </span>
             <span className="min-w-0 flex-1 truncate">
-              {a.descripcion ?? 'Esta partida ya no está en el desglose'}
+              {a.descripcion ?? 'Esta partida ya no está en el presupuesto oficial'}
             </span>
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
               {formatMoney(a.monto)}

@@ -62,6 +62,10 @@ export default function ProjectPresupuesto({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [porBorrar, setPorBorrar] = useState<PresupuestoLista | null>(null);
+  // Mover la estrella cambia contra qué presupuesto se lee el control de
+  // costos, así que el gasto ya clasificado en el anterior deja de contar. No
+  // se borra —volver a marcarlo lo devuelve— pero eso se avisa antes.
+  const [porMarcar, setPorMarcar] = useState<PresupuestoLista | null>(null);
   // Como se armo el presupuesto que esta abierto y como se llama. Decide cual
   // de las dos hojas se pinta, y se sabe sin preguntarle al servidor: sale de
   // la fila que se pincho, o del que se acaba de crear —que todavia no esta en
@@ -89,11 +93,25 @@ export default function ProjectPresupuesto({
   // la fila salga al dia despues de escribirlo.
   useEffect(() => { if (abierto == null) cargar(); }, [abierto, cargar]);
 
+  /** El oficial de ahora, que es el que perdería sus pagos de vista. */
+  const oficialActual = lista.find((p) => p.esPrincipal) ?? null;
+
+  /** Sin gasto clasificado no hay nada que avisar: se marca y ya. */
+  const pedirMarcarOficial = (p: PresupuestoLista) => {
+    if ((oficialActual?.pagosClasificados ?? 0) === 0) {
+      marcarOficial(p.id);
+      return;
+    }
+    setPorMarcar(p);
+  };
+
   const marcarOficial = async (id: number) => {
     try {
       setLista(await marcarPrincipal(projectId, id));
     } catch (err) {
       console.error('Error marcando el presupuesto oficial:', err);
+    } finally {
+      setPorMarcar(null);
     }
   };
 
@@ -220,7 +238,7 @@ export default function ProjectPresupuesto({
                           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenuItem
                               disabled={p.esPrincipal}
-                              onClick={() => marcarOficial(p.id)}
+                              onClick={() => pedirMarcarOficial(p)}
                             >
                               <Star className="mr-2 h-4 w-4" />
                               Marcar como oficial
@@ -253,6 +271,32 @@ export default function ProjectPresupuesto({
           onAbrir(p.id);
         }}
       />
+
+      <AlertDialog open={porMarcar !== null} onOpenChange={(o) => { if (!o) setPorMarcar(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Hacer oficial «{porMarcar?.nombre}»?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              El control de costos pasa a comparar contra este presupuesto, y las partidas
+              para clasificar pasan a ser las suyas. Los{' '}
+              <strong>{oficialActual?.pagosClasificados} pagos</strong> clasificados en
+              «{oficialActual?.nombre}» van a quedar sin partida y habrá que volver a
+              asignarlos.
+              <br /><br />
+              No se borra nada: si vuelves a marcar «{oficialActual?.nombre}» como oficial,
+              esa clasificación reaparece tal como está.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => porMarcar && marcarOficial(porMarcar.id)}>
+              Hacer oficial
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={porBorrar !== null} onOpenChange={(o) => { if (!o) setPorBorrar(null); }}>
         <AlertDialogContent>

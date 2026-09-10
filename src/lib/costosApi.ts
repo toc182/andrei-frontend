@@ -16,8 +16,8 @@ export interface ResumenCategoria {
 }
 
 /** Una linea del reparto de un pago. item y descripcion vienen en null cuando la
- *  fila ya no esta en el desglose: la partida se borro despues de asignarla, y
- *  ese pago vuelve a contar como pendiente. */
+ *  fila ya no esta en el presupuesto oficial —se borro, o la estrella se movio a
+ *  otro presupuesto— y ese pago vuelve a contar como pendiente. */
 export interface PartidaAsignada {
   rowUid: string;
   item: string | null;
@@ -35,7 +35,7 @@ export interface ResumenSolicitud {
   partidas: PartidaAsignada[];
 }
 
-/** Una fila costeable del desglose oficial: las que se pueden escoger. */
+/** Una fila costeable del presupuesto oficial: las que se pueden escoger. */
 export interface Partida {
   rowUid: string;
   item: string;
@@ -43,11 +43,11 @@ export interface Partida {
   /** Lo que el presupuesto oficial le puso. Es el peso con el que se reparte un
    *  gasto general; null = sin costo escrito, y entonces no entra en el reparto. */
   presupuestado: number | null;
-  /** El grupo del que cuelga; null si va suelta en la raiz del desglose. */
+  /** El grupo del que cuelga; null si va suelta en la raiz del presupuesto. */
   seccionUid: string | null;
 }
 
-/** Un grupo del desglose, para repartir un gasto solo dentro de el. */
+/** Un grupo del presupuesto, para repartir un gasto solo dentro de el. */
 export interface Seccion {
   rowUid: string;
   item: string;
@@ -76,7 +76,7 @@ export interface ResumenCostos {
   serie: { fecha: string; monto: number }[];
   solicitudes: ResumenSolicitud[];
   /** Presupuestado contra gastado, partida por partida. Va vacio si el proyecto
-   *  no tiene desglose: las partidas salen de ahi. */
+   *  no tiene presupuesto oficial: las partidas salen de ahi. */
   comparativo: {
     filas: ComparativoFila[];
     /** Lo gastado que no cae en ninguna fila del cuadro. Sale por diferencia,
@@ -91,11 +91,12 @@ export async function getResumenCostos(proyectoId: number): Promise<ResumenCosto
   return res.data.data;
 }
 
-/** Las partidas del desglose oficial del proyecto. desgloseId null = el
- *  proyecto no tiene desglose, y entonces no hay nada que asignar. */
+/** Las partidas del presupuesto OFICIAL del proyecto — el de la estrella.
+ *  presupuestoId null = el proyecto no tiene presupuesto oficial, y entonces no
+ *  hay nada que asignar. */
 export async function getPartidas(
   proyectoId: number,
-): Promise<{ desgloseId: number | null; partidas: Partida[]; secciones: Seccion[] }> {
+): Promise<{ presupuestoId: number | null; partidas: Partida[]; secciones: Seccion[] }> {
   const res = await api.get(`/costs/projects/${proyectoId}/partidas`);
   return res.data.data;
 }

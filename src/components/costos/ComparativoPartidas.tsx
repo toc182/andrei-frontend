@@ -1,11 +1,11 @@
 // ComparativoPartidas — lo presupuestado contra lo gastado, partida por partida.
 //
 // Es el cuadro con el que se controla una obra de verdad, y la razon de haber
-// anclado el gasto a las partidas del desglose: el presupuesto recuerda de que
-// fila nacio cada renglon, y los pagos cuelgan de esa misma fila, asi que los
-// dos lados se pueden poner uno al lado del otro.
+// anclado el gasto a las partidas del PRESUPUESTO oficial: los dos lados —lo
+// que se penso gastar y lo que se lleva gastado— cuelgan de la misma fila, asi
+// que se pueden poner uno al lado del otro.
 //
-// Salen TODAS las partidas del desglose, tengan gasto o no: el cuadro es el
+// Salen TODAS las partidas del presupuesto, tengan gasto o no: el cuadro es el
 // presupuesto entero, y una partida sin empezar tambien dice algo. Las que aun
 // no tienen gasto van apagadas para que no compitan con las que si.
 //
@@ -67,8 +67,8 @@ export default function ComparativoPartidas({
 
       {filas.length === 0 ? (
         <EmptyState
-          title="Este proyecto todavía no tiene desglose"
-          description="Las partidas salen del desglose del proyecto. Sin él no hay contra qué comparar renglón por renglón."
+          title="Este proyecto todavía no tiene presupuesto oficial"
+          description="Las partidas salen del presupuesto marcado con la estrella. Sin él no hay contra qué comparar renglón por renglón."
         />
       ) : (
         <>
