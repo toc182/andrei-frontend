@@ -19,7 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { formatMoney } from '@/utils/formatters';
+import { Monto } from './Monto';
 import type { DesgloseRow } from '@/lib/desgloseModel';
 import { padClass, grupoBgClass } from './desglosePad';
 import {
@@ -191,10 +191,6 @@ function DesgloseTableRowBase({
         // the groups read as bands. Only items take the slate hover — a hover
         // tint on a group would fight its band. Selection (navy) wins over both.
         isGrupo && grupoBgClass(r.depth),
-        // Dentro de una banda de grupo no hay líneas verticales: la banda es un
-        // bloque limpio. La celda se conserva (no colSpan) para que las
-        // columnas sigan alineadas con las del resto de la tabla.
-        isGrupo && '[&>td]:border-r-transparent',
         editable && 'group cursor-default',
         editable && !isGrupo && 'hover:bg-slate-50',
         selected && 'bg-slate-100 hover:bg-slate-100',
@@ -205,15 +201,22 @@ function DesgloseTableRowBase({
           content and no wider. Descripción alone is left wrappable and is made
           greedy (w-full on its header) so it absorbs all remaining width.
           The item cell is `relative` so it anchors the hover ＋. */}
-      {cell('item', r.item, 'relative whitespace-nowrap tabular-nums', insertButton)}
+      {cell('item', r.item, 'relative whitespace-nowrap text-center tabular-nums', insertButton)}
       {cell(
         'descripcion',
         <div className={cn(padClass(r.depth), r.tipo === 'grupo' && 'font-semibold')}>{r.descripcion}</div>,
         'break-words',
       )}
-      {cell('unidad', showVals ? r.unidad ?? '' : '', 'whitespace-nowrap')}
-      {cell('cantidad', showVals ? r.cantidad ?? '-' : '', 'whitespace-nowrap text-right tabular-nums')}
-      {cell('precioUnitario', showVals ? formatMoney(r.precioUnitario) : '', 'whitespace-nowrap text-right tabular-nums')}
+      {cell('unidad', showVals ? r.unidad ?? '' : '', 'whitespace-nowrap text-center')}
+      {cell('cantidad', showVals ? r.cantidad ?? '-' : '', 'whitespace-nowrap text-center tabular-nums')}
+      {/* El símbolo a la izquierda y el número a la derecha, para que el B/.
+          quede a plomo en toda la columna. Con la celda abierta manda el input,
+          que ocupa la casilla entera. */}
+      {cell(
+        'precioUnitario',
+        showVals ? <Monto value={r.precioUnitario} /> : '',
+        'whitespace-nowrap tabular-nums',
+      )}
       <TableCell
         className={cn(
           // Última columna sin border-r: el marco exterior lo pone la Card
@@ -224,7 +227,7 @@ function DesgloseTableRowBase({
           r.tipo === 'grupo' && !pricedSection && 'text-muted-foreground',
         )}
       >
-        {formatMoney(total)}
+        <Monto value={total} />
         {/* Delete-row ✕, mirroring the insert ＋ on the left: straddles the row's
             right edge, revealed on row hover. Poking outside the table keeps it
             clear of the Total number. onPointerDown stops the cell/row handlers. */}

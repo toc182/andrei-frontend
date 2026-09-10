@@ -766,10 +766,10 @@ export function DesgloseView({
   const headerRow = (
     <TableHeader>
       <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200 [&>th:last-child]:border-r-0">
-        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap rounded-tl-xl')}>Item</TableHead>
+        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-center rounded-tl-xl')}>Item</TableHead>
         <TableHead className={cn(HEADER_CELL, 'w-full')}>Descripción</TableHead>
-        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap')}>Unidad</TableHead>
-        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right')}>Cantidad</TableHead>
+        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-center')}>Unidad</TableHead>
+        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-center')}>Cantidad</TableHead>
         <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right')}>{etiquetaValorUnitario}</TableHead>
         <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right rounded-tr-xl')}>Total</TableHead>
       </TableRow>

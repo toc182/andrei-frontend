@@ -28,6 +28,22 @@ export const formatMoney = (
   }).format(numAmount);
 };
 
+/**
+ * Parte un monto en su símbolo y su número, para poder alinearlos por separado:
+ * el "B/." pegado a la izquierda de la celda y el número a la derecha, de modo
+ * que el símbolo quede a plomo en toda la columna (decisión de Ivan,
+ * 2026-09-10). Sin monto devuelve el guion como número y símbolo vacío, para
+ * que la celda no pinte un "B/." suelto.
+ */
+export const partesMoney = (
+  amount: number | string | null | undefined,
+): { simbolo: string; numero: string } => {
+  const texto = formatMoney(amount);
+  if (texto === '-') return { simbolo: '', numero: '-' };
+  const m = texto.match(/^(\D+?)\s*([\d.,]+)$/);
+  return m ? { simbolo: m[1].trim(), numero: m[2] } : { simbolo: '', numero: texto };
+};
+
 export function getInitials(name?: string): string {
   if (!name) return 'U';
   return name
