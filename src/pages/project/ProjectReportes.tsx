@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, MapPin, ArrowLeft } from 'lucide-react';
+import { Plus, MapPin, ArrowLeft, Download, Loader2 } from 'lucide-react';
 import api from '@/services/api';
 import {
   EmptyState, ErrorState, PageHeader, TableSkeleton,
@@ -24,6 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -41,7 +42,7 @@ import ReporteDetalle from './reportes/ReporteDetalle';
 import AreasDialog from './reportes/AreasDialog';
 import {
   type Reporte, type ReporteFila,
-  clasesClima, diaDeLaSemana, etiquetaMes, fechaCorta, hoyYMD,
+  clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, fechaCorta, mesCorto, hoyYMD,
 } from './reportes/tipos';
 
 interface Props {
@@ -63,11 +64,16 @@ const TOPE = 2000;
 const MES_ACTUAL = hoyYMD().slice(0, 7);
 
 
-/** Las horas perdidas resaltan solo cuando las hay. */
-function Horas({ valor }: { valor: string | null }) {
-  const n = valor ? Number(valor) : 0;
-  if (!n) return <span className="text-slate-300">—</span>;
-  return <span className="font-semibold text-warning tabular-nums">{n}</span>;
+/**
+ * El texto del día, en una línea. Se corta en el último espacio antes del tope
+ * para no partir una palabra, y se cierra con "..." para que se vea que sigue.
+ */
+function resumen(texto: string | null, tope = 120): string {
+  const limpio = (texto ?? '').replace(/\s+/g, ' ').trim();
+  if (limpio.length <= tope) return limpio;
+  const corte = limpio.slice(0, tope);
+  const espacio = corte.lastIndexOf(' ');
+  return `${(espacio > tope * 0.6 ? corte.slice(0, espacio) : corte).trimEnd()}...`;
 }
 
 export default function ProjectReportes({ projectId }: Props) {
@@ -85,6 +91,26 @@ export default function ProjectReportes({ projectId }: Props) {
   const [porPagina, setPorPagina] = useState(25);
   const [areasAbierto, setAreasAbierto] = useState(false);
   const [numeroPrevisto, setNumeroPrevisto] = useState<string | null>(null);
+  const [bajando, setBajando] = useState<number | null>(null);
+
+  // El PDF se pide con el token puesto y se abre desde memoria: un enlace
+  // pelado llegaría sin autenticación y el servidor lo rechazaría. Es el
+  // mismo camino que usa el botón del detalle.
+  const descargarPdf = async (id: number) => {
+    setBajando(id);
+    try {
+      const r = await api.get(`/proyecto-reportes/${projectId}/${id}/pdf`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(r.data as Blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error('No se pudo generar el PDF');
+    } finally {
+      setBajando(null);
+    }
+  };
 
   const cambiarOrden = (column: string, direction: SortDirection | null) => {
     setSortState(direction ? { column, direction } : { column: null, direction: null });
@@ -94,8 +120,9 @@ export default function ProjectReportes({ projectId }: Props) {
     setColumnFilters((prev) => ({ ...prev, [column]: values }));
   };
 
-  // La búsqueda se queda en el servidor: mira dentro de "qué se hizo" y
-  // "atrasos", que no viajan en la fila de la lista y no se podrían buscar aquí.
+  // La búsqueda se queda en el servidor: mira dentro de "qué se hizo" completo,
+  // "atrasos" y "novedades". La fila solo trae el arranque de "qué se hizo", así
+  // que buscar aquí dejaría fuera lo que diga más abajo del texto.
   const cargar = useCallback(() => {
     setCargando(true);
     setError(false);
@@ -270,39 +297,42 @@ export default function ProjectReportes({ projectId }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                    {/* Solo Fecha, Clima y Reportó llevan control: son por las que
-                        se busca un reporte. El resto son cifras que se leen en la
-                        fila, no criterios de búsqueda. Instrucción de Ivan. */}
+                    {/* Solo Fecha, Elaborado por y Clima llevan control: son por
+                        las que se busca un reporte. El código y el texto del día
+                        se leen en la fila. Instrucción de Ivan.
+
+                        Los anchos son fijos en las cuatro primeras y el resto se
+                        lo lleva Trabajo ejecutado: al angostar la ventana encoge
+                        esa y no las otras. Por debajo de lg desaparece del todo,
+                        porque recortada a nada no dice nada. */}
                     <SortableHeader
                       columnKey="fecha" label="Fecha" type="numeric" align="center"
-                      className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="w-[90px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       sortState={sortState} onSortChange={cambiarOrden}
                     />
+                    <TableHead className="w-[190px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código</TableHead>
                     <SortableHeader
-                      columnKey="clima" label="Clima" type="discrete" align="center"
-                      className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                      sortState={sortState} onSortChange={cambiarOrden}
-                      uniqueValues={valoresClima}
-                      activeFilters={columnFilters.clima ?? valoresClima}
-                      onFilterChange={cambiarFiltro}
-                    />
-                    <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hrs. perd.</TableHead>
-                    <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Calif.</TableHead>
-                    <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ayud.</TableHead>
-                    <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Áreas</TableHead>
-                    <TableHead className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fotos</TableHead>
-                    <SortableHeader
-                      columnKey="creador_nombre" label="Reportó" type="discrete" align="center"
-                      className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      columnKey="creador_nombre" label="Elaborado por" type="discrete" align="center"
+                      className="w-[230px] text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       sortState={sortState} onSortChange={cambiarOrden}
                       uniqueValues={valoresAutor}
                       activeFilters={columnFilters.creador_nombre ?? valoresAutor}
                       onFilterChange={cambiarFiltro}
                     />
+                    <SortableHeader
+                      columnKey="clima" label="Clima" type="discrete" align="center"
+                      className="w-[160px] text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      sortState={sortState} onSortChange={cambiarOrden}
+                      uniqueValues={valoresClima}
+                      activeFilters={columnFilters.clima ?? valoresClima}
+                      onFilterChange={cambiarFiltro}
+                    />
+                    <TableHead className="hidden w-full px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">Trabajo ejecutado</TableHead>
+                    <TableHead className="w-[64px] px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">PDF</TableHead>
                   </TableRow>
                 </TableHeader>
                 {cargando ? (
-                  <TableSkeleton rows={6} columns={8} />
+                  <TableSkeleton rows={6} columns={6} />
                 ) : (
                   <TableBody>
                     {visibles.map((f) => (
@@ -311,30 +341,66 @@ export default function ProjectReportes({ projectId }: Props) {
                         className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
                         onClick={() => setVista({ modo: 'detalle', id: f.id })}
                       >
-                        <TableCell className="px-4 py-3 text-center text-sm">
-                          <span className="block font-medium text-foreground">{fechaCorta(f.fecha)}</span>
-                          <span className="block text-xs text-muted-foreground">{diaDeLaSemana(f.fecha)}</span>
+                        {/* Recuadro de calendario: banda navy con el mes y el
+                            año, el día en grande y el día de la semana debajo.
+                            La banda es lo que hace que la columna se encuentre
+                            sola al bajar la vista. Opción B del mock. */}
+                        <TableCell className="px-4 py-2 text-center">
+                          {/* Dos piezas apiladas, cada una con su propio borde,
+                              en vez de un marco único por encima de las dos: el
+                              marco gris cruzaba la banda azul y la hacía ver más
+                              angosta que el resto del cuadro. El borde de la
+                              banda es navy sobre navy, o sea invisible, y las dos
+                              piezas miden lo mismo porque el borde va por dentro
+                              del ancho (box-sizing: border-box). */}
+                          <span className="mx-auto flex w-[56px] flex-col tabular-nums">
+                            {/* La banda centra su texto con flex, no con
+                                relleno: así el mes queda a la misma distancia
+                                arriba y abajo por más que cambie la letra. */}
+                            <span className="flex h-[15px] items-center justify-center rounded-t border border-navy bg-navy text-[9px] font-semibold uppercase leading-none tracking-wide text-white">
+                              {mesCorto(f.fecha)}
+                            </span>
+                            <span className="flex flex-col items-center rounded-b border border-t-0 border-navy/30 bg-card pb-1 pt-1">
+                              <span className="text-base font-semibold leading-none text-navy">
+                                {diaDelMes(f.fecha)}
+                              </span>
+                              <span className="mt-0.5 text-[10px] capitalize leading-none text-muted-foreground">
+                                {diaDeLaSemana(f.fecha)}
+                              </span>
+                            </span>
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-4 py-3 text-center text-sm tabular-nums text-slate-700">
+                          {f.numero}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-center text-sm text-muted-foreground">
+                          {f.creador_nombre}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-center">
                           <Badge variant="outline" className={clasesClima(f.clima)}>{f.clima}</Badge>
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-center text-sm">
-                          <Horas valor={f.horas_perdidas} />
+                        <TableCell className="hidden w-full px-4 py-3 text-sm text-slate-700 lg:table-cell">
+                          {resumen(f.que_se_hizo) || <span className="text-slate-300">—</span>}
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-center text-sm tabular-nums text-slate-700">
-                          {f.personal_calificado}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-center text-sm tabular-nums text-slate-700">
-                          {f.ayudantes}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-slate-700">
-                          {f.areas.length ? f.areas.join(', ') : <span className="text-slate-300">—</span>}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-center text-sm tabular-nums text-muted-foreground">
-                          {f.fotos}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-center text-sm text-muted-foreground">
-                          {f.creador_nombre}
+                        {/* El clic del botón no debe abrir el detalle: la fila
+                            entera es un enlace y el PDF es otra acción. */}
+                        <TableCell className="px-2 py-3 text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-navy"
+                            title={`Descargar el PDF de ${f.numero}`}
+                            disabled={bajando === f.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              descargarPdf(f.id);
+                            }}
+                          >
+                            {bajando === f.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <Download className="h-4 w-4" />}
+                            <span className="sr-only">Descargar PDF</span>
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

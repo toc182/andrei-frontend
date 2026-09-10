@@ -76,6 +76,8 @@ export interface ReporteFila {
   enviado_at: string | null;
   fotos: number;
   areas: string[];
+  /** Recortado a 300 caracteres por el servidor; la lista lo corta otra vez. */
+  que_se_hizo: string;
 }
 
 export interface Foto {
@@ -148,6 +150,21 @@ export function etiquetaMes(ym: string): string {
 function partes(fecha: string): [number, number, number] {
   const [y, m, d] = fecha.slice(0, 10).split('-').map(Number);
   return [y, m, d];
+}
+
+/**
+ * El mes con el año de dos cifras, "sep 26". Va en mayúsculas por CSS.
+ * El año va siempre, no solo cuando cambia: el filtro admite "todos los
+ * meses" y ahí un enero sin año no dice de cuál enero se trata.
+ */
+export function mesCorto(fecha: string): string {
+  const [y, m] = partes(fecha);
+  return `${MESES[m - 1].slice(0, 3).toLowerCase()} ${String(y).slice(-2)}`;
+}
+
+/** El día del mes: el número grande de la celda de fecha. */
+export function diaDelMes(fecha: string): number {
+  return partes(fecha)[2];
 }
 
 export function fechaCorta(fecha: string): string {
