@@ -1,8 +1,10 @@
-// Red de seguridad de la hoja de presupuesto armada desde el desglose.
+// Red de seguridad del modelo de la hoja de presupuesto: la parte compartida,
+// la del diff de costos (desglose) y la editable (desde cero).
 // cd andrei-frontend && npx tsx scripts/presupuesto-hoja.spec.ts
 import {
-  avanceCostos, computeTotales, costoPropio, costosCambiados, esContenedor,
-  precioPropio, tieneHijos, toHojaRows, TOTAL_KEY,
+  avanceCostos, borrarFila, computeTotales, costoPropio, costosCambiados,
+  desindentar, esContenedor, hojaCambiada, indentar, insertarFila, moverFila,
+  precioPropio, tieneHijos, toHojaRows, toWireRenglones, TOTAL_KEY,
 } from '../src/lib/presupuestoHoja';
 import type { PresupuestoRenglon } from '../src/lib/presupuestoApi';
 
@@ -31,14 +33,14 @@ const desglose = (): PresupuestoRenglon[] => [
 // ---- el arbol se aplana en orden, con profundidad ----
 {
   const rows = toHojaRows(desglose());
-  ok(rows.map((x) => x.id).join(',') === '1,2,3,4,5,6', 'arbol: orden de documento');
+  ok(rows.map((x) => x.tempId).join(',') === '1,2,3,4,5,6', 'arbol: orden de documento');
   ok(rows.map((x) => x.depth).join(',') === '0,1,1,0,1,1', 'arbol: profundidad por padre');
   ok(tieneHijos(rows, 0) && !tieneHijos(rows, 1), 'arbol: tieneHijos por profundidad');
   ok(esContenedor(rows, 0) && !esContenedor(rows, 1), 'arbol: la seccion con hijos es contenedor');
 
   // Desordenar la entrada no cambia nada: el orden sale de `orden`, no del array.
   const revuelto = [...desglose()].reverse();
-  ok(toHojaRows(revuelto).map((x) => x.id).join(',') === '1,2,3,4,5,6',
+  ok(toHojaRows(revuelto).map((x) => x.tempId).join(',') === '1,2,3,4,5,6',
     'arbol: se ordena por `orden`, no por como llegan');
 }
 // ---- monto propio ----
@@ -85,13 +87,73 @@ const desglose = (): PresupuestoRenglon[] => [
   const rows = toHojaRows(original);
   ok(costosCambiados(original, rows).length === 0, 'guardar: sin cambios no viaja nada');
 
-  const tocado = rows.map((x) => (x.id === 6 ? { ...x, costoUnitario: 1.62 } : x));
+  const tocado = rows.map((x) => (x.tempId === 6 ? { ...x, costoUnitario: 1.62 } : x));
   const d = costosCambiados(original, tocado);
   ok(d.length === 1 && d[0].id === 6 && d[0].costoUnitario === 1.62, 'guardar: solo el renglon tocado');
 
-  const borrado = rows.map((x) => (x.id === 2 ? { ...x, costoUnitario: null } : x));
+  const borrado = rows.map((x) => (x.tempId === 2 ? { ...x, costoUnitario: null } : x));
   const d2 = costosCambiados(original, borrado);
   ok(d2.length === 1 && d2[0].costoUnitario === null, 'guardar: borrar un costo tambien viaja');
+}
+
+// ---- hoja desde cero: la jerarquia que viaja al guardar ----
+{
+  const rows = toHojaRows(desglose());
+  const wire = toWireRenglones(rows);
+  ok(wire.map((w) => w.parentTempId).join(',') === ',1,1,,4,4',
+    'cable: cada fila nombra a su grupo padre por tempId');
+  ok(wire.map((w) => w.tempId).join(',') === '1,2,3,4,5,6', 'cable: el orden es el del documento');
+  ok(wire[0].cantidad === null && wire[0].costoUnitario === null,
+    'cable: un contenedor no manda montos propios');
+  ok(wire[1].costoUnitario === 9.2 && wire[1].unidad === 'm³', 'cable: el renglon manda los suyos');
+  ok(wire.every((w) => w.rowUid != null), 'cable: el rowUid viaja para conservar identidad');
+
+  // Un grupo SIN hijos si manda lo suyo: es una seccion de una linea.
+  const sueltos = toHojaRows([
+    r({ id: 9, tipo: 'grupo', cantidad: 2, costoUnitario: 30, orden: 0 }),
+  ]);
+  ok(toWireRenglones(sueltos)[0].costoUnitario === 30,
+    'cable: la seccion de una linea si manda sus montos');
+}
+// ---- hoja desde cero: agregar, mover y borrar ----
+{
+  const rows = toHojaRows(desglose());
+
+  // Despues de un grupo la fila nueva entra DENTRO; despues de un item, al lado.
+  const dentro = insertarFila(rows, 0, 'item');
+  ok(dentro.length === 7 && dentro[1].depth === 1, 'editar: despues de un grupo entra como hija');
+  const alLado = insertarFila(rows, 1, 'item');
+  ok(alLado[2].depth === 1, 'editar: despues de un item entra como hermana');
+  ok(insertarFila(rows, 0, 'item')[1].tempId === 7, 'editar: el tempId nuevo no pisa a ninguno');
+
+  // Indentar bajo un item no se hace solo: la pantalla promueve primero.
+  ok(indentar(rows, 2) === rows, 'editar: no indenta cuando el padre que toca es un item');
+  ok(desindentar(rows, 2)[2].depth === 0, 'editar: el ultimo hijo si puede subir');
+  ok(desindentar(rows, 1) === rows,
+    'editar: un item con hermano detras no sube — el hermano quedaria colgando de un item');
+  ok(desindentar(rows, 0) === rows, 'editar: en profundidad 0 no hay a donde subir');
+
+  // Borrar un grupo se lleva su rama entera.
+  const sinPrimera = borrarFila(rows, 0);
+  ok(sinPrimera.length === 3 && sinPrimera[0].tempId === 4,
+    'editar: borrar un grupo se lleva sus hijos');
+
+  // Mover intercambia ramas hermanas completas.
+  const movido = moverFila(rows, 0, 1);
+  ok(movido.map((x) => x.tempId).join(',') === '4,5,6,1,2,3',
+    'editar: mover intercambia la rama entera con la hermana');
+  ok(moverFila(rows, 0, -1) === rows, 'editar: la primera rama no sube mas');
+}
+// ---- hoja desde cero: cuando hay algo que guardar ----
+{
+  const original = desglose();
+  const rows = toHojaRows(original);
+  ok(!hojaCambiada(original, rows), 'guardar hoja: sin tocar nada, no hay cambios');
+  ok(hojaCambiada(original, insertarFila(rows, 1, 'item')),
+    'guardar hoja: agregar una fila es un cambio');
+  ok(hojaCambiada(original, rows.map((x) => (x.tempId === 2 ? { ...x, descripcion: 'Otra' } : x))),
+    'guardar hoja: cambiar un texto es un cambio');
+  ok(hojaCambiada(original, borrarFila(rows, 5)), 'guardar hoja: borrar una fila es un cambio');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

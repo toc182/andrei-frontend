@@ -1446,6 +1446,17 @@ When a single page or subview needs to hold more than one distinct body of conte
 
 Bandas de grupo: los mismos `grupoBgClass`/`padClass` de §22, para que el cuadro y el desglose se lean como el mismo documento.
 
+**El desglose y la Hoja de Presupuesto usan la misma retícula, con el color
+fuerte en toda ella** (`border-cuadro-line`, no `border-cuadro-grid`): son
+tablas de captura donde se escribe celda por celda, y ahí la línea fina no
+alcanza para ver dónde empieza y termina cada casilla (Ivan, 2026-09-10). Las
+mismas cinco reglas de arriba siguen valiendo, incluida la de que dentro de una
+banda de grupo no hay verticales.
+
+**La celda abierta no lleva anillo de foco.** Con la retícula a la vista la
+casilla ya se ve, y un recuadro dentro del recuadro se lee como una caja metida
+en la celda: al escribir solo aparece el cursor.
+
 ### Precisión
 
 - El único dato de entrada por fila es la **cantidad** del periodo; % y valores se calculan (ver `cuadroModel.ts`).

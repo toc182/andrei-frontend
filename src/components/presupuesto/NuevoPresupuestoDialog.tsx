@@ -3,8 +3,9 @@
 // mismo AppDialog montado hace que el contenido cambie en el sitio, sin el
 // parpadeo de cerrar uno y abrir otro (precedente: NuevaCuentaFlowDialog).
 //
-// Por ahora solo esta viva la manera "desde el desglose del proyecto"; si el
-// proyecto no tiene desglose, esa tarjeta sale apagada y lo dice.
+// Dos maneras vivas: "desde el desglose del proyecto", que solo sirve si el
+// proyecto tiene uno —si no, la tarjeta sale apagada y lo dice—, y "desde
+// cero", que sirve siempre y es la unica salida de un proyecto sin desglose.
 
 import { useEffect, useState } from 'react';
 import { ChevronRight, FileText, Loader2, Table2 } from 'lucide-react';
@@ -13,9 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { crearPresupuesto, type DesgloseDisponible } from '@/lib/presupuestoApi';
+import {
+  crearPresupuesto, type DesgloseDisponible, type PresupuestoMeta,
+} from '@/lib/presupuestoApi';
 
 type Paso = 'como' | 'nombre';
+type Manera = 'desglose' | 'cero';
 
 interface Props {
   open: boolean;
@@ -23,13 +27,18 @@ interface Props {
   projectId: number;
   /** El desglose oficial del proyecto; null = no hay de donde partir. */
   desglose: DesgloseDisponible | null;
-  onCreado: (presupuestoId: number) => void;
+  /** Viaja el presupuesto recien creado entero, no solo su id: quien abre la
+   *  hoja necesita saber de que manera se armo —para pintar el editor que
+   *  toca— y como se llama, y asi no tiene que volver a preguntarselo al
+   *  servidor. */
+  onCreado: (presupuesto: PresupuestoMeta) => void;
 }
 
 export default function NuevoPresupuestoDialog({
   open, onOpenChange, projectId, desglose, onCreado,
 }: Props) {
   const [paso, setPaso] = useState<Paso>('como');
+  const [manera, setManera] = useState<Manera>('desglose');
   const [nombre, setNombre] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +48,7 @@ export default function NuevoPresupuestoDialog({
   useEffect(() => {
     if (open) {
       setPaso('como');
+      setManera('desglose');
       setNombre('');
       setError(null);
     }
@@ -50,8 +60,8 @@ export default function NuevoPresupuestoDialog({
     try {
       setGuardando(true);
       setError(null);
-      const doc = await crearPresupuesto(projectId, limpio);
-      onCreado(doc.presupuesto.id);
+      const doc = await crearPresupuesto(projectId, limpio, manera);
+      onCreado(doc.presupuesto);
       onOpenChange(false);
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -70,7 +80,9 @@ export default function NuevoPresupuestoDialog({
       description={
         paso === 'como'
           ? 'Escoge una manera y la hoja nace lista para llenar.'
-          : 'Se arma con los renglones del desglose del proyecto.'
+          : manera === 'desglose'
+            ? 'Se arma con los renglones del desglose del proyecto.'
+            : 'La hoja nace en blanco y tú escribes los renglones.'
       }
       footer={
         paso === 'nombre' ? (
@@ -91,7 +103,7 @@ export default function NuevoPresupuestoDialog({
           <button
             type="button"
             disabled={!desglose}
-            onClick={() => setPaso('nombre')}
+            onClick={() => { setManera('desglose'); setPaso('nombre'); }}
             className={cn(
               'flex w-full items-center gap-3 rounded-lg border border-border border-l-4 border-l-teal p-4 text-left transition-colors',
               desglose ? 'hover:bg-muted/40' : 'cursor-not-allowed opacity-50',
@@ -109,20 +121,21 @@ export default function NuevoPresupuestoDialog({
             {desglose && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
           </button>
 
-          <div className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg border border-border border-l-4 border-l-navy p-4 text-left opacity-50">
+          <button
+            type="button"
+            onClick={() => { setManera('cero'); setPaso('nombre'); }}
+            className="flex w-full items-center gap-3 rounded-lg border border-border border-l-4 border-l-navy p-4 text-left transition-colors hover:bg-muted/40"
+          >
             <Table2 className="h-5 w-5 shrink-0 text-navy" />
             <div className="flex-1">
-              <div className="font-semibold">
-                Desde cero
-                <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Todavía no
-                </span>
-              </div>
+              <div className="font-semibold">Desde cero</div>
               <p className="text-sm text-muted-foreground">
-                Escribes tú los renglones, con mano de obra, material y equipo.
+                La hoja nace en blanco y escribes tú los renglones, con sus grupos y sus
+                costos. Es la única manera si el proyecto todavía no tiene desglose.
               </p>
             </div>
-          </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
         </div>
       ) : (
         <div className="space-y-2">

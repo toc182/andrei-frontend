@@ -35,11 +35,11 @@ import { formatMoney } from '@/utils/formatters';
 import {
   computeTotals, toWireItems, indentLegal, subtreeEnd, indentRows, indentParentIndex,
   outdentRows, deleteSubtree, moveSubtree, insertRowAfter, hasChildren,
-  newRowUid, GRAND_TOTAL_KEY, type DesgloseRow,
+  newRowUid, GRAND_TOTAL_KEY, type DesgloseItemInput, type DesgloseRow,
 } from '@/lib/desgloseModel';
 import {
   getDesglose, saveDesglose, getDesgloseById, saveDesgloseById, wireToRows,
-  eliminarDesgloseCuenta, DesgloseConflictError, type DesgloseMeta,
+  eliminarDesgloseCuenta, DesgloseConflictError, type DesgloseDoc, type DesgloseMeta,
 } from '@/lib/desgloseApi';
 import { exportDesgloseExcel } from '@/lib/desgloseExcel';
 import { DesglosePrintDialog } from './DesglosePrintDialog';
@@ -66,6 +66,22 @@ interface DesgloseViewProps {
   /** Volver al listado. Se dibuja como el botón de flecha de CuentaDetailPage:
    *  icono al lado izquierdo del título, no un botón de texto. */
   onBack?: () => void;
+  /** De dónde salen las filas y a dónde van al guardar.
+   *
+   *  Sin esto se usa el desglose del proyecto —o el de Cuentas, si viene
+   *  `desgloseId`—, que es el comportamiento de Información y no cambia. La
+   *  Hoja de Presupuesto pasa los suyos: es la MISMA tabla de seis columnas,
+   *  con el costo en el lugar del precio, así que reusa este editor entero en
+   *  vez de tener una copia que se le va separando. */
+  cargarDoc?: () => Promise<DesgloseDoc | null>;
+  guardarDoc?: (baseUpdatedAt: string | null, items: DesgloseItemInput[]) => Promise<DesgloseDoc>;
+  /** El ITBMS es del cuadro de precios del contrato; una hoja de costos no lo
+   *  lleva, y ahí el pie es solo el Total. */
+  mostrarItbms?: boolean;
+  /** Exportar a Excel e imprimir son del desglose y traen su propio formato. */
+  mostrarHerramientas?: boolean;
+  /** Encabezado de la columna del valor unitario. */
+  etiquetaValorUnitario?: string;
 }
 
 /** Per-row enablement + subtotal, precomputed in ONE O(N) pass below. Mirrors
@@ -88,11 +104,15 @@ interface LoadError {
   forbidden: boolean;
 }
 
-const HEADER_CELL = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+// Las mismas verticales que el cuerpo, para que las columnas cuadren de arriba
+// abajo. La última las pierde con [&>th:last-child]:border-r-0 en la fila.
+const HEADER_CELL = 'border-r border-cuadro-line px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
 export function DesgloseView({
   proyectoId, proyectoNombre, desgloseId, usoCount = 0, puedeEliminar = true,
   titulo = 'Desglose del Proyecto', onBack,
+  cargarDoc, guardarDoc, mostrarItbms = true, mostrarHerramientas = true,
+  etiquetaValorUnitario = 'P.U.',
 }: DesgloseViewProps) {
   const [rows, setRows] = useState<DesgloseRow[]>([]);
   const [meta, setMeta] = useState<DesgloseMeta | null>(null);
@@ -130,6 +150,12 @@ export function DesgloseView({
   const [indentConfirm, setIndentConfirm] = useState<{ index: number; parentIndex: number } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ index: number; count: number } | null>(null);
   const [reloadConfirmOpen, setReloadConfirmOpen] = useState(false);
+
+  // La fuente inyectada se lee por ref, igual que las filas de abajo: asi su
+  // identidad no entra en las dependencias de la carga, y un padre que declare
+  // cargarDoc en linea —lo normal— no dispara un bucle de recargas.
+  const fuenteRef = useRef({ cargarDoc, guardarDoc });
+  fuenteRef.current = { cargarDoc, guardarDoc };
 
   // Latest-rows ref: the row callbacks below must be identity-stable for
   // React.memo yet always operate on the CURRENT rows — a stale closure could
@@ -177,9 +203,12 @@ export function DesgloseView({
     setLoading(true);
     setErr(null);
     try {
-      const doc = desgloseId != null
-        ? await getDesgloseById(proyectoId, desgloseId)
-        : await getDesglose(proyectoId);
+      const cargar = fuenteRef.current.cargarDoc;
+      const doc = cargar
+        ? await cargar()
+        : desgloseId != null
+          ? await getDesgloseById(proyectoId, desgloseId)
+          : await getDesglose(proyectoId);
       if (seq !== fetchSeq.current) return; // a newer fetch owns the state now
       const fresh = doc ? wireToRows(doc.items) : [];
       baselineRef.current = fresh;
@@ -520,9 +549,12 @@ export function DesgloseView({
     setBusy(true);
     setSaveErr(null);
     try {
-      const doc = desgloseId != null
-        ? await saveDesgloseById(proyectoId, desgloseId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms)
-        : await saveDesglose(proyectoId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms);
+      const guardar = fuenteRef.current.guardarDoc;
+      const doc = guardar
+        ? await guardar(meta?.updatedAt ?? null, toWireItems(saved))
+        : desgloseId != null
+          ? await saveDesgloseById(proyectoId, desgloseId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms)
+          : await saveDesglose(proyectoId, meta?.updatedAt ?? null, toWireItems(saved), savedItbms);
       // ALWAYS take the fresh meta: the new concurrency stamp is what makes
       // the NEXT save valid even when we keep locally-edited rows below.
       setMeta(doc.desglose);
@@ -686,12 +718,16 @@ export function DesgloseView({
         </DropdownMenuItem>
         {/* Ambos actúan sobre lo que está en pantalla (ediciones sin guardar
             incluidas) y no tienen sentido sin filas. */}
-        <DropdownMenuItem onClick={handleExport} disabled={rows.length === 0 || exporting}>
-          <Download className="mr-2 h-4 w-4" /> Exportar a Excel
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setPrintOpen(true)} disabled={rows.length === 0}>
-          <Printer className="mr-2 h-4 w-4" /> Imprimir / PDF
-        </DropdownMenuItem>
+        {mostrarHerramientas && (
+          <>
+            <DropdownMenuItem onClick={handleExport} disabled={rows.length === 0 || exporting}>
+              <Download className="mr-2 h-4 w-4" /> Exportar a Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPrintOpen(true)} disabled={rows.length === 0}>
+              <Printer className="mr-2 h-4 w-4" /> Imprimir / PDF
+            </DropdownMenuItem>
+          </>
+        )}
         {canDelete && (
           <>
             <DropdownMenuSeparator />
@@ -729,12 +765,12 @@ export function DesgloseView({
   // wrapping and reinforces content-fit on the short columns.
   const headerRow = (
     <TableHeader>
-      <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+      <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200 [&>th:last-child]:border-r-0">
         <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap rounded-tl-xl')}>Item</TableHead>
         <TableHead className={cn(HEADER_CELL, 'w-full')}>Descripción</TableHead>
         <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap')}>Unidad</TableHead>
         <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right')}>Cantidad</TableHead>
-        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right')}>P.U.</TableHead>
+        <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right')}>{etiquetaValorUnitario}</TableHead>
         <TableHead className={cn(HEADER_CELL, 'whitespace-nowrap text-right rounded-tr-xl')}>Total</TableHead>
       </TableRow>
     </TableHeader>
@@ -975,7 +1011,7 @@ export function DesgloseView({
                 </span>
                 <span className="font-medium">{formatMoney(grandTotal * itbmsTasa / 100)}</span>
               </div>
-            ) : editing ? (
+            ) : editing && mostrarItbms ? (
               <div className="flex justify-end">
                 <Button variant="outline" size="sm" onClick={() => setItbmsRate('7')}>
                   <Plus className="mr-2 h-4 w-4" /> Agregar ITBMS

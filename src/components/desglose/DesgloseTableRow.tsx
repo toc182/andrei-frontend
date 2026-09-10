@@ -60,13 +60,17 @@ function EditableCell({ initial, numeric, maxLength, onCommit, onCancel, onTab }
       // the column to the input and the column would jump wide when opened.
       size={1}
       // Must occupy EXACTLY the box the text occupied — h-5/leading-5/text-sm
-      // is TableCell's own line box — or opening a cell grows the row. The
-      // focus ring is a box-shadow, so it signals "editable" without taking
-      // any space. text-sm is forced because shadcn's Input is text-base on
-      // mobile, which would be 24px and reintroduce the vertical jump.
+      // is TableCell's own line box — or opening a cell grows the row.
+      // text-sm is forced because shadcn's Input is text-base on mobile, which
+      // would be 24px and reintroduce the vertical jump.
+      //
+      // Sin anillo de foco (decisión de Ivan): con la retícula a la vista la
+      // celda ya se ve, y un recuadro dentro de otro recuadro se lee como una
+      // caja metida en la casilla. Lo único que aparece al escribir es el
+      // cursor.
       className={cn(
         'h-5 w-full min-w-0 rounded-sm border-0 bg-transparent p-0 text-sm leading-5 shadow-none',
-        'focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0',
+        'focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
         numeric && 'text-right tabular-nums',
       )}
       value={draft}
@@ -119,7 +123,7 @@ function DesgloseTableRowBase({
     const canEdit = editable && isFieldEditable(r, field, pricedSection);
     return (
       <TableCell
-        className={cn('px-4 py-2', canEdit && 'cursor-text', className)}
+        className={cn('border-r border-cuadro-line px-4 py-2', canEdit && 'cursor-text', className)}
         // One click types. stopPropagation keeps the row's own onClick from
         // firing and yanking focus back to the grid container; openCell selects
         // the row anyway. Re-clicking the open cell must not re-open it, or the
@@ -182,11 +186,15 @@ function DesgloseTableRowBase({
   return (
     <TableRow
       className={cn(
-        'border-b border-slate-100 last:border-0',
+        'border-b border-cuadro-line last:border-0',
         // Group rows get a depth-shaded blue band; item rows stay on the card so
         // the groups read as bands. Only items take the slate hover — a hover
         // tint on a group would fight its band. Selection (navy) wins over both.
         isGrupo && grupoBgClass(r.depth),
+        // Dentro de una banda de grupo no hay líneas verticales: la banda es un
+        // bloque limpio. La celda se conserva (no colSpan) para que las
+        // columnas sigan alineadas con las del resto de la tabla.
+        isGrupo && '[&>td]:border-r-transparent',
         editable && 'group cursor-default',
         editable && !isGrupo && 'hover:bg-slate-50',
         selected && 'bg-slate-100 hover:bg-slate-100',
@@ -208,6 +216,8 @@ function DesgloseTableRowBase({
       {cell('precioUnitario', showVals ? formatMoney(r.precioUnitario) : '', 'whitespace-nowrap text-right tabular-nums')}
       <TableCell
         className={cn(
+          // Última columna sin border-r: el marco exterior lo pone la Card
+          // (FRONTEND_CONVENTIONS.md, «La retícula: una regla, dos colores»).
           'relative whitespace-nowrap px-4 py-2 text-right tabular-nums',
           // Container-section total is a derived sum → muted. A childless
           // section's total is its own value → normal weight, like an item.

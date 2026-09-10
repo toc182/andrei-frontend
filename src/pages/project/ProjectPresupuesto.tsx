@@ -30,6 +30,7 @@ import { EmptyState, ErrorState, TableSkeleton } from '@/components/shell';
 import { formatMoney } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import PresupuestoHoja, { type CabeceraHoja } from '@/components/presupuesto/PresupuestoHoja';
+import PresupuestoHojaCero from '@/components/presupuesto/PresupuestoHojaCero';
 import NuevoPresupuestoDialog from '@/components/presupuesto/NuevoPresupuestoDialog';
 import {
   eliminarPresupuesto, getPresupuestos, marcarPrincipal,
@@ -61,6 +62,13 @@ export default function ProjectPresupuesto({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [porBorrar, setPorBorrar] = useState<PresupuestoLista | null>(null);
+  // Como se armo el presupuesto que esta abierto y como se llama. Decide cual
+  // de las dos hojas se pinta, y se sabe sin preguntarle al servidor: sale de
+  // la fila que se pincho, o del que se acaba de crear —que todavia no esta en
+  // `lista`, porque esta se recarga al volver.
+  const [abiertoComo, setAbiertoComo] = useState<{ origen: 'desglose' | 'cero'; nombre: string }>(
+    { origen: 'desglose', nombre: 'Presupuesto' },
+  );
 
   const cargar = useCallback(async () => {
     try {
@@ -103,6 +111,19 @@ export default function ProjectPresupuesto({
   // La hoja de uno concreto ocupa el sitio de la lista, dentro de la misma
   // pestana. Se sale pinchando «Presupuestos» arriba.
   if (abierto != null) {
+    // Armado desde cero: es el editor del desglose, con su barra, su pegar
+    // desde Excel y su propio Guardar. Copiado del desglose: la hoja de solo
+    // costos, que reporta el guardar hacia la cabecera de arriba.
+    if (abiertoComo.origen === 'cero') {
+      return (
+        <PresupuestoHojaCero
+          projectId={projectId}
+          presupuestoId={abierto}
+          nombre={abiertoComo.nombre}
+          onBack={() => onAbrir(null)}
+        />
+      );
+    }
     return (
       <PresupuestoHoja
         projectId={projectId}
@@ -134,10 +155,10 @@ export default function ProjectPresupuesto({
             title="Este proyecto todavía no tiene presupuestos"
             description={
               desglose
-                ? 'Empieza uno a partir del desglose del proyecto: trae los renglones con sus cantidades y tú escribes lo que te cuesta cada uno.'
-                : 'Para armar un presupuesto hace falta que el proyecto tenga desglose.'
+                ? 'Empieza uno a partir del desglose del proyecto —trae los renglones con sus cantidades y tú escribes lo que te cuesta cada uno— o desde cero, con la hoja en blanco.'
+                : 'Empieza uno desde cero: la hoja nace en blanco y tú escribes los renglones.'
             }
-            action={desglose ? botonNuevo : undefined}
+            action={botonNuevo}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -155,7 +176,10 @@ export default function ProjectPresupuesto({
                   {lista.map((p) => (
                     <TableRow
                       key={p.id}
-                      onClick={() => onAbrir(p.id)}
+                      onClick={() => {
+                        setAbiertoComo({ origen: p.origen, nombre: p.nombre });
+                        onAbrir(p.id);
+                      }}
                       className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
                     >
                       {/* El oficial se marca SOLO con el simbolo: sin etiqueta y
@@ -224,7 +248,10 @@ export default function ProjectPresupuesto({
         onOpenChange={onCreando}
         projectId={projectId}
         desglose={desglose}
-        onCreado={(id) => onAbrir(id)}
+        onCreado={(p) => {
+          setAbiertoComo({ origen: p.origen, nombre: p.nombre });
+          onAbrir(p.id);
+        }}
       />
 
       <AlertDialog open={porBorrar !== null} onOpenChange={(o) => { if (!o) setPorBorrar(null); }}>

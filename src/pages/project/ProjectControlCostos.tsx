@@ -91,9 +91,13 @@ export default function ProjectControlCostos({
     <div className="space-y-6">
       {/* min-h-9, el alto de un boton: sin el, las pestanas suben y bajan 4px
           al cambiar de una a otra segun si la fila del titulo trae boton. */}
+      {/* Una hoja armada desde cero trae su propio encabezado de sección con su
+          nombre —es el editor del desglose—, así que arriba se queda el nombre
+          de la pantalla, igual que en Información. Solo la hoja de costos, que
+          no tiene encabezado propio, sube el suyo hasta aquí. */}
       <PageHeader
         className="min-h-9"
-        title={hojaAbierta ? cabHoja?.titulo ?? 'Presupuesto' : 'Control de Costos'}
+        title={cabHoja?.titulo ?? 'Control de Costos'}
       >
         {acciones || undefined}
       </PageHeader>
