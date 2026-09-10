@@ -11,7 +11,7 @@
 // flechas y Enter atendidas a mano.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Search, Split, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Split, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,17 @@ import type { Partida, PartidaAsignada } from '@/lib/costosApi';
 /** Sin tildes y en minusculas: buscar "diseno" tiene que encontrar "diseño". */
 const normalizar = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/** Cuantas partidas se ven sin desplegar. Dos caben en la fila sin estirarla.
+ *  De tres en adelante se recoge: no es solo el pago repartido entre catorce
+ *  —que tambien—, es que veinte pagos con dos o tres partidas cada uno ya hacen
+ *  una pagina kilometrica. */
+export const PARTIDAS_VISIBLES = 2;
+
+/** De mayor a menor. Cuando la lista va recogida se ve solo la primera, y la
+ *  que mas se llevo es la que dice de que fue el gasto. */
+const porMonto = (asignadas: PartidaAsignada[]) =>
+  [...asignadas].sort((a, b) => b.monto - a.monto);
 
 interface SelectorPartidaProps {
   partidas: Partida[];
@@ -125,58 +136,80 @@ export default function SelectorPartida({
   partidas, asignadas, onEscoger, onRepartir, onEliminarTodas, disabled,
 }: SelectorPartidaProps) {
   const [abierto, setAbierto] = useState(false);
+  const [expandida, setExpandida] = useState(false);
+
+  // El boton de abrir la lista va FUERA del que abre el desplegable. Metido
+  // dentro seria un boton dentro de otro: al pincharlo se abriria el buscador
+  // en vez de desplegar las partidas.
+  const muchas = asignadas.length > PARTIDAS_VISIBLES;
 
   return (
-    <Popover open={abierto} onOpenChange={setAbierto}>
-      <PopoverTrigger asChild disabled={disabled}>
-        <button
-          type="button"
-          className={cn(
-            'flex w-full items-start gap-1.5 rounded-md px-1.5 py-1 text-left text-sm',
-            'transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60',
-          )}
-          aria-label="Partida de este pago"
-        >
-          <EtiquetaPartida asignadas={asignadas} />
-          <ChevronDown className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-        </button>
-      </PopoverTrigger>
+    <div className="flex w-full min-w-0 flex-col items-start">
+      <Popover open={abierto} onOpenChange={setAbierto}>
+        <PopoverTrigger asChild disabled={disabled}>
+          <button
+            type="button"
+            className={cn(
+              'flex w-full items-start gap-1.5 rounded-md px-1.5 py-1 text-left text-sm',
+              'transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60',
+            )}
+            aria-label="Partida de este pago"
+          >
+            <EtiquetaPartida asignadas={asignadas} expandida={expandida} />
+            <ChevronDown className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+          </button>
+        </PopoverTrigger>
 
-      {/* key: al cerrar y volver a abrir, el buscador nace limpio. Reabrirlo con
-          lo escrito antes hace creer que esas son todas las partidas que hay. */}
-      <PopoverContent key={String(abierto)} align="start" className="w-[340px] p-0">
-        <ListaPartidas
-          partidas={partidas}
-          onEscoger={(rowUid) => { onEscoger(rowUid); setAbierto(false); }}
-          pie={
-            <>
-              <button
-                type="button"
-                onClick={() => { setAbierto(false); onRepartir(); }}
-                className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-primary hover:bg-muted"
-              >
-                <Split className="h-3.5 w-3.5" />
-                Repartir entre varias partidas…
-              </button>
-
-              {/* Solo cuando hay algo que quitar. En un pago que ya esta sin
-                  clasificar esta linea no haria nada, y una opcion que no hace
-                  nada se lee como que esta rota. */}
-              {asignadas.length > 0 && (
+        {/* key: al cerrar y volver a abrir, el buscador nace limpio. Reabrirlo
+            con lo escrito antes hace creer que esas son todas las que hay. */}
+        <PopoverContent key={String(abierto)} align="start" className="w-[340px] p-0">
+          <ListaPartidas
+            partidas={partidas}
+            onEscoger={(rowUid) => { onEscoger(rowUid); setAbierto(false); }}
+            pie={
+              <>
                 <button
                   type="button"
-                  onClick={() => { setAbierto(false); onEliminarTodas(); }}
-                  className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-error hover:bg-error/5"
+                  onClick={() => { setAbierto(false); onRepartir(); }}
+                  className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-primary hover:bg-muted"
                 >
-                  <X className="h-3.5 w-3.5" />
-                  Eliminar todas
+                  <Split className="h-3.5 w-3.5" />
+                  Repartir entre varias partidas…
                 </button>
-              )}
-            </>
-          }
-        />
-      </PopoverContent>
-    </Popover>
+
+                {/* Solo cuando hay algo que quitar. En un pago que ya esta sin
+                    clasificar esta linea no haria nada, y una opcion que no
+                    hace nada se lee como que esta rota. */}
+                {asignadas.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setAbierto(false); onEliminarTodas(); }}
+                    className="flex w-full items-center gap-2 border-t border-border bg-muted/40 px-3 py-2 text-left text-sm text-error hover:bg-error/5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Eliminar todas
+                  </button>
+                )}
+              </>
+            }
+          />
+        </PopoverContent>
+      </Popover>
+
+      {muchas && (
+        <button
+          type="button"
+          onClick={() => setExpandida((v) => !v)}
+          className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-primary hover:underline"
+        >
+          {expandida ? (
+            <>Cerrar <ChevronUp className="h-3 w-3" /></>
+          ) : (
+            <>y {asignadas.length - 1} partidas más <ChevronDown className="h-3 w-3" /></>
+          )}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -217,8 +250,16 @@ export function DiferenciaPartida({
   );
 }
 
-/** Lo que se lee en la casilla cuando el desplegable esta cerrado. */
-export function EtiquetaPartida({ asignadas }: { asignadas: PartidaAsignada[] }) {
+/** Lo que se lee en la casilla cuando el desplegable esta cerrado.
+ *
+ *  `expandida` solo la manda quien ademas pinta el boton de abrir y cerrar. Por
+ *  defecto se ven todas, que es como se usa suelta. */
+export function EtiquetaPartida({
+  asignadas, expandida = true,
+}: {
+  asignadas: PartidaAsignada[];
+  expandida?: boolean;
+}) {
   if (asignadas.length === 0) {
     return (
       <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">
@@ -227,12 +268,18 @@ export function EtiquetaPartida({ asignadas }: { asignadas: PartidaAsignada[] })
     );
   }
 
-  // Repartido: se ven TODAS, cada una con lo que le toco. Decir solo "2
+  // Repartido: se ven todas, cada una con lo que le toco. Decir solo "2
   // partidas" obligaba a abrir el reparto para saber cuales eran.
+  //
+  // Salvo que sean muchas: ahi se queda la mayor y las demas se cuentan, o la
+  // pagina se hace kilometrica. Quien pinta esto pone el boton de abrirla.
   if (asignadas.length > 1) {
+    const muchas = asignadas.length > PARTIDAS_VISIBLES;
+    const lista = muchas ? porMonto(asignadas) : asignadas;
+    const visibles = muchas && !expandida ? lista.slice(0, 1) : lista;
     return (
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        {asignadas.map((a) => (
+        {visibles.map((a) => (
           <span key={a.rowUid} className="flex min-w-0 items-baseline gap-2">
             <span className="w-[42px] shrink-0 text-xs tabular-nums text-muted-foreground">
               {a.item ?? '—'}
