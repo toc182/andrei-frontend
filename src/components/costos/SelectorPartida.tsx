@@ -235,8 +235,8 @@ export function DiferenciaPartida({
         </span>
       ) : (
         despues.map((l) => (
-          <div key={l.rowUid} className="flex min-w-0 items-baseline gap-2 text-sm">
-            <span className="w-[42px] shrink-0 text-xs tabular-nums text-muted-foreground">
+          <div key={l.rowUid} className="flex min-w-0 items-baseline gap-1.5 text-sm">
+            <span className="min-w-[30px] shrink-0 text-xs tabular-nums text-muted-foreground">
               {l.item ?? '—'}
             </span>
             <span className="min-w-0 flex-1 truncate">{l.descripcion ?? ''}</span>
@@ -280,8 +280,8 @@ export function EtiquetaPartida({
     return (
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         {visibles.map((a) => (
-          <span key={a.rowUid} className="flex min-w-0 items-baseline gap-2">
-            <span className="w-[42px] shrink-0 text-xs tabular-nums text-muted-foreground">
+          <span key={a.rowUid} className="flex min-w-0 items-baseline gap-1.5">
+            <span className="min-w-[30px] shrink-0 text-xs tabular-nums text-muted-foreground">
               {a.item ?? '—'}
             </span>
             <span className="min-w-0 flex-1 truncate">
@@ -310,8 +310,8 @@ export function EtiquetaPartida({
   // El mismo ancho de codigo que las repartidas, para que las descripciones
   // queden en la misma vertical de una fila a otra.
   return (
-    <span className="flex min-w-0 flex-1 items-baseline gap-2">
-      <span className="w-[42px] shrink-0 text-xs tabular-nums text-muted-foreground">
+    <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+      <span className="min-w-[30px] shrink-0 text-xs tabular-nums text-muted-foreground">
         {unica.item}
       </span>
       <span className="min-w-0 flex-1 truncate">{unica.descripcion}</span>

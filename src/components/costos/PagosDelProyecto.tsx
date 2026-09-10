@@ -37,7 +37,7 @@ import {
   aplicarPropuesta, getEstadoAsistente, type Propuesta,
 } from '@/lib/asistentePagosApi';
 
-const TH = 'px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+const TH = 'px-2.5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
 /** Un pago cuenta como pendiente si no tiene lineas, o si la unica que tiene
  *  apunta a una fila que ya no esta en el desglose. */
@@ -178,9 +178,11 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
 
   return (
     <>
-      {/* La tabla manda; el asistente va al lado. Debajo de lg el panel baja,
-          que en una pantalla angosta la tabla no cabe partida en dos. */}
-      <div className={cn('grid items-start gap-4', hayAsistente && 'lg:grid-cols-[1fr_360px]')}>
+      {/* La tabla manda; el asistente va al lado. Debajo de 2xl el panel baja,
+          que en una pantalla angosta la tabla no cabe partida en dos.
+          El corte va en 2xl y no en lg porque el panel se lleva 376px: a 1280
+          la tabla se quedaba en 584 y la columna de Proveedor desaparecia. */}
+      <div className={cn('grid items-start gap-4', hayAsistente && '2xl:grid-cols-[1fr_360px]')}>
       <div className="min-w-0 space-y-3">
       {propuesta && (
         <BarraPropuesta
@@ -271,20 +273,25 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
             </div>
 
             <div className="hidden overflow-x-auto md:block">
-              <Table className="table-fixed">
+              {/* min-w: por debajo de esto el contenedor hace scroll. Apretar
+                  mas no cabe, y lo que pasaba antes era que una columna se
+                  aplastaba hasta desaparecer en vez de avisar. */}
+              <Table className="min-w-[700px] table-fixed">
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
                     {/* La columna de casillas solo existe mientras hay una
                         propuesta en pantalla. */}
                     {propuesta && <TableHead className="w-[38px] px-0" />}
-                    {/* La partida es la columna con la que se trabaja aqui, y
-                        los nombres de las partidas son largos: se lleva el ancho
-                        que sobraba en las demas. */}
-                    <TableHead className={`${TH} w-[110px] whitespace-nowrap`}>Número</TableHead>
-                    <TableHead className={TH}>A quién</TableHead>
-                    <TableHead className={`${TH} w-[125px] whitespace-nowrap`}>Pagado</TableHead>
-                    <TableHead className={`${TH} w-[125px] whitespace-nowrap text-right`}>Monto</TableHead>
-                    <TableHead className={`${TH} w-[45%]`}>Partida</TableHead>
+                    {/* Proveedor es la columna que se lee, asi que es la que
+                        lleva porcentaje; Partida se queda con lo que sobre. Al
+                        reves —Partida con un 45% fijo— Proveedor recibia las
+                        migajas y desaparecia en cuanto la pantalla se achicaba.
+                        Las tres fijas miden lo que mide su texto, ni un px mas. */}
+                    <TableHead className={`${TH} w-[84px] whitespace-nowrap`}>Número</TableHead>
+                    <TableHead className={`${TH} w-[30%]`}>Proveedor</TableHead>
+                    <TableHead className={`${TH} w-[92px] whitespace-nowrap`}>Pagado</TableHead>
+                    <TableHead className={`${TH} w-[128px] whitespace-nowrap text-right`}>Monto</TableHead>
+                    <TableHead className={TH}>Partida</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -316,16 +323,16 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                           )}
                         </TableCell>
                       )}
-                      <TableCell className="truncate px-4 py-2 text-sm font-medium text-foreground">
+                      <TableCell className="truncate px-2.5 py-2 text-sm font-medium text-foreground">
                         {p.numero ?? '—'}
                       </TableCell>
-                      <TableCell className="truncate px-4 py-2 text-sm text-slate-700">
+                      <TableCell className="truncate px-2.5 py-2 text-sm text-slate-700">
                         {p.proveedor ?? 'Sin proveedor'}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-2 text-sm text-slate-700">
+                      <TableCell className="whitespace-nowrap px-2.5 py-2 text-sm text-slate-700">
                         {formatDate(p.fecha)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-2 text-right text-sm tabular-nums text-slate-700">
+                      <TableCell className="whitespace-nowrap px-2.5 py-2 text-right text-sm tabular-nums text-slate-700">
                         {formatMoney(p.monto)}
                       </TableCell>
                       {/* La casilla de Partida abre su desplegable, no el
