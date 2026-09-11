@@ -75,11 +75,13 @@ export function ErrorState({
 interface TableSkeletonProps {
   rows?: number;
   columns?: number;
+  /** Para esconderlo por ancho cuando la tabla cambia de columnas. */
+  className?: string;
 }
 
-export function TableSkeleton({ rows = 5, columns = 4 }: TableSkeletonProps) {
+export function TableSkeleton({ rows = 5, columns = 4, className }: TableSkeletonProps) {
   return (
-    <TableBody>
+    <TableBody className={className}>
       {Array.from({ length: rows }).map((_, r) => (
         <TableRow key={r} className="border-b border-slate-100 last:border-0">
           {Array.from({ length: columns }).map((_, c) => (

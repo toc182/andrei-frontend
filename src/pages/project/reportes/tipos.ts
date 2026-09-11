@@ -153,13 +153,15 @@ function partes(fecha: string): [number, number, number] {
 }
 
 /**
- * El mes con el año de dos cifras, "sep 26". Va en mayúsculas por CSS.
- * El año va siempre, no solo cuando cambia: el filtro admite "todos los
- * meses" y ahí un enero sin año no dice de cuál enero se trata.
+ * El mes solo, "sep". Va en mayúsculas por CSS.
+ *
+ * Sin año a propósito: en español la fecha se escribe con el día primero,
+ * así que un "SEP 26" encima de un día en grande se lee como el 26 de
+ * septiembre, y el año de cuatro cifras no cabe bien en la banda. De qué
+ * año es lo dice el filtro de mes que está encima de la tabla.
  */
 export function mesCorto(fecha: string): string {
-  const [y, m] = partes(fecha);
-  return `${MESES[m - 1].slice(0, 3).toLowerCase()} ${String(y).slice(-2)}`;
+  return MESES[partes(fecha)[1] - 1].slice(0, 3).toLowerCase();
 }
 
 /** El día del mes: el número grande de la celda de fecha. */

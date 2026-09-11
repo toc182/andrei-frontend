@@ -365,7 +365,13 @@ export default function ProjectReportes({ projectId }: Props) {
                   </TableRow>
                 </TableHeader>
                 {cargando ? (
-                  <TableSkeleton rows={6} columns={6} />
+                  /* Dos esqueletos porque la tabla cambia de columnas: de lg
+                     para abajo se van Clima y Trabajo ejecutado, y uno de seis
+                     columnas prometería dos que no están. */
+                  <>
+                    <TableSkeleton rows={6} columns={4} className="lg:hidden" />
+                    <TableSkeleton rows={6} columns={6} className="hidden lg:table-row-group" />
+                  </>
                 ) : (
                   <TableBody>
                     {visibles.map((f) => (
