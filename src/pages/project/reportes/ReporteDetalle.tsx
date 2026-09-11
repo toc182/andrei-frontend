@@ -6,13 +6,24 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Download, Pencil, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Pencil, Send, Trash2, Loader2 } from 'lucide-react';
 import api from '@/services/api';
 import {
   Alert, ErrorState, PageHeader, SectionHeader, TableSkeleton,
 } from '@/components/shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import {
   type Reporte, clasesClima, fechaCorta, fechaLarga,
@@ -90,6 +101,11 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
   const [error, setError] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [bajando, setBajando] = useState(false);
+  const [confirmandoBaja, setConfirmandoBaja] = useState(false);
+  const [dandoBaja, setDandoBaja] = useState(false);
+
+  const { user } = useAuth();
+  const puedeDarDeBaja = user?.rol === 'admin' || user?.rol === 'co-admin';
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -125,12 +141,31 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
     setEnviando(true);
     try {
       await api.post(`/proyecto-reportes/${projectId}/${reporteId}/emitir`);
-      toast.success('Reporte enviado por correo');
+      // El correo es asunto del servidor: aqui solo se dice que ya salio de
+      // sus manos, que es lo unico que le incumbe a quien lo manda.
+      toast.success('Reporte enviado');
       cargar();
     } catch {
       toast.error('No se pudo enviar el reporte');
     } finally {
       setEnviando(false);
+    }
+  };
+
+  // Por dentro es una baja logica —la fila y los PDF archivados sobreviven—
+  // pero en pantalla se llama «Eliminar», que es lo que el usuario cree que
+  // esta haciendo. No cambiar el texto por «dar de baja»: la diferencia es de
+  // la maquina, no suya.
+  const darDeBaja = async () => {
+    setDandoBaja(true);
+    try {
+      await api.delete(`/proyecto-reportes/${projectId}/${reporteId}`);
+      toast.success('Reporte eliminado');
+      onVolver();
+    } catch {
+      toast.error('No se pudo eliminar el reporte');
+      setDandoBaja(false);
+      setConfirmandoBaja(false);
     }
   };
 
@@ -170,6 +205,16 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
           {reporte.puede_editar && (
             <Button variant="outline" size="sm" onClick={() => onEditar(reporte)}>
               <Pencil className="mr-2 h-4 w-4" /> Corregir
+            </Button>
+          )}
+          {puedeDarDeBaja && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmandoBaja(true)}
+              className="text-error hover:bg-error/10 hover:text-error"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Eliminar
             </Button>
           )}
         </div>
@@ -372,6 +417,30 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
           </div>
         )}
       </div>
+
+      <AlertDialog open={confirmandoBaja} onOpenChange={setConfirmandoBaja}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este reporte?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El reporte <strong>{reporte.numero}</strong> desaparecerá de la lista
+              y no se podrá abrir ni enviar. El PDF que ya salió por correo se
+              conserva. Queda registrado a tu nombre.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={dandoBaja}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={darDeBaja}
+              disabled={dandoBaja}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {dandoBaja && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
