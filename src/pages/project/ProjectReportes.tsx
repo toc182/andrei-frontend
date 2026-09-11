@@ -42,7 +42,7 @@ import ReporteDetalle from './reportes/ReporteDetalle';
 import AreasDialog from './reportes/AreasDialog';
 import {
   type Reporte, type ReporteFila,
-  clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, fechaCorta, mesCorto, hoyYMD,
+  clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, mesCorto, hoyYMD,
 } from './reportes/tipos';
 
 interface Props {
@@ -63,6 +63,36 @@ const TOPE = 2000;
 /** El mes en curso, en YYYY-MM. Es el filtro por defecto de la lista. */
 const MES_ACTUAL = hoyYMD().slice(0, 7);
 
+
+/**
+ * La fecha como un recuadro de calendario: banda navy con el mes y el año, el
+ * día en grande y el día de la semana debajo.
+ *
+ * Son dos piezas apiladas, cada una con su propio borde, en vez de un marco
+ * único por encima de las dos: el marco gris cruzaba la banda azul y la hacía
+ * ver más angosta que el resto del cuadro. El borde de la banda es navy sobre
+ * navy, o sea invisible, y las dos piezas miden lo mismo porque el borde va por
+ * dentro del ancho (box-sizing: border-box).
+ */
+function CajaFecha({ fecha }: { fecha: string }) {
+  return (
+    <span className="flex w-[56px] flex-none flex-col tabular-nums">
+      {/* La banda centra su texto con flex, no con relleno: así el mes queda a
+          la misma distancia arriba y abajo por más que cambie la letra. */}
+      <span className="flex h-[15px] items-center justify-center rounded-t border border-navy bg-navy text-[9px] font-semibold uppercase leading-none tracking-wide text-white">
+        {mesCorto(fecha)}
+      </span>
+      <span className="flex flex-col items-center rounded-b border border-t-0 border-navy/30 bg-card pb-1 pt-1">
+        <span className="text-base font-semibold leading-none text-navy">
+          {diaDelMes(fecha)}
+        </span>
+        <span className="mt-0.5 text-[10px] capitalize leading-none text-muted-foreground">
+          {diaDeLaSemana(fecha)}
+        </span>
+      </span>
+    </span>
+  );
+}
 
 /**
  * El texto del día, en una línea. Se corta en el último espacio antes del tope
@@ -293,7 +323,7 @@ export default function ProjectReportes({ projectId }: Props) {
         <>
           <Card className="overflow-hidden p-0">
             {/* Escritorio: tabla. Móvil: tarjetas. */}
-            <div className="hidden md:block">
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
@@ -301,19 +331,22 @@ export default function ProjectReportes({ projectId }: Props) {
                         las que se busca un reporte. El código y el texto del día
                         se leen en la fila. Instrucción de Ivan.
 
-                        Los anchos son fijos en las cuatro primeras y el resto se
-                        lo lleva Trabajo ejecutado: al angostar la ventana encoge
-                        esa y no las otras. Por debajo de lg desaparece del todo,
-                        porque recortada a nada no dice nada. */}
+                        Los anchos generosos valen de lg para arriba, que es
+                        donde sobra espacio; el resto se lo lleva Trabajo
+                        ejecutado, así que al angostar encoge esa y no las otras.
+                        Por debajo de lg se van las dos — Trabajo ejecutado
+                        recortado a nada no dice nada, y Clima no cabe junto a lo
+                        demás. Fecha, Código, Elaborado por y PDF no se van nunca:
+                        el PDF menos que ninguna, que es una acción. */}
                     <SortableHeader
                       columnKey="fecha" label="Fecha" type="numeric" align="center"
                       className="w-[90px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                       sortState={sortState} onSortChange={cambiarOrden}
                     />
-                    <TableHead className="w-[190px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código</TableHead>
+                    <TableHead className="whitespace-nowrap px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:w-[190px]">Código</TableHead>
                     <SortableHeader
                       columnKey="creador_nombre" label="Elaborado por" type="discrete" align="center"
-                      className="w-[230px] text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:w-[230px]"
                       sortState={sortState} onSortChange={cambiarOrden}
                       uniqueValues={valoresAutor}
                       activeFilters={columnFilters.creador_nombre ?? valoresAutor}
@@ -321,7 +354,7 @@ export default function ProjectReportes({ projectId }: Props) {
                     />
                     <SortableHeader
                       columnKey="clima" label="Clima" type="discrete" align="center"
-                      className="w-[160px] text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="hidden text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell lg:w-[160px]"
                       sortState={sortState} onSortChange={cambiarOrden}
                       uniqueValues={valoresClima}
                       activeFilters={columnFilters.clima ?? valoresClima}
@@ -346,28 +379,8 @@ export default function ProjectReportes({ projectId }: Props) {
                             La banda es lo que hace que la columna se encuentre
                             sola al bajar la vista. Opción B del mock. */}
                         <TableCell className="px-4 py-2 text-center">
-                          {/* Dos piezas apiladas, cada una con su propio borde,
-                              en vez de un marco único por encima de las dos: el
-                              marco gris cruzaba la banda azul y la hacía ver más
-                              angosta que el resto del cuadro. El borde de la
-                              banda es navy sobre navy, o sea invisible, y las dos
-                              piezas miden lo mismo porque el borde va por dentro
-                              del ancho (box-sizing: border-box). */}
-                          <span className="mx-auto flex w-[56px] flex-col tabular-nums">
-                            {/* La banda centra su texto con flex, no con
-                                relleno: así el mes queda a la misma distancia
-                                arriba y abajo por más que cambie la letra. */}
-                            <span className="flex h-[15px] items-center justify-center rounded-t border border-navy bg-navy text-[9px] font-semibold uppercase leading-none tracking-wide text-white">
-                              {mesCorto(f.fecha)}
-                            </span>
-                            <span className="flex flex-col items-center rounded-b border border-t-0 border-navy/30 bg-card pb-1 pt-1">
-                              <span className="text-base font-semibold leading-none text-navy">
-                                {diaDelMes(f.fecha)}
-                              </span>
-                              <span className="mt-0.5 text-[10px] capitalize leading-none text-muted-foreground">
-                                {diaDeLaSemana(f.fecha)}
-                              </span>
-                            </span>
+                          <span className="mx-auto flex justify-center">
+                            <CajaFecha fecha={f.fecha} />
                           </span>
                         </TableCell>
                         <TableCell className="whitespace-nowrap px-4 py-3 text-center text-sm tabular-nums text-slate-700">
@@ -376,7 +389,7 @@ export default function ProjectReportes({ projectId }: Props) {
                         <TableCell className="px-4 py-3 text-center text-sm text-muted-foreground">
                           {f.creador_nombre}
                         </TableCell>
-                        <TableCell className="px-4 py-3 text-center">
+                        <TableCell className="hidden px-4 py-3 text-center lg:table-cell">
                           <Badge variant="outline" className={clasesClima(f.clima)}>{f.clima}</Badge>
                         </TableCell>
                         <TableCell className="hidden w-full px-4 py-3 text-sm text-slate-700 lg:table-cell">
@@ -418,33 +431,48 @@ export default function ProjectReportes({ projectId }: Props) {
               ) : total === 0 ? (
                 <EmptyState title={vacioTitulo} description={vacioTexto} />
               ) : (
+                /* La tarjeta lleva lo mismo que la fila de la tabla. El botón
+                   del PDF va FUERA del botón que abre el detalle: un botón
+                   dentro de otro no es HTML válido. */
                 visibles.map((f) => (
-                  <button
+                  <div
                     key={f.id}
-                    type="button"
-                    onClick={() => setVista({ modo: 'detalle', id: f.id })}
-                    className="block w-full border-b border-slate-100 px-4 py-3 text-left last:border-0 hover:bg-slate-50/60"
+                    className="flex items-start gap-3 border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-slate-50/60"
                   >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span>
-                        <span className="block font-medium">{fechaCorta(f.fecha)}</span>
-                        <span className="block text-xs text-muted-foreground">{diaDeLaSemana(f.fecha)}</span>
-                      </span>
-                      <Badge variant="outline" className={clasesClima(f.clima)}>{f.clima}</Badge>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground tabular-nums">
-                      <span>{f.personal_calificado} calif. · {f.ayudantes} ayud.</span>
-                      {Number(f.horas_perdidas ?? 0) > 0 && (
-                        <span className="font-semibold text-warning">
-                          {Number(f.horas_perdidas)} h perdidas
+                    <button
+                      type="button"
+                      onClick={() => setVista({ modo: 'detalle', id: f.id })}
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                    >
+                      <CajaFecha fecha={f.fecha} />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-sm font-medium tabular-nums text-foreground">
+                            {f.numero}
+                          </span>
+                          <Badge variant="outline" className={clasesClima(f.clima)}>{f.clima}</Badge>
                         </span>
-                      )}
-                      <span>{f.fotos} fotos</span>
-                    </div>
-                    {f.areas.length > 0 && (
-                      <div className="mt-1 text-sm text-slate-700">{f.areas.join(', ')}</div>
-                    )}
-                  </button>
+                        {/* Sin el texto del día: la tarjeta se lee de un golpe y
+                            entran más en la pantalla. El texto está en el detalle. */}
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {f.creador_nombre}
+                        </span>
+                      </span>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 flex-none text-muted-foreground hover:text-navy"
+                      title={`Descargar el PDF de ${f.numero}`}
+                      disabled={bajando === f.id}
+                      onClick={() => descargarPdf(f.id)}
+                    >
+                      {bajando === f.id
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Download className="h-4 w-4" />}
+                      <span className="sr-only">Descargar PDF</span>
+                    </Button>
+                  </div>
                 ))
               )}
             </div>
