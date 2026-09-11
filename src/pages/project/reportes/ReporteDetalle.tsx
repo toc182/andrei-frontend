@@ -175,9 +175,15 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
         </div>
       </div>
 
-      {/* Si el navegador se cerró a media subida, el reporte quedó guardado
-          pero sin salir por correo. Aquí se ve y se puede mandar. */}
-      {!reporte.enviado_at && reporte.puede_editar && (
+      {/* Solo cuando de verdad no salió.
+          El envío lo hace el servidor por su cuenta y puede tardar un minuto
+          en arrancar; mientras va en camino, envio_proximo_intento trae fecha
+          y aquí no se dice nada. Avisar durante ese minuto sería alarmar por
+          algo que está funcionando, que es la clase de mentira que este
+          rediseño vino a quitar. */}
+      {!reporte.enviado_at
+        && !reporte.envio_proximo_intento
+        && reporte.puede_editar && (
         <Alert
           variant="warning"
           title="Este reporte no se ha enviado por correo"

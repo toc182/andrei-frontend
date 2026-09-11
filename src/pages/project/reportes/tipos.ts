@@ -121,6 +121,12 @@ export interface Reporte {
   proyecto_nombre: string;
   created_at: string;
   enviado_at: string | null;
+  /**
+   * Cuándo le toca al servidor el siguiente intento de mandarlo por correo.
+   * Con fecha, va en camino y no hay nada que hacer; en null y sin enviado_at,
+   * de verdad no salió.
+   */
+  envio_proximo_intento: string | null;
   puede_editar: boolean;
   areas: { id: number; nombre: string }[];
   fotos: Foto[];
