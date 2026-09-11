@@ -15,6 +15,9 @@
  *   demás; por eso el «+ Puesto» está dentro de cada bloque y no suelto.
  * - La equis va pegada al nombre, no al final, para que las casillas de número
  *   queden todas en la misma columna y se lean de un vistazo.
+ * - Las listas llevan un ancho máximo. Alinear los números exige una columna
+ *   fija, y sin tope, en una pantalla ancha esa columna se va al borde y deja
+ *   medio metro de vacío entre el nombre y su casilla.
  * - Los cuatro puestos de arranque del bloque propio no se quitan.
  *
  * Las listas se guardan en cuanto se tocan, como las áreas: no esperan a que
@@ -225,7 +228,7 @@ export function SeccionPersonal({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="max-w-[26rem] space-y-3">
       {bloque(null)}
       {listas.empresas.map((e) => bloque(e))}
 
@@ -255,7 +258,7 @@ export function SeccionEquipo({
   listas, valores, onValor, onAgregar, onQuitar,
 }: EquipoProps) {
   return (
-    <div className="space-y-1">
+    <div className="max-w-[26rem] space-y-1">
       {listas.equipos.length > 0 && (
         <div className="flex items-center gap-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
           <span className="ml-auto w-14 text-center">Unid.</span>
@@ -313,17 +316,20 @@ interface EntregasProps {
 export function SeccionEntregas({
   listas, filas, onFilas, onAgregarCategoria,
 }: EntregasProps) {
-  // `editando` es el índice de la fila abierta, o -1 para una nueva.
+  // Tres estados y no dos: null es cerrado, -1 es una entrega nueva, y un
+  // número es la fila que se está corrigiendo. Usar null para "cerrado" y
+  // "nueva" a la vez fue un error: el botón ponía "nueva" y el diálogo leía
+  // eso como "cerrado", así que agregar no abría nada.
   const [editando, setEditando] = useState<number | null>(null);
   const [borrador, setBorrador] = useState<FilaEntrega>(ENTREGA_VACIA);
 
   const nombreCategoria = (id: number) =>
     listas.categorias.find((c) => c.id === id)?.nombre ?? '';
 
-  const abrir = (i: number | null) => {
+  const abrir = (i: number) => {
     setEditando(i);
     setBorrador(
-      i === null
+      i === -1
         ? { ...ENTREGA_VACIA, categoria_id: listas.categorias[0]?.id ?? 0 }
         : filas[i],
     );
@@ -331,7 +337,7 @@ export function SeccionEntregas({
 
   const guardar = () => {
     if (!borrador.descripcion.trim() || !borrador.categoria_id) return;
-    if (editando === null) onFilas([...filas, borrador]);
+    if (editando === -1) onFilas([...filas, borrador]);
     else onFilas(filas.map((f, i) => (i === editando ? borrador : f)));
     setEditando(null);
   };
@@ -340,7 +346,7 @@ export function SeccionEntregas({
     [f.cantidad, f.unidad].filter((x) => x !== '' && x !== null).join(' ');
 
   return (
-    <div className="space-y-1">
+    <div className="max-w-[30rem] space-y-1">
       {filas.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">Sin entregas hoy</p>
       ) : (
@@ -376,7 +382,7 @@ export function SeccionEntregas({
 
       <button
         type="button"
-        onClick={() => abrir(null)}
+        onClick={() => abrir(-1)}
         className="self-start pt-1 text-xs font-semibold text-primary hover:underline"
       >
         + Entrega
@@ -386,14 +392,14 @@ export function SeccionEntregas({
         open={editando !== null}
         onOpenChange={(o) => !o && setEditando(null)}
         size="simple"
-        title={editando === null ? 'Agregar entrega' : 'Corregir entrega'}
+        title={editando === -1 ? 'Agregar entrega' : 'Corregir entrega'}
         footer={
           <>
             <Button variant="outline" onClick={() => setEditando(null)}>
               Cancelar
             </Button>
             <Button onClick={guardar}>
-              {editando === null ? 'Agregar' : 'Guardar'}
+              {editando === -1 ? 'Agregar' : 'Guardar'}
             </Button>
           </>
         }

@@ -419,11 +419,12 @@ export default function ReporteForm({
           </div>
         </div>
 
-        {/* Personal, Equipo y Entregas. Las listas del proyecto salen solas;
-            lo que se teclea aquí son los números de hoy. */}
+        {/* En pantalla ancha van a dos columnas, igual que en el PDF: una sola
+            columna a lo ancho de la tarjeta deja las casillas de número a un
+            palmo de su nombre. En el teléfono se apilan. */}
         {listas && (
-          <>
-            <div className="space-y-4 border-t border-border p-4">
+          <div className="border-t border-border md:grid md:grid-cols-2">
+            <div className="space-y-4 p-4 md:border-r md:border-border">
               <SectionHeader title="Personal" />
               <SeccionPersonal
                 listas={listas}
@@ -436,30 +437,32 @@ export default function ReporteForm({
               />
             </div>
 
-            <div className="space-y-4 border-t border-border p-4">
-              <SectionHeader title="Equipo" />
-              <SeccionEquipo
-                listas={listas}
-                valores={equiposUso}
-                onValor={(id, campo, v) => setEquiposUso((q) => ({
-                  ...q,
-                  [id]: { unidades: '', horas: '', ...q[id], [campo]: v },
-                }))}
-                onAgregar={(nombre) => agregarA('equipos', nombre)}
-                onQuitar={(id) => quitarDe('equipos', id)}
-              />
-            </div>
+            <div>
+              <div className="space-y-4 border-t border-border p-4 md:border-t-0">
+                <SectionHeader title="Equipo" />
+                <SeccionEquipo
+                  listas={listas}
+                  valores={equiposUso}
+                  onValor={(id, campo, v) => setEquiposUso((q) => ({
+                    ...q,
+                    [id]: { unidades: '', horas: '', ...q[id], [campo]: v },
+                  }))}
+                  onAgregar={(nombre) => agregarA('equipos', nombre)}
+                  onQuitar={(id) => quitarDe('equipos', id)}
+                />
+              </div>
 
-            <div className="space-y-4 border-t border-border p-4">
-              <SectionHeader title="Entregas" />
-              <SeccionEntregas
-                listas={listas}
-                filas={entregas}
-                onFilas={setEntregas}
-                onAgregarCategoria={(nombre) => agregarA('categorias', nombre)}
-              />
+              <div className="space-y-4 border-t border-border p-4">
+                <SectionHeader title="Entregas" />
+                <SeccionEntregas
+                  listas={listas}
+                  filas={entregas}
+                  onFilas={setEntregas}
+                  onAgregarCategoria={(nombre) => agregarA('categorias', nombre)}
+                />
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         <div className="space-y-3 border-t border-border p-4">

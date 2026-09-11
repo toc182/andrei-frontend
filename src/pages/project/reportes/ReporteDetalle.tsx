@@ -46,7 +46,9 @@ function FilasLeidas({
 }) {
   const grupos = [...new Set(filas.map((f) => f.grupo))];
   return (
-    <div className="space-y-3">
+    // Con tope de ancho: alinear los valores exige una columna fija, y sin
+    // tope esa columna se va al borde de la pantalla.
+    <div className="max-w-[26rem] space-y-3">
       {grupos.map((g) => (
         <div key={g ?? 'propio'}>
           {grupos.length > 1 && (
@@ -230,57 +232,68 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
           <Texto etiqueta="Novedades del día" valor={reporte.novedades} vacio="Sin novedades" />
         </div>
 
-        {/* Personal, Equipo y Entregas. Solo se pinta lo que el reporte
-            tiene: un reporte sin entregas no ensena una seccion vacia. */}
-        {reporte.personal.length > 0 && (
-          <div className="space-y-3 border-t border-border p-4">
-            <SectionHeader title="Personal" />
-            <FilasLeidas
-              filas={reporte.personal.map((f) => ({
-                clave: `p${f.puesto_id}`,
-                grupo: f.empresa_nombre,
-                nombre: f.nombre,
-                valor: String(f.cantidad),
-              }))}
-            />
-            <div className="flex items-baseline justify-between border-t border-border pt-2 text-sm">
-              <span className="text-muted-foreground">Total en obra</span>
-              <span className="font-bold tabular-nums">{total}</span>
-            </div>
-          </div>
-        )}
-
-        {reporte.equipos.length > 0 && (
-          <div className="space-y-3 border-t border-border p-4">
-            <SectionHeader title="Equipo" />
-            <FilasLeidas
-              filas={reporte.equipos.map((f) => ({
-                clave: `e${f.equipo_id}`,
-                grupo: null,
-                nombre: f.nombre,
-                valor: `${Number(f.unidades)} u · ${Number(f.horas)} h`,
-              }))}
-            />
-          </div>
-        )}
-
-        {reporte.entregas.length > 0 && (
-          <div className="space-y-3 border-t border-border p-4">
-            <SectionHeader title="Entregas" />
-            {reporte.entregas.map((f, i) => (
-              <div
-                key={`${f.descripcion}-${i}`}
-                className="flex items-baseline gap-2 border-b border-slate-100 py-1.5 last:border-0"
-              >
-                <span className="text-[15px] font-medium">{f.descripcion}</span>
-                <span className="text-xs text-muted-foreground">
-                  {f.categoria.toLowerCase()}
-                </span>
-                <span className="ml-auto text-sm tabular-nums text-muted-foreground">
-                  {[f.cantidad, f.unidad].filter(Boolean).join(' ')}
-                </span>
+        {/* A dos columnas en pantalla ancha, como el formulario y el PDF:
+            Personal a la izquierda, Equipo y Entregas a la derecha. Solo se
+            pinta lo que el reporte tiene. */}
+        {(reporte.personal.length > 0
+          || reporte.equipos.length > 0
+          || reporte.entregas.length > 0) && (
+          <div className="border-t border-border md:grid md:grid-cols-2">
+            {reporte.personal.length > 0 && (
+              <div className="space-y-3 p-4 md:border-r md:border-border">
+                <SectionHeader title="Personal" />
+                <FilasLeidas
+                  filas={reporte.personal.map((f) => ({
+                    clave: `p${f.puesto_id}`,
+                    grupo: f.empresa_nombre,
+                    nombre: f.nombre,
+                    valor: String(f.cantidad),
+                  }))}
+                />
+                <div className="flex max-w-[26rem] items-baseline justify-between border-t border-border pt-2 text-sm">
+                  <span className="text-muted-foreground">Total en obra</span>
+                  <span className="font-bold tabular-nums">{total}</span>
+                </div>
               </div>
-            ))}
+            )}
+
+            <div>
+              {reporte.equipos.length > 0 && (
+                <div className="space-y-3 border-t border-border p-4 md:border-t-0">
+                  <SectionHeader title="Equipo" />
+                  <FilasLeidas
+                    filas={reporte.equipos.map((f) => ({
+                      clave: `e${f.equipo_id}`,
+                      grupo: null,
+                      nombre: f.nombre,
+                      valor: `${Number(f.unidades)} u · ${Number(f.horas)} h`,
+                    }))}
+                  />
+                </div>
+              )}
+
+              {reporte.entregas.length > 0 && (
+                <div className="space-y-3 border-t border-border p-4">
+                  <SectionHeader title="Entregas" />
+                  <div className="max-w-[30rem]">
+                    {reporte.entregas.map((f, i) => (
+                      <div
+                        key={`${f.descripcion}-${i}`}
+                        className="flex items-baseline gap-2 border-b border-slate-100 py-1.5 last:border-0"
+                      >
+                        <span className="text-[15px] font-medium">{f.descripcion}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {f.categoria.toLowerCase()}
+                        </span>
+                        <span className="ml-auto text-sm tabular-nums text-muted-foreground">
+                          {[f.cantidad, f.unidad].filter(Boolean).join(' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
