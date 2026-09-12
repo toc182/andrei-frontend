@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, X, Loader2 } from 'lucide-react';
 import api from '@/services/api';
+import SubidaEnCurso, { type Progreso } from './SubidaEnCurso';
 import { Alert, DatePicker, SectionHeader } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,7 +129,9 @@ export default function ReporteForm({
   const [novedades, setNovedades] = useState(reporte?.novedades ?? '');
   const [fotos, setFotos] = useState<FotoPendiente[]>([]);
   const [guardando, setGuardando] = useState(false);
-  const [progreso, setProgreso] = useState('');
+  // El progreso ya no es una frase suelta: el panel necesita saber en que
+  // paso va y cuantas fotos lleva, para dibujar la lista y la barra.
+  const [progreso, setProgreso] = useState<Progreso | null>(null);
 
   // Lo que tiene que sobrevivir a un intento fallido.
   //
@@ -290,7 +293,7 @@ export default function ReporteForm({
         })),
       };
 
-      setProgreso('Guardando el reporte…');
+      setProgreso({ paso: 'datos' });
       // Si ya hay borrador de un intento anterior se corrige, no se crea otro.
       let id = editando ? reporte!.id : borradorRef.current;
       if (id === null) {
@@ -332,7 +335,7 @@ export default function ReporteForm({
       const pendientes = fotos.filter((f) => !subidasRef.current.has(f.url));
       const yaEstaban = fotos.length - pendientes.length;
       for (let i = 0; i < pendientes.length; i += 1) {
-        setProgreso(`Subiendo fotos… ${yaEstaban + i + 1} de ${fotos.length}`);
+        setProgreso({ paso: 'fotos', hechas: yaEstaban + i, total: fotos.length });
         const datos = new FormData();
         datos.append('fotos', pendientes[i].archivo);
         // El multipart es OBLIGATORIO aquí. La instancia de api trae
@@ -352,7 +355,7 @@ export default function ReporteForm({
       // justamente lo que se busca — si la subida se corta, no queda un reporte
       // a medias en la lista de nadie.
       if (!editando) {
-        setProgreso('Enviando el reporte…');
+        setProgreso({ paso: 'enviando' });
         await api.post(`/proyecto-reportes/${projectId}/${id}/emitir`);
       }
 
@@ -366,7 +369,7 @@ export default function ReporteForm({
       setError(err.response?.data?.message ?? 'No se pudo guardar el reporte');
     } finally {
       setGuardando(false);
-      setProgreso('');
+      setProgreso(null);
     }
   }, [
     fecha, clima, horas, motivo, listas, personal, equiposUso, entregas, areasElegidas,
@@ -595,13 +598,15 @@ export default function ReporteForm({
           El -mx-8 la hace sangrar hasta los bordes: el contenedor con scroll
           de AppLayout lleva px-8, y sin eso quedarían dos franjas por donde se
           vería pasar el contenido por debajo. */}
+      <SubidaEnCurso progreso={progreso} fotos={fotos.length} />
+
       <div className="sticky bottom-0 z-20 -mx-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
         <Button variant="outline" onClick={onCancelar} disabled={guardando}>
           Cancelar
         </Button>
         <Button onClick={guardar} disabled={guardando}>
           {guardando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {guardando ? progreso || 'Guardando…' : editando ? 'Guardar cambios' : 'Guardar reporte'}
+          {guardando ? 'Enviando…' : editando ? 'Guardar cambios' : 'Guardar reporte'}
         </Button>
       </div>
     </div>
