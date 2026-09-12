@@ -129,6 +129,29 @@ export default function ReporteForm({
   const [fotos, setFotos] = useState<FotoPendiente[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [progreso, setProgreso] = useState('');
+
+  // Lo que tiene que sobrevivir a un intento fallido.
+  //
+  // Aqui estuvo el fallo del 2026-09-10: el id del reporte recien creado era
+  // una constante dentro de guardar(), asi que al fallar la subida se perdia.
+  // El ingeniero volvia a darle a Guardar y se creaba OTRO reporte. Le dio tres
+  // veces.
+  //
+  // Van en refs y NO en estado a proposito. guardar() es un useCallback, y un
+  // valor de estado que no este en su lista de dependencias se queda congelado
+  // en la version memorizada de la funcion: la primera version de este arreglo
+  // lo puso en estado, no lo anadio a las dependencias, y el reintento seguia
+  // creando un reporte nuevo porque borradorId se leia siempre como null. El
+  // arreglo era inerte y el lint solo lo decia como aviso. Una ref siempre lee
+  // el valor de ahora.
+  const borradorRef = useRef<number | null>(null);
+
+  // url local de cada foto -> id que le dio el servidor.
+  //
+  // Un contador no sirve: entre un intento y otro el ingeniero puede quitar o
+  // agregar fotos, y entonces «ya subi 3» deja de significar nada. Se subiria
+  // una que quito y se perderia una que agrego, sin un solo error en pantalla.
+  const subidasRef = useRef(new Map<string, number>());
   const [error, setError] = useState<string | null>(null);
   const [yaReportado, setYaReportado] = useState<string | null>(null);
 
@@ -210,6 +233,7 @@ export default function ReporteForm({
     );
 
   const elegirFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (guardando) return;
     const nuevas = Array.from(e.target.files ?? [])
       .filter((f) => f.type.startsWith('image/'))
       .map((archivo) => ({ archivo, url: URL.createObjectURL(archivo) }));
@@ -217,11 +241,16 @@ export default function ReporteForm({
     e.target.value = '';
   };
 
-  const quitarFoto = (i: number) =>
+  const quitarFoto = (i: number) => {
+    // Mientras sube, la lista de fotos está congelada: guardar() trabaja sobre
+    // la foto de la lista que tenía al empezar, así que tocarla a media subida
+    // dejaría el reporte con fotos que no son las que se ven en pantalla.
+    if (guardando) return;
     setFotos((prev) => {
       URL.revokeObjectURL(prev[i].url);
       return prev.filter((_, j) => j !== i);
     });
+  };
 
   const guardar = useCallback(async () => {
     setError(null);
@@ -262,37 +291,73 @@ export default function ReporteForm({
       };
 
       setProgreso('Guardando el reporte…');
-      const id = editando
-        ? reporte!.id
-        : (await api.post(`/proyecto-reportes/${projectId}`, cuerpo)).data.data.id;
-      if (editando) await api.put(`/proyecto-reportes/${projectId}/${id}`, cuerpo);
+      // Si ya hay borrador de un intento anterior se corrige, no se crea otro.
+      let id = editando ? reporte!.id : borradorRef.current;
+      if (id === null) {
+        id = (await api.post(`/proyecto-reportes/${projectId}`, cuerpo)).data.data.id;
+        borradorRef.current = id;
+      } else {
+        await api.put(`/proyecto-reportes/${projectId}/${id}`, cuerpo);
+      }
 
-      // Las fotos van en tandas pequeñas y no en una sola subida gigante:
-      // en obra con mala señal, perder una tanda no obliga a repetir todo.
-      for (let i = 0; i < fotos.length; i += 3) {
-        const tanda = fotos.slice(i, i + 3);
-        setProgreso(
-          `Subiendo fotos… ${Math.min(i + tanda.length, fotos.length)} de ${fotos.length}`,
-        );
+      // Lo que hay en pantalla manda. Si en un intento anterior llegó a subir
+      // una foto que después quitó, se quita también del servidor: si no, el
+      // PDF saldría con una foto que él borró a propósito.
+      const enPantalla = new Set(fotos.map((f) => f.url));
+      for (const [url, fotoId] of [...subidasRef.current]) {
+        if (enPantalla.has(url)) continue;
+        try {
+          await api.delete(`/proyecto-reportes/${projectId}/${id}/fotos/${fotoId}`);
+        } catch (e) {
+          // Un 404 significa que ya no está, que es justo lo que se quería.
+          // Sin esta tolerancia el formulario quedaba atascado para siempre:
+          // el borrado llegaba al servidor, la respuesta se perdía, y cada
+          // reintento volvía a pedir lo mismo y volvía a recibir 404.
+          const estado = (e as { response?: { status?: number } }).response?.status;
+          if (estado !== 404) throw e;
+        }
+        // Se olvida pase lo que pase: la foto no está en pantalla y ya no está
+        // en el servidor, así que no hay nada más que hacer con ella.
+        subidasRef.current.delete(url);
+      }
+
+      // Una foto por petición, no en tandas.
+      //
+      // Con tandas de tres, una subida cortada a medias podía dejar dos
+      // guardadas en el servidor sin que el navegador se enterara, y al
+      // reintentar salían repetidas en el reporte y en el PDF. De una en una,
+      // cada respuesta dice exactamente cuál llegó. Y sigue cumpliendo lo que
+      // buscaban las tandas: con mala señal, lo que se pierde es una foto, no
+      // la subida entera.
+      const pendientes = fotos.filter((f) => !subidasRef.current.has(f.url));
+      const yaEstaban = fotos.length - pendientes.length;
+      for (let i = 0; i < pendientes.length; i += 1) {
+        setProgreso(`Subiendo fotos… ${yaEstaban + i + 1} de ${fotos.length}`);
         const datos = new FormData();
-        tanda.forEach((f) => datos.append('fotos', f.archivo));
+        datos.append('fotos', pendientes[i].archivo);
         // El multipart es OBLIGATORIO aquí. La instancia de api trae
         // 'application/json' por defecto, y axios, al ver un FormData con ese
         // encabezado, lo convierte a JSON en vez de mandarlo como archivo: el
         // backend no recibe nada y responde "No se recibió ninguna foto".
         // Todas las demás subidas de la app lo pasan igual.
-        await api.post(`/proyecto-reportes/${projectId}/${id}/fotos`, datos, {
+        const r = await api.post(`/proyecto-reportes/${projectId}/${id}/fotos`, datos, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+        const guardada = (r.data?.data ?? [])[0];
+        if (guardada?.id) subidasRef.current.set(pendientes[i].url, guardada.id);
       }
 
-      // El correo sale al final, cuando el reporte ya está completo. Si se
-      // mandara al guardar, saldría sin fotos, que es justo lo que no podía
-      // hacer el formulario de Google.
+      // Esta llamada es la que convierte el borrador en reporte: le pone
+      // número y lo hace visible. Hasta aquí no existe para nadie, que es
+      // justamente lo que se busca — si la subida se corta, no queda un reporte
+      // a medias en la lista de nadie.
       if (!editando) {
         setProgreso('Enviando el reporte…');
         await api.post(`/proyecto-reportes/${projectId}/${id}/emitir`);
       }
+
+      borradorRef.current = null;
+      subidasRef.current.clear();
 
       toast.success(editando ? 'Reporte corregido' : 'Reporte enviado');
       onListo();
@@ -468,14 +533,17 @@ export default function ReporteForm({
         <div className="space-y-3 border-t border-border p-4">
           <SectionHeader title="Fotos" />
           <div className="flex flex-wrap items-center gap-3">
-            <Button asChild variant="outline" size="sm">
-              <label htmlFor="fotos" className="cursor-pointer">
+            <Button asChild variant="outline" size="sm" disabled={guardando}>
+              <label
+                htmlFor="fotos"
+                className={guardando ? 'pointer-events-none opacity-60' : 'cursor-pointer'}
+              >
                 <Plus className="mr-2 h-4 w-4" /> Agregar fotos
               </label>
             </Button>
             <input
               id="fotos" type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple className="hidden" onChange={elegirFotos}
+              multiple className="hidden" onChange={elegirFotos} disabled={guardando}
             />
             <span className="text-sm text-muted-foreground tabular-nums">
               {fotos.length === 0
@@ -493,7 +561,8 @@ export default function ReporteForm({
                     type="button"
                     aria-label={`Quitar ${f.archivo.name}`}
                     onClick={() => quitarFoto(i)}
-                    className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white"
+                    disabled={guardando}
+                    className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white disabled:opacity-40"
                   >
                     <X className="h-3 w-3" />
                   </button>
