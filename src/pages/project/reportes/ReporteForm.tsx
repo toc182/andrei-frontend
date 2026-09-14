@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import { Plus, X, Loader2 } from 'lucide-react';
 import api from '@/services/api';
 import SubidaEnCurso, { type Progreso } from './SubidaEnCurso';
@@ -365,8 +366,19 @@ export default function ReporteForm({
       toast.success(editando ? 'Reporte corregido' : 'Reporte enviado');
       onListo();
     } catch (e) {
-      const err = e as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message ?? 'No se pudo guardar el reporte');
+      // Sin respuesta del servidor quiere decir que la conexion se corto: la
+      // peticion no llego, o su respuesta no volvio. Asi le paso a Ivan desde
+      // el iPhone el 2026-09-14, y la pantalla solo decia «No se pudo guardar
+      // el reporte», que no le dice al ingeniero ni que paso ni que hacer.
+      // Cuando el servidor SI contesta, su motivo es el que vale.
+      if (axios.isAxiosError(e) && !e.response) {
+        setError(
+          `Se cortó la conexión mientras se enviaba. No se perdió nada: revisa la señal y vuelve a darle a «${editando ? 'Guardar cambios' : 'Guardar reporte'}».`,
+        );
+      } else {
+        const err = e as { response?: { data?: { message?: string } } };
+        setError(err.response?.data?.message ?? 'No se pudo guardar el reporte');
+      }
     } finally {
       setGuardando(false);
       setProgreso(null);
