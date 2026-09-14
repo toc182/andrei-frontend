@@ -38,6 +38,7 @@ import {
   type ColumnFilters, type SortDirection, type SortState,
 } from '@/components/sortableHeaderUtils';
 import ReporteForm from './reportes/ReporteForm';
+import ReporteNuevo from './reportes/ReporteNuevo';
 import ReporteDetalle from './reportes/ReporteDetalle';
 import AreasDialog from './reportes/AreasDialog';
 import {
@@ -227,13 +228,24 @@ export default function ProjectReportes({ projectId }: Props) {
           </Button>
           <PageHeader title={titulo} subtitle={subtitulo} />
         </div>
-        <ReporteForm
-          projectId={projectId}
-          reporte={editando}
-          onCancelar={volver}
-          onListo={volver}
-          onNumeroPrevisto={setNumeroPrevisto}
-        />
+        {editando ? (
+          <ReporteForm
+            projectId={projectId}
+            reporte={editando}
+            onCancelar={volver}
+            onListo={volver}
+            onNumeroPrevisto={setNumeroPrevisto}
+          />
+        ) : (
+          // Uno nuevo pasa antes por ReporteNuevo, que ofrece seguir el que
+          // haya quedado sin enviar.
+          <ReporteNuevo
+            projectId={projectId}
+            onCancelar={volver}
+            onListo={volver}
+            onNumeroPrevisto={setNumeroPrevisto}
+          />
+        )}
       </div>
     );
   }

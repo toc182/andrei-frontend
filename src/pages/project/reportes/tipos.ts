@@ -120,6 +120,7 @@ export interface Reporte {
   creador_nombre: string;
   proyecto_nombre: string;
   created_at: string;
+  updated_at: string;
   enviado_at: string | null;
   /**
    * Cuándo le toca al servidor el siguiente intento de mandarlo por correo.

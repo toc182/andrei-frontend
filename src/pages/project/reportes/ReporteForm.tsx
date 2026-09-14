@@ -35,15 +35,30 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  CLIMAS, type Area, type FilaEntrega, type Listas, type Reporte,
+  CLIMAS, type Area, type FilaEntrega, type Foto, type Listas, type Reporte,
   fechaCorta, hoyYMD,
 } from './tipos';
 import { SeccionEntregas, SeccionEquipo, SeccionPersonal } from './SeccionesFilas';
+import {
+  type Semilla, borrarLocal, guardarLocal, semillaDeReporte,
+} from './borradorLocal';
+import { useAuth } from '@/context/AuthContext';
+
+/**
+ * El tope por foto. Tiene que ser el mismo que FOTO_MB_MAX del backend
+ * (routes/proyectoReportes.ts): se comprueba aqui, al elegir la foto, para que
+ * el ingeniero se entere en ese momento y no despues de subir las demas.
+ */
+const FOTO_MB_MAX = 15;
 
 interface Props {
   projectId: number;
   /** Si viene, se está corrigiendo; si no, es un reporte nuevo. */
   reporte?: Reporte;
+  /** Un reporte nuevo que arranca con lo que quedó sin enviar. */
+  semilla?: Semilla;
+  /** Las fotos que ese reporte sin enviar ya tenía subidas. */
+  fotosGuardadas?: Foto[];
   onListo: () => void;
   onCancelar: () => void;
   /** El codigo que le tocaria al reporte; lo pinta el titulo de la pagina. */
@@ -51,9 +66,17 @@ interface Props {
 }
 
 interface FotoPendiente {
-  archivo: File;
+  /** Sin archivo es una foto que ya está en el servidor. */
+  archivo?: File;
   url: string;
+  nombre: string;
 }
+
+const megas = (bytes: number) =>
+  (bytes / 1024 / 1024).toLocaleString('es-PA', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
 
 /** Un textarea que crece con lo que se escribe. */
 function TextareaCrece({
@@ -86,49 +109,45 @@ function TextareaCrece({
 }
 
 export default function ReporteForm({
-  projectId, reporte, onListo, onCancelar, onNumeroPrevisto,
+  projectId, reporte, semilla, fotosGuardadas, onListo, onCancelar, onNumeroPrevisto,
 }: Props) {
   const editando = !!reporte;
+  const { user } = useAuth();
 
-  const [fecha, setFecha] = useState(reporte?.fecha.slice(0, 10) ?? hoyYMD());
-  const [clima, setClima] = useState<string>(reporte?.clima ?? '');
-  const [horas, setHoras] = useState(reporte?.horas_perdidas ?? '');
-  const [motivo, setMotivo] = useState(reporte?.motivo ?? '');
+  // De dónde arranca: el reporte que se corrige, lo que quedó sin enviar, o
+  // en blanco. Se calcula una sola vez; los estados de abajo lo toman al montar.
+  const [inicial] = useState<Semilla | null>(() =>
+    reporte ? semillaDeReporte(reporte, null) : semilla ?? null,
+  );
+
+  const [fecha, setFecha] = useState(inicial?.fecha ?? hoyYMD());
+  const [clima, setClima] = useState<string>(inicial?.clima ?? '');
+  const [horas, setHoras] = useState(inicial?.horas ?? '');
+  const [motivo, setMotivo] = useState(inicial?.motivo ?? '');
   // Las tres secciones que son filas. Las listas del proyecto se cargan de
   // /proyecto-listas; los valores son lo que se teclea hoy.
   const [listas, setListas] = useState<Listas | null>(null);
   const [personal, setPersonal] = useState<Record<number, string>>(
-    () => Object.fromEntries(
-      (reporte?.personal ?? []).map((f) => [f.puesto_id, String(f.cantidad)]),
-    ),
+    inicial?.personal ?? {},
   );
   const [equiposUso, setEquiposUso] = useState<
     Record<number, { unidades: string; horas: string }>
-  >(
-    () => Object.fromEntries(
-      (reporte?.equipos ?? []).map((f) => [
-        f.equipo_id,
-        { unidades: String(f.unidades), horas: String(f.horas) },
-      ]),
-    ),
-  );
-  const [entregas, setEntregas] = useState<FilaEntrega[]>(
-    () => (reporte?.entregas ?? []).map((f) => ({
-      categoria_id: f.categoria_id,
-      descripcion: f.descripcion,
-      cantidad: f.cantidad ?? '',
-      unidad: f.unidad ?? '',
-      notas: f.notas ?? '',
-    })),
-  );
+  >(inicial?.equiposUso ?? {});
+  const [entregas, setEntregas] = useState<FilaEntrega[]>(inicial?.entregas ?? []);
   const [areas, setAreas] = useState<Area[]>([]);
   const [areasElegidas, setAreasElegidas] = useState<number[]>(
-    reporte?.areas.map((a) => a.id) ?? [],
+    inicial?.areasElegidas ?? [],
   );
-  const [queSeHizo, setQueSeHizo] = useState(reporte?.que_se_hizo ?? '');
-  const [atrasos, setAtrasos] = useState(reporte?.atrasos ?? '');
-  const [novedades, setNovedades] = useState(reporte?.novedades ?? '');
-  const [fotos, setFotos] = useState<FotoPendiente[]>([]);
+  const [queSeHizo, setQueSeHizo] = useState(inicial?.queSeHizo ?? '');
+  const [atrasos, setAtrasos] = useState(inicial?.atrasos ?? '');
+  const [novedades, setNovedades] = useState(inicial?.novedades ?? '');
+  // Las fotos que el reporte sin enviar ya tenía subidas entran como cualquier
+  // otra, pero sin archivo y ya registradas en subidasRef: guardar() no las
+  // vuelve a subir, y si el ingeniero quita una, la borra del servidor.
+  const [fotos, setFotos] = useState<FotoPendiente[]>(
+    () => (fotosGuardadas ?? []).map((f) => ({ url: f.url, nombre: f.nombre_archivo })),
+  );
+  const [fotoError, setFotoError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   // El progreso ya no es una frase suelta: el panel necesita saber en que
   // paso va y cuantas fotos lleva, para dibujar la lista y la barra.
@@ -148,15 +167,21 @@ export default function ReporteForm({
   // creando un reporte nuevo porque borradorId se leia siempre como null. El
   // arreglo era inerte y el lint solo lo decia como aviso. Una ref siempre lee
   // el valor de ahora.
-  const borradorRef = useRef<number | null>(null);
+  const borradorRef = useRef<number | null>(inicial?.borradorId ?? null);
 
   // url local de cada foto -> id que le dio el servidor.
   //
   // Un contador no sirve: entre un intento y otro el ingeniero puede quitar o
   // agregar fotos, y entonces «ya subi 3» deja de significar nada. Se subiria
   // una que quito y se perderia una que agrego, sin un solo error en pantalla.
-  const subidasRef = useRef(new Map<string, number>());
+  const subidasRef = useRef(
+    new Map<string, number>((fotosGuardadas ?? []).map((f) => [f.url, f.id])),
+  );
   const [error, setError] = useState<string | null>(null);
+  // La conexión cortada va aparte del error: se pinta como aviso y no como
+  // error, que es lo que pide FRONTEND_CONVENTIONS §15 para «no hay conexión».
+  const [sinConexion, setSinConexion] = useState(false);
+  const avisosRef = useRef<HTMLDivElement>(null);
   const [yaReportado, setYaReportado] = useState<string | null>(null);
 
   useEffect(() => {
@@ -226,6 +251,29 @@ export default function ReporteForm({
     };
   }, [projectId, fecha, editando, onNumeroPrevisto]);
 
+  // Lo escrito se va guardando en el teléfono con cada cambio (borradorLocal.ts),
+  // para ofrecerlo al volver si no llega a enviarse. Solo en un reporte nuevo:
+  // lo que se corrige ya existe entero en el servidor.
+  useEffect(() => {
+    if (editando || !user) return;
+    guardarLocal(user.id, projectId, {
+      fecha, clima, horas, motivo, areasElegidas, queSeHizo, atrasos, novedades,
+      personal, equiposUso, entregas, borradorId: borradorRef.current,
+    });
+  }, [
+    editando, user, projectId, fecha, clima, horas, motivo, areasElegidas, queSeHizo,
+    atrasos, novedades, personal, equiposUso, entregas,
+  ]);
+
+  // El aviso va arriba del formulario y el botón de guardar abajo: en un
+  // reporte largo, el ingeniero que pulsa Guardar no lo veía aparecer y creía
+  // que no había pasado nada. Se lleva la pantalla hasta él.
+  useEffect(() => {
+    if (error || sinConexion) {
+      avisosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [error, sinConexion]);
+
   useEffect(
     () => () => fotos.forEach((f) => URL.revokeObjectURL(f.url)),
     [fotos],
@@ -238,9 +286,26 @@ export default function ReporteForm({
 
   const elegirFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (guardando) return;
-    const nuevas = Array.from(e.target.files ?? [])
-      .filter((f) => f.type.startsWith('image/'))
-      .map((archivo) => ({ archivo, url: URL.createObjectURL(archivo) }));
+    const elegidas = Array.from(e.target.files ?? []).filter((f) =>
+      f.type.startsWith('image/'),
+    );
+    // Las que pasan del tope no entran, y se dice cuáles y cuánto pesan. El
+    // 2026-09-14 una foto de 11 MB (el tope era 10) dejó sin enviar un reporte
+    // entero, y el ingeniero se enteró al final, sin saber qué foto era.
+    const tope = FOTO_MB_MAX * 1024 * 1024;
+    const grandes = elegidas.filter((f) => f.size > tope);
+    setFotoError(
+      grandes.length === 0
+        ? null
+        : grandes.length === 1
+          ? `${grandes[0].name} pesa ${megas(grandes[0].size)} MB y no se agregó. El máximo es ${FOTO_MB_MAX} MB por foto.`
+          : `No se agregaron ${grandes.length} fotos porque pasan de ${FOTO_MB_MAX} MB: ${grandes
+              .map((f) => `${f.name} (${megas(f.size)} MB)`)
+              .join(', ')}.`,
+    );
+    const nuevas = elegidas
+      .filter((f) => f.size <= tope)
+      .map((archivo) => ({ archivo, url: URL.createObjectURL(archivo), nombre: archivo.name }));
     setFotos((prev) => [...prev, ...nuevas]);
     e.target.value = '';
   };
@@ -258,11 +323,14 @@ export default function ReporteForm({
 
   const guardar = useCallback(async () => {
     setError(null);
+    setSinConexion(false);
     if (!fecha) return setError('Falta la fecha del reporte');
     if (!clima) return setError('Falta indicar el clima');
     if (!queSeHizo.trim()) return setError('Falta describir qué se hizo hoy');
 
     setGuardando(true);
+    // La foto que está subiendo, para nombrarla si el servidor la rechaza.
+    let subiendo: string | null = null;
     try {
       const cuerpo = {
         fecha,
@@ -300,6 +368,14 @@ export default function ReporteForm({
       if (id === null) {
         id = (await api.post(`/proyecto-reportes/${projectId}`, cuerpo)).data.data.id;
         borradorRef.current = id;
+        // El teléfono aprende a qué borrador del servidor pertenece lo escrito:
+        // así, al volver, se ofrece con las fotos que alcanzaron a subir.
+        if (user) {
+          guardarLocal(user.id, projectId, {
+            fecha, clima, horas, motivo, areasElegidas, queSeHizo, atrasos, novedades,
+            personal, equiposUso, entregas, borradorId: id,
+          });
+        }
       } else {
         await api.put(`/proyecto-reportes/${projectId}/${id}`, cuerpo);
       }
@@ -333,10 +409,14 @@ export default function ReporteForm({
       // cada respuesta dice exactamente cuál llegó. Y sigue cumpliendo lo que
       // buscaban las tandas: con mala señal, lo que se pierde es una foto, no
       // la subida entera.
-      const pendientes = fotos.filter((f) => !subidasRef.current.has(f.url));
+      const pendientes = fotos.filter(
+        (f): f is FotoPendiente & { archivo: File } =>
+          !subidasRef.current.has(f.url) && f.archivo !== undefined,
+      );
       const yaEstaban = fotos.length - pendientes.length;
       for (let i = 0; i < pendientes.length; i += 1) {
         setProgreso({ paso: 'fotos', hechas: yaEstaban + i, total: fotos.length });
+        subiendo = pendientes[i].nombre;
         const datos = new FormData();
         datos.append('fotos', pendientes[i].archivo);
         // El multipart es OBLIGATORIO aquí. La instancia de api trae
@@ -349,6 +429,7 @@ export default function ReporteForm({
         });
         const guardada = (r.data?.data ?? [])[0];
         if (guardada?.id) subidasRef.current.set(pendientes[i].url, guardada.id);
+        subiendo = null;
       }
 
       // Esta llamada es la que convierte el borrador en reporte: le pone
@@ -358,6 +439,8 @@ export default function ReporteForm({
       if (!editando) {
         setProgreso({ paso: 'enviando' });
         await api.post(`/proyecto-reportes/${projectId}/${id}/emitir`);
+        // Enviado: ya no hay nada que ofrecer al volver.
+        if (user) borrarLocal(user.id, projectId);
       }
 
       borradorRef.current = null;
@@ -372,12 +455,11 @@ export default function ReporteForm({
       // el reporte», que no le dice al ingeniero ni que paso ni que hacer.
       // Cuando el servidor SI contesta, su motivo es el que vale.
       if (axios.isAxiosError(e) && !e.response) {
-        setError(
-          `Se cortó la conexión mientras se enviaba. No se perdió nada: revisa la señal y vuelve a darle a «${editando ? 'Guardar cambios' : 'Guardar reporte'}».`,
-        );
+        setSinConexion(true);
       } else {
         const err = e as { response?: { data?: { message?: string } } };
-        setError(err.response?.data?.message ?? 'No se pudo guardar el reporte');
+        const motivoServidor = err.response?.data?.message ?? 'No se pudo guardar el reporte';
+        setError(subiendo ? `No se pudo subir ${subiendo}: ${motivoServidor}` : motivoServidor);
       }
     } finally {
       setGuardando(false);
@@ -385,12 +467,21 @@ export default function ReporteForm({
     }
   }, [
     fecha, clima, horas, motivo, listas, personal, equiposUso, entregas, areasElegidas,
-    queSeHizo, atrasos, novedades, fotos, editando, reporte, projectId, onListo,
+    queSeHizo, atrasos, novedades, fotos, editando, reporte, projectId, onListo, user,
   ]);
 
   return (
     <div className="space-y-6">
-      {error && <Alert variant="error" title={error} />}
+      <div ref={avisosRef} className="scroll-mt-4 space-y-3 empty:hidden">
+        {sinConexion && (
+          <Alert
+            variant="warning"
+            title="Se cortó la conexión mientras se enviaba"
+            description={`No se perdió nada: revisa la señal y vuelve a darle a «${editando ? 'Guardar cambios' : 'Guardar reporte'}».`}
+          />
+        )}
+        {error && <Alert variant="error" title={error} />}
+      </div>
       {yaReportado && (
         <Alert
           variant="warning"
@@ -567,14 +658,16 @@ export default function ReporteForm({
             </span>
           </div>
 
+          {fotoError && <p className="text-xs text-error">{fotoError}</p>}
+
           {fotos.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {fotos.map((f, i) => (
                 <div key={f.url} className="relative h-20 w-20 overflow-hidden rounded border border-border">
-                  <img src={f.url} alt={f.archivo.name} className="h-full w-full object-cover" />
+                  <img src={f.url} alt={f.nombre} className="h-full w-full object-cover" />
                   <button
                     type="button"
-                    aria-label={`Quitar ${f.archivo.name}`}
+                    aria-label={`Quitar ${f.nombre}`}
                     onClick={() => quitarFoto(i)}
                     disabled={guardando}
                     className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white disabled:opacity-40"
