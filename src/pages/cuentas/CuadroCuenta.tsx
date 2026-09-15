@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText, Loader2, Minus, Plus } from 'lucide-react';
 import { PageHeader, TableSkeleton, ErrorState } from '@/components/shell';
+import { Table } from '@/components/ui/table';
 import { grupoBgClass, padClass } from '@/components/desglose/desglosePad';
 import { cn } from '@/lib/utils';
 import { getCuadro, saveCuadro, type CuadroDoc } from '@/lib/cuadroApi';
@@ -205,7 +206,7 @@ export default function CuadroCuenta({
   );
 
   if (loading) {
-    return <div className="space-y-4">{encabezado}<TableSkeleton rows={8} /></div>;
+    return <div className="space-y-4">{encabezado}<Table><TableSkeleton rows={8} /></Table></div>;
   }
   if (error || !doc) {
     return <div className="space-y-4">{encabezado}<ErrorState onRetry={load} /></div>;

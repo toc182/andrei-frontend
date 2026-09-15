@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Loader2, Plus, Printer, Trash2 } from 'lucide-react';
 import { PageHeader, ErrorState, TableSkeleton } from '@/components/shell';
+import { Table } from '@/components/ui/table';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -255,7 +256,7 @@ export default function VistaPreviaCuenta({ cuentaId, onBack }: Props) {
     </div>
   );
 
-  if (loading) return <div className="space-y-4">{encabezado}<TableSkeleton rows={6} /></div>;
+  if (loading) return <div className="space-y-4">{encabezado}<Table><TableSkeleton rows={6} /></Table></div>;
   if (error || !doc || !ajustes || !ctx || !papel) {
     return <div className="space-y-4">{encabezado}<ErrorState onRetry={load} /></div>;
   }

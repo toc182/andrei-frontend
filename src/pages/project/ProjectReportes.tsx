@@ -286,7 +286,9 @@ export default function ProjectReportes({ projectId }: Props) {
       <PageHeader
         title="Reportes diarios"
         subtitle={
-          total === 0
+          cargando
+            ? 'Cargando…'
+            : total === 0
             ? hayFiltros
               ? 'Ningún reporte coincide con los filtros'
               : 'Todavía no hay reportes en este proyecto'
@@ -445,7 +447,7 @@ export default function ProjectReportes({ projectId }: Props) {
 
             <div className="md:hidden">
               {cargando ? (
-                <div className="p-4"><TableSkeleton rows={4} columns={2} /></div>
+                <div className="p-4"><Table><TableSkeleton rows={4} columns={2} /></Table></div>
               ) : total === 0 ? (
                 <EmptyState title={vacioTitulo} description={vacioTexto} />
               ) : (

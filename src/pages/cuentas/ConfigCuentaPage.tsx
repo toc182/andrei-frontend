@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Maximize2, Plus, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
 import { AppDialog, PageHeader, ErrorState, TableSkeleton } from '@/components/shell';
+import { Table } from '@/components/ui/table';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -328,7 +329,7 @@ export default function ConfigCuentaPage({ projectId, ejemploCuentaId, onBack }:
     </div>
   );
 
-  if (loading) return <div className="space-y-4">{encabezado}<TableSkeleton rows={6} /></div>;
+  if (loading) return <div className="space-y-4">{encabezado}<Table><TableSkeleton rows={6} /></Table></div>;
   if (error || !base || !ajustes) {
     return <div className="space-y-4">{encabezado}<ErrorState onRetry={load} /></div>;
   }

@@ -11,6 +11,7 @@ import api from '@/services/api';
 import {
   Alert, ErrorState, PageHeader, SectionHeader, TableSkeleton,
 } from '@/components/shell';
+import { Table } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -169,7 +170,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
     }
   };
 
-  if (cargando) return <TableSkeleton rows={6} columns={4} />;
+  if (cargando) return <Table><TableSkeleton rows={6} columns={4} /></Table>;
   if (error || !reporte) return <ErrorState onRetry={cargar} />;
 
   // Los reportes nuevos suman sus filas; los viejos, que no tienen ninguna,
