@@ -720,10 +720,16 @@ export default function ReporteForm({
           tampoco hace falta ya el relleno inferior que la compensaba.
           El -mx-8 la hace sangrar hasta los bordes: el contenedor con scroll
           de AppLayout lleva px-8, y sin eso quedarían dos franjas por donde se
-          vería pasar el contenido por debajo. */}
+          vería pasar el contenido por debajo.
+          El -bottom-8 y el -mb-8 hacen lo mismo con su pb-8. `sticky` se pega
+          donde empieza el relleno del contenedor, no en su borde: con bottom-0
+          la barra quedaba 32px por encima del borde y el formulario pasaba por
+          esa franja, debajo de los botones (Ivan, 2026-09-15). -bottom-8 la
+          baja hasta el borde mientras se baja, y -mb-8 la deja contra el borde
+          también al llegar al final. */}
       <SubidaEnCurso progreso={progreso} fotos={fotos.length} />
 
-      <div className="sticky bottom-0 z-20 -mx-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
+      <div className="sticky -bottom-8 z-20 -mx-8 -mb-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:mb-0 md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
         <Button variant="outline" onClick={onCancelar} disabled={guardando}>
           Cancelar
         </Button>
