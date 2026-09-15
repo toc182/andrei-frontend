@@ -46,17 +46,6 @@ export type NavigationView =
 // FORM DATA TYPES
 // ============================================
 
-export interface ExpenseFormData {
-  proyecto_categoria_id: string;
-  fecha: string;
-  concepto: string;
-  monto: string;
-  descripcion: string;
-  tipo_gasto: 'real' | 'compromiso' | 'estimado';
-  moneda: string;
-  aprobado: boolean;
-}
-
 export interface ProjectFormData {
   nombre: string;
   nombre_corto: string;
