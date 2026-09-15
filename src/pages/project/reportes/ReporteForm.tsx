@@ -274,9 +274,27 @@ export default function ReporteForm({
     }
   }, [error, sinConexion]);
 
+  // La miniatura de cada foto elegida es una url local (createObjectURL) que hay
+  // que soltar cuando ya no se usa: al quitar la foto (quitarFoto) y, las que
+  // queden, al salir del formulario. Nunca antes. Hasta el 2026-09-15 se
+  // soltaban las de toda la lista cada vez que cambiaba: al agregar 2 fotos a 3,
+  // las 3 primeras seguían en pantalla con su url ya muerta, y se veían solo
+  // porque el navegador las tenía cargadas.
+  //
+  // La lista va en una ref porque la limpieza de un efecto sin dependencias ve
+  // la lista del primer render. Las fotos sin archivo están en el servidor: esa
+  // url no es nuestra.
+  const fotosRef = useRef(fotos);
+  useEffect(() => {
+    fotosRef.current = fotos;
+  }, [fotos]);
   useEffect(
-    () => () => fotos.forEach((f) => URL.revokeObjectURL(f.url)),
-    [fotos],
+    () => () => {
+      for (const f of fotosRef.current) {
+        if (f.archivo) URL.revokeObjectURL(f.url);
+      }
+    },
+    [],
   );
 
   const alternarArea = (id: number) =>
