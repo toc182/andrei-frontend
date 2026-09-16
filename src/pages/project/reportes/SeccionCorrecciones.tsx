@@ -16,15 +16,20 @@ import { type Correccion, type Trozo, fechaHoraPanama } from './tipos';
 
 function PedazoDeRenglon({ trozo }: { trozo: Trozo }) {
   switch (trozo.tipo) {
+    // Rojo y verde apagados, sin fondo (Ivan, 2026-09-16: «demasiado
+    // llamativos»): el color de la marca mezclado con el gris del texto
+    // secundario, igual que en el PDF, y así también en modo oscuro. En srgb y
+    // no en oklch: en oklch la mezcla gira el tono y el rojo sale morado. Lo que
+    // dice qué pasó es el tachado y el subrayado.
     case 'quitado':
       return (
-        <del className="rounded-sm bg-error/10 px-0.5 text-error decoration-[1.5px]">
+        <del className="text-[color-mix(in_srgb,var(--color-error)_30%,var(--color-muted-foreground))] decoration-error/35">
           {trozo.texto}
         </del>
       );
     case 'agregado':
       return (
-        <ins className="rounded-sm bg-success/10 px-0.5 text-success decoration-[1.5px] underline-offset-[3px]">
+        <ins className="text-[color-mix(in_srgb,var(--color-success)_35%,var(--color-muted-foreground))] decoration-success/35 underline-offset-[3px]">
           {trozo.texto}
         </ins>
       );
@@ -47,7 +52,7 @@ export default function SeccionCorrecciones({ correcciones }: { correcciones: Co
         >
           <div className="flex flex-wrap items-baseline gap-x-2 text-sm leading-5 md:block">
             <div className="tabular-nums text-muted-foreground">{fechaHoraPanama(c.created_at)}</div>
-            <div className="font-semibold">{c.usuario_nombre}</div>
+            <div>{c.usuario_nombre}</div>
           </div>
           <div className="min-w-0 space-y-2">
             {c.cambios.map((k, i) => (
