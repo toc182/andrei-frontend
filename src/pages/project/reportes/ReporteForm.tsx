@@ -72,6 +72,17 @@ interface FotoPendiente {
   nombre: string;
 }
 
+/**
+ * Una clave al azar para un «Guardar cambios».
+ *
+ * getRandomValues y no randomUUID: randomUUID solo existe en páginas seguras, y
+ * el formulario también se prueba desde el teléfono por la red local, en http.
+ */
+const nuevaClave = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+    b.toString(16).padStart(2, '0'),
+  ).join('');
+
 const megas = (bytes: number) =>
   (bytes / 1024 / 1024).toLocaleString('es-PA', {
     minimumFractionDigits: 1,
@@ -177,6 +188,13 @@ export default function ReporteForm({
   const subidasRef = useRef(
     new Map<string, number>((fotosGuardadas ?? []).map((f) => [f.url, f.id])),
   );
+
+  // La clave de esta corrección. Va con el guardado, con cada foto y con el
+  // aviso final, y es lo que el servidor usa para juntarlo todo en una sola
+  // línea de Correcciones. Se inventa una vez al abrir el formulario: un
+  // reintento después de un corte la repite, porque sigue siendo el mismo
+  // «Guardar cambios».
+  const [claveCorreccion] = useState(nuevaClave);
   const [error, setError] = useState<string | null>(null);
   // La conexión cortada va aparte del error: se pinta como aviso y no como
   // error, que es lo que pide FRONTEND_CONVENTIONS §15 para «no hay conexión».
@@ -380,6 +398,10 @@ export default function ReporteForm({
         })),
       };
 
+      // Todo lo que forma parte de una corrección lleva su clave. Un reporte
+      // nuevo no la necesita: lo que se sube al enviarlo no es una corrección.
+      const deCorreccion = editando ? { params: { correccion: claveCorreccion } } : {};
+
       setProgreso({ paso: 'datos' });
       // Si ya hay borrador de un intento anterior se corrige, no se crea otro.
       let id = editando ? reporte!.id : borradorRef.current;
@@ -395,7 +417,7 @@ export default function ReporteForm({
           });
         }
       } else {
-        await api.put(`/proyecto-reportes/${projectId}/${id}`, cuerpo);
+        await api.put(`/proyecto-reportes/${projectId}/${id}`, cuerpo, deCorreccion);
       }
 
       // Lo que hay en pantalla manda. Si en un intento anterior llegó a subir
@@ -405,7 +427,10 @@ export default function ReporteForm({
       for (const [url, fotoId] of [...subidasRef.current]) {
         if (enPantalla.has(url)) continue;
         try {
-          await api.delete(`/proyecto-reportes/${projectId}/${id}/fotos/${fotoId}`);
+          await api.delete(
+            `/proyecto-reportes/${projectId}/${id}/fotos/${fotoId}`,
+            deCorreccion,
+          );
         } catch (e) {
           // Un 404 significa que ya no está, que es justo lo que se quería.
           // Sin esta tolerancia el formulario quedaba atascado para siempre:
@@ -444,6 +469,7 @@ export default function ReporteForm({
         // Todas las demás subidas de la app lo pasan igual.
         const r = await api.post(`/proyecto-reportes/${projectId}/${id}/fotos`, datos, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          ...deCorreccion,
         });
         const guardada = (r.data?.data ?? [])[0];
         if (guardada?.id) subidasRef.current.set(pendientes[i].url, guardada.id);
@@ -459,6 +485,14 @@ export default function ReporteForm({
         await api.post(`/proyecto-reportes/${projectId}/${id}/emitir`);
         // Enviado: ya no hay nada que ofrecer al volver.
         if (user) borrarLocal(user.id, projectId);
+      } else {
+        // El aviso final de la corrección: el texto y las fotos ya llegaron, y
+        // el servidor archiva su versión del PDF con todo. Si el aviso no llega,
+        // la archiva el servidor de madrugada; la corrección ya está guardada y
+        // el ingeniero no tiene que reintentar por esto.
+        await api
+          .post(`/proyecto-reportes/${projectId}/${id}/correcciones/terminar`)
+          .catch(() => undefined);
       }
 
       borradorRef.current = null;
@@ -486,6 +520,7 @@ export default function ReporteForm({
   }, [
     fecha, clima, horas, motivo, listas, personal, equiposUso, entregas, areasElegidas,
     queSeHizo, atrasos, novedades, fotos, editando, reporte, projectId, onListo, user,
+    claveCorreccion,
   ]);
 
   return (

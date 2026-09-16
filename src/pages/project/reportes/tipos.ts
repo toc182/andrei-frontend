@@ -91,16 +91,31 @@ export interface Foto {
   url: string;
 }
 
+/**
+ * Un pedazo de un renglón de Correcciones; se dibujan juntos, con un espacio.
+ * quitado va tachado, agregado subrayado, corte es el «…» y nota va en gris.
+ */
+export interface Trozo {
+  tipo: 'igual' | 'quitado' | 'agregado' | 'corte' | 'nota';
+  texto: string;
+}
+
+/** Lo que cambió en un campo: su nombre y sus renglones. */
+export interface CambioLegible {
+  etiqueta: string;
+  renglones: Trozo[][];
+}
+
+/**
+ * Una línea de la sección Correcciones: un «Guardar cambios» hecho después de
+ * enviar el reporte. Viene armada del servidor, igual que en el PDF; la
+ * pantalla solo le pone estilo.
+ */
 export interface Correccion {
   id: number;
   created_at: string;
   usuario_nombre: string;
-  detalles: {
-    cambios?: Record<
-      string,
-      { label: string; antes: string | number | null; despues: string | number | null }
-    >;
-  } | null;
+  cambios: CambioLegible[];
 }
 
 /** El reporte completo, como lo devuelve el detalle. */
@@ -183,6 +198,34 @@ export function diaDelMes(fecha: string): number {
 export function fechaCorta(fecha: string): string {
   const [y, m, d] = partes(fecha);
   return `${d} ${MESES[m - 1].slice(0, 3).toLowerCase()} ${y}`;
+}
+
+/**
+ * Un momento exacto —no un día— como «15 sep 2026, 9:04 p. m.», en la hora de
+ * Panamá.
+ *
+ * La zona va fija y no se toma la del navegador: la obra y la oficina están en
+ * Panamá. Y no se corta el texto como en fechaCorta, porque el servidor manda
+ * estos momentos en UTC: cortado, la corrección que Cesar hizo el 15 a las
+ * 9:04 de la noche aparecía el 16.
+ */
+export function fechaHoraPanama(momento: string): string {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Panama',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+      .formatToParts(new Date(momento))
+      .map((x) => [x.type, x.value]),
+  );
+  const mes = MESES[Number(p.month) - 1].slice(0, 3).toLowerCase();
+  const franja = p.dayPeriod === 'AM' ? 'a. m.' : 'p. m.';
+  return `${p.day} ${mes} ${p.year}, ${p.hour}:${p.minute} ${franja}`;
 }
 
 export function diaDeLaSemana(fecha: string): string {

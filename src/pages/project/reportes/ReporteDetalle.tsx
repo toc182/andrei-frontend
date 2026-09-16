@@ -26,9 +26,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import {
-  type Reporte, clasesClima, fechaCorta, fechaLarga,
-} from './tipos';
+import { type Reporte, clasesClima, fechaLarga } from './tipos';
+import SeccionCorrecciones from './SeccionCorrecciones';
 
 interface Props {
   projectId: number;
@@ -393,33 +392,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
         {reporte.correcciones.length > 0 && (
           <div className="space-y-3 border-t border-border p-4">
             <SectionHeader title="Correcciones" />
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <tbody>
-                  {reporte.correcciones.map((c) => (
-                    <tr key={c.id} className="border-b border-slate-100 last:border-0">
-                      <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground tabular-nums">
-                        {fechaCorta(c.created_at)}
-                      </td>
-                      <td className="whitespace-nowrap py-2 pr-4 font-medium">
-                        {c.usuario_nombre}
-                      </td>
-                      <td className="py-2 text-slate-700">
-                        {Object.values(c.detalles?.cambios ?? {})
-                          .map((v) =>
-                            v.antes === null
-                              ? `se agregó ${v.label}`
-                              : v.despues === null
-                                ? `se quitó ${v.label}`
-                                : `${v.label} de ${v.antes} a ${v.despues}`,
-                          )
-                          .join(' · ') || 'Cambio registrado'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <SeccionCorrecciones correcciones={reporte.correcciones} />
           </div>
         )}
       </div>
