@@ -89,7 +89,16 @@ export interface Foto {
   tamano: number | null;
   orden: number;
   url: string;
+  /** El texto que va debajo de la foto; null si no tiene. */
+  leyenda: string | null;
 }
+
+/**
+ * El tope de una leyenda de foto. El mismo que LEYENDA_MAX del backend
+ * (services/reporteCambios.ts) y que la columna: 150 caracteres caben en tres
+ * renglones debajo de la foto del PDF sin que dejen de caber cuatro por hoja.
+ */
+export const LEYENDA_MAX = 150;
 
 /**
  * Un pedazo de un renglón de Correcciones; se dibujan juntos, con un espacio.

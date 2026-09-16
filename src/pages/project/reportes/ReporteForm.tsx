@@ -10,6 +10,9 @@
  *   dos líneas no deje su casilla a distinta altura que la de al lado.
  * - Las áreas son fichas, no una lista de casillas: ocupan mucho menos.
  * - Los campos de texto crecen hacia abajo mientras se escribe.
+ * - Cada foto es un renglón con su leyenda al lado, igual en el teléfono y en
+ *   la computadora (maqueta aprobada por Ivan el 2026-09-16). En pantalla ancha
+ *   van a dos columnas.
  * - En móvil el botón de guardar se queda abajo mientras haya formulario. Es
  *   `sticky`, no `fixed`: en Safari de iPhone una barra `fixed` se ancla a una
  *   ventana que sigue por debajo de la barra del navegador, tapa contenido y
@@ -35,7 +38,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  CLIMAS, type Area, type FilaEntrega, type Foto, type Listas, type Reporte,
+  CLIMAS, LEYENDA_MAX, type Area, type FilaEntrega, type Foto, type Listas, type Reporte,
   fechaCorta, hoyYMD,
 } from './tipos';
 import { SeccionEntregas, SeccionEquipo, SeccionPersonal } from './SeccionesFilas';
@@ -70,7 +73,20 @@ interface FotoPendiente {
   archivo?: File;
   url: string;
   nombre: string;
+  /** Lo que hay escrito en su casilla; en blanco es sin leyenda. */
+  leyenda: string;
+  /**
+   * Una foto que el reporte ya tenía al enviarse. Al corregir se muestra para
+   * poder cambiar su leyenda, pero no se quita desde aquí, igual que antes.
+   */
+  enReporte?: boolean;
 }
+
+/**
+ * Una leyenda como la guarda el servidor: en un renglón y sin espacios de más.
+ * Se manda así para que lo que se compara sea lo mismo que se ve.
+ */
+const limpiarLeyenda = (s: string) => s.replace(/\s+/g, ' ').trim();
 
 /**
  * Una clave al azar para un «Guardar cambios».
@@ -91,13 +107,15 @@ const megas = (bytes: number) =>
 
 /** Un textarea que crece con lo que se escribe. */
 function TextareaCrece({
-  id, value, onChange, placeholder, rows = 3,
+  id, value, onChange, placeholder, rows = 3, maxLength, disabled,
 }: {
   id: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   rows?: number;
+  maxLength?: number;
+  disabled?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -113,9 +131,64 @@ function TextareaCrece({
       rows={rows}
       value={value}
       placeholder={placeholder}
+      maxLength={maxLength}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       className="resize-none overflow-hidden"
     />
+  );
+}
+
+/**
+ * Un renglón de la sección Fotos: la miniatura, y al lado su número y la
+ * casilla de la leyenda. Sin `onQuitar` no lleva la equis.
+ */
+function FilaFoto({
+  foto, numero, bloqueada, onLeyenda, onQuitar,
+}: {
+  foto: FotoPendiente;
+  numero: number;
+  bloqueada: boolean;
+  onLeyenda: (texto: string) => void;
+  onQuitar?: () => void;
+}) {
+  const id = `leyenda-foto-${numero}`;
+  // El contador aparece cerca del tope: la casilla deja de aceptar letras al
+  // llegar, y sin él parecería que el teclado se trabó.
+  const cercaDelTope = foto.leyenda.length >= LEYENDA_MAX - 30;
+  return (
+    <div className="grid grid-cols-[5rem_1fr] items-start gap-3">
+      <div className="relative h-20 w-20 overflow-hidden rounded border border-border">
+        <img src={foto.url} alt={`Foto ${numero}`} className="h-full w-full object-cover" />
+        {onQuitar && (
+          <button
+            type="button"
+            aria-label={`Quitar la foto ${numero}`}
+            onClick={onQuitar}
+            disabled={bloqueada}
+            className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white disabled:opacity-40"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <div className="min-w-0 space-y-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <Label htmlFor={id} className="text-xs text-muted-foreground tabular-nums">
+            Foto {numero}
+          </Label>
+          {cercaDelTope && (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {foto.leyenda.length}/{LEYENDA_MAX}
+            </span>
+          )}
+        </div>
+        <TextareaCrece
+          id={id} rows={2} value={foto.leyenda} onChange={onLeyenda}
+          placeholder="Leyenda (opcional)" maxLength={LEYENDA_MAX} disabled={bloqueada}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -152,12 +225,23 @@ export default function ReporteForm({
   const [queSeHizo, setQueSeHizo] = useState(inicial?.queSeHizo ?? '');
   const [atrasos, setAtrasos] = useState(inicial?.atrasos ?? '');
   const [novedades, setNovedades] = useState(inicial?.novedades ?? '');
-  // Las fotos que el reporte sin enviar ya tenía subidas entran como cualquier
-  // otra, pero sin archivo y ya registradas en subidasRef: guardar() no las
-  // vuelve a subir, y si el ingeniero quita una, la borra del servidor.
-  const [fotos, setFotos] = useState<FotoPendiente[]>(
-    () => (fotosGuardadas ?? []).map((f) => ({ url: f.url, nombre: f.nombre_archivo })),
-  );
+  // Las fotos que ya están en el servidor entran como cualquier otra, pero sin
+  // archivo y ya registradas en subidasRef: guardar() no las vuelve a subir y
+  // sí manda su leyenda. Son dos casos:
+  // - al corregir, las que el reporte ya tiene, para poder cambiar su leyenda
+  //   (enReporte: no se quitan desde aquí);
+  // - al seguir un reporte sin enviar, las que alcanzaron a subir; si el
+  //   ingeniero quita una, se borra del servidor.
+  // Van primero, como en el servidor, y así el número de cada una es el mismo
+  // que tendrá en la pantalla del reporte y en el PDF.
+  const [fotos, setFotos] = useState<FotoPendiente[]>(() => [
+    ...(reporte?.fotos ?? []).map((f) => ({
+      url: f.url, nombre: f.nombre_archivo, leyenda: f.leyenda ?? '', enReporte: true,
+    })),
+    ...(fotosGuardadas ?? []).map((f) => ({
+      url: f.url, nombre: f.nombre_archivo, leyenda: f.leyenda ?? '',
+    })),
+  ]);
   const [fotoError, setFotoError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   // El progreso ya no es una frase suelta: el panel necesita saber en que
@@ -186,7 +270,9 @@ export default function ReporteForm({
   // agregar fotos, y entonces «ya subi 3» deja de significar nada. Se subiria
   // una que quito y se perderia una que agrego, sin un solo error en pantalla.
   const subidasRef = useRef(
-    new Map<string, number>((fotosGuardadas ?? []).map((f) => [f.url, f.id])),
+    new Map<string, number>(
+      [...(reporte?.fotos ?? []), ...(fotosGuardadas ?? [])].map((f) => [f.url, f.id]),
+    ),
   );
 
   // La clave de esta corrección. Va con el guardado, con cada foto y con el
@@ -341,7 +427,9 @@ export default function ReporteForm({
     );
     const nuevas = elegidas
       .filter((f) => f.size <= tope)
-      .map((archivo) => ({ archivo, url: URL.createObjectURL(archivo), nombre: archivo.name }));
+      .map((archivo) => ({
+        archivo, url: URL.createObjectURL(archivo), nombre: archivo.name, leyenda: '',
+      }));
     setFotos((prev) => [...prev, ...nuevas]);
     e.target.value = '';
   };
@@ -356,6 +444,16 @@ export default function ReporteForm({
       return prev.filter((_, j) => j !== i);
     });
   };
+
+  // Congelada mientras sube, por lo mismo que quitarFoto: la leyenda de una foto
+  // viaja con ella, y cambiarla a media subida no llegaría a ninguna parte.
+  const cambiarLeyenda = (i: number, leyenda: string) => {
+    if (guardando) return;
+    setFotos((prev) => prev.map((f, j) => (j === i ? { ...f, leyenda } : f)));
+  };
+
+  // Cuántas de la lista son del reporte que se corrige: las primeras.
+  const enReporte = fotos.filter((f) => f.enReporte).length;
 
   const guardar = useCallback(async () => {
     setError(null);
@@ -396,6 +494,16 @@ export default function ReporteForm({
           unidad: f.unidad,
           notas: f.notas,
         })),
+        // Las leyendas de las fotos que ya están en el servidor: las del reporte
+        // que se corrige, las del que quedó sin enviar y las que subieron en un
+        // intento anterior. El servidor solo anota las que cambiaron. Las de las
+        // fotos nuevas viajan con cada foto, abajo.
+        fotos: fotos.flatMap((f) => {
+          const fotoId = subidasRef.current.get(f.url);
+          return fotoId === undefined
+            ? []
+            : [{ id: fotoId, leyenda: limpiarLeyenda(f.leyenda) || null }];
+        }),
       };
 
       // Todo lo que forma parte de una corrección lleva su clave. Un reporte
@@ -461,6 +569,9 @@ export default function ReporteForm({
         setProgreso({ paso: 'fotos', hechas: yaEstaban + i, total: fotos.length });
         subiendo = pendientes[i].nombre;
         const datos = new FormData();
+        // La leyenda va en la misma petición que su foto: llegan juntas o no
+        // llega ninguna.
+        datos.append('leyenda', limpiarLeyenda(pendientes[i].leyenda));
         datos.append('fotos', pendientes[i].archivo);
         // El multipart es OBLIGATORIO aquí. La instancia de api trae
         // 'application/json' por defecto, y axios, al ver un FormData con ese
@@ -707,41 +818,47 @@ export default function ReporteForm({
             <span className="text-sm text-muted-foreground tabular-nums">
               {fotos.length === 0
                 ? 'Ninguna foto agregada'
-                : `${fotos.length} ${fotos.length === 1 ? 'foto agregada' : 'fotos agregadas'}`}
+                : editando
+                  ? `${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'}`
+                  : `${fotos.length} ${fotos.length === 1 ? 'foto agregada' : 'fotos agregadas'}`}
             </span>
           </div>
 
           {fotoError && <p className="text-xs text-error">{fotoError}</p>}
 
-          {fotos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {fotos.map((f, i) => (
-                <div key={f.url} className="relative h-20 w-20 overflow-hidden rounded border border-border">
-                  <img src={f.url} alt={f.nombre} className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    aria-label={`Quitar ${f.nombre}`}
-                    onClick={() => quitarFoto(i)}
-                    disabled={guardando}
-                    className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white disabled:opacity-40"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+          {/* Al corregir, las fotos van en dos grupos: las que el reporte ya
+              tiene, que no se quitan desde aquí, y las nuevas. Las del reporte
+              van siempre primero (ver el estado `fotos`), así que cada grupo es
+              un tramo de la lista y el número sigue corrido. */}
+          {[
+            { titulo: 'Ya en el reporte', desde: 0, hasta: enReporte },
+            { titulo: 'Nuevas', desde: enReporte, hasta: fotos.length },
+          ]
+            .filter((g) => g.hasta > g.desde)
+            .map((g) => (
+              <div key={g.titulo} className="space-y-2">
+                {editando && (
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {g.titulo}
+                  </div>
+                )}
+                <div className="grid gap-3 md:grid-cols-2 md:gap-x-5">
+                  {fotos.slice(g.desde, g.hasta).map((f, k) => {
+                    const i = g.desde + k;
+                    return (
+                      <FilaFoto
+                        key={f.url}
+                        foto={f}
+                        numero={i + 1}
+                        bloqueada={guardando}
+                        onLeyenda={(texto) => cambiarLeyenda(i, texto)}
+                        onQuitar={f.enReporte ? undefined : () => quitarFoto(i)}
+                      />
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div className="rounded border-l-[3px] border-l-warning bg-warning/5 px-3 py-2 text-xs leading-relaxed text-slate-700">
-            <b className="text-warning">Recuerda:</b> es obligatorio fotografiar el acero
-            armado antes de vaciar, y la tubería antes de rellenar.
-          </div>
-
-          {editando && (
-            <p className="text-xs text-muted-foreground">
-              Las fotos que agregues aquí se suman a las que el reporte ya tiene.
-            </p>
-          )}
+              </div>
+            ))}
         </div>
       </div>
 

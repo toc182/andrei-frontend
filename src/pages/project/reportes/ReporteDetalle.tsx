@@ -373,17 +373,25 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
         {reporte.fotos.length > 0 && (
           <div className="space-y-3 border-t border-border p-4">
             <SectionHeader title={`Fotos · ${reporte.fotos.length}`} />
+            {/* Cada foto con su número y su leyenda debajo, como en el PDF. El
+                número es el que usa Correcciones («Leyenda de la foto 3»). */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {reporte.fotos.map((f) => (
-                <a
-                  key={f.id} href={f.url} target="_blank" rel="noreferrer"
-                  className="block overflow-hidden rounded border border-border"
-                >
-                  <img
-                    src={f.url} alt={f.nombre_archivo} loading="lazy"
-                    className="aspect-[4/3] w-full object-cover transition-transform hover:scale-105"
-                  />
-                </a>
+              {reporte.fotos.map((f, i) => (
+                <figure key={f.id} className="min-w-0">
+                  <a
+                    href={f.url} target="_blank" rel="noreferrer"
+                    className="block overflow-hidden rounded border border-border"
+                  >
+                    <img
+                      src={f.url} alt={f.leyenda ?? `Foto ${i + 1}`} loading="lazy"
+                      className="aspect-[4/3] w-full object-cover transition-transform hover:scale-105"
+                    />
+                  </a>
+                  <figcaption className="mt-1.5 break-words text-[13px] leading-snug text-slate-700">
+                    <span className="text-muted-foreground tabular-nums">{i + 1}.</span>
+                    {f.leyenda && ` ${f.leyenda}`}
+                  </figcaption>
+                </figure>
               ))}
             </div>
           </div>
