@@ -2,10 +2,10 @@
 // pantallas de la hoja imprimible del Cuadro de Cuenta: la de configuración
 // (Configurar Cuenta, montaje del proyecto) y la vista previa de una cuenta.
 //
-// Viven aquí y no en components/shell porque son de este módulo: no las usa
-// ninguna otra parte del sistema.
+// Viven aquí y no en components/shell porque son de este módulo. La única
+// excepción es EditorLogos, que también monta el formulario del proyecto.
 
-import { useRef, type ChangeEvent } from 'react';
+import { useRef, type ChangeEvent, type ReactNode } from 'react';
 import { Check, ChevronDown, ChevronUp, ImageOff, Plus, Trash2, Upload, X } from 'lucide-react';
 import logoPinellas from '@/assets/logo.png';
 import logoCocp from '@/assets/LogoCOCPfondoblanco.png';
@@ -386,14 +386,24 @@ export function EditorColor({
  *  una imagen subida, que viaja como data URL dentro del propio montaje.
  *
  *  El bloque NO lleva caja propia: dentro de una Card no van más Cards, los
- *  dos lados se separan con una línea (FRONTEND_CONVENTIONS §8). */
+ *  dos lados se separan con una línea (FRONTEND_CONVENTIONS §8).
+ *
+ *  También lo monta el formulario del proyecto para el logo del consorcio:
+ *  uno solo, subido, sin los logos de la casa. */
 export function EditorLogos({
-  label, valores, onChange, onAviso,
+  label, valores, onChange, onAviso, max = MAX_LOGOS_PER_SIDE, soloSubir = false, ayuda,
 }: {
   label: string;
   valores: LogoChoice[];
   onChange: (next: LogoChoice[]) => void;
   onAviso: (msg: string | null) => void;
+  /** Cuántos caben. Las hojas llevan hasta tres por lado. */
+  max?: number;
+  /** Sin el menú de los logos de la casa: el recuadro punteado abre
+   *  directamente el selector de archivos. */
+  soloSubir?: boolean;
+  /** Texto al lado de los azulejos: dónde sale el logo, qué archivo sirve. */
+  ayuda?: ReactNode;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -425,14 +435,17 @@ export function EditorLogos({
     onChange([...valores, { dataUrl }]);
   };
 
-  const lleno = valores.length >= MAX_LOGOS_PER_SIDE;
+  const lleno = valores.length >= max;
+
+  const claseAgregar =
+    'flex h-12 w-[84px] flex-col items-center justify-center gap-0.5 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-teal hover:text-teal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
 
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {valores.map((c, i) => {
           const src = miniaturaDe(c);
           return (
@@ -457,13 +470,21 @@ export function EditorLogos({
         })}
         {/* El recuadro punteado dice "aquí cabe otro" sin gastar un botón
             aparte, y el logo se elige VIENDOLO, no leyendo su nombre. */}
-        {!lleno && (
+        {!lleno && soloSubir && (
+          <button
+            type="button"
+            className={claseAgregar}
+            aria-label={`Subir ${label.toLowerCase()}`}
+            onClick={pedirImagen}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Logo
+          </button>
+        )}
+        {!lleno && !soloSubir && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="flex h-12 w-[84px] flex-col items-center justify-center gap-0.5 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-teal hover:text-teal focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
+              <button type="button" className={claseAgregar}>
                 <Plus className="h-3.5 w-3.5" />
                 Logo
               </button>
@@ -497,6 +518,9 @@ export function EditorLogos({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        )}
+        {ayuda && (
+          <div className="ml-2 max-w-xs text-sm text-muted-foreground">{ayuda}</div>
         )}
       </div>
       <Input ref={fileRef} type="file" accept="image/*" onChange={subir} className="hidden" />

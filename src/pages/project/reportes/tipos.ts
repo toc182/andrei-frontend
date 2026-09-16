@@ -26,6 +26,8 @@ export interface Listas {
   puestos: ItemLista[];
   equipos: ItemLista[];
   categorias: ItemLista[];
+  /** Como se llama el bloque propio: «Pinellas», o el consorcio del proyecto. */
+  nombre_propio: string;
 }
 
 /** Lo que se llena cada día. */
@@ -119,6 +121,8 @@ export interface Reporte {
   creado_por: number;
   creador_nombre: string;
   proyecto_nombre: string;
+  /** Como se llama la cuadrilla propia: «Pinellas», o el consorcio del proyecto. */
+  nombre_propio: string;
   created_at: string;
   updated_at: string;
   enviado_at: string | null;

@@ -34,9 +34,6 @@ import type {
   FilaEntrega, ItemLista, Listas,
 } from './tipos';
 
-/** El nombre del bloque propio. Fijo por decisión de Ivan. */
-export const EMPRESA_PROPIA = 'Pinellas';
-
 // ---------------------------------------------------------------------------
 // Piezas compartidas
 // ---------------------------------------------------------------------------
@@ -185,10 +182,12 @@ export function SeccionPersonal({
         }
       >
         {/* El nombre del bloque propio solo aparece cuando hay con quién
-            confundirlo: si no hay subcontratistas, sobra la etiqueta. */}
+            confundirlo: si no hay subcontratistas, sobra la etiqueta. Es
+            «Pinellas», o el consorcio en un proyecto en consorcio (lo decide
+            el servidor, igual que en el PDF). */}
         {(empresa || hayEmpresas) && (
           <div className="flex items-center gap-2 pb-1 text-xs font-bold uppercase tracking-wide text-primary">
-            {empresa ? empresa.nombre : EMPRESA_PROPIA}
+            {empresa ? empresa.nombre : listas.nombre_propio}
             {empresa && (
               <button
                 type="button"

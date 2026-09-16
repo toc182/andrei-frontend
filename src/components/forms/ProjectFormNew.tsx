@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Trash2, Plus } from 'lucide-react';
+import { EditorLogos } from '@/pages/cuentas/impresionPiezas';
 
 interface Cliente {
   id: number;
@@ -79,6 +80,8 @@ const projectSchema = z
         }),
       ),
     }),
+    // Data URL del logo del consorcio; null si no hay.
+    logo_consorcio: z.string().nullable(),
   })
   .refine(
     (data) => {
@@ -108,6 +111,16 @@ const projectSchema = z
     {
       message: 'La suma de porcentajes debe ser exactamente 100%',
       path: ['datos_adicionales', 'socios'],
+    },
+  )
+  .refine(
+    // En un consorcio, Contratista es el nombre del consorcio: es lo que sale
+    // en el reporte diario donde antes decía «Pinellas».
+    (data) =>
+      !data.datos_adicionales.es_consorcio || !!data.contratista?.trim(),
+    {
+      message: 'Escribe el nombre del consorcio.',
+      path: ['contratista'],
     },
   );
 
@@ -172,8 +185,14 @@ const ProjectFormNew = ({
         es_consorcio: false,
         socios: [{ nombre: 'Pinellas, S.A.', porcentaje: 100 }],
       },
+      logo_consorcio: null,
     },
   });
+
+  // El logo tal como vino del servidor. Si no cambió no se reenvía: son
+  // decenas de KB que el servidor volvería a procesar en cada guardado.
+  const logoCargado = useRef<string | null>(null);
+  const [avisoLogo, setAvisoLogo] = useState<string | null>(null);
 
   const estados = [
     { value: 'planificacion', label: 'Planificación' },
@@ -187,6 +206,7 @@ const ProjectFormNew = ({
   const watchEsConsorcio = form.watch('datos_adicionales.es_consorcio');
   const watchSocios = form.watch('datos_adicionales.socios');
   const watchTipoContrato = form.watch('tipo_contrato');
+  const watchLogo = form.watch('logo_consorcio');
 
   // Limpiar acto_publico al cambiar a contrato privado
   useEffect(() => {
@@ -214,6 +234,8 @@ const ProjectFormNew = ({
   useEffect(() => {
     if (isOpen) {
       loadClientes();
+      setAvisoLogo(null);
+      logoCargado.current = null;
 
       if (projectId) {
         loadProject();
@@ -232,6 +254,7 @@ const ProjectFormNew = ({
 
       if (response.data.success) {
         const project = response.data.proyecto;
+        logoCargado.current = project.logo_consorcio ?? null;
 
         // Cargar datos en react-hook-form
         form.reset({
@@ -268,6 +291,7 @@ const ProjectFormNew = ({
               { nombre: 'Pinellas, S.A.', porcentaje: 100 },
             ],
           },
+          logo_consorcio: logoCargado.current,
         });
       }
     } catch (err) {
@@ -338,6 +362,10 @@ const ProjectFormNew = ({
           ...data.datos_adicionales,
         },
       };
+
+      if (data.logo_consorcio === logoCargado.current) {
+        delete submitData.logo_consorcio;
+      }
 
       // Limpiar campos vacíos
       Object.keys(submitData).forEach((key) => {
@@ -598,7 +626,9 @@ const ProjectFormNew = ({
                   name="contratista"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contratista</FormLabel>
+                      <FormLabel>
+                        Contratista{watchEsConsorcio ? ' *' : ''}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Ej: Constructora Panama S.A."
@@ -971,6 +1001,38 @@ const ProjectFormNew = ({
                           Debe sumar 100%
                         </AlertDescription>
                       </Alert>
+                    )}
+                  </div>
+
+                  {/* El logo sale en el reporte diario en lugar del de
+                      Pinellas. Se guarda con el resto del formulario. */}
+                  <div className="space-y-2 border-t border-border pt-4">
+                    <EditorLogos
+                      label="Logo del consorcio"
+                      max={1}
+                      soloSubir
+                      valores={watchLogo ? [{ dataUrl: watchLogo }] : []}
+                      onChange={(next) => {
+                        const elegido = next[0];
+                        form.setValue(
+                          'logo_consorcio',
+                          typeof elegido === 'object' && elegido ? elegido.dataUrl : null,
+                          { shouldDirty: true },
+                        );
+                      }}
+                      onAviso={setAvisoLogo}
+                      ayuda={
+                        <>
+                          Sale{' '}
+                          <span className="font-semibold text-foreground">
+                            arriba a la izquierda del reporte diario
+                          </span>
+                          , en lugar del de Pinellas. Imagen PNG o JPG, máx. 400 KB.
+                        </>
+                      }
+                    />
+                    {avisoLogo && (
+                      <p className="text-sm font-medium text-error">{avisoLogo}</p>
                     )}
                   </div>
                 </div>

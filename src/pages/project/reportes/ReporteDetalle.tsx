@@ -49,12 +49,15 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
 /**
  * Las filas de Personal o Equipo en solo lectura, agrupadas por empresa.
  * El titulo del grupo solo aparece cuando hay mas de uno: con una sola
- * cuadrilla, "Pinellas" seria una etiqueta de mas.
+ * cuadrilla, el nombre propio seria una etiqueta de mas.
  */
 function FilasLeidas({
   filas,
+  propio,
 }: {
   filas: { clave: string; grupo: string | null; nombre: string; valor: string }[];
+  /** El titulo del grupo sin empresa: «Pinellas», o el consorcio. */
+  propio: string;
 }) {
   const grupos = [...new Set(filas.map((f) => f.grupo))];
   return (
@@ -65,7 +68,7 @@ function FilasLeidas({
         <div key={g ?? 'propio'}>
           {grupos.length > 1 && (
             <div className="pb-1 text-xs font-bold uppercase tracking-wide text-primary">
-              {g ?? 'Pinellas'}
+              {g ?? propio}
             </div>
           )}
           {filas.filter((f) => f.grupo === g).map((f) => (
@@ -301,6 +304,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
                     nombre: f.nombre,
                     valor: String(f.cantidad),
                   }))}
+                  propio={reporte.nombre_propio}
                 />
                 <div className="flex max-w-[26rem] items-baseline justify-between border-t border-border pt-2 text-sm">
                   <span className="text-muted-foreground">Total en obra</span>
@@ -320,6 +324,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
                       nombre: f.nombre,
                       valor: `${Number(f.unidades)} u · ${Number(f.horas)} h`,
                     }))}
+                    propio={reporte.nombre_propio}
                   />
                 </div>
               )}
