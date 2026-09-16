@@ -82,6 +82,10 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+function SinDato() {
+  return <span className="text-muted-foreground">—</span>;
+}
+
 export default function ProjectInformacion({
   project,
   adendas,
@@ -154,6 +158,17 @@ export default function ProjectInformacion({
               {project.cliente_nombre && (
                 <InfoRow label="Cliente:">{project.cliente_nombre}</InfoRow>
               )}
+
+              {/* Contratista y residente salen siempre, con raya si faltan: a
+                  diferencia de las demás filas opcionales, aquí un vacío es un
+                  dato pendiente que conviene ver. */}
+              <InfoRow label="Contratista:">
+                {project.contratista?.trim() || <SinDato />}
+              </InfoRow>
+
+              <InfoRow label="Ingeniero Residente:">
+                {project.ingeniero_residente?.trim() || <SinDato />}
+              </InfoRow>
 
               <InfoRow label="Estado:">{getEstadoBadge(project.estado)}</InfoRow>
 
