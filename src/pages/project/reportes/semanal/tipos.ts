@@ -134,6 +134,13 @@ export interface SemanalDetalle {
   metas_plan: MetaPlan[];
   problemas: (Problema & { id: number })[];
   decisiones: (Decision & { id: number })[];
+  /** Los guardados que hubo DESPUÉS de enviarlo, ya legibles. */
+  correcciones: {
+    id: number;
+    created_at: string;
+    quien: string;
+    cambios: { etiqueta: string; renglones: { tipo: string; texto: string }[][] }[];
+  }[];
   fotos_elegidas: number[];
   fotos: FotoSemana[];
   dias: string[];

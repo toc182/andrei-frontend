@@ -163,7 +163,7 @@ export default function SemanalForm({
 
   /** Guarda lo escrito. Devuelve false si no llegó. */
   const guardar = useCallback(async (): Promise<boolean> => {
-    if (!detalle || detalle.completo) return true;
+    if (!detalle) return true;
     const datos = cuerpo();
     const firma = JSON.stringify(datos);
     if (firma === guardadoRef.current) return true;
@@ -181,7 +181,9 @@ export default function SemanalForm({
     }
   }, [cuerpo, detalle, projectId]);
 
-  // Se guarda solo, poco después de dejar de escribir.
+  // Se guarda solo, poco después de dejar de escribir. Al CORREGIR un reporte
+  // ya enviado no: cada guardado deja una línea en Correcciones, y guardar solo
+  // llenaría el rastro de ruido. Ahí manda el botón «Guardar cambios».
   useEffect(() => {
     if (!detalle || detalle.completo || cargando) return;
     const t = setTimeout(() => { void guardar(); }, 1200);
@@ -233,6 +235,13 @@ export default function SemanalForm({
     try {
       const llego = await guardar();
       if (!llego) return;
+      // Corrigiendo, el guardado ES el final: deja su línea en Correcciones y
+      // el PDF se vuelve a archivar. El correo no se manda otra vez.
+      if (detalle.completo) {
+        toast.success('Reporte corregido');
+        onListo();
+        return;
+      }
       await api.post(`/proyecto-reportes-semanales/${projectId}/${detalle.id}/emitir`);
       toast.success('Reporte semanal enviado');
       onListo();
@@ -558,7 +567,9 @@ export default function SemanalForm({
         </Button>
         <Button onClick={enviar} disabled={enviando}>
           {enviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {enviando ? 'Enviando…' : 'Guardar reporte'}
+          {enviando
+            ? detalle.completo ? 'Guardando…' : 'Enviando…'
+            : detalle.completo ? 'Guardar cambios' : 'Guardar reporte'}
         </Button>
       </div>
     </div>

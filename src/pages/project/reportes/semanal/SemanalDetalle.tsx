@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Download, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Pencil, Trash2 } from 'lucide-react';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, ErrorState, PageHeader, SectionHeader } from '@/components/shell';
@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import SeccionDatos from './SeccionDatos';
+import SeccionCorrecciones from '../SeccionCorrecciones';
+import type { Correccion } from '../tipos';
 import { semanaLarga } from './fechas';
 import { comoNumero, diaCorto, type Meta, type SemanalDetalle as Detalle } from './tipos';
 
@@ -39,13 +41,14 @@ function avance(m: Meta): string | null {
 }
 
 export default function SemanalDetalle({
-  projectId, reporteId, onVolver, onPdf, bajandoPdf,
+  projectId, reporteId, onVolver, onPdf, bajandoPdf, onCorregir,
 }: {
   projectId: number;
   reporteId: number;
   onVolver: () => void;
   onPdf: () => void;
   bajandoPdf: boolean;
+  onCorregir: () => void;
 }) {
   const { user } = useAuth();
   const [detalle, setDetalle] = useState<Detalle | null>(null);
@@ -90,6 +93,16 @@ export default function SemanalDetalle({
   if (error || !detalle) return <ErrorState onRetry={cargar} />;
 
   const esAdmin = user?.rol === 'admin' || user?.rol === 'co-admin';
+  // Corrige quien lo escribió, o un admin: lo mismo que deja pasar el servidor.
+  const puedeCorregir = esAdmin || user?.id === detalle.creado_por;
+  // Las líneas vienen armadas del servidor, las mismas que imprime el PDF; la
+  // sección es la del reporte diario, que ya las sabe dibujar.
+  const correcciones: Correccion[] = detalle.correcciones.map((c) => ({
+    id: c.id,
+    created_at: c.created_at,
+    usuario_nombre: c.quien,
+    cambios: c.cambios as Correccion['cambios'],
+  }));
 
   return (
     <div className="space-y-6">
@@ -107,6 +120,11 @@ export default function SemanalDetalle({
           title={`Semana ${detalle.semana_iso} · ${semanaLarga(detalle.semana_inicio, detalle.semana_fin)}`}
           subtitle={detalle.numero}
         >
+          {puedeCorregir && (
+            <Button variant="outline" size="sm" onClick={onCorregir}>
+              <Pencil className="mr-2 h-4 w-4" /> Corregir
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onPdf} disabled={bajandoPdf}>
             {bajandoPdf
               ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -237,6 +255,15 @@ export default function SemanalDetalle({
           </div>
         )}
       </div>
+
+      {correcciones.length > 0 && (
+        <div className="rounded-lg border border-border bg-card">
+          <div className="space-y-3 p-4">
+            <SectionHeader title="Correcciones" count={correcciones.length} />
+            <SeccionCorrecciones correcciones={correcciones} />
+          </div>
+        </div>
+      )}
 
       {!detalle.completo && (
         <Alert

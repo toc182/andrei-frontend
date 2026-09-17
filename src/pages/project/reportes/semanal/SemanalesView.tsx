@@ -23,6 +23,7 @@ import type { SemanaDisponible, SemanalFila } from './tipos';
 type Vista =
   | { modo: 'lista' }
   | { modo: 'form'; id: number }
+  | { modo: 'corregir'; id: number }
   | { modo: 'detalle'; id: number };
 
 export default function SemanalesView({
@@ -111,32 +112,40 @@ export default function SemanalesView({
         onVolver={() => setVista({ modo: 'lista' })}
         onPdf={() => descargarPdf(vista.id)}
         bajandoPdf={bajando === vista.id}
+        onCorregir={() => setVista({ modo: 'corregir', id: vista.id })}
       />
     );
   }
 
-  if (vista.modo === 'form') {
+  if (vista.modo === 'form' || vista.modo === 'corregir') {
+    const corrigiendo = vista.modo === 'corregir';
+    const volver = () => setVista(corrigiendo
+      ? { modo: 'detalle', id: vista.id }
+      : { modo: 'lista' });
     return (
       <div className="space-y-6">
         <div className="flex items-start gap-2">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setVista({ modo: 'lista' })}
-            aria-label="Volver a reportes"
+            onClick={volver}
+            aria-label={corrigiendo ? 'Volver al reporte' : 'Volver a reportes'}
             className="-ml-2 h-8 w-8 shrink-0 self-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <PageHeader title="Nuevo reporte semanal" subtitle={titulo ?? undefined} />
+          <PageHeader
+            title={corrigiendo ? 'Corregir reporte semanal' : 'Nuevo reporte semanal'}
+            subtitle={titulo ?? undefined}
+          />
         </div>
         <SemanalForm
           projectId={projectId}
           reporteId={vista.id}
           onCambiarReporte={(id) => setVista({ modo: 'form', id })}
           onCabecera={setTitulo}
-          onListo={() => setVista({ modo: 'lista' })}
-          onCancelar={() => setVista({ modo: 'lista' })}
+          onListo={volver}
+          onCancelar={volver}
         />
       </div>
     );
