@@ -47,6 +47,8 @@ interface Usuario {
   rol: 'admin' | 'co-admin' | 'usuario';
   tipo_usuario: 'interno' | 'externo';
   activo: boolean;
+  /** Como lo manda Meta: solo digitos y con codigo de pais. */
+  whatsapp: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +71,9 @@ const editSchema = z.object({
   nombre: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   rol: z.enum(['admin', 'co-admin', 'usuario']),
+  // Opcional y sin formato obligatorio: el servidor lo deja como Meta lo manda
+  // y devuelve el motivo si no puede.
+  whatsapp: z.string().optional(),
 });
 
 type CreateInternoData = z.infer<typeof createInternoSchema>;
@@ -109,6 +114,7 @@ const UsuariosPage = () => {
       nombre: '',
       email: '',
       rol: 'usuario',
+      whatsapp: '',
     },
   });
 
@@ -151,6 +157,7 @@ const UsuariosPage = () => {
       nombre: usuario.nombre,
       email: usuario.email || '',
       rol: usuario.rol,
+      whatsapp: usuario.whatsapp || '',
     });
     setError('');
     setShowEditModal(true);
@@ -689,6 +696,30 @@ const UsuariosPage = () => {
                   )}
                 />
 
+
+                <FormField
+                  control={editForm.control}
+                  name="whatsapp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          inputMode="tel"
+                          placeholder="6000-0000"
+                          disabled={submitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        Desde este número podrá usar el asistente. Si no es de Panamá, escribe
+                        el código del país.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={editForm.control}
                   name="rol"
