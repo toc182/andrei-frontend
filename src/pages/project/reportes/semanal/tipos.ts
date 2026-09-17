@@ -126,6 +126,8 @@ export interface SemanalDetalle {
   lo_que_se_espera: string | null;
   completo: boolean;
   enviado_at: string | null;
+  /** Si el servidor tiene con qué redactar: sin llave, no se ofrece el botón. */
+  ia_configurada: boolean;
   creado_por: number;
   datos: DatosSemana;
   metas: Meta[];

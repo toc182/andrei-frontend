@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2, Plus, Sparkles, X } from 'lucide-react';
 import api from '@/services/api';
 import { Alert, SectionHeader } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,10 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import SeccionDatos from './SeccionDatos';
 import SeccionFotos from './SeccionFotos';
@@ -81,6 +85,10 @@ export default function SemanalForm({
   const [error, setError] = useState<string | null>(null);
   const [sinConexion, setSinConexion] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  // La IA escribe cuando se le pide, nunca sola: decisión de Ivan, porque
+  // automático confunde. «escribiendo» es lo que dura la llamada.
+  const [escribiendo, setEscribiendo] = useState(false);
+  const [confirmarIa, setConfirmarIa] = useState(false);
 
   // Lo que se escribe.
   const [resumen, setResumen] = useState('');
@@ -180,6 +188,40 @@ export default function SemanalForm({
     return () => clearTimeout(t);
   }, [guardar, detalle, cargando]);
 
+  /**
+   * «Redactar con IA»: escribe el resumen y los problemas a partir de los
+   * reportes diarios. Reemplaza esas dos secciones enteras, así que cuando ya
+   * hay algo escrito se pregunta antes.
+   */
+  const redactar = async () => {
+    if (!detalle) return;
+    setEscribiendo(true);
+    setError(null);
+    try {
+      // Lo escrito se guarda antes: la IA trabaja sobre el reporte del
+      // servidor, no sobre lo que hay en pantalla.
+      await guardar();
+      const r = await api.post(`/proyecto-reportes-semanales/${projectId}/${detalle.id}/redactar`);
+      const escrito = r.data.data as {
+        resumen: string;
+        problemas: { fecha: string | null; problema: string }[];
+      };
+      setResumen(escrito.resumen);
+      setProblemas(escrito.problemas.map((p) => ({ ...p, accion: '' })));
+      // El servidor ya tiene esto: que el guardado automático no lo repita.
+      guardadoRef.current = '';
+    } catch (e) {
+      if (axios.isAxiosError(e) && !e.response) setSinConexion(true);
+      else {
+        const msg = (e as { response?: { data?: { message?: string } } })
+          .response?.data?.message;
+        setError(msg ?? 'La IA no pudo escribir el borrador');
+      }
+    } finally {
+      setEscribiendo(false);
+    }
+  };
+
   const enviar = async () => {
     if (!detalle) return;
     if (!resumen.trim()) {
@@ -229,6 +271,10 @@ export default function SemanalForm({
   }
 
   const dias = detalle.datos.dias;
+  const diariosDeLaSemana = dias.filter((d) => d.numero !== null).length;
+  // «Ya redactado» es que haya algo escrito: da igual si lo puso la IA o el
+  // ingeniero, porque en los dos casos volver a redactar lo reemplaza.
+  const yaRedactado = resumen.trim() !== '' || problemas.length > 0;
   const opciones = semanas.some((s) => s.semana_inicio === detalle.semana_inicio)
     ? semanas
     : [
@@ -298,15 +344,62 @@ export default function SemanalForm({
           </div>
         </div>
 
+        {detalle.ia_configurada && (
+          <div className="border-t border-border bg-info/5">
+            <div className="flex flex-col gap-3 border-l-4 border-info p-4 md:flex-row md:items-center">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold">
+                  {escribiendo
+                    ? 'Escribiendo el resumen y los problemas…'
+                    : yaRedactado
+                      ? 'Listo: revisa el resumen y los problemas'
+                      : 'Resumen y problemas con IA'}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {escribiendo
+                    ? 'Tarda unos segundos. Mientras, puedes marcar las metas o elegir las fotos.'
+                    : yaRedactado
+                      ? 'Si corriges algún reporte diario, puedes volver a redactarlos.'
+                      : `Se escriben a partir de ${diariosDeLaSemana} ${diariosDeLaSemana === 1 ? 'reporte diario' : 'reportes diarios'} de la semana. Después los revisas y cambias lo que haga falta.`}
+                </div>
+              </div>
+              {escribiendo ? (
+                <Button disabled>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Escribiendo…
+                </Button>
+              ) : yaRedactado ? (
+                <Button variant="outline" onClick={() => setConfirmarIa(true)}>
+                  Volver a redactar
+                </Button>
+              ) : (
+                <Button onClick={redactar} disabled={diariosDeLaSemana === 0}>
+                  <Sparkles className="mr-2 h-4 w-4" /> Redactar con IA
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3 border-t border-border p-4">
           <SectionHeader title="Resumen de la semana" />
-          <TextareaCrece
-            id="resumen"
-            rows={7}
-            value={resumen}
-            onChange={setResumen}
-            placeholder="Cómo fue la semana: lo que se avanzó, lo que se atrasó y por qué."
-          />
+          {escribiendo ? (
+            <div className="space-y-2" aria-hidden>
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={`h-3 animate-pulse rounded bg-slate-100 ${i === 3 ? 'w-1/2' : ''}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <TextareaCrece
+              id="resumen"
+              rows={7}
+              value={resumen}
+              onChange={setResumen}
+              placeholder="Cómo fue la semana: lo que se avanzó, lo que se atrasó y por qué."
+            />
+          )}
         </div>
 
         <div className="space-y-3 border-t border-border p-4">
@@ -442,6 +535,22 @@ export default function SemanalForm({
           <SeccionFotos fotos={detalle.fotos} elegidas={fotos} onCambio={setFotos} />
         </div>
       </div>
+
+      <AlertDialog open={confirmarIa} onOpenChange={setConfirmarIa}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Volver a redactar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se reemplazan el resumen y los problemas que hay ahora, incluido lo que hayas
+              cambiado a mano. Las metas, el plan, las decisiones y las fotos se quedan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={redactar}>Volver a redactar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="sticky -bottom-8 z-20 -mx-8 -mb-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:mb-0 md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
         <Button variant="outline" onClick={onCancelar} disabled={enviando}>
