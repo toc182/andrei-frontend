@@ -8,7 +8,7 @@
  * que se había planeado.
  */
 
-import { Plus } from 'lucide-react';
+import { Download, Loader2, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -58,12 +58,35 @@ function Fechas({ fila }: { fila: SemanalFila }) {
 }
 
 export default function ListaSemanales({
-  filas, onAbrir, onNuevo,
+  filas, onAbrir, onNuevo, onPdf, bajando,
 }: {
   filas: SemanalFila[];
   onAbrir: (id: number) => void;
   onNuevo: () => void;
+  onPdf: (id: number) => void;
+  /** El reporte cuyo PDF se está generando, si hay alguno. */
+  bajando: number | null;
 }) {
+  /** El botón del PDF: la fila entera abre el reporte, así que este no. */
+  const botonPdf = (f: SemanalFila, enFila: boolean) => (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 flex-none text-muted-foreground hover:text-navy"
+      title={`Descargar el PDF de ${f.numero}`}
+      disabled={bajando === f.id}
+      onClick={(e) => {
+        if (enFila) e.stopPropagation();
+        onPdf(f.id);
+      }}
+    >
+      {bajando === f.id
+        ? <Loader2 className="h-4 w-4 animate-spin" />
+        : <Download className="h-4 w-4" />}
+      <span className="sr-only">Descargar PDF</span>
+    </Button>
+  );
+
   if (filas.length === 0) {
     return (
       <Card className="overflow-hidden p-0">
@@ -101,6 +124,9 @@ export default function ListaSemanales({
               <TableHead className="w-full px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Metas
               </TableHead>
+              <TableHead className="w-[64px] px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                PDF
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -119,6 +145,7 @@ export default function ListaSemanales({
                   {f.creador_nombre}
                 </TableCell>
                 <TableCell className="px-4 py-3"><Metas fila={f} /></TableCell>
+                <TableCell className="px-2 py-3 text-center">{botonPdf(f, true)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -127,11 +154,16 @@ export default function ListaSemanales({
 
       <div className="md:hidden">
         {filas.map((f) => (
-          <button
+          /* El botón del PDF va FUERA del que abre el reporte: un botón dentro
+             de otro no es HTML válido. */
+          <div
             key={f.id}
+            className="flex items-start gap-3 border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-slate-50/60"
+          >
+          <button
             type="button"
             onClick={() => onAbrir(f.id)}
-            className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-0 hover:bg-slate-50/60"
+            className="flex min-w-0 flex-1 items-start gap-3 text-left"
           >
             <span className="min-w-0 flex-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -145,6 +177,8 @@ export default function ListaSemanales({
               <span className="mt-1 block"><Metas fila={f} /></span>
             </span>
           </button>
+          {botonPdf(f, false)}
+          </div>
         ))}
       </div>
     </Card>

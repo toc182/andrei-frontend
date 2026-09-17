@@ -37,6 +37,26 @@ export default function SemanalesView({
   const [error, setError] = useState(false);
   const [abriendo, setAbriendo] = useState(false);
   const [titulo, setTitulo] = useState<string | null>(null);
+  const [bajando, setBajando] = useState<number | null>(null);
+
+  // El PDF se pide con el token puesto y se abre desde memoria: un enlace pelado
+  // llegaría sin autenticación y el servidor lo rechazaría. Mismo camino que en
+  // los reportes diarios.
+  const descargarPdf = async (id: number) => {
+    setBajando(id);
+    try {
+      const r = await api.get(`/proyecto-reportes-semanales/${projectId}/${id}/pdf`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(r.data as Blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast.error('No se pudo generar el PDF');
+    } finally {
+      setBajando(null);
+    }
+  };
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -89,6 +109,8 @@ export default function SemanalesView({
         projectId={projectId}
         reporteId={vista.id}
         onVolver={() => setVista({ modo: 'lista' })}
+        onPdf={() => descargarPdf(vista.id)}
+        bajandoPdf={bajando === vista.id}
       />
     );
   }
@@ -139,6 +161,8 @@ export default function SemanalesView({
           filas={filas}
           onAbrir={(id) => setVista({ modo: 'detalle', id })}
           onNuevo={nuevo}
+          onPdf={descargarPdf}
+          bajando={bajando}
         />
       )}
     </div>

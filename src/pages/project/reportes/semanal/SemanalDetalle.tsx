@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Trash2 } from 'lucide-react';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, ErrorState, PageHeader, SectionHeader } from '@/components/shell';
@@ -39,11 +39,13 @@ function avance(m: Meta): string | null {
 }
 
 export default function SemanalDetalle({
-  projectId, reporteId, onVolver,
+  projectId, reporteId, onVolver, onPdf, bajandoPdf,
 }: {
   projectId: number;
   reporteId: number;
   onVolver: () => void;
+  onPdf: () => void;
+  bajandoPdf: boolean;
 }) {
   const { user } = useAuth();
   const [detalle, setDetalle] = useState<Detalle | null>(null);
@@ -105,6 +107,12 @@ export default function SemanalDetalle({
           title={`Semana ${detalle.semana_iso} · ${semanaLarga(detalle.semana_inicio, detalle.semana_fin)}`}
           subtitle={detalle.numero}
         >
+          <Button variant="outline" size="sm" onClick={onPdf} disabled={bajandoPdf}>
+            {bajandoPdf
+              ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              : <Download className="mr-2 h-4 w-4" />}
+            PDF
+          </Button>
           {esAdmin && (
             <Button variant="outline" size="sm" onClick={() => setConfirmar(true)}>
               <Trash2 className="mr-2 h-4 w-4" /> Eliminar
