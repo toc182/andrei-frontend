@@ -37,10 +37,12 @@ import {
   applyColumnFilters, getSortComparator,
   type ColumnFilters, type SortDirection, type SortState,
 } from '@/components/sortableHeaderUtils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReporteForm from './reportes/ReporteForm';
 import ReporteNuevo from './reportes/ReporteNuevo';
 import ReporteDetalle from './reportes/ReporteDetalle';
 import AreasDialog from './reportes/AreasDialog';
+import SemanalesView from './reportes/semanal/SemanalesView';
 import {
   type Reporte, type ReporteFila,
   clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, mesCorto, hoyYMD,
@@ -121,6 +123,12 @@ export default function ProjectReportes({ projectId }: Props) {
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(25);
   const [areasAbierto, setAreasAbierto] = useState(false);
+  // Reportes tiene dos pestañas: los diarios y los semanales (§21). Cuando la
+  // de semanales abre su formulario o un reporte, se queda con la pantalla
+  // entera y aquí se esconden la cabecera y las pestañas, igual que hace el
+  // reporte diario con la suya.
+  const [pestana, setPestana] = useState<'diarios' | 'semanales'>('diarios');
+  const [semanalCompleta, setSemanalCompleta] = useState(false);
   const [numeroPrevisto, setNumeroPrevisto] = useState<string | null>(null);
   const [bajando, setBajando] = useState<number | null>(null);
 
@@ -281,27 +289,57 @@ export default function ProjectReportes({ projectId }: Props) {
     ? 'Ningún reporte coincide con lo que buscas. Prueba con otro mes o quita los filtros.'
     : 'Cuando el ingeniero mande su primer reporte diario, aparecerá aquí.';
 
+  // Cuando la pestaña de semanales abre su formulario, la cabecera y las
+  // pestañas se esconden, pero el árbol NO cambia: si se devolviera otra cosa,
+  // React desmontaría SemanalesView y el formulario recién abierto volvería a
+  // la lista con lo escrito perdido.
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Reportes diarios"
+        className={semanalCompleta ? 'hidden' : undefined}
+        title="Reportes"
         subtitle={
-          cargando
+          pestana === 'semanales'
+            ? 'Un reporte por semana, a partir de los diarios'
+            : cargando
             ? 'Cargando…'
             : total === 0
             ? hayFiltros
               ? 'Ningún reporte coincide con los filtros'
               : 'Todavía no hay reportes en este proyecto'
-            : `${total} ${total === 1 ? 'reporte' : 'reportes'}`
+            : `${total} ${total === 1 ? 'reporte diario' : 'reportes diarios'}`
         }
       >
-        <Button variant="outline" size="sm" onClick={() => setAreasAbierto(true)}>
-          <MapPin className="mr-2 h-4 w-4" /> Áreas
-        </Button>
-        <Button size="sm" onClick={() => setVista({ modo: 'nuevo' })}>
-          <Plus className="mr-2 h-4 w-4" /> Nuevo reporte
-        </Button>
+        {pestana === 'diarios' && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setAreasAbierto(true)}>
+              <MapPin className="mr-2 h-4 w-4" /> Áreas
+            </Button>
+            <Button size="sm" onClick={() => setVista({ modo: 'nuevo' })}>
+              <Plus className="mr-2 h-4 w-4" /> Nuevo reporte
+            </Button>
+          </>
+        )}
       </PageHeader>
+
+      <Tabs value={pestana} onValueChange={(v) => setPestana(v as 'diarios' | 'semanales')}>
+        <TabsList className={`mb-6 w-full justify-center ${semanalCompleta ? 'hidden' : ''}`}>
+          <TabsTrigger value="diarios">Diarios</TabsTrigger>
+          <TabsTrigger value="semanales">Semanales</TabsTrigger>
+        </TabsList>
+
+        {/* forceMount: lo que el ingeniero está escribiendo en el reporte
+            semanal no puede desaparecer porque la pestaña deje de estar
+            activa (§21). Al no estar activa se esconde a mano. */}
+        <TabsContent
+          value="semanales"
+          forceMount
+          className={`space-y-6 ${pestana === 'semanales' ? '' : 'hidden'}`}
+        >
+          <SemanalesView projectId={projectId} onPantallaCompleta={setSemanalCompleta} />
+        </TabsContent>
+
+        <TabsContent value="diarios" className="space-y-6">
 
       {/* Filtros encima de la tarjeta, como el resto de las listas. */}
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -534,6 +572,8 @@ export default function ProjectReportes({ projectId }: Props) {
           )}
         </>
       )}
+        </TabsContent>
+      </Tabs>
 
       <AreasDialog
         projectId={projectId}
