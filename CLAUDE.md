@@ -54,8 +54,9 @@ src/
 ├── components/shell/ # Design system components — see @src/components/shell/CLAUDE.md
 ├── components/ui/ # shadcn/ui components — do not modify directly
 ├── components/ # Other reusable components (AdjuntosPreview, Breadcrumbs, etc.)
-├── pages/ # Full page components (11 files)
+├── pages/ # Full page components (15 files)
 ├── pages/project/ # Project sub-views (9 files)
+│                  # reportes/ = el reporte diario; reportes/semanal/ = el semanal
 ├── context/ # AuthContext (useAuth hook)
 ├── services/ # api.ts — single axios instance
 ├── types/ # api.ts, index.ts
@@ -68,6 +69,21 @@ npm run dev # Vite dev server
 npm run build # tsc + vite build
 npm run lint # eslint
 npm run dev -- --host # expose to local network (mobile testing)
+
+## Reportes: dos pestañas
+
+La sección Reportes de un proyecto tiene dos pestañas (§21): **Diarios** y
+**Semanales**. La de semanales vive en `src/pages/project/reportes/semanal/` y
+trae su lista, el formulario y el reporte ya enviado con sus Correcciones.
+
+Dos cosas que no se ven pero mandan:
+
+- el panel de semanales va con `forceMount` y escondido a mano cuando la pestaña
+  no está activa. Si se devolviera otro árbol, React desmontaría la vista y el
+  formulario recién abierto volvería a la lista con lo escrito perdido;
+- el formulario guarda solo mientras se escribe, salvo cuando se está CORRIGIENDO
+  un reporte ya enviado: ahí cada guardado deja una línea en Correcciones, así que
+  manda el botón «Guardar cambios».
 
 ## Routing
 
