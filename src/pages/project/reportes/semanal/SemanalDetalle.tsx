@@ -195,7 +195,16 @@ export default function SemanalDetalle({
                   <span className="text-sm text-muted-foreground">
                     {p.fecha ? diaCorto(p.fecha) : 'Toda la semana'}
                   </span>
-                  <span className="text-sm">{p.problema}</span>
+                  <span className="text-sm">
+                    {/* Lo pendiente es lo único que hay que seguir mirando: va
+                        marcado, y el servidor ya lo pone primero. */}
+                    {p.pendiente && (
+                      <span className="mr-2 rounded bg-warning/10 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-warning">
+                        Pendiente
+                      </span>
+                    )}
+                    {p.problema}
+                  </span>
                   <span className="text-sm text-slate-700">
                     {p.accion ?? <span className="text-muted-foreground">Sin acción anotada</span>}
                   </span>

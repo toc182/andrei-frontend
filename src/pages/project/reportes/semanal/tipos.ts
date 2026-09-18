@@ -61,6 +61,8 @@ export interface Problema {
   fecha: string | null;
   problema: string;
   accion: string | null;
+  /** Lo que todavía hay que seguir. Lo demás es el comentario de ese día. */
+  pendiente: boolean;
 }
 
 export interface Decision {

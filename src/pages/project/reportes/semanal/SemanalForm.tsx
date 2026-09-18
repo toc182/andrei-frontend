@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -155,7 +156,7 @@ export default function SemanalForm({
       texto: m.texto, cantidad: m.cantidad, unidad: m.unidad,
     })),
     problemas: problemas.map((p) => ({
-      fecha: p.fecha, problema: p.problema, accion: p.accion,
+      fecha: p.fecha, problema: p.problema, accion: p.accion, pendiente: p.pendiente,
     })),
     decisiones: decisiones.map((d) => ({ texto: d.texto })),
     fotos,
@@ -427,8 +428,9 @@ export default function SemanalForm({
         <div className="space-y-3 border-t border-border p-4">
           <SectionHeader title="Problemas y atrasos" />
           <div className="space-y-3">
-            <div className="hidden gap-3 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[7rem_1fr_1fr_2rem]">
-              <span>Día</span><span>Problema</span><span>Acción a tomar</span><span />
+            <div className="hidden gap-3 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[7rem_1fr_1fr_8.5rem_2rem]">
+              <span>Día</span><span>Problema</span><span>Acción a tomar</span>
+              <span>Sigue pendiente</span><span />
             </div>
             {problemas.map((p, i) => {
               const cambiar = (c: Partial<Problema>) =>
@@ -436,7 +438,7 @@ export default function SemanalForm({
               return (
                 <div
                   key={p.id ?? `nuevo-${i}`}
-                  className="grid grid-cols-[1fr_2rem] gap-3 md:grid-cols-[7rem_1fr_1fr_2rem]"
+                  className="grid grid-cols-[1fr_2rem] gap-3 md:grid-cols-[7rem_1fr_1fr_8.5rem_2rem]"
                 >
                   <Select
                     value={p.fecha ?? 'semana'}
@@ -479,13 +481,26 @@ export default function SemanalForm({
                       placeholder="Qué se va a hacer"
                     />
                   </div>
+                  {/* Solo se marca lo que hay que seguir: una lluvia que costó
+                      dos horas es el comentario de ese día y nada más. */}
+                  <div className="col-span-2 flex items-center gap-2 md:col-span-1 md:h-9">
+                    <Checkbox
+                      id={`pend-${i}`}
+                      checked={p.pendiente}
+                      onCheckedChange={(v) => cambiar({ pendiente: v === true })}
+                    />
+                    <Label htmlFor={`pend-${i}`} className="font-normal">
+                      <span className="md:hidden">Sigue pendiente</span>
+                      <span className="hidden md:inline">{p.pendiente ? 'Sí' : 'No'}</span>
+                    </Label>
+                  </div>
                 </div>
               );
             })}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setProblemas([...problemas, { fecha: null, problema: '', accion: '' }])}
+              onClick={() => setProblemas([...problemas, { fecha: null, problema: '', accion: '', pendiente: false }])}
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar problema
             </Button>
