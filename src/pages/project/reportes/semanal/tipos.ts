@@ -61,8 +61,9 @@ export interface Problema {
   fecha: string | null;
   problema: string;
   accion: string | null;
-  /** Lo que todavía hay que seguir. Lo demás es el comentario de ese día. */
-  pendiente: boolean;
+  /** Lo que todavía hay que seguir. Lo demás es el comentario de ese día.
+   *  `null` es «sin contestar»: el reporte no sale así. */
+  pendiente: boolean | null;
 }
 
 export interface Decision {

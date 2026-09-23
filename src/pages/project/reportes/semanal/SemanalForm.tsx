@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -285,6 +285,11 @@ export default function SemanalForm({
   // «Ya redactado» es que haya algo escrito: da igual si lo puso la IA o el
   // ingeniero, porque en los dos casos volver a redactar lo reemplaza.
   const yaRedactado = resumen.trim() !== '' || problemas.length > 0;
+  // Un problema escrito que no dice si sigue pendiente deja el reporte dentro:
+  // la oficina tiene que poder leerlo sin llamar al ingeniero. El servidor lo
+  // repite al enviar y al corregir; esto es para no llegar hasta allá.
+  const sinContestar = problemas
+    .filter((p) => p.problema.trim() !== '' && p.pendiente === null).length;
   const opciones = semanas.some((s) => s.semana_inicio === detalle.semana_inicio)
     ? semanas
     : [
@@ -428,17 +433,20 @@ export default function SemanalForm({
         <div className="space-y-3 border-t border-border p-4">
           <SectionHeader title="Problemas y atrasos" />
           <div className="space-y-3">
-            <div className="hidden gap-3 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[7rem_1fr_1fr_8.5rem_2rem]">
+            <div className="hidden gap-3 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-[7rem_1fr_1fr_9.5rem_2rem]">
               <span>Día</span><span>Problema</span><span>Acción a tomar</span>
-              <span>Sigue pendiente</span><span />
+              <span>¿Sigue pendiente?</span><span />
             </div>
             {problemas.map((p, i) => {
               const cambiar = (c: Partial<Problema>) =>
                 setProblemas(problemas.map((x, j) => (j === i ? { ...x, ...c } : x)));
+              // Un problema escrito tiene que decir si sigue pendiente. Uno en
+              // blanco no se marca: ese ni siquiera se guarda.
+              const faltaContestar = p.pendiente === null && p.problema.trim() !== '';
               return (
                 <div
                   key={p.id ?? `nuevo-${i}`}
-                  className="grid grid-cols-[1fr_2rem] gap-3 md:grid-cols-[7rem_1fr_1fr_8.5rem_2rem]"
+                  className="grid grid-cols-[1fr_2rem] gap-3 md:grid-cols-[7rem_1fr_1fr_9.5rem_2rem]"
                 >
                   <Select
                     value={p.fecha ?? 'semana'}
@@ -481,18 +489,30 @@ export default function SemanalForm({
                       placeholder="Qué se va a hacer"
                     />
                   </div>
-                  {/* Solo se marca lo que hay que seguir: una lluvia que costó
-                      dos horas es el comentario de ese día y nada más. */}
-                  <div className="col-span-2 flex items-center gap-2 md:col-span-1 md:h-9">
-                    <Checkbox
-                      id={`pend-${i}`}
-                      checked={p.pendiente}
-                      onCheckedChange={(v) => cambiar({ pendiente: v === true })}
-                    />
-                    <Label htmlFor={`pend-${i}`} className="font-normal">
-                      <span className="md:hidden">Sigue pendiente</span>
-                      <span className="hidden md:inline">{p.pendiente ? 'Sí' : 'No'}</span>
-                    </Label>
+                  {/* Sí es lo que hay que seguir; No es el comentario de ese
+                      día y nada más. Nace sin contestar cuando lo agrega el
+                      ingeniero: la IA sí lo contesta al redactar. */}
+                  <div className="col-span-2 space-y-1.5 md:col-span-1">
+                    <Label className="md:hidden">¿Sigue pendiente?</Label>
+                    <RadioGroup
+                      value={p.pendiente === null ? '' : p.pendiente ? 'si' : 'no'}
+                      onValueChange={(v) => cambiar({ pendiente: v === 'si' })}
+                      className={`flex items-center gap-4 md:h-9 ${
+                        faltaContestar ? 'rounded-md border border-error px-2' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="si" id={`pend-si-${i}`} />
+                        <Label htmlFor={`pend-si-${i}`} className="font-normal">Sí</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="no" id={`pend-no-${i}`} />
+                        <Label htmlFor={`pend-no-${i}`} className="font-normal">No</Label>
+                      </div>
+                    </RadioGroup>
+                    {faltaContestar && (
+                      <p className="text-xs text-error">Dinos si sigue pendiente o elimínalo</p>
+                    )}
                   </div>
                 </div>
               );
@@ -500,7 +520,7 @@ export default function SemanalForm({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setProblemas([...problemas, { fecha: null, problema: '', accion: '', pendiente: false }])}
+              onClick={() => setProblemas([...problemas, { fecha: null, problema: '', accion: '', pendiente: null }])}
             >
               <Plus className="mr-2 h-4 w-4" /> Agregar problema
             </Button>
@@ -576,11 +596,18 @@ export default function SemanalForm({
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="sticky -bottom-8 z-20 -mx-8 -mb-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:mb-0 md:flex md:justify-end md:border-0 md:bg-transparent md:p-0">
+      <div className="sticky -bottom-8 z-20 -mx-8 -mb-8 grid grid-cols-[1fr_2fr] gap-2 border-t border-border bg-card p-3 md:static md:mx-0 md:mb-0 md:flex md:items-center md:justify-end md:border-0 md:bg-transparent md:p-0">
+        {sinContestar > 0 && (
+          <p className="col-span-2 text-sm text-error md:mr-auto">
+            {sinContestar === 1
+              ? 'Falta 1 problema por contestar.'
+              : `Faltan ${sinContestar} problemas por contestar.`}
+          </p>
+        )}
         <Button variant="outline" onClick={onCancelar} disabled={enviando}>
           Cancelar
         </Button>
-        <Button onClick={enviar} disabled={enviando}>
+        <Button onClick={enviar} disabled={enviando || sinContestar > 0}>
           {enviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {enviando
             ? detalle.completo ? 'Guardando…' : 'Enviando…'
