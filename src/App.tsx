@@ -4,6 +4,7 @@ import LoginN from './pages/LoginN';
 import DashboardNew from './pages/DashboardNew';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import VerificacionPublica from './pages/VerificacionPublica';
+import PrivacidadPublica from './pages/PrivacidadPublica';
 import { Toaster } from '@/components/ui/sonner';
 import { AppErrorBoundary } from '@/components/shell/AppErrorBoundary';
 import { Loader2 } from 'lucide-react';
@@ -42,6 +43,11 @@ const App: React.FC = () => {
   // Rutas públicas (sin AuthProvider)
   if (window.location.pathname.startsWith('/verificar/')) {
     return <VerificacionPublica />;
+  }
+  // La política de privacidad la lee gente de fuera —Meta la exige para
+  // publicar la aplicación de WhatsApp—, así que va sin login.
+  if (window.location.pathname.startsWith('/privacidad')) {
+    return <PrivacidadPublica />;
   }
 
   return (
