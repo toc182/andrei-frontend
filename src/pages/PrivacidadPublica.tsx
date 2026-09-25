@@ -95,9 +95,9 @@ const PrivacidadPublica: React.FC = () => (
           obligación legal. La solicitud se hace por correo a{' '}
           <a
             className="text-primary underline"
-            href="mailto:ivan@pinellaspanama.com"
+            href="mailto:info@pinellaspanama.com"
           >
-            ivan@pinellaspanama.com
+            info@pinellaspanama.com
           </a>
           .
         </p>
@@ -108,9 +108,9 @@ const PrivacidadPublica: React.FC = () => (
           Pinellas, S.A. · Urb. Los Ángeles, Calle 63A, D12, Panamá ·{' '}
           <a
             className="text-primary underline"
-            href="mailto:ivan@pinellaspanama.com"
+            href="mailto:info@pinellaspanama.com"
           >
-            ivan@pinellaspanama.com
+            info@pinellaspanama.com
           </a>
         </p>
       </Seccion>
