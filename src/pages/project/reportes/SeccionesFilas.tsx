@@ -24,7 +24,7 @@
  * se guarde el reporte, porque son del proyecto y no del día.
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { AppDialog } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,7 @@ function Linea({
   nombre: string;
   sePuedeQuitar: boolean;
   onQuitar: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex items-center gap-2 border-b border-slate-100 py-1 last:border-0">
@@ -88,8 +88,36 @@ function Numero({
   );
 }
 
+/**
+ * Una ficha para escoger una opción: la categoría de una entrega, el área de un
+ * trabajo. Ocupan mucho menos que una lista de casillas.
+ */
+export function Ficha({
+  activa, onClick, children,
+}: {
+  activa: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activa}
+      className={
+        'rounded-full border px-3 py-1 text-sm font-medium transition-colors '
+        + (activa
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-card text-slate-700 hover:border-primary')
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
 /** El «+ algo» de cada bloque: se abre en un campo y se cierra al agregar. */
-function Agregar({
+export function Agregar({
   texto, onAgregar, sugerencias = [], idSugerencias,
 }: {
   texto: string;
@@ -408,20 +436,13 @@ export function SeccionEntregas({
             <Label>Categoría</Label>
             <div className="flex flex-wrap gap-2">
               {listas.categorias.map((c) => (
-                <button
+                <Ficha
                   key={c.id}
-                  type="button"
+                  activa={borrador.categoria_id === c.id}
                   onClick={() => setBorrador({ ...borrador, categoria_id: c.id })}
-                  aria-pressed={borrador.categoria_id === c.id}
-                  className={
-                    'rounded-full border px-3 py-1 text-sm font-medium transition-colors '
-                    + (borrador.categoria_id === c.id
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-card text-slate-700 hover:border-primary')
-                  }
                 >
                   {c.nombre}
-                </button>
+                </Ficha>
               ))}
             </div>
             <Agregar texto="+ Categoría" onAgregar={onAgregarCategoria} />

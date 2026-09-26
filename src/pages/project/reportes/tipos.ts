@@ -62,6 +62,49 @@ export interface Area {
   activo: boolean;
 }
 
+/**
+ * Un punto de «Trabajo ejecutado»: qué se hizo y en qué área. area_id null es
+ * «General», lo que no es de ningún área (decisión de Ivan, 2026-09-25).
+ */
+export interface Trabajo {
+  area_id: number | null;
+  texto: string;
+}
+
+/** El mismo punto como vuelve del servidor, con el nombre de su área. */
+export interface TrabajoGuardado extends Trabajo {
+  id: number;
+  area_nombre: string | null;
+  orden: number;
+}
+
+/** Cómo se llama lo que no es de ningún área. */
+export const GENERAL = 'General';
+
+/**
+ * Los puntos juntados por área, cada área donde apareció por primera vez. El
+ * mismo orden que el PDF (agruparTrabajos del backend). `indices` son las
+ * posiciones de cada punto en la lista original, para poder corregirlo.
+ */
+export function agruparTrabajos<T extends Trabajo>(
+  trabajos: T[],
+  nombreDe: (t: T) => string,
+): { clave: string; nombre: string; indices: number[] }[] {
+  const grupos: { clave: string; nombre: string; indices: number[] }[] = [];
+  const porClave = new Map<string, { clave: string; nombre: string; indices: number[] }>();
+  trabajos.forEach((t, i) => {
+    const clave = t.area_id === null ? 'general' : String(t.area_id);
+    let g = porClave.get(clave);
+    if (!g) {
+      g = { clave, nombre: t.area_id === null ? GENERAL : nombreDe(t), indices: [] };
+      porClave.set(clave, g);
+      grupos.push(g);
+    }
+    g.indices.push(i);
+  });
+  return grupos;
+}
+
 /** Una fila de la lista. */
 export interface ReporteFila {
   id: number;
@@ -139,7 +182,11 @@ export interface Reporte {
   personal_calificado: number;
   ayudantes: number;
   equipo: string[];
-  que_se_hizo: string;
+  /**
+   * El trabajo ejecutado de un reporte de antes del cambio, en un solo texto.
+   * Null en uno por áreas, que trae sus puntos en `trabajos`.
+   */
+  que_se_hizo: string | null;
   atrasos: string | null;
   novedades: string | null;
   creado_por: number;
@@ -157,7 +204,10 @@ export interface Reporte {
    */
   envio_proximo_intento: string | null;
   puede_editar: boolean;
+  /** La lista de áreas aparte de un reporte de antes; vacía en uno por áreas. */
   areas: { id: number; nombre: string }[];
+  /** Los puntos de un reporte por áreas; vacío en uno de antes. */
+  trabajos: TrabajoGuardado[];
   fotos: Foto[];
   correcciones: Correccion[];
   personal: PersonalGuardado[];

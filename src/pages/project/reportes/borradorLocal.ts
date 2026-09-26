@@ -17,7 +17,7 @@
  * recuerda nada, que es como funcionaba antes.
  */
 
-import type { FilaEntrega, Reporte } from './tipos';
+import type { FilaEntrega, Reporte, Trabajo } from './tipos';
 
 /** Lo que el formulario necesita para arrancar, con la forma de su estado. */
 export interface Semilla {
@@ -25,6 +25,12 @@ export interface Semilla {
   clima: string;
   horas: string;
   motivo: string;
+  /**
+   * Los puntos de «Trabajo ejecutado» por área. Puede faltar en lo que un
+   * teléfono guardó antes del cambio: esa semilla trae solo queSeHizo.
+   */
+  trabajos?: Trabajo[];
+  /** La forma de antes: la lista de áreas aparte y el texto. */
   areasElegidas: number[];
   queSeHizo: string;
   atrasos: string;
@@ -48,6 +54,7 @@ export function semillaDeReporte(r: Reporte, borradorId: number | null): Semilla
     clima: r.clima ?? '',
     horas: r.horas_perdidas ?? '',
     motivo: r.motivo ?? '',
+    trabajos: (r.trabajos ?? []).map((t) => ({ area_id: t.area_id, texto: t.texto })),
     areasElegidas: r.areas.map((a) => a.id),
     queSeHizo: r.que_se_hizo ?? '',
     atrasos: r.atrasos ?? '',
@@ -73,6 +80,20 @@ export function semillaDeReporte(r: Reporte, borradorId: number | null): Semilla
 }
 
 /**
+ * Los puntos con los que arranca un reporte por áreas.
+ *
+ * Lo que se escribió con la forma de antes —un borrador del servidor o del
+ * teléfono de antes del cambio— no se pierde: su texto entra como un punto de
+ * «General», que el ingeniero puede mover de área o partir.
+ */
+export function trabajosDeSemilla(s: Semilla | null): Trabajo[] {
+  if (!s) return [];
+  if (s.trabajos && s.trabajos.length > 0) return s.trabajos;
+  const texto = s.queSeHizo?.trim();
+  return texto ? [{ area_id: null, texto }] : [];
+}
+
+/**
  * Si hay algo que valga la pena recordar. La fecha no cuenta: viene puesta
  * sola, y un formulario recién abierto no es un reporte a medias.
  */
@@ -83,6 +104,7 @@ export function tieneContenido(s: Semilla): boolean {
       (t) => String(t ?? '').trim() !== '',
     ) ||
     s.areasElegidas.length > 0 ||
+    (s.trabajos?.length ?? 0) > 0 ||
     Object.values(s.personal).some((v) => v !== '' && Number(v) !== 0) ||
     Object.values(s.equiposUso).some(
       (v) => (v.unidades !== '' && Number(v.unidades) !== 0) || (v.horas !== '' && Number(v.horas) !== 0),

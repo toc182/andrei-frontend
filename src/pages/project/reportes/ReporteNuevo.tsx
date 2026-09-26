@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import ReporteForm from './ReporteForm';
 import {
-  type Semilla, borrarLocal, leerLocal, semillaDeReporte,
+  type Semilla, borrarLocal, leerLocal, semillaDeReporte, trabajosDeSemilla,
 } from './borradorLocal';
 import type { Foto, Reporte } from './tipos';
 
@@ -63,6 +63,9 @@ function fechaDelReporte(ymd: string): string {
   const [y, m, d] = ymd.slice(0, 10).split('-');
   return `${d}/${m}/${y}`;
 }
+
+/** Lo que se escribió del trabajo ejecutado, en una línea. */
+const loEscrito = (s: Semilla) => trabajosDeSemilla(s).map((t) => t.texto).join(' · ');
 
 function arranque(texto: string, tope = 110): string {
   const limpio = texto.replace(/\s+/g, ' ').trim();
@@ -180,9 +183,11 @@ export default function ReporteNuevo({
               <span className="text-muted-foreground">Fotos ya subidas</span>
               <span className="font-semibold tabular-nums">{fotos}</span>
             </div>
-            {sinEnviar.semilla.queSeHizo.trim() && (
+            {/* El arranque de lo escrito: los puntos por área, o el texto de
+                un reporte empezado antes de ese cambio. */}
+            {loEscrito(sinEnviar.semilla) && (
               <p className="border-t border-border pt-1.5 text-slate-700">
-                «{arranque(sinEnviar.semilla.queSeHizo)}»
+                «{arranque(loEscrito(sinEnviar.semilla))}»
               </p>
             )}
           </div>

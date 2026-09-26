@@ -8,7 +8,10 @@
  *   fecha y clima arriba y horas (angosto) junto a motivo debajo.
  * - Los campos se alinean por abajo, para que una etiqueta que se parte en
  *   dos líneas no deje su casilla a distinta altura que la de al lado.
- * - Las áreas son fichas, no una lista de casillas: ocupan mucho menos.
+ * - El trabajo ejecutado va por áreas (SeccionTrabajo.tsx): cada punto con su
+ *   área, junto con Novedades y Atrasos en «Resumen del día», igual que el PDF.
+ *   Un reporte enviado antes de ese cambio se corrige con su forma de antes:
+ *   áreas en fichas y un solo texto.
  * - Los campos de texto crecen hacia abajo mientras se escribe.
  * - Cada foto es un renglón con su leyenda al lado, igual en el teléfono y en
  *   la computadora (maqueta aprobada por Ivan el 2026-09-16). En pantalla ancha
@@ -39,11 +42,12 @@ import {
 import { toast } from 'sonner';
 import {
   CLIMAS, LEYENDA_MAX, type Area, type FilaEntrega, type Foto, type Listas, type Reporte,
-  fechaCorta, hoyYMD,
+  type Trabajo, fechaCorta, hoyYMD,
 } from './tipos';
-import { SeccionEntregas, SeccionEquipo, SeccionPersonal } from './SeccionesFilas';
+import { Ficha, SeccionEntregas, SeccionEquipo, SeccionPersonal } from './SeccionesFilas';
+import { SeccionTrabajo } from './SeccionTrabajo';
 import {
-  type Semilla, borrarLocal, guardarLocal, semillaDeReporte,
+  type Semilla, borrarLocal, guardarLocal, semillaDeReporte, trabajosDeSemilla,
 } from './borradorLocal';
 import { useAuth } from '@/context/AuthContext';
 
@@ -223,6 +227,14 @@ export default function ReporteForm({
     inicial?.areasElegidas ?? [],
   );
   const [queSeHizo, setQueSeHizo] = useState(inicial?.queSeHizo ?? '');
+  // Por áreas, salvo al corregir un reporte que se envió antes del cambio: ese
+  // se queda con su texto y su lista de áreas (decisión de Ivan, 2026-09-25).
+  const [porAreas] = useState(
+    () => !reporte || (reporte.trabajos ?? []).length > 0 || !reporte.que_se_hizo,
+  );
+  const [trabajos, setTrabajos] = useState<Trabajo[]>(() =>
+    porAreas ? trabajosDeSemilla(inicial) : [],
+  );
   const [atrasos, setAtrasos] = useState(inicial?.atrasos ?? '');
   const [novedades, setNovedades] = useState(inicial?.novedades ?? '');
   // Las fotos que ya están en el servidor entran como cualquier otra, pero sin
@@ -288,12 +300,32 @@ export default function ReporteForm({
   const avisosRef = useRef<HTMLDivElement>(null);
   const [yaReportado, setYaReportado] = useState<string | null>(null);
 
-  useEffect(() => {
+  const cargarAreas = useCallback(() => {
     api
       .get(`/proyecto-areas/${projectId}`)
       .then((r) => setAreas(r.data.data ?? []))
       .catch(() => setAreas([]));
   }, [projectId]);
+
+  useEffect(cargarAreas, [cargarAreas]);
+
+  // «+ Área» en la ventana del trabajo: el área es del proyecto, así que se
+  // guarda ya, como las demás listas, y queda para los reportes siguientes.
+  const agregarArea = useCallback(
+    async (nombre: string): Promise<number | null> => {
+      try {
+        const r = await api.post(`/proyecto-areas/${projectId}`, { nombre });
+        cargarAreas();
+        return r.data?.data?.id ?? null;
+      } catch (e) {
+        const msg = (e as { response?: { data?: { message?: string } } })
+          ?.response?.data?.message;
+        setError(msg ?? 'No se pudo agregar el área');
+        return null;
+      }
+    },
+    [projectId, cargarAreas],
+  );
 
   // Las cuatro listas vienen de un solo viaje: el formulario las necesita
   // todas y se llena en obra, donde cada petición de más es otra manera de
@@ -361,11 +393,11 @@ export default function ReporteForm({
   useEffect(() => {
     if (editando || !user) return;
     guardarLocal(user.id, projectId, {
-      fecha, clima, horas, motivo, areasElegidas, queSeHizo, atrasos, novedades,
+      fecha, clima, horas, motivo, trabajos, areasElegidas, queSeHizo, atrasos, novedades,
       personal, equiposUso, entregas, borradorId: borradorRef.current,
     });
   }, [
-    editando, user, projectId, fecha, clima, horas, motivo, areasElegidas, queSeHizo,
+    editando, user, projectId, fecha, clima, horas, motivo, trabajos, areasElegidas, queSeHizo,
     atrasos, novedades, personal, equiposUso, entregas,
   ]);
 
@@ -460,7 +492,9 @@ export default function ReporteForm({
     setSinConexion(false);
     if (!fecha) return setError('Falta la fecha del reporte');
     if (!clima) return setError('Falta indicar el clima');
-    if (!queSeHizo.trim()) return setError('Falta describir qué se hizo hoy');
+    if (porAreas ? trabajos.length === 0 : !queSeHizo.trim()) {
+      return setError('Falta anotar el trabajo ejecutado');
+    }
 
     setGuardando(true);
     // La foto que está subiendo, para nombrarla si el servidor la rechaza.
@@ -471,8 +505,10 @@ export default function ReporteForm({
         clima,
         horas_perdidas: horas === '' ? null : Number(horas),
         motivo: motivo.trim() || null,
-        areas: areasElegidas,
-        que_se_hizo: queSeHizo.trim(),
+        // Por áreas van los puntos; un reporte de antes, su texto y sus áreas.
+        ...(porAreas
+          ? { trabajos }
+          : { areas: areasElegidas, que_se_hizo: queSeHizo.trim() }),
         atrasos: atrasos.trim() || null,
         novedades: novedades.trim() || null,
         // Se mandan todas las filas, incluidas las que quedaron en cero: el
@@ -520,7 +556,7 @@ export default function ReporteForm({
         // así, al volver, se ofrece con las fotos que alcanzaron a subir.
         if (user) {
           guardarLocal(user.id, projectId, {
-            fecha, clima, horas, motivo, areasElegidas, queSeHizo, atrasos, novedades,
+            fecha, clima, horas, motivo, trabajos, areasElegidas, queSeHizo, atrasos, novedades,
             personal, equiposUso, entregas, borradorId: id,
           });
         }
@@ -630,8 +666,8 @@ export default function ReporteForm({
     }
   }, [
     fecha, clima, horas, motivo, listas, personal, equiposUso, entregas, areasElegidas,
-    queSeHizo, atrasos, novedades, fotos, editando, reporte, projectId, onListo, user,
-    claveCorreccion,
+    queSeHizo, porAreas, trabajos, atrasos, novedades, fotos, editando, reporte, projectId,
+    onListo, user, claveCorreccion,
   ]);
 
   return (
@@ -695,60 +731,71 @@ export default function ReporteForm({
         </div>
 
         <div className="space-y-4 border-t border-border p-4">
-          <SectionHeader title="Trabajo ejecutado" />
+          <SectionHeader title="Resumen del día" />
 
-          <div className="space-y-2">
-            <Label>Áreas de trabajo</Label>
-            {areas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Este proyecto todavía no tiene áreas definidas.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {areas.map((a) => {
-                  const activa = areasElegidas.includes(a.id);
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => alternarArea(a.id)}
-                      aria-pressed={activa}
-                      className={
-                        'rounded-full border px-3 py-1 text-sm font-medium transition-colors ' +
-                        (activa
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-card text-slate-700 hover:border-primary')
-                      }
-                    >
-                      {a.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="que">Trabajo ejecutado *</Label>
-            <TextareaCrece
-              id="que" value={queSeHizo} onChange={setQueSeHizo}
-              placeholder="Vaciado de losa en área de chorros, armado de acero en torre péndulo…"
-            />
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
+          {porAreas ? (
             <div className="space-y-1.5">
-              <Label htmlFor="atrasos">Atrasos o impedimentos</Label>
-              <TextareaCrece
-                id="atrasos" rows={2} value={atrasos} onChange={setAtrasos}
-                placeholder="Falta de material, equipo dañado…"
+              <Label>Trabajo ejecutado</Label>
+              <SeccionTrabajo
+                areas={areas}
+                trabajos={trabajos}
+                onTrabajos={setTrabajos}
+                onAgregarArea={agregarArea}
+                nombres={Object.fromEntries(
+                  (reporte?.trabajos ?? [])
+                    .filter((t) => t.area_id !== null)
+                    .map((t) => [t.area_id, t.area_nombre ?? '']),
+                )}
+                bloqueado={guardando}
               />
             </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>Áreas de trabajo</Label>
+                {areas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Este proyecto todavía no tiene áreas definidas.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {areas.map((a) => (
+                      <Ficha
+                        key={a.id}
+                        activa={areasElegidas.includes(a.id)}
+                        onClick={() => alternarArea(a.id)}
+                      >
+                        {a.nombre}
+                      </Ficha>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="que">Trabajo ejecutado *</Label>
+                <TextareaCrece
+                  id="que" value={queSeHizo} onChange={setQueSeHizo}
+                  placeholder="Vaciado de losa en área de chorros, armado de acero en torre péndulo…"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Novedades antes que Atrasos, igual que en el PDF (Ivan, 2026-09-25). */}
+          <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="novedades">Novedades del día</Label>
               <TextareaCrece
                 id="novedades" rows={2} value={novedades} onChange={setNovedades}
                 placeholder="Visitas, instrucciones, incidentes"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="atrasos">Atrasos o impedimentos</Label>
+              <TextareaCrece
+                id="atrasos" rows={2} value={atrasos} onChange={setAtrasos}
+                placeholder="Falta de material, equipo dañado…"
               />
             </div>
           </div>

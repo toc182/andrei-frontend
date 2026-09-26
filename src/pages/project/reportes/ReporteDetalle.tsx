@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { type Reporte, clasesClima, fechaLarga } from './tipos';
+import { GENERAL, type Reporte, agruparTrabajos, clasesClima, fechaLarga } from './tipos';
 import SeccionCorrecciones from './SeccionCorrecciones';
 
 interface Props {
@@ -267,6 +267,33 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
           )}
         </div>
 
+        {(reporte.trabajos ?? []).length > 0 ? (
+          // Por áreas: «Resumen del día» con el trabajo de cada área, y después
+          // Novedades y Atrasos, en el mismo orden que el formulario y el PDF.
+          <div className="space-y-4 border-t border-border p-4">
+            <SectionHeader title="Resumen del día" />
+            <div>
+              <div className="text-xs text-muted-foreground">Trabajo ejecutado</div>
+              {agruparTrabajos(reporte.trabajos, (t) => t.area_nombre ?? '').map((g) => (
+                <div key={g.clave} className="border-b border-slate-100 py-2 last:border-0">
+                  <span className="block text-[15px] font-semibold text-foreground">
+                    {g.clave === 'general' ? GENERAL : g.nombre}
+                  </span>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-[15px] leading-relaxed">
+                    {g.indices.map((i) => (
+                      <li key={reporte.trabajos[i].id} className="whitespace-pre-wrap">
+                        {reporte.trabajos[i].texto}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <Texto etiqueta="Novedades del día" valor={reporte.novedades} vacio="Sin novedades" />
+            <Texto etiqueta="Atrasos o impedimentos" valor={reporte.atrasos} vacio="Sin atrasos reportados" />
+          </div>
+        ) : (
+        // Un reporte de antes del cambio se ve como se veía.
         <div className="space-y-4 border-t border-border p-4">
           <SectionHeader title="Trabajo ejecutado" />
           {reporte.areas.length > 0 && (
@@ -285,6 +312,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
           <Texto etiqueta="Atrasos o impedimentos" valor={reporte.atrasos} vacio="Sin atrasos reportados" />
           <Texto etiqueta="Novedades del día" valor={reporte.novedades} vacio="Sin novedades" />
         </div>
+        )}
 
         {/* A dos columnas en pantalla ancha, como el formulario y el PDF:
             Personal a la izquierda, Equipo y Entregas a la derecha. Solo se
