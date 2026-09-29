@@ -5,10 +5,14 @@
  * Cuando se abre el formulario o un reporte, la pantalla se la queda entera:
  * `onPantallaCompleta` se lo dice a la página para que esconda su cabecera y
  * sus pestañas, como pasa con el reporte diario.
+ *
+ * El botón «Nuevo reporte semanal» no vive aquí sino en la cabecera de la
+ * página, a la altura del título, donde está «Nuevo reporte» en Diarios (Ivan,
+ * 2026-09-29). La página lo aprieta a través de `ref`.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { useCallback, useEffect, useImperativeHandle, useState, type Ref } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import api from '@/services/api';
 import { ErrorState, PageHeader, TableSkeleton } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -20,6 +24,11 @@ import SemanalDetalle from './SemanalDetalle';
 import SemanalForm from './SemanalForm';
 import type { SemanaDisponible, SemanalFila } from './tipos';
 
+/** Lo que la página puede pedirle a esta pestaña desde su cabecera. */
+export interface SemanalesAcciones {
+  nuevo: () => void;
+}
+
 type Vista =
   | { modo: 'lista' }
   | { modo: 'form'; id: number }
@@ -27,16 +36,18 @@ type Vista =
   | { modo: 'detalle'; id: number };
 
 export default function SemanalesView({
-  projectId, onPantallaCompleta,
+  projectId, onPantallaCompleta, onAbriendo, ref,
 }: {
   projectId: number;
   onPantallaCompleta: (completa: boolean) => void;
+  /** Mientras se empieza un reporte, para que la cabecera apague su botón. */
+  onAbriendo: (abriendo: boolean) => void;
+  ref?: Ref<SemanalesAcciones>;
 }) {
   const [vista, setVista] = useState<Vista>({ modo: 'lista' });
   const [filas, setFilas] = useState<SemanalFila[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
-  const [abriendo, setAbriendo] = useState(false);
   const [titulo, setTitulo] = useState<string | null>(null);
   const [bajando, setBajando] = useState<number | null>(null);
 
@@ -83,7 +94,7 @@ export default function SemanalesView({
    * sigue ese mismo; no se abre otro.
    */
   const nuevo = async () => {
-    setAbriendo(true);
+    onAbriendo(true);
     try {
       const r = await api.get(`/proyecto-reportes-semanales/${projectId}/semanas`);
       const semanas = (r.data.data ?? []) as SemanaDisponible[];
@@ -100,9 +111,11 @@ export default function SemanalesView({
         .response?.data?.message;
       toast.error(msg ?? 'No se pudo empezar el reporte');
     } finally {
-      setAbriendo(false);
+      onAbriendo(false);
     }
   };
+
+  useImperativeHandle(ref, () => ({ nuevo }));
 
   if (vista.modo === 'detalle') {
     return (
@@ -153,12 +166,6 @@ export default function SemanalesView({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button size="sm" onClick={nuevo} disabled={abriendo}>
-          <Plus className="mr-2 h-4 w-4" /> Nuevo reporte semanal
-        </Button>
-      </div>
-
       {error ? (
         <ErrorState onRetry={cargar} />
       ) : cargando ? (

@@ -15,7 +15,7 @@
  * arranca en el actual, que es lo que acota el tamaño de esa carga.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, MapPin, ArrowLeft, Download, Loader2 } from 'lucide-react';
 import api from '@/services/api';
 import {
@@ -42,7 +42,7 @@ import ReporteForm from './reportes/ReporteForm';
 import ReporteNuevo from './reportes/ReporteNuevo';
 import ReporteDetalle from './reportes/ReporteDetalle';
 import AreasDialog from './reportes/AreasDialog';
-import SemanalesView from './reportes/semanal/SemanalesView';
+import SemanalesView, { type SemanalesAcciones } from './reportes/semanal/SemanalesView';
 import {
   type Reporte, type ReporteFila,
   clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, mesCorto, hoyYMD,
@@ -129,6 +129,10 @@ export default function ProjectReportes({ projectId }: Props) {
   // reporte diario con la suya.
   const [pestana, setPestana] = useState<'diarios' | 'semanales'>('diarios');
   const [semanalCompleta, setSemanalCompleta] = useState(false);
+  // «Nuevo reporte semanal» vive en la cabecera, como «Nuevo reporte» en
+  // Diarios; lo que hace es de la pestaña de semanales.
+  const semanales = useRef<SemanalesAcciones>(null);
+  const [abriendoSemanal, setAbriendoSemanal] = useState(false);
   const [numeroPrevisto, setNumeroPrevisto] = useState<string | null>(null);
   const [bajando, setBajando] = useState<number | null>(null);
 
@@ -320,6 +324,15 @@ export default function ProjectReportes({ projectId }: Props) {
             </Button>
           </>
         )}
+        {pestana === 'semanales' && (
+          <Button
+            size="sm"
+            onClick={() => semanales.current?.nuevo()}
+            disabled={abriendoSemanal}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Nuevo reporte semanal
+          </Button>
+        )}
       </PageHeader>
 
       <Tabs value={pestana} onValueChange={(v) => setPestana(v as 'diarios' | 'semanales')}>
@@ -336,7 +349,12 @@ export default function ProjectReportes({ projectId }: Props) {
           forceMount
           className={`space-y-6 ${pestana === 'semanales' ? '' : 'hidden'}`}
         >
-          <SemanalesView projectId={projectId} onPantallaCompleta={setSemanalCompleta} />
+          <SemanalesView
+            ref={semanales}
+            projectId={projectId}
+            onPantallaCompleta={setSemanalCompleta}
+            onAbriendo={setAbriendoSemanal}
+          />
         </TabsContent>
 
         <TabsContent value="diarios" className="space-y-6">
