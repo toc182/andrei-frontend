@@ -829,8 +829,10 @@ export default function ReporteForm({
                     ...q,
                     [id]: { unidades: '', horas: '', ...q[id], [campo]: v },
                   }))}
-                  onAgregar={(nombre) => agregarA('equipos', nombre)}
+                  onAgregar={(nombre, empresaId) => agregarA('equipos', nombre, empresaId)}
                   onQuitar={(id) => quitarDe('equipos', id)}
+                  onAgregarEmpresa={(nombre) => agregarA('empresas', nombre)}
+                  onQuitarEmpresa={(id) => quitarDe('empresas', id)}
                 />
               </div>
 

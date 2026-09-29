@@ -10,8 +10,8 @@
  *   lista del proyecto aparece con sus casillas para que el ingeniero solo
  *   teclee números. Una entrega, en cambio, es un hecho de ese día y no se
  *   puede precargar.
- * - En Personal, cada bloque (el propio y cada empresa) es dueño de sus
- *   puestos. La equis SIEMPRE quita la línea de ese bloque y nunca toca a los
+ * - En Personal y en Equipo, cada bloque (el propio y cada empresa) es dueño
+ *   de sus puestos o de sus máquinas. La equis SIEMPRE quita la línea de ese bloque y nunca toca a los
  *   demás; por eso el «+ Puesto» está dentro de cada bloque y no suelto.
  * - La equis va pegada al nombre, no al final, para que las casillas de número
  *   queden todas en la misma columna y se lean de un vistazo.
@@ -173,86 +173,118 @@ export function Agregar({
 }
 
 // ---------------------------------------------------------------------------
+// Bloques por empresa: Personal y Equipo
+// ---------------------------------------------------------------------------
+
+/**
+ * Un bloque de Personal o de Equipo: el propio, o el de una empresa en su
+ * recuadro con su equis. Las dos secciones lo comparten para verse y portarse
+ * igual (decisión de Ivan del 2026-09-28: el equipo va por empresa como el
+ * personal, y las empresas son las mismas en las dos).
+ */
+function Bloque({
+  empresa, nombrePropio, hayEmpresas, onQuitarEmpresa, children,
+}: {
+  /** null es el bloque propio. */
+  empresa: ItemLista | null;
+  nombrePropio: string;
+  hayEmpresas: boolean;
+  onQuitarEmpresa: (id: number) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={
+        empresa
+          ? 'rounded-md border border-border bg-primary/[0.03] p-2'
+          : ''
+      }
+    >
+      {/* El nombre del bloque propio solo aparece cuando hay con quién
+          confundirlo: si no hay subcontratistas, sobra la etiqueta. Es
+          «Pinellas», o el consorcio en un proyecto en consorcio (lo decide
+          el servidor, igual que en el PDF). */}
+      {(empresa || hayEmpresas) && (
+        <div className="flex items-center gap-2 pb-1 text-xs font-bold uppercase tracking-wide text-primary">
+          {empresa ? empresa.nombre : nombrePropio}
+          {empresa && (
+            <button
+              type="button"
+              aria-label={`Quitar ${empresa.nombre}`}
+              onClick={() => onQuitarEmpresa(empresa.id)}
+              className="ml-auto text-muted-foreground hover:text-error"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/** Lo que comparten Personal y Equipo: la lista de empresas y cómo tocarla. */
+interface EmpresasProps {
+  listas: Listas;
+  onAgregarEmpresa: (nombre: string) => void;
+  onQuitarEmpresa: (id: number) => void;
+}
+
+/** Los ítems de un bloque: los del propio (null) o los de esa empresa. */
+const delBloque = (items: ItemLista[], empresaId: number | null) =>
+  items.filter((x) => (x.empresa_id ?? null) === empresaId);
+
+// ---------------------------------------------------------------------------
 // Personal
 // ---------------------------------------------------------------------------
 
-interface PersonalProps {
-  listas: Listas;
+interface PersonalProps extends EmpresasProps {
   valores: Record<number, string>;
   onCantidad: (puestoId: number, v: string) => void;
   onAgregarPuesto: (nombre: string, empresaId: number | null) => void;
   onQuitarPuesto: (id: number) => void;
-  onAgregarEmpresa: (nombre: string) => void;
-  onQuitarEmpresa: (id: number) => void;
 }
 
 export function SeccionPersonal({
   listas, valores, onCantidad, onAgregarPuesto, onQuitarPuesto,
   onAgregarEmpresa, onQuitarEmpresa,
 }: PersonalProps) {
-  const delBloque = (empresaId: number | null) =>
-    listas.puestos.filter((p) => (p.empresa_id ?? null) === empresaId);
-
   const total = listas.puestos.reduce(
     (s, p) => s + (Number(valores[p.id]) || 0), 0,
   );
-  const hayEmpresas = listas.empresas.length > 0;
 
-  const bloque = (empresa: ItemLista | null) => {
-    const puestos = delBloque(empresa?.id ?? null);
-    return (
-      <div
-        key={empresa?.id ?? 'propio'}
-        className={
-          empresa
-            ? 'rounded-md border border-border bg-primary/[0.03] p-2'
-            : ''
-        }
-      >
-        {/* El nombre del bloque propio solo aparece cuando hay con quién
-            confundirlo: si no hay subcontratistas, sobra la etiqueta. Es
-            «Pinellas», o el consorcio en un proyecto en consorcio (lo decide
-            el servidor, igual que en el PDF). */}
-        {(empresa || hayEmpresas) && (
-          <div className="flex items-center gap-2 pb-1 text-xs font-bold uppercase tracking-wide text-primary">
-            {empresa ? empresa.nombre : listas.nombre_propio}
-            {empresa && (
-              <button
-                type="button"
-                aria-label={`Quitar ${empresa.nombre}`}
-                onClick={() => onQuitarEmpresa(empresa.id)}
-                className="ml-auto text-muted-foreground hover:text-error"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        )}
+  const bloque = (empresa: ItemLista | null) => (
+    <Bloque
+      key={empresa?.id ?? 'propio'}
+      empresa={empresa}
+      nombrePropio={listas.nombre_propio}
+      hayEmpresas={listas.empresas.length > 0}
+      onQuitarEmpresa={onQuitarEmpresa}
+    >
+      {delBloque(listas.puestos, empresa?.id ?? null).map((p) => (
+        <Linea
+          key={p.id}
+          nombre={p.nombre}
+          // Los cuatro de arranque del bloque propio no se quitan. Dentro de
+          // una empresa sí: un subcontratista rara vez trae los cuatro.
+          sePuedeQuitar={!p.fijo}
+          onQuitar={() => onQuitarPuesto(p.id)}
+        >
+          <Numero
+            etiqueta={p.nombre}
+            value={valores[p.id] ?? ''}
+            onChange={(v) => onCantidad(p.id, v)}
+          />
+        </Linea>
+      ))}
 
-        {puestos.map((p) => (
-          <Linea
-            key={p.id}
-            nombre={p.nombre}
-            // Los cuatro de arranque del bloque propio no se quitan. Dentro de
-            // una empresa sí: un subcontratista rara vez trae los cuatro.
-            sePuedeQuitar={!p.fijo}
-            onQuitar={() => onQuitarPuesto(p.id)}
-          >
-            <Numero
-              etiqueta={p.nombre}
-              value={valores[p.id] ?? ''}
-              onChange={(v) => onCantidad(p.id, v)}
-            />
-          </Linea>
-        ))}
-
-        <Agregar
-          texto="+ Puesto"
-          onAgregar={(nombre) => onAgregarPuesto(nombre, empresa?.id ?? null)}
-        />
-      </div>
-    );
-  };
+      <Agregar
+        texto="+ Puesto"
+        onAgregar={(nombre) => onAgregarPuesto(nombre, empresa?.id ?? null)}
+      />
+    </Bloque>
+  );
 
   return (
     <div className="max-w-[26rem] space-y-3">
@@ -273,54 +305,77 @@ export function SeccionPersonal({
 // Equipo
 // ---------------------------------------------------------------------------
 
-interface EquipoProps {
-  listas: Listas;
+interface EquipoProps extends EmpresasProps {
   valores: Record<number, { unidades: string; horas: string }>;
   onValor: (equipoId: number, campo: 'unidades' | 'horas', v: string) => void;
-  onAgregar: (nombre: string) => void;
+  onAgregar: (nombre: string, empresaId: number | null) => void;
   onQuitar: (id: number) => void;
 }
 
 export function SeccionEquipo({
   listas, valores, onValor, onAgregar, onQuitar,
+  onAgregarEmpresa, onQuitarEmpresa,
 }: EquipoProps) {
+  const bloque = (empresa: ItemLista | null) => {
+    const maquinas = delBloque(listas.equipos, empresa?.id ?? null);
+    return (
+      <Bloque
+        key={empresa?.id ?? 'propio'}
+        empresa={empresa}
+        nombrePropio={listas.nombre_propio}
+        hayEmpresas={listas.empresas.length > 0}
+        onQuitarEmpresa={onQuitarEmpresa}
+      >
+        {maquinas.length > 0 && (
+          <div className="flex items-center gap-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            <span className="ml-auto w-14 text-center">Unid.</span>
+            <span className="w-[4.5rem] text-center">Horas</span>
+          </div>
+        )}
+
+        {maquinas.length === 0 && !empresa && (
+          <p className="text-sm italic text-muted-foreground">
+            Este proyecto todavía no tiene equipos en su lista.
+          </p>
+        )}
+
+        {maquinas.map((q) => (
+          <Linea
+            key={q.id}
+            nombre={q.nombre}
+            sePuedeQuitar
+            onQuitar={() => onQuitar(q.id)}
+          >
+            <Numero
+              etiqueta={`Unidades de ${q.nombre}`}
+              value={valores[q.id]?.unidades ?? ''}
+              onChange={(v) => onValor(q.id, 'unidades', v)}
+            />
+            <Numero
+              ancha
+              etiqueta={`Horas de ${q.nombre}`}
+              value={valores[q.id]?.horas ?? ''}
+              onChange={(v) => onValor(q.id, 'horas', v)}
+            />
+          </Linea>
+        ))}
+
+        <Agregar
+          texto="+ Equipo"
+          onAgregar={(nombre) => onAgregar(nombre, empresa?.id ?? null)}
+        />
+      </Bloque>
+    );
+  };
+
   return (
-    <div className="max-w-[26rem] space-y-1">
-      {listas.equipos.length > 0 && (
-        <div className="flex items-center gap-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-          <span className="ml-auto w-14 text-center">Unid.</span>
-          <span className="w-[4.5rem] text-center">Horas</span>
-        </div>
-      )}
+    <div className="max-w-[26rem] space-y-3">
+      {bloque(null)}
+      {listas.empresas.map((e) => bloque(e))}
 
-      {listas.equipos.length === 0 && (
-        <p className="text-sm italic text-muted-foreground">
-          Este proyecto todavía no tiene equipos en su lista.
-        </p>
-      )}
-
-      {listas.equipos.map((q) => (
-        <Linea
-          key={q.id}
-          nombre={q.nombre}
-          sePuedeQuitar
-          onQuitar={() => onQuitar(q.id)}
-        >
-          <Numero
-            etiqueta={`Unidades de ${q.nombre}`}
-            value={valores[q.id]?.unidades ?? ''}
-            onChange={(v) => onValor(q.id, 'unidades', v)}
-          />
-          <Numero
-            ancha
-            etiqueta={`Horas de ${q.nombre}`}
-            value={valores[q.id]?.horas ?? ''}
-            onChange={(v) => onValor(q.id, 'horas', v)}
-          />
-        </Linea>
-      ))}
-
-      <Agregar texto="+ Equipo" onAgregar={onAgregar} />
+      {/* Es la misma lista de empresas de Personal: la que se agrega aquí
+          aparece allá, y al revés. */}
+      <Agregar texto="+ Empresa" onAgregar={onAgregarEmpresa} />
     </div>
   );
 }

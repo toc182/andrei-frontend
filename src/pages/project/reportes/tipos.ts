@@ -14,7 +14,7 @@ export interface ItemLista {
   id: number;
   nombre: string;
   orden: number;
-  /** Solo en puestos: null es el bloque propio, con valor es el de esa empresa. */
+  /** Solo en puestos y equipos: null es el bloque propio, con valor es el de esa empresa. */
   empresa_id?: number | null;
   /** Solo en puestos: los cuatro de arranque, que no se quitan. */
   fijo?: boolean;
@@ -51,7 +51,22 @@ export interface PersonalGuardado extends FilaPersonal {
   empresa_id: number | null;
   empresa_nombre: string | null;
 }
-export interface EquipoGuardado extends FilaEquipo { nombre: string; }
+export interface EquipoGuardado extends FilaEquipo {
+  nombre: string;
+  empresa_id: number | null;
+  empresa_nombre: string | null;
+}
+
+/**
+ * Una columna de las tablas de Personal y Equipo del reporte terminado: la
+ * cuadrilla propia (empresa_id null) o una empresa, con sus siglas. Vienen
+ * hechas del servidor para que la pantalla diga lo mismo que el PDF.
+ */
+export interface ColumnaEmpresa {
+  empresa_id: number | null;
+  nombre: string;
+  sigla: string;
+}
 export interface EntregaGuardada extends FilaEntrega { categoria: string; }
 
 export interface Area {
@@ -213,6 +228,8 @@ export interface Reporte {
   personal: PersonalGuardado[];
   equipos: EquipoGuardado[];
   entregas: EntregaGuardada[];
+  /** Solo en el detalle: las cuadrillas con filas en este reporte, con sus siglas. */
+  columnas?: ColumnaEmpresa[];
 }
 
 const MESES = [

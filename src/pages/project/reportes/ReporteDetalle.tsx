@@ -28,6 +28,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { GENERAL, type Reporte, agruparTrabajos, clasesClima, fechaLarga } from './tipos';
 import SeccionCorrecciones from './SeccionCorrecciones';
+import { TablaEquipo, TablaPersonal } from './TablasCuadrillas';
 
 interface Props {
   projectId: number;
@@ -41,46 +42,6 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
     <div>
       <div className="text-xs text-muted-foreground">{etiqueta}</div>
       <div className="mt-0.5 text-base font-semibold tabular-nums">{children}</div>
-    </div>
-  );
-}
-
-/**
- * Las filas de Personal o Equipo en solo lectura, agrupadas por empresa.
- * El titulo del grupo solo aparece cuando hay mas de uno: con una sola
- * cuadrilla, el nombre propio seria una etiqueta de mas.
- */
-function FilasLeidas({
-  filas,
-  propio,
-}: {
-  filas: { clave: string; grupo: string | null; nombre: string; valor: string }[];
-  /** El titulo del grupo sin empresa: «Pinellas», o el consorcio. */
-  propio: string;
-}) {
-  const grupos = [...new Set(filas.map((f) => f.grupo))];
-  return (
-    // Con tope de ancho: alinear los valores exige una columna fija, y sin
-    // tope esa columna se va al borde de la pantalla.
-    <div className="max-w-[26rem] space-y-3">
-      {grupos.map((g) => (
-        <div key={g ?? 'propio'}>
-          {grupos.length > 1 && (
-            <div className="pb-1 text-xs font-bold uppercase tracking-wide text-primary">
-              {g ?? propio}
-            </div>
-          )}
-          {filas.filter((f) => f.grupo === g).map((f) => (
-            <div
-              key={f.clave}
-              className="flex items-baseline justify-between border-b border-slate-100 py-1.5 last:border-0"
-            >
-              <span className="text-[15px]">{f.nombre}</span>
-              <span className="text-[15px] font-medium tabular-nums">{f.valor}</span>
-            </div>
-          ))}
-        </div>
-      ))}
     </div>
   );
 }
@@ -324,19 +285,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
             {reporte.personal.length > 0 && (
               <div className="space-y-3 p-4 md:border-r md:border-border">
                 <SectionHeader title="Personal" />
-                <FilasLeidas
-                  filas={reporte.personal.map((f) => ({
-                    clave: `p${f.puesto_id}`,
-                    grupo: f.empresa_nombre,
-                    nombre: f.nombre,
-                    valor: String(f.cantidad),
-                  }))}
-                  propio={reporte.nombre_propio}
-                />
-                <div className="flex max-w-[26rem] items-baseline justify-between border-t border-border pt-2 text-sm">
-                  <span className="text-muted-foreground">Total en obra</span>
-                  <span className="font-bold tabular-nums">{total}</span>
-                </div>
+                <TablaPersonal filas={reporte.personal} columnas={reporte.columnas ?? []} />
               </div>
             )}
 
@@ -344,15 +293,7 @@ export default function ReporteDetalle({ projectId, reporteId, onVolver, onEdita
               {reporte.equipos.length > 0 && (
                 <div className="space-y-3 border-t border-border p-4 md:border-t-0">
                   <SectionHeader title="Equipo" />
-                  <FilasLeidas
-                    filas={reporte.equipos.map((f) => ({
-                      clave: `e${f.equipo_id}`,
-                      grupo: null,
-                      nombre: f.nombre,
-                      valor: `${Number(f.unidades)} u · ${Number(f.horas)} h`,
-                    }))}
-                    propio={reporte.nombre_propio}
-                  />
+                  <TablaEquipo filas={reporte.equipos} columnas={reporte.columnas ?? []} />
                 </div>
               )}
 
