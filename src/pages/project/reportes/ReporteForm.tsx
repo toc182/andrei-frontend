@@ -41,6 +41,16 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   CLIMAS, LEYENDA_MAX, type Area, type FilaEntrega, type Foto, type Listas, type Reporte,
   type Trabajo, fechaCorta, hoyYMD,
 } from './tipos';
@@ -57,6 +67,13 @@ import { useAuth } from '@/context/AuthContext';
  * el ingeniero se entere en ese momento y no despues de subir las demas.
  */
 const FOTO_MB_MAX = 15;
+
+/**
+ * Cuantas fotos lleva un reporte como mucho. Decision de Ivan del 2026-09-30,
+ * cuando Cesar subio 40 y en el PDF salieron 27. Tiene que ser el mismo que
+ * FOTOS_MAX del backend (services/reportePdfComun.ts).
+ */
+const FOTOS_MAX = 40;
 
 interface Props {
   projectId: number;
@@ -241,7 +258,10 @@ export default function ReporteForm({
   // archivo y ya registradas en subidasRef: guardar() no las vuelve a subir y
   // sí manda su leyenda. Son dos casos:
   // - al corregir, las que el reporte ya tiene, para poder cambiar su leyenda
-  //   (enReporte: no se quitan desde aquí);
+  //   o quitarlas (enReporte). Quitar una pide confirmación, y el borrado va al
+  //   servidor con el resto del guardado, como una línea más de Correcciones.
+  //   Hasta el 2026-09-30 no llevaban la equis y Cesar no pudo quitar ninguna
+  //   de las 40 que subió;
   // - al seguir un reporte sin enviar, las que alcanzaron a subir; si el
   //   ingeniero quita una, se borra del servidor.
   // Van primero, como en el servidor, y así el número de cada una es el mismo
@@ -457,8 +477,19 @@ export default function ReporteForm({
               .map((f) => `${f.name} (${megas(f.size)} MB)`)
               .join(', ')}.`,
     );
-    const nuevas = elegidas
-      .filter((f) => f.size <= tope)
+    const aceptadas = elegidas.filter((f) => f.size <= tope);
+    // Las que pasan de FOTOS_MAX no entran: se dice cuántas quedaron fuera.
+    const caben = Math.max(0, FOTOS_MAX - fotos.length);
+    if (aceptadas.length > caben) {
+      const fuera = aceptadas.length - caben;
+      setFotoError((antes) =>
+        [antes, `El reporte lleva como máximo ${FOTOS_MAX} fotos: ${fuera} ${fuera === 1 ? 'no se agregó' : 'no se agregaron'}.`]
+          .filter(Boolean)
+          .join(' '),
+      );
+    }
+    const nuevas = aceptadas
+      .slice(0, caben)
       .map((archivo) => ({
         archivo, url: URL.createObjectURL(archivo), nombre: archivo.name, leyenda: '',
       }));
@@ -472,10 +503,14 @@ export default function ReporteForm({
     // dejaría el reporte con fotos que no son las que se ven en pantalla.
     if (guardando) return;
     setFotos((prev) => {
-      URL.revokeObjectURL(prev[i].url);
+      // Solo la url local es nuestra; la de una foto del servidor no.
+      if (prev[i].archivo) URL.revokeObjectURL(prev[i].url);
       return prev.filter((_, j) => j !== i);
     });
   };
+
+  // La foto del reporte que se va a quitar, mientras se confirma.
+  const [porQuitar, setPorQuitar] = useState<number | null>(null);
 
   // Congelada mientras sube, por lo mismo que quitarFoto: la leyenda de una foto
   // viaja con ella, y cambiarla a media subida no llegaría a ninguna parte.
@@ -852,17 +887,22 @@ export default function ReporteForm({
         <div className="space-y-3 border-t border-border p-4">
           <SectionHeader title="Fotos" />
           <div className="flex flex-wrap items-center gap-3">
-            <Button asChild variant="outline" size="sm" disabled={guardando}>
+            <Button asChild variant="outline" size="sm" disabled={guardando || fotos.length >= FOTOS_MAX}>
               <label
                 htmlFor="fotos"
-                className={guardando ? 'pointer-events-none opacity-60' : 'cursor-pointer'}
+                className={
+                  guardando || fotos.length >= FOTOS_MAX
+                    ? 'pointer-events-none opacity-60'
+                    : 'cursor-pointer'
+                }
               >
                 <Plus className="mr-2 h-4 w-4" /> Agregar fotos
               </label>
             </Button>
             <input
               id="fotos" type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple className="hidden" onChange={elegirFotos} disabled={guardando}
+              multiple className="hidden" onChange={elegirFotos}
+              disabled={guardando || fotos.length >= FOTOS_MAX}
             />
             <span className="text-sm text-muted-foreground tabular-nums">
               {fotos.length === 0
@@ -870,13 +910,14 @@ export default function ReporteForm({
                 : editando
                   ? `${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'}`
                   : `${fotos.length} ${fotos.length === 1 ? 'foto agregada' : 'fotos agregadas'}`}
+              {fotos.length >= FOTOS_MAX && ` · máximo ${FOTOS_MAX}`}
             </span>
           </div>
 
           {fotoError && <p className="text-xs text-error">{fotoError}</p>}
 
           {/* Al corregir, las fotos van en dos grupos: las que el reporte ya
-              tiene, que no se quitan desde aquí, y las nuevas. Las del reporte
+              tiene, que se quitan confirmando, y las nuevas. Las del reporte
               van siempre primero (ver el estado `fotos`), así que cada grupo es
               un tramo de la lista y el número sigue corrido. */}
           {[
@@ -901,7 +942,7 @@ export default function ReporteForm({
                         numero={i + 1}
                         bloqueada={guardando}
                         onLeyenda={(texto) => cambiarLeyenda(i, texto)}
-                        onQuitar={f.enReporte ? undefined : () => quitarFoto(i)}
+                        onQuitar={f.enReporte ? () => setPorQuitar(i) : () => quitarFoto(i)}
                       />
                     );
                   })}
@@ -910,6 +951,30 @@ export default function ReporteForm({
             ))}
         </div>
       </div>
+
+      <AlertDialog open={porQuitar !== null} onOpenChange={(v) => { if (!v) setPorQuitar(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar la foto {porQuitar === null ? '' : porQuitar + 1}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {editando
+                ? 'Sale del reporte cuando guardes los cambios, y queda anotado en Correcciones.'
+                : 'Sale del reporte cuando guardes.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (porQuitar !== null) quitarFoto(porQuitar);
+                setPorQuitar(null);
+              }}
+            >
+              Quitar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* En móvil los botones se quedan abajo mientras haya formulario, para no
           tener que bajar hasta el final cada vez que se quiere guardar.
