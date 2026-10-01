@@ -9,10 +9,16 @@
  * tarjeta, la tarjeta lleva solo la tabla, y la paginación va FUERA. Fue una
  * instrucción explícita de Ivan, para que se vea como el resto del sistema.
  *
- * Filtrar y ordenar ocurre EN EL NAVEGADOR, no en el servidor, igual que en
- * Solicitudes: un filtro de encabezado que solo mirara la página cargada
- * mentiría sobre lo que hay. Por eso se pide el mes entero de una vez. El mes
- * arranca en el actual, que es lo que acota el tamaño de esa carga.
+ * La lista abre en los últimos reportes, de 25 en 25, y no en el mes en curso:
+ * el primero de octubre de 2026 Lilia abrió Santa Isabel, octubre todavía no
+ * tenía reportes y vio la lista vacía. Instrucción de Ivan. Con un mes escogido
+ * sale el mes entero, corrido, sin páginas.
+ *
+ * Paginar, ordenar y filtrar por las columnas ocurre EN EL SERVIDOR. Abrir en
+ * todos los meses obligaba a bajar el proyecto entero si la página lo hiciera
+ * sola, y un filtro de encabezado que solo mirara la página cargada mentiría
+ * sobre lo que hay. Por lo mismo, los valores que ofrece cada filtro también
+ * los manda el servidor.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,10 +39,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { SortableHeader } from '@/components/SortableHeader';
-import {
-  applyColumnFilters, getSortComparator,
-  type ColumnFilters, type SortDirection, type SortState,
-} from '@/components/sortableHeaderUtils';
+import type { ColumnFilters, SortDirection, SortState } from '@/components/sortableHeaderUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ReporteForm from './reportes/ReporteForm';
 import ReporteNuevo from './reportes/ReporteNuevo';
@@ -45,7 +48,7 @@ import AreasDialog from './reportes/AreasDialog';
 import SemanalesView, { type SemanalesAcciones } from './reportes/semanal/SemanalesView';
 import {
   type Reporte, type ReporteFila,
-  clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, mesCorto, hoyYMD,
+  clasesClima, diaDelMes, diaDeLaSemana, etiquetaMes, mesCorto,
 } from './reportes/tipos';
 
 interface Props {
@@ -60,11 +63,20 @@ type Vista =
 
 const TAMANOS = [25, 50, 100];
 
-/** Tope de la carga. El backend admite hasta 2000; un mes nunca se acerca. */
-const TOPE = 2000;
+/**
+ * Cuántos se piden con un mes escogido, que sale entero de una vez. Es el tope
+ * del backend; un mes nunca se acerca.
+ */
+const TOPE_MES = 2000;
 
-/** El mes en curso, en YYYY-MM. Es el filtro por defecto de la lista. */
-const MES_ACTUAL = hoyYMD().slice(0, 7);
+/** Lo que devuelve la lista: una página, el total y los valores de los filtros. */
+interface RespuestaLista {
+  data: ReporteFila[];
+  total: number;
+  filtros: { creador_nombre: string[]; clima: string[] };
+}
+
+const SIN_VALORES: RespuestaLista['filtros'] = { creador_nombre: [], clima: [] };
 
 
 /**
@@ -111,12 +123,16 @@ function resumen(texto: string | null, tope = 120): string {
 
 export default function ProjectReportes({ projectId }: Props) {
   const [vista, setVista] = useState<Vista>({ modo: 'lista' });
+  // Lo que trajo el servidor: la página que se ve, cuántos hay en total con
+  // estos filtros y qué valores ofrece cada filtro del encabezado.
   const [filas, setFilas] = useState<ReporteFila[]>([]);
+  const [total, setTotal] = useState(0);
+  const [valores, setValores] = useState(SIN_VALORES);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
 
   const [busqueda, setBusqueda] = useState('');
-  const [mes, setMes] = useState(MES_ACTUAL);
+  const [mes, setMes] = useState('todos');
   const [meses, setMeses] = useState<string[]>([]);
   const [sortState, setSortState] = useState<SortState>({ column: null, direction: null });
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
@@ -155,67 +171,108 @@ export default function ProjectReportes({ projectId }: Props) {
     }
   };
 
+  // Cualquier cambio de filtro u orden vuelve a la primera página: quedarse en
+  // la página 7 de un resultado que ahora tiene dos filas se ve como un error.
+  // Va en cada cambio y no en un efecto aparte: el efecto llegaría tarde y la
+  // lista se pediría dos veces, la primera con la página vieja.
+  const cambiarBusqueda = (texto: string) => {
+    setBusqueda(texto);
+    setPagina(1);
+  };
+
+  // Cambiar de mes cambia el conjunto entero, así que los filtros de columna
+  // del mes anterior dejan de tener sentido: un ingeniero que no reportó en el
+  // mes nuevo escondería todas las filas.
+  const cambiarMes = (valor: string) => {
+    setMes(valor);
+    setColumnFilters({});
+    setPagina(1);
+  };
+
   const cambiarOrden = (column: string, direction: SortDirection | null) => {
     setSortState(direction ? { column, direction } : { column: null, direction: null });
+    setPagina(1);
   };
 
   const cambiarFiltro = (column: string, values: string[]) => {
     setColumnFilters((prev) => ({ ...prev, [column]: values }));
+    setPagina(1);
   };
 
-  // La búsqueda se queda en el servidor: mira dentro de "qué se hizo" completo,
-  // "atrasos" y "novedades". La fila solo trae el arranque de "qué se hizo", así
-  // que buscar aquí dejaría fuera lo que diga más abajo del texto.
+  const cambiarPorPagina = (n: number) => {
+    setPorPagina(n);
+    setPagina(1);
+  };
+
+  // Con un mes escogido sale el mes entero y no hay páginas.
+  const porMes = mes !== 'todos';
+
+  // Cada cambio pide de nuevo, y una respuesta lenta puede llegar después de la
+  // siguiente: solo cuenta la del último pedido. Sin esto, pasar dos páginas
+  // seguidas podía dejar en pantalla la primera.
+  const ultimoPedido = useRef(0);
+
+  // La búsqueda mira dentro de "qué se hizo" completo, "atrasos" y "novedades",
+  // y la fila solo trae el arranque de "qué se hizo": por eso también es del
+  // servidor.
   const cargar = useCallback(() => {
+    const pedido = ++ultimoPedido.current;
     setCargando(true);
     setError(false);
     api
-      .get(`/proyecto-reportes/${projectId}`, {
+      .get<RespuestaLista>(`/proyecto-reportes/${projectId}`, {
         params: {
           q: busqueda || undefined,
-          mes: mes === 'todos' ? undefined : mes,
-          limit: TOPE,
+          mes: porMes ? mes : undefined,
+          limit: porMes ? TOPE_MES : porPagina,
+          offset: porMes ? 0 : (pagina - 1) * porPagina,
+          orden: sortState.direction ? sortState.column : undefined,
+          dir: sortState.direction ?? undefined,
+          // Un filtro viaja como lista JSON. Que falte es «sin filtro»; una
+          // lista vacía es «ninguno», lo que pasa al desmarcar todo.
+          autor: columnFilters.creador_nombre && JSON.stringify(columnFilters.creador_nombre),
+          clima: columnFilters.clima && JSON.stringify(columnFilters.clima),
         },
       })
-      .then((r) => setFilas(r.data.data ?? []))
-      .catch(() => setError(true))
-      .finally(() => setCargando(false));
-  }, [projectId, busqueda, mes]);
+      .then((r) => {
+        if (pedido !== ultimoPedido.current) return;
+        const { data, total: hay, filtros } = r.data;
+        // Si la página quedó más allá del final (se dio de baja un reporte
+        // mientras se miraba otro), se va a la última que tenga algo.
+        if (data.length === 0 && hay > 0 && pagina > 1) {
+          setPagina(Math.ceil(hay / porPagina));
+          return;
+        }
+        setFilas(data);
+        setTotal(hay);
+        setValores(filtros ?? SIN_VALORES);
+        setCargando(false);
+      })
+      .catch(() => {
+        if (pedido !== ultimoPedido.current) return;
+        setError(true);
+        setCargando(false);
+      });
+  }, [projectId, busqueda, mes, porMes, pagina, porPagina, sortState, columnFilters]);
 
   useEffect(() => {
     if (vista.modo === 'lista') cargar();
   }, [vista.modo, cargar]);
 
+  // Solo los meses que de verdad tienen reportes: un mes vacío en la lista es
+  // justo lo que confundió a Lilia.
   useEffect(() => {
     api
-      .get(`/proyecto-reportes/${projectId}/meses`)
-      .then((r) => setMeses(r.data.data ?? []))
+      .get<{ data: string[] }>(`/proyecto-reportes/${projectId}/meses`)
+      .then((r) => {
+        const lista = r.data.data ?? [];
+        setMeses(lista);
+        // Si el mes escogido se quedó sin reportes (se dio de baja el único),
+        // la lista vuelve a los últimos: el selector ya no lo ofrece.
+        setMes((m) => (m === 'todos' || lista.includes(m) ? m : 'todos'));
+      })
       .catch(() => setMeses([]));
   }, [projectId, vista.modo]);
-
-  // Cualquier cambio de filtro u orden devuelve a la primera página: quedarse
-  // en la página 7 de un resultado que ahora tiene dos filas se ve como un error.
-  useEffect(() => {
-    setPagina(1);
-  }, [busqueda, mes, sortState, columnFilters, porPagina]);
-
-  // El mes en curso siempre está en la lista aunque todavía no tenga reportes;
-  // si no, el selector arrancaría en blanco en un proyecto recién empezado.
-  const opcionesMes = Array.from(new Set([MES_ACTUAL, ...meses])).sort().reverse();
-
-  // Los valores que ofrece cada filtro salen de lo filtrado por las DEMÁS
-  // columnas, para no ofrecer opciones que no darían ninguna fila.
-  const excluyendo = (columna: string) =>
-    applyColumnFilters(
-      filas,
-      Object.fromEntries(Object.entries(columnFilters).filter(([k]) => k !== columna)),
-    );
-  const valoresClima = [...new Set(excluyendo('clima').map((f) => f.clima))].sort();
-  const valoresAutor = [...new Set(excluyendo('creador_nombre').map((f) => f.creador_nombre))].sort();
-
-  const comparador = getSortComparator(sortState);
-  const visiblesTodas = applyColumnFilters(filas, columnFilters);
-  const ordenadas = comparador ? [...visiblesTodas].sort(comparador) : visiblesTodas;
 
   if (vista.modo === 'nuevo' || vista.modo === 'editar') {
     const editando = vista.modo === 'editar' ? vista.reporte : undefined;
@@ -273,17 +330,13 @@ export default function ProjectReportes({ projectId }: Props) {
     );
   }
 
-  // Paginación en el navegador, sobre lo ya filtrado y ordenado.
-  const total = ordenadas.length;
+  // La página ya viene cortada del servidor; aquí solo se cuenta para el pie.
   const paginas = Math.max(1, Math.ceil(total / porPagina));
-  const paginaSegura = Math.min(pagina, paginas);
-  const inicio = (paginaSegura - 1) * porPagina;
-  const visibles = ordenadas.slice(inicio, inicio + porPagina);
-  const desde = total === 0 ? 0 : inicio + 1;
-  const hasta = Math.min(inicio + porPagina, total);
+  const inicio = (pagina - 1) * porPagina;
+  const desde = filas.length === 0 ? 0 : inicio + 1;
+  const hasta = inicio + filas.length;
 
-  // "No hay nada" y "no hay nada CON ESTOS FILTROS" no se dicen igual, y con el
-  // mes en curso por defecto lo segundo va a pasar seguido.
+  // "No hay nada" y "no hay nada CON ESTOS FILTROS" no se dicen igual.
   const hayFiltros =
     busqueda !== ''
     || mes !== 'todos'
@@ -365,22 +418,18 @@ export default function ProjectReportes({ projectId }: Props) {
           <Input
             placeholder="Buscar por número, trabajo, atrasos…"
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => cambiarBusqueda(e.target.value)}
           />
         </div>
-        {/* Quién reportó ya no vive aquí: es un filtro del encabezado de la
-            tabla, como en Solicitudes. El mes se queda porque además acota
-            cuántos reportes se traen de una vez. */}
-        {/* Cambiar de mes cambia el conjunto entero, así que los filtros de
-            columna del mes anterior dejan de tener sentido: un ingeniero que
-            no reportó en el mes nuevo escondería todas las filas. */}
-        <Select value={mes} onValueChange={(v) => { setMes(v); setColumnFilters({}); }}>
+        {/* Quién reportó no vive aquí: es un filtro del encabezado de la
+            tabla, como en Solicitudes. */}
+        <Select value={mes} onValueChange={cambiarMes}>
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Mes" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos los meses</SelectItem>
-            {opcionesMes.map((m) => (
+            {meses.map((m) => (
               <SelectItem key={m} value={m}>{etiquetaMes(m)}</SelectItem>
             ))}
           </SelectContent>
@@ -418,16 +467,16 @@ export default function ProjectReportes({ projectId }: Props) {
                       columnKey="creador_nombre" label="Elaborado por" type="discrete" align="center"
                       className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:w-[230px]"
                       sortState={sortState} onSortChange={cambiarOrden}
-                      uniqueValues={valoresAutor}
-                      activeFilters={columnFilters.creador_nombre ?? valoresAutor}
+                      uniqueValues={valores.creador_nombre}
+                      activeFilters={columnFilters.creador_nombre ?? valores.creador_nombre}
                       onFilterChange={cambiarFiltro}
                     />
                     <SortableHeader
                       columnKey="clima" label="Clima" type="discrete" align="center"
                       className="hidden text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell lg:w-[160px]"
                       sortState={sortState} onSortChange={cambiarOrden}
-                      uniqueValues={valoresClima}
-                      activeFilters={columnFilters.clima ?? valoresClima}
+                      uniqueValues={valores.clima}
+                      activeFilters={columnFilters.clima ?? valores.clima}
                       onFilterChange={cambiarFiltro}
                     />
                     <TableHead className="hidden w-full px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:table-cell">Trabajo ejecutado</TableHead>
@@ -444,7 +493,7 @@ export default function ProjectReportes({ projectId }: Props) {
                   </>
                 ) : (
                   <TableBody>
-                    {visibles.map((f) => (
+                    {filas.map((f) => (
                       <TableRow
                         key={f.id}
                         className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60"
@@ -510,7 +559,7 @@ export default function ProjectReportes({ projectId }: Props) {
                 /* La tarjeta lleva lo mismo que la fila de la tabla. El botón
                    del PDF va FUERA del botón que abre el detalle: un botón
                    dentro de otro no es HTML válido. */
-                visibles.map((f) => (
+                filas.map((f) => (
                   <div
                     key={f.id}
                     className="flex items-start gap-3 border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-slate-50/60"
@@ -554,12 +603,13 @@ export default function ProjectReportes({ projectId }: Props) {
             </div>
           </Card>
 
-          {/* Paginación fuera de la tarjeta, como SolicitudesPagination. */}
-          {total > 0 && (
+          {/* Paginación fuera de la tarjeta, como SolicitudesPagination. Con un
+              mes escogido no hay: el mes sale entero. */}
+          {!porMes && total > 0 && (
             <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="tabular-nums">Mostrando {desde}–{hasta} de {total}</span>
-                <Select value={String(porPagina)} onValueChange={(v) => setPorPagina(Number(v))}>
+                <Select value={String(porPagina)} onValueChange={(v) => cambiarPorPagina(Number(v))}>
                   <SelectTrigger className="h-8 w-[80px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {TAMANOS.map((t) => (
@@ -572,16 +622,16 @@ export default function ProjectReportes({ projectId }: Props) {
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline" size="sm" className="h-8"
-                  disabled={paginaSegura <= 1} onClick={() => setPagina(paginaSegura - 1)}
+                  disabled={cargando || pagina <= 1} onClick={() => setPagina(pagina - 1)}
                 >
                   Anterior
                 </Button>
                 <span className="min-w-[100px] px-2 text-center text-sm tabular-nums">
-                  Página {paginaSegura} de {paginas}
+                  Página {pagina} de {paginas}
                 </span>
                 <Button
                   variant="outline" size="sm" className="h-8"
-                  disabled={paginaSegura >= paginas} onClick={() => setPagina(paginaSegura + 1)}
+                  disabled={cargando || pagina >= paginas} onClick={() => setPagina(pagina + 1)}
                 >
                   Siguiente
                 </Button>
