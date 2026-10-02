@@ -134,7 +134,11 @@ export default function AdjuntosPreview({
 
       {adjuntos.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {puedeSoltar ? 'Sin adjuntos. Arrastra los archivos aquí o usa Adjuntar.' : 'Sin adjuntos'}
+          Sin adjuntos
+          {/* En el teléfono no se arrastra: ahí la pista sobra. */}
+          {puedeSoltar && (
+            <span className="hidden md:inline">. Arrastra los archivos aquí o usa Adjuntar.</span>
+          )}
         </p>
       ) : loadingUrls ? (
         <p className="text-sm text-muted-foreground">Cargando previews...</p>

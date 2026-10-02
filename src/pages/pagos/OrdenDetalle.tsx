@@ -433,102 +433,163 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       <div className="space-y-3">
         <SectionHeader title="Detalle de compra" />
         <Card className="overflow-hidden p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                <TableHead className="w-[84px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Pedido
-                </TableHead>
-                <TableHead className="w-[100px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Recibido
-                </TableHead>
-                <TableHead className="w-[76px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Unidad
-                </TableHead>
-                <TableHead className="w-[96px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Código
-                </TableHead>
-                <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Descripción
-                </TableHead>
-                <TableHead className="w-[108px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Precio unit.
-                </TableHead>
-                <TableHead className="w-[120px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Precio total
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orden.items.map((i) => {
-                const recibido = Number(i.recibido_cantidad);
-                const completo = recibido >= Number(i.cantidad);
-                return (
-                  <TableRow key={i.id} className="border-b border-slate-100 last:border-0">
-                    <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
-                      {Number(i.cantidad).toLocaleString('en-US')}
-                    </TableCell>
-                    <TableCell
-                      className={`px-4 py-3 text-right text-sm tabular-nums ${
+          {/* Teléfono: un bloque por renglón. Las siete columnas piden casi 600 px
+              y la tarjeta las cortaba (Ivan, 2026-10-02). */}
+          <div className="md:hidden">
+            {orden.items.map((i) => {
+              const recibido = Number(i.recibido_cantidad);
+              const completo = recibido >= Number(i.cantidad);
+              return (
+                <div key={i.id} className="border-b border-slate-100 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{i.descripcion}</p>
+                      <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                        {i.codigo ? `${i.codigo} · ` : ''}
+                        {plata(i.precio_unitario)} / {i.unidad}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums">
+                      {plata(i.precio_total)}
+                    </p>
+                  </div>
+                  <p className="mt-1.5 text-xs tabular-nums text-slate-700">
+                    Pedido {Number(i.cantidad).toLocaleString('en-US')} {i.unidad} · Recibido{' '}
+                    <span
+                      className={
                         recibido === 0
                           ? 'text-muted-foreground'
                           : completo
-                            ? 'text-success'
-                            : 'text-warning'
-                      }`}
+                            ? 'font-semibold text-success'
+                            : 'font-semibold text-warning'
+                      }
                     >
                       {recibido === 0 ? '—' : recibido.toLocaleString('en-US')}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-sm text-slate-700">{i.unidad}</TableCell>
-                    <TableCell className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
-                      {i.codigo ?? '—'}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-sm text-slate-700">
-                      {i.descripcion}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
-                      {plata(i.precio_unitario)}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
-                      {plata(i.precio_total)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              <TableRow>
-                <TableCell colSpan={5} className="px-4 py-2 text-right text-sm text-muted-foreground">
-                  Sub total
-                </TableCell>
-                <TableCell colSpan={2} className="px-4 py-2 text-right text-sm tabular-nums text-slate-700">
-                  {plata(orden.subtotal)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell colSpan={5} className="px-4 py-2 text-right text-sm text-muted-foreground">
-                  Descuento
-                </TableCell>
-                <TableCell colSpan={2} className="px-4 py-2 text-right text-sm tabular-nums text-slate-700">
-                  {plata(orden.descuento)}
-                </TableCell>
-              </TableRow>
-              <TableRow className="border-b border-slate-100">
-                <TableCell colSpan={5} className="px-4 py-2 text-right text-sm text-muted-foreground">
+                    </span>
+                  </p>
+                </div>
+              );
+            })}
+            <dl className="space-y-1.5 px-4 py-3 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Sub total</dt>
+                <dd className="tabular-nums text-slate-700">{plata(orden.subtotal)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Descuento</dt>
+                <dd className="tabular-nums text-slate-700">{plata(orden.descuento)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">
                   ITBMS {(Number(orden.itbms_tasa) * 100).toFixed(0)}%
-                </TableCell>
-                <TableCell colSpan={2} className="px-4 py-2 text-right text-sm tabular-nums text-slate-700">
-                  {plata(orden.itbms)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-slate-700">
-                  Total de la orden
-                </TableCell>
-                <TableCell colSpan={2} className="px-4 py-3 text-right text-base font-bold tabular-nums">
-                  {plata(orden.monto_total)}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </dt>
+                <dd className="tabular-nums text-slate-700">{plata(orden.itbms)}</dd>
+              </div>
+              <div className="flex justify-between gap-3 border-t border-slate-100 pt-2">
+                <dt className="font-semibold text-slate-700">Total de la orden</dt>
+                <dd className="text-base font-bold tabular-nums">{plata(orden.monto_total)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                  <TableHead className="w-[84px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Pedido
+                  </TableHead>
+                  <TableHead className="w-[100px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Recibido
+                  </TableHead>
+                  <TableHead className="w-[76px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Unidad
+                  </TableHead>
+                  <TableHead className="w-[96px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Código
+                  </TableHead>
+                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Descripción
+                  </TableHead>
+                  <TableHead className="w-[108px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Precio unit.
+                  </TableHead>
+                  <TableHead className="w-[120px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Precio total
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orden.items.map((i) => {
+                  const recibido = Number(i.recibido_cantidad);
+                  const completo = recibido >= Number(i.cantidad);
+                  return (
+                    <TableRow key={i.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
+                        {Number(i.cantidad).toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell
+                        className={`px-4 py-3 text-right text-sm tabular-nums ${
+                          recibido === 0
+                            ? 'text-muted-foreground'
+                            : completo
+                              ? 'text-success'
+                              : 'text-warning'
+                        }`}
+                      >
+                        {recibido === 0 ? '—' : recibido.toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-slate-700">{i.unidad}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
+                        {i.codigo ?? '—'}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-slate-700">
+                        {i.descripcion}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
+                        {plata(i.precio_unitario)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
+                        {plata(i.precio_total)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow>
+                  <TableCell colSpan={5} className="px-4 py-2 text-right text-sm text-muted-foreground">
+                    Sub total
+                  </TableCell>
+                  <TableCell colSpan={2} className="px-4 py-2 text-right text-sm tabular-nums text-slate-700">
+                    {plata(orden.subtotal)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="px-4 py-2 text-right text-sm text-muted-foreground">
+                    Descuento
+                  </TableCell>
+                  <TableCell colSpan={2} className="px-4 py-2 text-right text-sm tabular-nums text-slate-700">
+                    {plata(orden.descuento)}
+                  </TableCell>
+                </TableRow>
+                <TableRow className="border-b border-slate-100">
+                  <TableCell colSpan={5} className="px-4 py-2 text-right text-sm text-muted-foreground">
+                    ITBMS {(Number(orden.itbms_tasa) * 100).toFixed(0)}%
+                  </TableCell>
+                  <TableCell colSpan={2} className="px-4 py-2 text-right text-sm tabular-nums text-slate-700">
+                    {plata(orden.itbms)}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-slate-700">
+                    Total de la orden
+                  </TableCell>
+                  <TableCell colSpan={2} className="px-4 py-3 text-right text-base font-bold tabular-nums">
+                    {plata(orden.monto_total)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       </div>
 

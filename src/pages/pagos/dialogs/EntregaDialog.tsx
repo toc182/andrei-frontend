@@ -118,6 +118,20 @@ export default function EntregaDialog({ orden, open, onOpenChange, onListo }: Pr
     }
   };
 
+  const campoLlego = (r: (typeof renglones)[number], className: string) =>
+    r.falta <= 0 ? (
+      <span className="text-xs text-muted-foreground">Completo</span>
+    ) : (
+      <Input
+        inputMode="decimal"
+        aria-label={`Llegó ahora de ${r.descripcion}`}
+        value={cantidades[r.id] ?? ''}
+        placeholder="0"
+        onChange={(e) => setCantidades((c) => ({ ...c, [r.id]: e.target.value }))}
+        className={`${className} text-right tabular-nums ${r.escrito > r.falta ? 'border-error' : ''}`}
+      />
+    );
+
   return (
     <AppDialog
       open={open}
@@ -126,17 +140,26 @@ export default function EntregaDialog({ orden, open, onOpenChange, onListo }: Pr
       title="Registrar una entrega"
       description={`${orden.numero} · ${orden.proveedor} · ${orden.proyecto_nombre ?? ''}`}
       footer={
-        <div className="flex w-full items-center justify-between gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <p className="text-xs text-muted-foreground">
             {subtotal > 0
               ? `Al registrarla, ${plata(total)} pasan a Por pagar y al costo del proyecto.`
               : 'Escriba lo que llegó de cada renglón.'}
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={guardando}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={guardando}
+              className="flex-1 sm:flex-none"
+            >
               Cancelar
             </Button>
-            <Button onClick={() => void guardar()} disabled={!puedeGuardar}>
+            <Button
+              onClick={() => void guardar()}
+              disabled={!puedeGuardar}
+              className="flex-1 sm:flex-none"
+            >
               {guardando ? 'Registrando...' : 'Registrar entrega'}
             </Button>
           </div>
@@ -161,74 +184,88 @@ export default function EntregaDialog({ orden, open, onOpenChange, onListo }: Pr
         <div>
           <Label className="text-xs mb-2 block">Qué llegó</Label>
           <div className="overflow-hidden rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                  <TableHead className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Descripción
-                  </TableHead>
-                  <TableHead className="w-[84px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Pedido
-                  </TableHead>
-                  <TableHead className="w-[92px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Ya recibido
-                  </TableHead>
-                  <TableHead className="w-[76px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Falta
-                  </TableHead>
-                  <TableHead className="w-[116px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Llegó ahora
-                  </TableHead>
-                  <TableHead className="w-[112px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Importe
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {renglones.map((r) => (
-                  <TableRow key={r.id} className="border-b border-slate-100 last:border-0">
-                    <TableCell className="px-3 py-2 text-sm text-slate-700">
-                      {r.descripcion}
-                      <span className="text-muted-foreground">
-                        {' '}
-                        · {r.unidad} · {plata(r.precio_unitario)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-slate-700">
-                      {Number(r.cantidad).toLocaleString('en-US')}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-muted-foreground">
-                      {Number(r.recibido_cantidad).toLocaleString('en-US')}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-slate-700">
-                      {r.falta.toLocaleString('en-US')}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-right">
-                      {r.falta <= 0 ? (
-                        <span className="text-xs text-muted-foreground">Completo</span>
-                      ) : (
-                        <Input
-                          inputMode="decimal"
-                          value={cantidades[r.id] ?? ''}
-                          placeholder="0"
-                          onChange={(e) =>
-                            setCantidades((c) => ({ ...c, [r.id]: e.target.value }))
-                          }
-                          className={`h-8 text-right tabular-nums ${
-                            r.escrito > r.falta ? 'border-error' : ''
-                          }`}
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell className="px-3 py-2 text-right text-sm font-semibold tabular-nums">
+            {/* Teléfono: un bloque por renglón, con la cajita a lo ancho. Esto se
+                usa en la obra, desde el teléfono; las seis columnas no cabían y el
+                botón de registrar quedaba fuera de la pantalla (Ivan, 2026-10-02). */}
+            <div className="divide-y divide-slate-100 md:hidden">
+              {renglones.map((r) => (
+                <div key={r.id} className="px-3 py-3">
+                  <p className="text-sm text-slate-700">
+                    {r.descripcion}
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {r.unidad} · {plata(r.precio_unitario)}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                    Pedido {Number(r.cantidad).toLocaleString('en-US')} · Ya recibido{' '}
+                    {Number(r.recibido_cantidad).toLocaleString('en-US')} · Falta{' '}
+                    {r.falta.toLocaleString('en-US')}
+                  </p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className="shrink-0 text-xs font-medium text-slate-700">Llegó ahora</span>
+                    <div className="flex-1">{campoLlego(r, 'h-9')}</div>
+                    <span className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums">
                       {r.importe > 0 ? plata(r.importe) : '—'}
-                    </TableCell>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                    <TableHead className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Descripción
+                    </TableHead>
+                    <TableHead className="w-[84px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Pedido
+                    </TableHead>
+                    <TableHead className="w-[92px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Ya recibido
+                    </TableHead>
+                    <TableHead className="w-[76px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Falta
+                    </TableHead>
+                    <TableHead className="w-[116px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Llegó ahora
+                    </TableHead>
+                    <TableHead className="w-[112px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Importe
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {renglones.map((r) => (
+                    <TableRow key={r.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="px-3 py-2 text-sm text-slate-700">
+                        {r.descripcion}
+                        <span className="text-muted-foreground">
+                          {' '}
+                          · {r.unidad} · {plata(r.precio_unitario)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-slate-700">
+                        {Number(r.cantidad).toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-muted-foreground">
+                        {Number(r.recibido_cantidad).toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-slate-700">
+                        {r.falta.toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right">{campoLlego(r, 'h-8')}</TableCell>
+                      <TableCell className="px-3 py-2 text-right text-sm font-semibold tabular-nums">
+                        {r.importe > 0 ? plata(r.importe) : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             <div className="flex justify-end border-t border-border bg-slate-50 px-3 py-3">
-              <div className="w-72 space-y-1.5">
+              <div className="w-full space-y-1.5 sm:w-72">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Sub total de esta entrega</span>
                   <span className="tabular-nums text-slate-700">{plata(subtotal)}</span>

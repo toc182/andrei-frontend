@@ -54,6 +54,16 @@ interface Renglon {
   recibido: number;
 }
 
+type CampoRenglon = 'cantidad' | 'unidad' | 'codigo' | 'descripcion' | 'precio_unitario';
+
+const ETIQUETA_CAMPO: Record<CampoRenglon, string> = {
+  cantidad: 'Cantidad',
+  unidad: 'Unidad',
+  codigo: 'Código',
+  descripcion: 'Descripción',
+  precio_unitario: 'Precio unit.',
+};
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -258,6 +268,42 @@ export default function OrdenFormDialog({
   const cambiar = (i: number, campo: keyof Renglon, valor: string) =>
     setRenglones((rs) => rs.map((r, j) => (j === i ? { ...r, [campo]: valor } : r)));
 
+  // Las cajitas de un renglón y su botón de quitar se escriben una vez y salen
+  // en los dos dibujos: la tabla de la computadora y los bloques del teléfono.
+  type ConTotal = (typeof calculado.conTotal)[number];
+  const campoRenglon = (r: ConTotal, i: number, campo: CampoRenglon, className: string) => {
+    const numerico = campo === 'cantidad' || campo === 'precio_unitario';
+    const bajadoAqui = campo === 'cantidad' && r.recibido > 0 && num(r.cantidad) < r.recibido;
+    return (
+      <Input
+        inputMode={numerico ? 'decimal' : undefined}
+        aria-label={`${ETIQUETA_CAMPO[campo]} del renglón ${i + 1}`}
+        value={r[campo]}
+        onChange={(e) => cambiar(i, campo, e.target.value)}
+        placeholder={campo === 'descripcion' ? 'Descripción del producto o servicio' : undefined}
+        className={cn(
+          className,
+          numerico && 'text-right',
+          (numerico || campo === 'codigo') && 'tabular-nums',
+          bajadoAqui && 'border-error',
+        )}
+      />
+    );
+  };
+  const botonQuitar = (r: ConTotal, i: number) => (
+    <Button
+      variant="outline"
+      size="icon"
+      className="h-7 w-7"
+      aria-label={`Quitar el renglón ${i + 1}`}
+      disabled={r.recibido > 0 || renglones.length === 1}
+      title={r.recibido > 0 ? 'De este renglón ya se recibió material' : undefined}
+      onClick={() => setRenglones((rs) => rs.filter((_, j) => j !== i))}
+    >
+      <X className="h-3.5 w-3.5 text-error" />
+    </Button>
+  );
+
   return (
     <AppDialog
       open={open}
@@ -270,17 +316,22 @@ export default function OrdenFormDialog({
           : (proyectoNombre ?? '')
       }
       footer={
-        <div className="flex w-full items-center justify-between gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <p className="text-xs text-muted-foreground">
             {yaSalio
               ? 'Solo un administrador puede editar una orden ya enviada.'
               : 'Al crearla pasa a aprobación. Se envía al proveedor cuando esté aprobada.'}
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={guardando}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={guardando}
+              className="flex-1 sm:flex-none"
+            >
               Cancelar
             </Button>
-            <Button onClick={() => void guardar()} disabled={!puede}>
+            <Button onClick={() => void guardar()} disabled={!puede} className="flex-1 sm:flex-none">
               {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear orden'}
             </Button>
           </div>
@@ -400,97 +451,80 @@ export default function OrdenFormDialog({
         <div>
           <Label className="text-xs mb-2 block">Detalle de compra</Label>
           <div className="overflow-hidden rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                  <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Cant.
-                  </TableHead>
-                  <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Unidad
-                  </TableHead>
-                  <TableHead className="w-[96px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Código
-                  </TableHead>
-                  <TableHead className="px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Descripción
-                  </TableHead>
-                  <TableHead className="w-[104px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    P. Unit.
-                  </TableHead>
-                  <TableHead className="w-[112px] px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Total
-                  </TableHead>
-                  <TableHead className="w-[48px] px-2 py-2" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {calculado.conTotal.map((r, i) => (
-                  <TableRow key={r.id ?? `n${i}`} className="border-b border-slate-100 last:border-0">
-                    <TableCell className="px-2 py-2">
-                      <Input
-                        inputMode="decimal"
-                        value={r.cantidad}
-                        onChange={(e) => cambiar(i, 'cantidad', e.target.value)}
-                        className={`h-8 text-right tabular-nums ${
-                          r.recibido > 0 && num(r.cantidad) < r.recibido ? 'border-error' : ''
-                        }`}
-                      />
-                    </TableCell>
-                    <TableCell className="px-2 py-2">
-                      <Input
-                        value={r.unidad}
-                        onChange={(e) => cambiar(i, 'unidad', e.target.value)}
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell className="px-2 py-2">
-                      <Input
-                        value={r.codigo}
-                        onChange={(e) => cambiar(i, 'codigo', e.target.value)}
-                        className="h-8 tabular-nums"
-                      />
-                    </TableCell>
-                    <TableCell className="px-2 py-2">
-                      <Input
-                        value={r.descripcion}
-                        onChange={(e) => cambiar(i, 'descripcion', e.target.value)}
-                        placeholder="Descripción del producto o servicio"
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell className="px-2 py-2">
-                      <Input
-                        inputMode="decimal"
-                        value={r.precio_unitario}
-                        onChange={(e) => cambiar(i, 'precio_unitario', e.target.value)}
-                        className="h-8 text-right tabular-nums"
-                      />
-                    </TableCell>
-                    <TableCell className="px-2 py-2 text-right text-sm font-semibold tabular-nums">
-                      {plata(r.total)}
-                    </TableCell>
-                    <TableCell className="px-2 py-2 text-center">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        aria-label={`Quitar el renglón ${i + 1}`}
-                        disabled={r.recibido > 0 || renglones.length === 1}
-                        title={
-                          r.recibido > 0
-                            ? 'De este renglón ya se recibió material'
-                            : undefined
-                        }
-                        onClick={() => setRenglones((rs) => rs.filter((_, j) => j !== i))}
-                      >
-                        <X className="h-3.5 w-3.5 text-error" />
-                      </Button>
-                    </TableCell>
+            {/* Teléfono: un bloque por renglón, con cajitas donde se puede
+                escribir. En la tabla de siete columnas no cabían y el botón de
+                guardar quedaba fuera de la pantalla (Ivan, 2026-10-02). */}
+            <div className="divide-y divide-slate-100 md:hidden">
+              {calculado.conTotal.map((r, i) => (
+                <div key={r.id ?? `n${i}`} className="space-y-2 px-3 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Renglón {i + 1}
+                    </span>
+                    {botonQuitar(r, i)}
+                  </div>
+                  {campoRenglon(r, i, 'descripcion', 'h-9')}
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['cantidad', 'unidad', 'codigo', 'precio_unitario'] as const).map((campo) => (
+                      <div key={campo}>
+                        <span className="text-xs text-muted-foreground">{ETIQUETA_CAMPO[campo]}</span>
+                        {campoRenglon(r, i, campo, 'mt-1 h-9')}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-right text-sm">
+                    <span className="text-muted-foreground">Total </span>
+                    <span className="font-semibold tabular-nums">{plata(r.total)}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                    <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Cant.
+                    </TableHead>
+                    <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Unidad
+                    </TableHead>
+                    <TableHead className="w-[96px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Código
+                    </TableHead>
+                    <TableHead className="px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Descripción
+                    </TableHead>
+                    <TableHead className="w-[104px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      P. Unit.
+                    </TableHead>
+                    <TableHead className="w-[112px] px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Total
+                    </TableHead>
+                    <TableHead className="w-[48px] px-2 py-2" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {calculado.conTotal.map((r, i) => (
+                    <TableRow key={r.id ?? `n${i}`} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="px-2 py-2">{campoRenglon(r, i, 'cantidad', 'h-8')}</TableCell>
+                      <TableCell className="px-2 py-2">{campoRenglon(r, i, 'unidad', 'h-8')}</TableCell>
+                      <TableCell className="px-2 py-2">{campoRenglon(r, i, 'codigo', 'h-8')}</TableCell>
+                      <TableCell className="px-2 py-2">
+                        {campoRenglon(r, i, 'descripcion', 'h-8')}
+                      </TableCell>
+                      <TableCell className="px-2 py-2">
+                        {campoRenglon(r, i, 'precio_unitario', 'h-8')}
+                      </TableCell>
+                      <TableCell className="px-2 py-2 text-right text-sm font-semibold tabular-nums">
+                        {plata(r.total)}
+                      </TableCell>
+                      <TableCell className="px-2 py-2 text-center">{botonQuitar(r, i)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             <div className="flex flex-col gap-4 border-t border-border bg-slate-50 px-3 py-3 sm:flex-row sm:items-start sm:justify-between">
               <Button
                 variant="outline"
@@ -600,7 +634,9 @@ export default function OrdenFormDialog({
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-primary">
                   <Upload className="h-4 w-4" />
                   Subir archivo
-                  <span className="font-normal text-muted-foreground">o arrástralo aquí</span>
+                  <span className="hidden font-normal text-muted-foreground md:inline">
+                    o arrástralo aquí
+                  </span>
                   <input
                     type="file"
                     className="hidden"

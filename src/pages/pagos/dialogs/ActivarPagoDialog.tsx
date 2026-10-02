@@ -84,6 +84,28 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
     }
   };
 
+  // La fecha de vence, en rojo si ya pasó y en ámbar si falta una semana o menos.
+  const colorVence = (vence: string) => {
+    const dias = diasHasta(vence);
+    return dias < 0 ? 'font-semibold text-error' : dias <= 7 ? 'text-warning' : 'text-slate-700';
+  };
+  const queLlego = (l: (typeof lineas)[number]) =>
+    l.items
+      .map((i) => `${i.descripcion}, ${Number(i.cantidad).toLocaleString('en-US')} ${i.unidad}`)
+      .join(' · ');
+  // La cajita del monto, la misma en el teléfono y en la tabla.
+  const campoMonto = (l: (typeof lineas)[number], className: string) => (
+    <Input
+      inputMode="decimal"
+      aria-label={`A pagar de la entrega del ${fechaCorta(l.fecha)}`}
+      value={montos[l.id] ?? ''}
+      onChange={(e) => setMontos((m) => ({ ...m, [l.id]: e.target.value }))}
+      className={`${className} text-right tabular-nums ${
+        l.escrito > l.disponible ? 'border-error' : ''
+      }`}
+    />
+  );
+
   return (
     <AppDialog
       open={open}
@@ -93,10 +115,15 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
       description={`${orden.numero} · ${orden.proveedor} · ${orden.proyecto_nombre ?? ''}`}
       footer={
         <div className="flex w-full justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={guardando}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={guardando}
+            className="flex-1 sm:flex-none"
+          >
             Cancelar
           </Button>
-          <Button onClick={() => void guardar()} disabled={!puede}>
+          <Button onClick={() => void guardar()} disabled={!puede} className="flex-1 sm:flex-none">
             {guardando ? 'Creando...' : 'Crear la solicitud'}
           </Button>
         </div>
@@ -120,71 +147,73 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
                 faltan {plata(orden.falta_por_retirar)} por retirar.
               </p>
               <div className="overflow-hidden rounded-lg border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                      <TableHead className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Entrega
-                      </TableHead>
-                      <TableHead className="w-[104px] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Vence
-                      </TableHead>
-                      <TableHead className="w-[112px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Pendiente
-                      </TableHead>
-                      <TableHead className="w-[128px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        A pagar
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lineas.map((l) => {
-                      const dias = diasHasta(l.vence);
-                      return (
+                {/* Teléfono: un bloque por entrega, con la cajita del monto a lo
+                    ancho. En la tabla la cajita quedaba tan angosta que no se leía
+                    el número (Ivan, 2026-10-02). */}
+                <div className="divide-y divide-slate-100 md:hidden">
+                  {lineas.map((l) => (
+                    <div key={l.id} className="px-3 py-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className="text-sm font-medium text-slate-700">
+                          Entrega del {fechaCorta(l.fecha)}
+                        </p>
+                        <p className={`shrink-0 text-xs tabular-nums ${colorVence(l.vence)}`}>
+                          Vence {fechaCorta(l.vence)}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{queLlego(l)}</p>
+                      <div className="mt-2 flex items-center gap-3">
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          Pendiente{' '}
+                          <span className="tabular-nums text-slate-700">{plata(l.disponible)}</span>
+                        </span>
+                        <div className="flex-1">{campoMonto(l, 'h-9')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden md:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                        <TableHead className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Entrega
+                        </TableHead>
+                        <TableHead className="w-[104px] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Vence
+                        </TableHead>
+                        <TableHead className="w-[112px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Pendiente
+                        </TableHead>
+                        <TableHead className="w-[128px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          A pagar
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lineas.map((l) => (
                         <TableRow key={l.id} className="border-b border-slate-100 last:border-0">
                           <TableCell className="px-3 py-2 text-sm text-slate-700">
                             {fechaCorta(l.fecha)}
-                            <span className="block text-xs text-muted-foreground">
-                              {l.items
-                                .map(
-                                  (i) =>
-                                    `${i.descripcion}, ${Number(i.cantidad).toLocaleString('en-US')} ${i.unidad}`,
-                                )
-                                .join(' · ')}
-                            </span>
+                            <span className="block text-xs text-muted-foreground">{queLlego(l)}</span>
                           </TableCell>
-                          <TableCell
-                            className={`px-3 py-2 text-sm tabular-nums ${
-                              dias < 0 ? 'font-semibold text-error' : dias <= 7 ? 'text-warning' : 'text-slate-700'
-                            }`}
-                          >
+                          <TableCell className={`px-3 py-2 text-sm tabular-nums ${colorVence(l.vence)}`}>
                             {fechaCorta(l.vence)}
                           </TableCell>
                           <TableCell className="px-3 py-2 text-right text-sm tabular-nums text-slate-700">
                             {plata(l.disponible)}
                           </TableCell>
-                          <TableCell className="px-3 py-2">
-                            <Input
-                              inputMode="decimal"
-                              value={montos[l.id] ?? ''}
-                              onChange={(e) =>
-                                setMontos((m) => ({ ...m, [l.id]: e.target.value }))
-                              }
-                              className={`h-8 text-right tabular-nums ${
-                                l.escrito > l.disponible ? 'border-error' : ''
-                              }`}
-                            />
-                          </TableCell>
+                          <TableCell className="px-3 py-2">{campoMonto(l, 'h-8')}</TableCell>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-                <div className="flex items-baseline justify-between gap-4 border-t border-border bg-slate-50 px-3 py-3">
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex flex-col gap-2 border-t border-border bg-slate-50 px-3 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                   <span className="text-xs text-muted-foreground">
                     Se puede pagar menos y dejar el resto para después.
                   </span>
-                  <span className="flex items-baseline gap-3">
+                  <span className="flex items-baseline justify-between gap-3">
                     <span className="text-sm font-semibold text-slate-700">
                       Monto de la solicitud
                     </span>
