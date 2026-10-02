@@ -71,7 +71,7 @@ interface AppSidebarProps {
 
 const todosMenuItems: { label: string; icon: LucideIcon; view: string }[] = [
   { label: 'Dashboard', icon: Home, view: 'dashboard' },
-  { label: 'Solicitudes de Pago', icon: Banknote, view: 'solicitudes-pago' },
+  { label: 'Pagos', icon: Banknote, view: 'solicitudes-pago' },
   { label: 'Requisiciones', icon: ClipboardList, view: 'requisiciones' },
   { label: 'Cajas Menudas', icon: Wallet, view: 'cajas-menudas' },
   { label: 'Cuentas', icon: ReceiptText, view: 'cuentas' },
@@ -87,7 +87,7 @@ const projectMenuItems: { key: string; label: string; icon: LucideIcon }[] = [
   // Dentro van como pestañas.
   { key: 'costos', label: 'Control de Costos', icon: DollarSign },
   { key: 'requisiciones', label: 'Requisiciones', icon: ClipboardList },
-  { key: 'solicitudes-pago', label: 'Solicitudes de Pago', icon: Banknote },
+  { key: 'solicitudes-pago', label: 'Pagos', icon: Banknote },
   { key: 'caja-menuda', label: 'Caja Menuda', icon: Wallet },
   { key: 'cuentas', label: 'Cuentas', icon: ReceiptText },
   { key: 'tareas', label: 'Tareas', icon: CheckSquare },
@@ -311,7 +311,8 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               <SidebarMenu className="gap-0.5 [&_button]:h-7">
                 {todosMenuItems
                   .filter((item) => {
-                    if (item.view === 'solicitudes-pago') return hasPermission('solicitudes_ver');
+                    if (item.view === 'solicitudes-pago')
+                      return hasPermission('solicitudes_ver') || hasPermission('ordenes_ver');
                     if (item.view === 'requisiciones') return hasPermission('requisiciones_ver');
                     if (item.view === 'cajas-menudas') return showCajasMenudas;
                     if (item.view === 'cuentas') return showCuentas;
@@ -348,7 +349,8 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
               <SidebarMenu className="gap-0.5 [&_button]:h-7">
                 {projectMenuItems
                   .filter((item) => {
-                    if (item.key === 'solicitudes-pago') return hasPermission('solicitudes_ver');
+                    if (item.key === 'solicitudes-pago')
+                      return hasPermission('solicitudes_ver') || hasPermission('ordenes_ver');
                     if (item.key === 'requisiciones') return hasPermission('requisiciones_ver');
                     // Costos ensena el dinero del proyecto y enlaza a las
                     // solicitudes: se esconde con su propia llave.

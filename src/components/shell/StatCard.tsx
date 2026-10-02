@@ -15,6 +15,8 @@ interface StatCardProps {
   value: string;
   icon?: ElementType;
   trend?: TrendData;
+  /** Línea gris debajo del número, para contexto ("Incluye ITBMS", "45% del total"). */
+  caption?: string;
   accent?: AccentColor;
   href?: string;
   onClick?: () => void;
@@ -40,6 +42,7 @@ export function StatCard({
   value,
   icon: Icon,
   trend,
+  caption,
   accent = "navy",
   href,
   onClick,
@@ -76,8 +79,15 @@ export function StatCard({
       >
         {value}
       </p>
+      {caption && <p className="mt-2 text-xs font-medium text-slate-500">{caption}</p>}
       {trend && (
-        <p className={cn("mt-2 text-xs font-medium", trendColor[trend.direction])}>
+        <p
+          className={cn(
+            caption ? "mt-1" : "mt-2",
+            "text-xs font-medium",
+            trendColor[trend.direction],
+          )}
+        >
           {trend.direction === "up" && "\u25B2 "}
           {trend.direction === "down" && "\u25BC "}
           {trend.value}

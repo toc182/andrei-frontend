@@ -5,6 +5,8 @@
 // The same dialog handles both:
 // - single-approval flow (pendingApprovalId set, ignores reviewedCount)
 // - bulk-approval flow (pendingApprovalId null, uses reviewedCount)
+//
+// Aprobar una orden de compra usa esta misma ventana, con su propio texto.
 
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert as ShellAlert } from '@/components/shell/Alert';
@@ -22,6 +24,8 @@ interface BulkApprovalPasswordDialogProps {
   loading: boolean;
   error: string | null;
   onConfirm: () => void;
+  /** Lo que dice la ventana cuando lo que se aprueba no es una solicitud. */
+  description?: string;
 }
 
 export function BulkApprovalPasswordDialog({
@@ -34,10 +38,13 @@ export function BulkApprovalPasswordDialog({
   loading,
   error,
   onConfirm,
+  description: descripcionPropia,
 }: BulkApprovalPasswordDialogProps) {
-  const description = pendingApprovalId
-    ? 'Ingresa tu contraseña para aprobar esta solicitud.'
-    : `Vas a aprobar ${reviewedCount} solicitud${reviewedCount > 1 ? 'es' : ''} revisada${reviewedCount > 1 ? 's' : ''}. Ingresa tu contraseña para confirmar.`;
+  const description =
+    descripcionPropia ??
+    (pendingApprovalId
+      ? 'Ingresa tu contraseña para aprobar esta solicitud.'
+      : `Vas a aprobar ${reviewedCount} solicitud${reviewedCount > 1 ? 'es' : ''} revisada${reviewedCount > 1 ? 's' : ''}. Ingresa tu contraseña para confirmar.`);
 
   return (
     <AppDialog

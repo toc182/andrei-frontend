@@ -6,7 +6,7 @@
 // is rendered, controlled by the `showProyectoColumn` prop.
 
 import { Card, CardContent } from '@/components/ui/card';
-import { EmptyState } from '@/components/shell/states';
+import { EmptyState, TableSkeleton } from '@/components/shell/states';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -28,6 +28,8 @@ import { EstadoBadge } from './EstadoBadge';
 import { MensajeIconPopover } from './MensajeIconPopover';
 import type { SolicitudPago } from '../types';
 import { formatMoney } from '../../../utils/formatters';
+import { useCargaLenta } from '@/hooks/useCargaLenta';
+import { cn } from '@/lib/utils';
 
 const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return '-';
@@ -52,6 +54,9 @@ interface SolicitudesTableProps {
   uniqueCategorias: string[];
   onRowClick: (sol: SolicitudPago) => void;
   onMarkMensajeRead: (id: number) => void;
+  /** Todavía no ha llegado nada: va el esqueleto, no «No hay solicitudes», que
+   *  asomaba un instante en cada primera carga como si no hubiera ninguna. */
+  cargando?: boolean;
 }
 
 export function SolicitudesTable({
@@ -67,12 +72,15 @@ export function SolicitudesTable({
   uniqueCategorias,
   onRowClick,
   onMarkMensajeRead,
+  cargando = false,
 }: SolicitudesTableProps) {
+  const lenta = useCargaLenta(cargando);
+
   return (
     <>
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
-        {solicitudes.length === 0 ? (
+        {cargando ? null : solicitudes.length === 0 ? (
           <EmptyState
             title="No hay solicitudes de pago"
             description="No se encontraron solicitudes con los filtros actuales"
@@ -149,7 +157,9 @@ export function SolicitudesTable({
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden md:block">
+      {/* Mientras carga, la tabla entera guarda su sitio sin verse las primeras
+          0.3 s (useCargaLenta): esconder solo las filas dejaba asomar sus rayas. */}
+      <div className={cn('hidden md:block', cargando && !lenta && 'invisible')}>
         <Card className="overflow-hidden p-0">
             <Table>
               <TableHeader>
@@ -226,82 +236,86 @@ export function SolicitudesTable({
                   />
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {solicitudes.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={showProyectoColumn ? 8 : 7}
-                      className="p-0"
-                    >
-                      <EmptyState
-                        title="No hay solicitudes de pago"
-                        description="No se encontraron solicitudes con los filtros actuales"
-                      />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  solicitudes.map((sol) => (
-                    <TableRow
-                      key={sol.id}
-                      className={`cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60 ${sol.es_mi_turno ? 'bg-warning/[0.04]' : ''}`}
-                      onClick={() => onRowClick(sol)}
-                    >
-                      <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
-                        <span className="flex items-center gap-1">
-                          {sol.numero}
-                          {sol.revisada && (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-0 text-center">
-                        {sol.urgente && (
-                          <span className="text-error font-bold">!</span>
-                        )}
-                      </TableCell>
-                      {showProyectoColumn && (
-                        <TableCell>{sol.proyecto_nombre || '-'}</TableCell>
-                      )}
-                      <TableCell>{formatDate(sol.fecha)}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1.5">
-                          <span>{sol.proveedor}</span>
-                          {sol.mensaje && (
-                            <MensajeIconPopover
-                              mensaje={sol.mensaje}
-                              autorNombre={sol.mensaje_autor_nombre ?? null}
-                              leido={!!sol.mensaje_leido}
-                              solicitudId={sol.id}
-                              onMarkRead={onMarkMensajeRead}
-                            />
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {sol.categoria_nombre || (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
-                        {formatMoney(sol.monto_total)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {sol.estado === 'pendiente' ? (
-                            sol.aprobadores_estado?.length ? (
-                              <ApprovalPillBar
-                                aprobadores={sol.aprobadores_estado}
-                              />
-                            ) : null
-                          ) : (
-                            <EstadoBadge estado={sol.estado} />
-                          )}
-                        </div>
+              {cargando ? (
+                <TableSkeleton rows={6} columns={showProyectoColumn ? 8 : 7} />
+              ) : (
+                <TableBody>
+                  {solicitudes.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={showProyectoColumn ? 8 : 7}
+                        className="p-0"
+                      >
+                        <EmptyState
+                          title="No hay solicitudes de pago"
+                          description="No se encontraron solicitudes con los filtros actuales"
+                        />
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
+                  ) : (
+                    solicitudes.map((sol) => (
+                      <TableRow
+                        key={sol.id}
+                        className={`cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60 ${sol.es_mi_turno ? 'bg-warning/[0.04]' : ''}`}
+                        onClick={() => onRowClick(sol)}
+                      >
+                        <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
+                          <span className="flex items-center gap-1">
+                            {sol.numero}
+                            {sol.revisada && (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-0 text-center">
+                          {sol.urgente && (
+                            <span className="text-error font-bold">!</span>
+                          )}
+                        </TableCell>
+                        {showProyectoColumn && (
+                          <TableCell>{sol.proyecto_nombre || '-'}</TableCell>
+                        )}
+                        <TableCell>{formatDate(sol.fecha)}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span>{sol.proveedor}</span>
+                            {sol.mensaje && (
+                              <MensajeIconPopover
+                                mensaje={sol.mensaje}
+                                autorNombre={sol.mensaje_autor_nombre ?? null}
+                                leido={!!sol.mensaje_leido}
+                                solicitudId={sol.id}
+                                onMarkRead={onMarkMensajeRead}
+                              />
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {sol.categoria_nombre || (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-4 py-3 text-right text-sm font-medium tabular-nums text-slate-700">
+                          {formatMoney(sol.monto_total)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {sol.estado === 'pendiente' ? (
+                              sol.aprobadores_estado?.length ? (
+                                <ApprovalPillBar
+                                  aprobadores={sol.aprobadores_estado}
+                                />
+                              ) : null
+                            ) : (
+                              <EstadoBadge estado={sol.estado} />
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              )}
             </Table>
         </Card>
       </div>

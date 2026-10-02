@@ -58,6 +58,8 @@ interface PermUser {
   requisiciones_ver: boolean | null;
   clientes_ver: boolean | null;
   costos_ver: boolean | null;
+  ordenes_ver: boolean | null;
+  ordenes_entregas: boolean | null;
 }
 
 interface ProjectOption {
@@ -100,6 +102,8 @@ const DEFAULT_PERMS: UserPermissions = {
   requisiciones_ver: false,
   clientes_ver: false,
   costos_ver: false,
+  ordenes_ver: false,
+  ordenes_entregas: false,
 };
 
 export default function PermisosPage() {
@@ -501,6 +505,29 @@ export default function PermisosPage() {
                     label="Acceso a cotizaciones"
                     checked={perms.cotizaciones}
                     onChange={() => togglePerm('cotizaciones')}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Ordenes de compra: la compra a credito. «Registrar entregas»
+                  ademas solo funciona en los proyectos que la persona alcanza,
+                  igual que Reportes. */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">
+                  Órdenes de compra
+                </Label>
+                <div className="space-y-2">
+                  <PermCheckbox
+                    label="Ver órdenes de compra"
+                    checked={perms.ordenes_ver}
+                    onChange={() => togglePerm('ordenes_ver')}
+                  />
+                  <PermCheckbox
+                    label="Registrar entregas"
+                    checked={perms.ordenes_entregas}
+                    onChange={() => togglePerm('ordenes_entregas')}
                   />
                 </div>
               </div>

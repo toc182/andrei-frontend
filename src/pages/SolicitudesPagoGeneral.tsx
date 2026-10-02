@@ -15,6 +15,9 @@ import { PageHeader } from '@/components/shell/PageHeader';
 import { StatCard } from '@/components/shell/StatCard';
 import { Alert } from '@/components/shell/Alert';
 import api from '../services/api';
+import { recordado, recordar } from '@/lib/recordados';
+import { useCargaLenta } from '@/hooks/useCargaLenta';
+import { cn } from '@/lib/utils';
 import { formatMoney } from '../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../types/api';
 import SolicitudPagoForm from '../components/forms/SolicitudPagoForm';
@@ -63,21 +66,53 @@ import type { Correccion } from './solicitudes/dialogs/detail/SolicitudCorreccio
 
 interface SolicitudesPagoGeneralProps {
   onNavigate?: (view: string) => void;
+  /**
+   * Cuando esta vista es una PESTAÑA de Pagos, el título y el botón ya los puso
+   * la página: aquí no se dibuja ninguno de los dos. El botón vive arriba, en el
+   * encabezado, no suelto debajo de las pestañas.
+   */
+  enPestana?: boolean;
+  /**
+   * Le entrega a la página el «Nueva Solicitud» para que lo ponga en el
+   * encabezado. El flujo de alta (elegir proyecto, mirar que tenga aprobadores)
+   * vive aquí; lo único que sube es el disparador.
+   */
+  onAccionNueva?: (abrir: () => void) => void;
 }
+
+interface ListaSolicitudes {
+  solicitudes: SolicitudPago[];
+  proyectos: ProjectOption[];
+}
+
+/** Una memoria por cada vista de la lista: la completa y la de «mis aprobaciones». */
+const claveSolicitudes = (soloMias: boolean) => `solicitudes:todas${soloMias ? ':mias' : ''}`;
 
 export default function SolicitudesPagoGeneral({
   onNavigate,
+  enPestana = false,
+  onAccionNueva,
 }: SolicitudesPagoGeneralProps) {
   const { user, hasPermission, isAdminOrCoAdmin } = useAuth();
   const canManage = !!user;
+
+  // El botón de alta lo dibuja la página de Pagos, en su encabezado.
+  useEffect(() => {
+    if (enPestana) onAccionNueva?.(() => handleNewSolicitud());
+  }, [enPestana, onAccionNueva]);
   const canManageSolicitud = (sol: SolicitudPago) =>
     isAdminOrCoAdmin ||
     hasPermission('solicitudes_editar_todas') ||
     sol.preparado_por === user?.id;
 
-  const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>([]);
-  const [proyectos, setProyectos] = useState<ProjectOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Si la lista ya se trajo en la sesión, sale al instante con lo que tenía y se
+  // refresca por detrás. `loading` quiere decir «todavía no hay nada que
+  // enseñar»: un refresco no lo vuelve a encender.
+  const previa = recordado<ListaSolicitudes>(claveSolicitudes(false));
+  const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>(previa?.solicitudes ?? []);
+  const [proyectos, setProyectos] = useState<ProjectOption[]>(previa?.proyectos ?? []);
+  const [loading, setLoading] = useState(!previa);
+  const lenta = useCargaLenta(loading);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -275,8 +310,13 @@ export default function SolicitudesPagoGeneral({
   }, [pageSize]);
 
   const loadData = async () => {
+    const clave = claveSolicitudes(filterMyApproval);
+    const recordada = recordado<ListaSolicitudes>(clave);
+    if (recordada) {
+      setSolicitudes(recordada.solicitudes);
+      setProyectos(recordada.proyectos);
+    }
     try {
-      setLoading(true);
       setError(null);
 
       const queryParams: string[] = [];
@@ -289,12 +329,15 @@ export default function SolicitudesPagoGeneral({
         api.get('/projects'),
       ]);
 
-      if (solRes.data.success) {
-        setSolicitudes(solRes.data.solicitudes || []);
-      }
-      if (projRes.data.success) {
-        setProyectos(projRes.data.proyectos || projRes.data.data || []);
-      }
+      const nuevas: SolicitudPago[] | null = solRes.data.success
+        ? solRes.data.solicitudes || []
+        : null;
+      const proys: ProjectOption[] | null = projRes.data.success
+        ? projRes.data.proyectos || projRes.data.data || []
+        : null;
+      if (nuevas) setSolicitudes(nuevas);
+      if (proys) setProyectos(proys);
+      if (nuevas && proys) recordar(clave, { solicitudes: nuevas, proyectos: proys });
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Error al cargar las solicitudes de pago');
@@ -584,25 +627,38 @@ export default function SolicitudesPagoGeneral({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Solicitudes de Pago"
-        subtitle="Vista consolidada de todos los proyectos"
-      >
-        <Button onClick={handleNewSolicitud}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Solicitud
-        </Button>
-      </PageHeader>
+      {enPestana ? null : (
+        <PageHeader
+          title="Solicitudes de Pago"
+          subtitle="Vista consolidada de todos los proyectos"
+        >
+          <Button onClick={handleNewSolicitud}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Solicitud
+          </Button>
+        </PageHeader>
+      )}
 
       {error && <Alert variant="error" title={error} />}
       {actionError && <Alert variant="error" title={actionError} />}
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total" value={String(stats.total)} accent="navy" />
-        <StatCard label="Pendientes" value={String(stats.pendientes)} accent="warning" />
-        <StatCard label="Aprobadas" value={String(stats.aprobadas)} accent="success" />
-        <StatCard label="Monto Total" value={formatMoney(stats.montoTotal)} accent="teal" />
+      {/* Stats Cards. Mientras no ha llegado nada van las mismas tarjetas sin
+          número —no ceros, que dirían que no hay ninguna—: guardan el alto
+          exacto y nada salta cuando llegan los datos. */}
+      <div
+        className={cn(
+          'grid gap-4 sm:grid-cols-2 lg:grid-cols-4',
+          loading && !lenta && 'invisible',
+        )}
+      >
+        <StatCard label="Total" value={loading ? '—' : String(stats.total)} accent="navy" />
+        <StatCard label="Pendientes" value={loading ? '—' : String(stats.pendientes)} accent="warning" />
+        <StatCard label="Aprobadas" value={loading ? '—' : String(stats.aprobadas)} accent="success" />
+        <StatCard
+          label="Monto Total"
+          value={loading ? '—' : formatMoney(stats.montoTotal)}
+          accent="teal"
+        />
       </div>
 
       {/* Filters */}
@@ -669,6 +725,7 @@ export default function SolicitudesPagoGeneral({
         uniqueEstados={uniqueEstados}
         uniqueCategorias={uniqueCategorias}
         onRowClick={openDetail}
+        cargando={loading}
         onMarkMensajeRead={(id) =>
           marcarMensajeLeido({
             solicitudId: id,
@@ -678,17 +735,20 @@ export default function SolicitudesPagoGeneral({
         }
       />
 
-      <SolicitudesPagination
-        totalItems={totalItems}
-        showingFrom={showingFrom}
-        showingTo={showingTo}
-        currentPage={safePage}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={setPageSize}
-      />
+      {/* «Mostrando 0 de 0» mientras carga diría que no hay ninguna. */}
+      {!loading && (
+        <SolicitudesPagination
+          totalItems={totalItems}
+          showingFrom={showingFrom}
+          showingTo={showingTo}
+          currentPage={safePage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
+      )}
       {/* Bulk approval success → toast (triggered via useEffect) */}
 
       <ProjectSelectorDialog

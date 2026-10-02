@@ -21,6 +21,9 @@ import { StatCard } from '@/components/shell/StatCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import api from '../../services/api';
+import { recordado, recordar } from '@/lib/recordados';
+import { useCargaLenta } from '@/hooks/useCargaLenta';
+import { cn } from '@/lib/utils';
 import { formatMoney } from '../../utils/formatters';
 import type { SolicitudPagoAdjunto } from '../../types/api';
 import SolicitudPagoForm from '../../components/forms/SolicitudPagoForm';
@@ -65,26 +68,46 @@ import {
   marcarMensajeLeido,
 } from '../solicitudes/utils/solicitudActions';
 
+interface ListaSolicitudesProyecto {
+  solicitudes: SolicitudPago[];
+  spPrefijo: string | null;
+}
+
+/** Una memoria por proyecto y por vista: la completa y la de «mis aprobaciones». */
+const claveSolicitudes = (projectId: number, soloMias: boolean) =>
+  `solicitudes:proyecto:${projectId}${soloMias ? ':mias' : ''}`;
+
 interface ProjectSolicitudesPagoProps {
   projectId: number;
   onNavigate?: (view: string) => void;
+  /** Dentro de la pestaña de Pagos, el título y el botón los pone la página. */
+  enPestana?: boolean;
+  /** Le entrega a la página el «Nueva Solicitud» para su encabezado. */
+  onAccionNueva?: (abrir: (() => void) | null) => void;
 }
 
 export default function ProjectSolicitudesPago({
   projectId,
   onNavigate,
+  enPestana = false,
+  onAccionNueva,
 }: ProjectSolicitudesPagoProps) {
   const { user, hasPermission, isAdminOrCoAdmin } = useAuth();
   const canManage = !!user;
+
   const canManageSolicitud = (sol: SolicitudPago) =>
     isAdminOrCoAdmin ||
     hasPermission('solicitudes_editar_todas') ||
     sol.preparado_por === user?.id;
 
-  // Data
-  const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>([]);
-  const [spPrefijo, setSpPrefijo] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Data. Si la lista ya se trajo en la sesión, sale al instante con lo que
+  // tenía y se refresca por detrás. `loading` quiere decir «todavía no hay nada
+  // que enseñar»: un refresco no lo vuelve a encender.
+  const previa = recordado<ListaSolicitudesProyecto>(claveSolicitudes(projectId, false));
+  const [solicitudes, setSolicitudes] = useState<SolicitudPago[]>(previa?.solicitudes ?? []);
+  const [spPrefijo, setSpPrefijo] = useState<string | null>(previa?.spPrefijo ?? null);
+  const [loading, setLoading] = useState(!previa);
+  const lenta = useCargaLenta(loading);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
 
@@ -124,7 +147,9 @@ export default function ProjectSolicitudesPago({
   const [detailAprobadores, setDetailAprobadores] = useState<
     AprobadorProyecto[]
   >([]);
-  const [hasApprovers, setHasApprovers] = useState<boolean | null>(null);
+  const [hasApprovers, setHasApprovers] = useState<boolean | null>(
+    () => recordado<boolean>(`aprobadores:${projectId}`) ?? null,
+  );
 
   // Adjuntos
   const [detailAdjuntos, setDetailAdjuntos] = useState<SolicitudPagoAdjunto[]>(
@@ -269,7 +294,9 @@ export default function ProjectSolicitudesPago({
     try {
       const response = await api.get(`/approval-settings/project/${projectId}`);
       if (response.data.success) {
-        setHasApprovers(response.data.approvers.length > 0);
+        const hay = response.data.approvers.length > 0;
+        recordar(`aprobadores:${projectId}`, hay);
+        setHasApprovers(hay);
       }
     } catch {
       setHasApprovers(false);
@@ -277,8 +304,13 @@ export default function ProjectSolicitudesPago({
   };
 
   const loadSolicitudes = async () => {
+    const clave = claveSolicitudes(projectId, filterMyApproval);
+    const recordada = recordado<ListaSolicitudesProyecto>(clave);
+    if (recordada) {
+      setSolicitudes(recordada.solicitudes);
+      setSpPrefijo(recordada.spPrefijo);
+    }
     try {
-      setLoading(true);
       setError(null);
       const queryParams: string[] = [];
       if (filterMyApproval) {
@@ -289,8 +321,13 @@ export default function ProjectSolicitudesPago({
         `/solicitudes-pago/project/${projectId}${params}`,
       );
       if (response.data.success) {
-        setSolicitudes(response.data.solicitudes || []);
-        setSpPrefijo(response.data.sp_prefijo);
+        const lista: ListaSolicitudesProyecto = {
+          solicitudes: response.data.solicitudes || [],
+          spPrefijo: response.data.sp_prefijo,
+        };
+        recordar(clave, lista);
+        setSolicitudes(lista.solicitudes);
+        setSpPrefijo(lista.spPrefijo);
       }
     } catch (err) {
       console.error('Error loading solicitudes:', err);
@@ -576,12 +613,28 @@ export default function ProjectSolicitudesPago({
     ),
   };
 
+  // El botón de alta lo dibuja la página de Pagos, en su encabezado.
+  useEffect(() => {
+    if (!enPestana) return;
+    onAccionNueva?.(
+      canManage && hasApprovers
+        ? () => {
+            setEditingSolicitud(null);
+            setEditingItems([]);
+            setEditingAjustes([]);
+            setShowForm(true);
+          }
+        : null,
+    );
+  }, [enPestana, onAccionNueva, canManage, hasApprovers]);
+
   if (error && !loading) {
     return <Alert variant="error" title={error} />;
   }
 
-  // If no prefix configured, show setup prompt
-  if (!spPrefijo) {
+  // If no prefix configured, show setup prompt. Mientras carga todavía no se
+  // sabe: sin el `!loading`, este recuadro asomaba en cada primera carga.
+  if (!spPrefijo && !loading) {
     return (
       <div className="max-w-md mx-auto mt-8">
         <Card>
@@ -620,30 +673,48 @@ export default function ProjectSolicitudesPago({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Solicitudes de Pago">
-        {canManage && hasApprovers && (
-          <Button
-            onClick={() => {
-              setEditingSolicitud(null);
-              setEditingItems([]);
-              setEditingAjustes([]);
-              setShowForm(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Solicitud
-          </Button>
-        )}
-      </PageHeader>
+      {!enPestana && (
+        <PageHeader title="Solicitudes de Pago">
+          {canManage && hasApprovers && (
+            <Button
+              onClick={() => {
+                setEditingSolicitud(null);
+                setEditingItems([]);
+                setEditingAjustes([]);
+                setShowForm(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Solicitud
+            </Button>
+          )}
+        </PageHeader>
+      )}
 
       {actionError && <Alert variant="error" title={actionError} />}
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Solicitudes" value={String(stats.total)} accent="navy" />
-        <StatCard label="Pendientes" value={String(stats.pendientes)} accent="warning" />
-        <StatCard label="Aprobadas" value={String(stats.aprobadas)} accent="success" />
-        <StatCard label="Monto Total" value={formatMoney(stats.montoTotal)} accent="teal" />
+      {/* Mientras no ha llegado nada van las mismas tarjetas sin número —no
+          ceros, que dirían que no hay ninguna—: guardan el alto exacto y nada
+          salta cuando llegan los datos. */}
+      <div
+        className={cn(
+          'grid gap-4 sm:grid-cols-2 lg:grid-cols-4',
+          loading && !lenta && 'invisible',
+        )}
+      >
+        <StatCard
+          label="Total Solicitudes"
+          value={loading ? '—' : String(stats.total)}
+          accent="navy"
+        />
+        <StatCard label="Pendientes" value={loading ? '—' : String(stats.pendientes)} accent="warning" />
+        <StatCard label="Aprobadas" value={loading ? '—' : String(stats.aprobadas)} accent="success" />
+        <StatCard
+          label="Monto Total"
+          value={loading ? '—' : formatMoney(stats.montoTotal)}
+          accent="teal"
+        />
       </div>
 
       {/* Actions Bar */}
@@ -656,9 +727,11 @@ export default function ProjectSolicitudesPago({
             autoComplete="off"
             className="w-[220px]"
           />
-          <span className="text-xs text-muted-foreground">
-            Prefijo: {spPrefijo}
-          </span>
+          {spPrefijo && (
+            <span className="text-xs text-muted-foreground">
+              Prefijo: {spPrefijo}
+            </span>
+          )}
         </div>
 
         {canManage && hasApprovers === false && (
@@ -730,6 +803,7 @@ export default function ProjectSolicitudesPago({
         uniqueEstados={uniqueEstados}
         uniqueCategorias={uniqueCategorias}
         onRowClick={openDetail}
+        cargando={loading}
         onMarkMensajeRead={(id) =>
           marcarMensajeLeido({
             solicitudId: id,
@@ -738,17 +812,20 @@ export default function ProjectSolicitudesPago({
           })
         }
       />
-      <SolicitudesPagination
-        totalItems={totalItems}
-        showingFrom={showingFrom}
-        showingTo={showingTo}
-        currentPage={safePage}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={setPageSize}
-      />
+      {/* «Mostrando 0 de 0» mientras carga diría que no hay ninguna. */}
+      {!loading && (
+        <SolicitudesPagination
+          totalItems={totalItems}
+          showingFrom={showingFrom}
+          showingTo={showingTo}
+          currentPage={safePage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
+      )}
 
       {/* Bulk approval success → toast */}
 

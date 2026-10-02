@@ -8,6 +8,8 @@ const API_BASE = isLocalDev()
   : 'https://andrei-backend-production.up.railway.app/api';
 
 interface VerificacionData {
+  /** Un código puede ser de una solicitud de pago o de una orden de compra. */
+  tipo?: 'solicitud_pago' | 'orden_compra';
   numero: string;
   fecha: string;
   beneficiario: string;
@@ -15,6 +17,9 @@ interface VerificacionData {
   monto_total: number;
   estado: string;
   proyecto_nombre: string | null;
+  /** Solo en una orden de compra. */
+  proveedor_ruc?: string | null;
+  termino_dias?: number;
   verificado: boolean;
   aprobaciones: Array<{ usuario_nombre: string; fecha: string }>;
 }
@@ -60,6 +65,52 @@ const estadoLabels: Record<
   },
 };
 
+const estadoOrdenLabels: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
+  pendiente: {
+    label: 'Pendiente',
+    color: 'text-warning',
+    bg: 'bg-warning/10 border-warning/30',
+  },
+  rechazada: {
+    label: 'Rechazada',
+    color: 'text-error',
+    bg: 'bg-error/10 border-error/30',
+  },
+  por_enviar: {
+    label: 'Por enviar',
+    color: 'text-slate-600',
+    bg: 'bg-slate-50 border-slate-200',
+  },
+  enviada: {
+    label: 'Enviada',
+    color: 'text-teal',
+    bg: 'bg-teal/10 border-teal/30',
+  },
+  entrega_parcial: {
+    label: 'Entrega parcial',
+    color: 'text-warning',
+    bg: 'bg-warning/10 border-warning/30',
+  },
+  recibida: {
+    label: 'Recibida',
+    color: 'text-info',
+    bg: 'bg-info/10 border-info/30',
+  },
+  cerrada: {
+    label: 'Cerrada',
+    color: 'text-success',
+    bg: 'bg-success/10 border-success/30',
+  },
+  dada_de_baja: {
+    label: 'Dada de baja',
+    color: 'text-slate-600',
+    bg: 'bg-slate-50 border-slate-200',
+  },
+};
+
 function formatMoney(amount: number): string {
   return `B/. ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -75,6 +126,9 @@ function formatDate(dateString: string): string {
 
 const VerificacionPublica: React.FC = () => {
   const [data, setData] = useState<VerificacionData | null>(null);
+  // Los dos papeles de Pinellas con QR se dibujan aqui; lo que cambia son los
+  // nombres de los campos y el mapa de estados.
+  const esOrden = data?.tipo === 'orden_compra';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,13 +242,16 @@ const VerificacionPublica: React.FC = () => {
               <div className="p-5 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-xs text-slate-500">Solicitud de Pago</p>
+                    <p className="text-xs text-slate-500">
+                      {esOrden ? 'Orden de Compra' : 'Solicitud de Pago'}
+                    </p>
                     <p className="text-base font-bold text-slate-800">
                       {data.numero}
                     </p>
                   </div>
                   {(() => {
-                    const est = estadoLabels[data.estado] || {
+                    const mapa = esOrden ? estadoOrdenLabels : estadoLabels;
+                    const est = mapa[data.estado] || {
                       label: data.estado,
                       color: 'text-slate-600',
                       bg: 'bg-slate-50 border-slate-200',
@@ -225,10 +282,17 @@ const VerificacionPublica: React.FC = () => {
                 </div>
 
                 <div className="text-sm">
-                  <p className="text-xs text-slate-500">Beneficiario</p>
+                  <p className="text-xs text-slate-500">
+                    {esOrden ? 'Proveedor' : 'Beneficiario'}
+                  </p>
                   <p className="font-medium text-slate-700">
                     {data.beneficiario}
                   </p>
+                  {esOrden && data.proveedor_ruc && (
+                    <p className="text-xs text-slate-500 tabular-nums">
+                      RUC {data.proveedor_ruc}
+                    </p>
+                  )}
                 </div>
 
                 {data.proyecto_nombre && (
@@ -240,9 +304,22 @@ const VerificacionPublica: React.FC = () => {
                   </div>
                 )}
 
+                {esOrden && data.termino_dias !== undefined && (
+                  <div className="text-sm">
+                    <p className="text-xs text-slate-500">Término de pago</p>
+                    <p className="font-medium text-slate-700">
+                      {data.termino_dias === 0
+                        ? 'Contado'
+                        : `${data.termino_dias} días desde cada entrega`}
+                    </p>
+                  </div>
+                )}
+
                 {data.concepto && (
                   <div className="text-sm">
-                    <p className="text-xs text-slate-500">Concepto</p>
+                    <p className="text-xs text-slate-500">
+                      {esOrden ? 'Condiciones de compra' : 'Concepto'}
+                    </p>
                     <p className="font-medium text-slate-700">
                       {data.concepto}
                     </p>

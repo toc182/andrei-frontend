@@ -1,9 +1,10 @@
 // src/lib/costosApi.ts — resumen de Control de Costos.
 // Espeja el endpoint /costs/projects/:id/resumen.
 //
-// Tres numeros: lo que se va a cobrar (contrato), lo que se calculo que iba a
-// costar (el presupuesto con la estrella) y lo que se lleva gastado (las
-// solicitudes de pago ya pagadas).
+// Lo que se va a cobrar (contrato), lo que se calculo que iba a costar (el
+// presupuesto con la estrella), lo PAGADO (solicitudes ya pagadas) y lo que esta
+// POR PAGAR: material de ordenes de compra que ya llego a la obra y todavia no
+// se ha pagado. Los dos ultimos sumados son lo que la obra lleva costado.
 import api from '@/services/api';
 
 export interface ResumenCategoria {
@@ -69,6 +70,10 @@ export interface ResumenCostos {
   contrato: number | null;
   presupuesto: { id: number; nombre: string; costo: number } | null;
   gastado: number;
+  /** Lo que YA LLEGO de las ordenes de compra y todavia no se ha pagado. */
+  porPagar: number;
+  /** gastado + porPagar. Lo que la obra lleva costado, pagado o no. */
+  costoHastaHoy: number;
   categorias: ResumenCategoria[];
   /** Pagos sin categoria de gasto. En la pantalla es un aviso, no una fila mas. */
   sinClasificar: { monto: number; solicitudes: number };

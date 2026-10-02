@@ -24,7 +24,7 @@ import ProjectRequisiciones from './ProjectRequisiciones';
 import ProjectMembers from './ProjectMembers';
 import ProjectTodos from './ProjectTodos';
 import ProjectReportes from './ProjectReportes';
-import ProjectSolicitudesPago from './ProjectSolicitudesPago';
+import ProjectPagos from './ProjectPagos';
 import ProjectAdendas from './ProjectAdendas';
 import CajasMenudasPage from '../CajasMenudasPage';
 import CuentasProjectView from '../cuentas/CuentasProjectView';
@@ -33,9 +33,17 @@ import CronogramaWorkspace from '../cronogramas/CronogramaWorkspace';
 import AdendaForm from '../../components/forms/AdendaForm';
 import ProjectFormNew from '../../components/forms/ProjectFormNew';
 import api from '../../services/api';
+import { recordado, recordar } from '@/lib/recordados';
+import { useCargaLenta } from '@/hooks/useCargaLenta';
+import { cn } from '@/lib/utils';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
 import type { Project, Adenda } from '@/types';
+
+interface ProyectoRecordado {
+  project: Project;
+  adendas: Adenda[];
+}
 
 interface ProjectDetailLayoutProps {
   projectId: number;
@@ -73,9 +81,34 @@ export default function ProjectDetailLayout({
   showInfo = false,
   onCloseInfo,
 }: ProjectDetailLayoutProps) {
-  const [project, setProject] = useState<Project | null>(null);
-  const [projectAdendas, setProjectAdendas] = useState<Adenda[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Un proyecto ya abierto en la sesión sale al instante con lo que tenía y se
+  // refresca por detrás; el esqueleto queda para la primera vez, y solo si
+  // tarda más de 0.3 s (ver lib/recordados y useCargaLenta).
+  const previo = recordado<ProyectoRecordado>(`proyecto:${projectId}`);
+  const [proyectoVista, setProyectoVista] = useState(projectId);
+  const [project, setProject] = useState<Project | null>(previo?.project ?? null);
+  const [projectAdendas, setProjectAdendas] = useState<Adenda[]>(previo?.adendas ?? []);
+  const [loading, setLoading] = useState<boolean>(!previo);
+  const lenta = useCargaLenta(loading && !project);
+
+  // Otro proyecto: lo del anterior no puede quedarse en pantalla mientras llega
+  // el nuevo.
+  if (proyectoVista !== projectId) {
+    setProyectoVista(projectId);
+    setProject(previo?.project ?? null);
+    setProjectAdendas(previo?.adendas ?? []);
+    setLoading(!previo);
+  }
+
+  // Lo que está en pantalla es lo que se recuerda, venga de la carga o de una
+  // edición. El id se mira para no guardar bajo este proyecto lo que llegó
+  // tarde de otro.
+  useEffect(() => {
+    if (project && project.id === projectId) {
+      recordar(`proyecto:${projectId}`, { project, adendas: projectAdendas });
+    }
+  }, [project, projectAdendas, projectId]);
+
   const [error, setError] = useState<string | null>(null);
   const [cuentaNumero, setCuentaNumero] = useState<number | null>(null);
   const [showAdendaForm, setShowAdendaForm] = useState<boolean>(false);
@@ -128,7 +161,7 @@ export default function ProjectDetailLayout({
       presupuesto: 'Presupuesto',
       costos: 'Control de Costos',
       requisiciones: 'Requisiciones',
-      'solicitudes-pago': 'Solicitudes de Pago',
+      'solicitudes-pago': 'Pagos',
       'caja-menuda': 'Caja Menuda',
       cuentas: 'Cuentas',
       tareas: 'Tareas',
@@ -290,8 +323,12 @@ export default function ProjectDetailLayout({
 
       case 'solicitudes-pago':
         return (
-          <ProjectSolicitudesPago
+          <ProjectPagos
+            // Otro proyecto es otra pantalla: nada del anterior (filas, filtros,
+            // lo recordado) puede asomarse mientras carga el nuevo.
+            key={projectId}
             projectId={projectId}
+            projectName={project.nombre_corto || project.nombre}
             onNavigate={onNavigate}
           />
         );
@@ -362,7 +399,7 @@ export default function ProjectDetailLayout({
 
   if (loading && !project) {
     return (
-      <div className="space-y-4">
+      <div className={cn('space-y-4', !lenta && 'invisible')}>
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-32 w-full" />

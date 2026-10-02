@@ -98,44 +98,62 @@ export default function ProjectCostos({ projectId, onIrAPresupuestos }: ProjectC
   }
 
   const {
-    contrato, presupuesto, gastado, categorias, sinClasificar, serie, solicitudes,
-    comparativo, fechas,
+    contrato, presupuesto, gastado, porPagar, costoHastaHoy,
+    categorias, sinClasificar, serie, solicitudes, comparativo, fechas,
   } = resumen;
   const irAlPresupuesto = () => onIrAPresupuestos?.();
   const pctGastado = presupuesto && presupuesto.costo > 0
-    ? Math.round((gastado / presupuesto.costo) * 100)
+    ? Math.round((costoHastaHoy / presupuesto.costo) * 100)
     : null;
   const totalRepartido = categorias.reduce((s, c) => s + c.monto, 0) + sinClasificar.monto;
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Valor del contrato"
           value={contrato != null ? formatMoney(contrato) : '—'}
           accent="navy"
-          trend={{ value: 'Incluye ITBMS', direction: 'flat' }}
+          caption="Incluye ITBMS"
         />
         <StatCard
           label="Presupuesto estimado"
           value={presupuesto ? formatMoney(presupuesto.costo) : 'Sin presupuesto'}
           accent="navy"
           onClick={irAlPresupuesto}
-          trend={{
-            value: presupuesto ? presupuesto.nombre : 'Ninguno marcado como oficial',
-            direction: 'flat',
-          }}
+          caption={presupuesto ? presupuesto.nombre : 'Ninguno marcado como oficial'}
         />
         <StatCard
-          label="Gastado hasta hoy"
+          label="Pagado"
           value={formatMoney(gastado)}
           accent="navy"
-          trend={{
-            value: pctGastado != null ? `${pctGastado}% del presupuesto` : 'Sin presupuesto contra qué comparar',
-            direction: 'flat',
-          }}
+          caption="Lo que ya salió del banco"
+        />
+        <StatCard
+          label="Por pagar"
+          value={formatMoney(porPagar)}
+          accent={porPagar > 0 ? 'warning' : 'navy'}
+          caption="Ya recibido, todavía sin pagar"
         />
       </div>
+
+      {/* El costo de la obra es lo pagado MAS lo que ya llego y no se ha pagado.
+          Lo que falta por retirar de una orden no entra: no se debe todavia, y
+          Ivan pidio que viva solo dentro de la orden. */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="border-l-2 border-l-navy pl-2.5 font-heading text-base font-semibold text-foreground">
+            Costo del proyecto hasta hoy
+          </h2>
+          <span className="text-2xl font-bold tabular-nums text-foreground">
+            {formatMoney(costoHastaHoy)}
+          </span>
+        </div>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {formatMoney(gastado)} pagado · {formatMoney(porPagar)} recibido y sin pagar
+          {pctGastado != null ? ` · ${pctGastado}% del presupuesto` : ''}
+        </p>
+      </Card>
 
       {!presupuesto && (
         <Alert

@@ -9,6 +9,7 @@ import React, {
   useMemo,
 } from 'react';
 import { authAPI } from '../services/api';
+import { olvidarTodo } from '@/lib/recordados';
 import type { User, UserPermissions } from '@/types';
 
 // Types for auth context
@@ -80,6 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authAPI.login(email, password);
       if (response.success) {
+        // Lo que recordaba la sesión anterior no es de esta persona.
+        olvidarTodo();
         localStorage.setItem('token', response.token);
         setUser(response.user);
         setIsAuthenticated(true);
@@ -96,6 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = (): void => {
+    olvidarTodo();
     localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);

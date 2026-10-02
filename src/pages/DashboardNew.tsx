@@ -25,7 +25,7 @@ import EquiposPage from './EquiposPage';
 import ProjectDetailLayout from './project/ProjectDetailLayout';
 import RequisicionesGeneral from './RequisicionesGeneral';
 import AdministracionPage from './AdministracionPage';
-import SolicitudesPagoGeneral from './SolicitudesPagoGeneral';
+import PagosPage from './PagosPage';
 import MiCuentaPage from './MiCuentaPage';
 import CajasMenudasPage from './CajasMenudasPage';
 import CuentasGeneralPage from './cuentas/CuentasGeneralPage';
@@ -265,7 +265,7 @@ export default function DashboardNew() {
         return <RequisicionesGeneral />;
 
       case 'solicitudes-pago':
-        return <SolicitudesPagoGeneral onNavigate={setCurrentView} />;
+        return <PagosPage onNavigate={setCurrentView} />;
 
       case 'cajas-menudas':
         return <CajasMenudasPage key={navKey} />;

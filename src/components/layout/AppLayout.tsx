@@ -40,7 +40,7 @@ const viewTitles: Record<string, string> = {
   projects: 'Pinellas - Proyectos',
   clientes: 'Pinellas - Clientes',
   requisiciones: 'Pinellas - Requisiciones',
-  'solicitudes-pago': 'Pinellas - Solicitudes de Pago',
+  'solicitudes-pago': 'Pinellas - Pagos',
   'cajas-menudas': 'Pinellas - Cajas Menudas',
   equipos: 'Pinellas - Equipos',
   'equipos-informacion': 'Pinellas - Equipos',
