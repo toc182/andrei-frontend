@@ -8,7 +8,7 @@
  * borrador.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Upload, X } from 'lucide-react';
+import { Paperclip, Plus, Upload, X } from 'lucide-react';
 import api from '@/services/api';
 import { AppDialog, Alert, DatePicker } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { plata } from '../formato';
+import { abrirAdjunto } from '../adjuntos';
+import { useSoltarArchivos } from '@/hooks/useSoltarArchivos';
+import { cn } from '@/lib/utils';
 import type { OrdenDetalle } from '../tiposDetalle';
 
 interface Categoria {
@@ -102,12 +105,34 @@ export default function OrdenFormDialog({
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rechazados, setRechazados] = useState<string | null>(null);
+
+  // Los archivos también se pueden arrastrar al recuadro de adjuntos. Se suben
+  // al guardar, igual que los del botón.
+  const { encima, props: zona } = useSoltarArchivos({
+    tipos: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
+    activo: open && !guardando,
+    alSoltar: (aceptados, rechazo) => {
+      setRechazados(
+        rechazo.length
+          ? `${rechazo.map((f) => f.name).join(', ')}: solo se adjuntan PDF, JPG, PNG y WEBP.`
+          : null,
+      );
+      if (aceptados.length) {
+        setArchivos((prev) => [
+          ...prev,
+          ...aceptados.map((archivo) => ({ archivo, descripcion: '' })),
+        ]);
+      }
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
     setError(null);
     setMotivo('');
     setArchivos([]);
+    setRechazados(null);
     if (orden) {
       setProveedor(orden.proveedor);
       setDescripcion(orden.descripcion ?? '');
@@ -514,7 +539,37 @@ export default function OrdenFormDialog({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label className="text-xs">Adjuntos</Label>
-            <div className="mt-1.5 overflow-hidden rounded-lg border border-border">
+            <div
+              {...zona}
+              className={cn(
+                'relative mt-1.5 overflow-hidden rounded-lg border',
+                encima ? 'border-teal ring-2 ring-teal/30' : 'border-border',
+              )}
+            >
+              {encima && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-card/90 text-sm font-semibold text-teal">
+                  Suelta los archivos para adjuntarlos
+                </div>
+              )}
+              {/* Los que la orden ya tiene. Se ven y se abren aquí; se quitan
+                  desde la orden, en su recuadro de adjuntos. */}
+              {orden?.adjuntos.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-2 border-b border-slate-100 p-3"
+                >
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <button
+                    type="button"
+                    onClick={() => void abrirAdjunto(orden.id, a.id)}
+                    className="truncate text-left text-sm text-primary hover:underline"
+                    title={a.descripcion ?? a.nombre_original}
+                  >
+                    {a.nombre_original}
+                  </button>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">Ya adjunto</span>
+                </div>
+              ))}
               {archivos.map((a, i) => (
                 <div key={`${a.archivo.name}-${i}`} className="border-b border-slate-100 p-3">
                   <div className="flex items-center justify-between gap-2">
@@ -545,6 +600,7 @@ export default function OrdenFormDialog({
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-primary">
                   <Upload className="h-4 w-4" />
                   Subir archivo
+                  <span className="font-normal text-muted-foreground">o arrástralo aquí</span>
                   <input
                     type="file"
                     className="hidden"
@@ -558,6 +614,7 @@ export default function OrdenFormDialog({
                 </label>
               </div>
             </div>
+            {rechazados && <p className="mt-1.5 text-xs text-error">{rechazados}</p>}
           </div>
           <div>
             <Label className="text-xs" htmlFor="condiciones">

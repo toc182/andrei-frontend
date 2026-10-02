@@ -18,6 +18,8 @@ export interface OrdenAdjunto {
   id: number;
   entrega_id: number | null;
   nombre_original: string;
+  tipo_mime: string;
+  tamano: number;
   descripcion: string | null;
   subido_por_nombre: string | null;
 }

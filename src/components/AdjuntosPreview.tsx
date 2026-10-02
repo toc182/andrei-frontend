@@ -9,11 +9,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { AppDialog } from '@/components/shell/AppDialog';
 import api from '../services/api';
+import { useSoltarArchivos } from '@/hooks/useSoltarArchivos';
 import type { SolicitudPagoAdjunto } from '../types/api';
 
+/** Lo único que el recuadro mira de cada archivo. Así sirve igual para una
+ *  solicitud de pago que para una orden de compra. */
+type AdjuntoVisible = Pick<SolicitudPagoAdjunto, 'id' | 'nombre_original' | 'tipo_mime' | 'tamano'>;
+
 interface AdjuntosPreviewProps {
-  adjuntos: SolicitudPagoAdjunto[];
-  solicitudPagoId: number;
+  adjuntos: AdjuntoVisible[];
+  solicitudPagoId?: number;
+  /** De dónde salen los enlaces para abrir los archivos. Sin esto, los de la
+   *  solicitud de pago `solicitudPagoId`. */
+  rutaUrls?: string;
   onUpload?: (files: FileList) => void;
   onDelete?: (id: number) => void;
   uploading?: boolean;
@@ -30,6 +38,7 @@ interface AdjuntoUrl {
 export default function AdjuntosPreview({
   adjuntos,
   solicitudPagoId,
+  rutaUrls,
   onUpload,
   onDelete,
   uploading,
@@ -41,6 +50,27 @@ export default function AdjuntosPreview({
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxName, setLightboxName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ruta = rutaUrls ?? `/solicitudes-pago/${solicitudPagoId}/adjuntos/urls`;
+
+  // Además del botón, se pueden arrastrar los archivos y soltarlos en el recuadro.
+  const puedeSoltar = !readOnly && !!onUpload && !uploading;
+  const [rechazo, setRechazo] = useState<string | null>(null);
+  const { encima, props: zona } = useSoltarArchivos({
+    tipos: ['application/pdf', 'image/jpeg', 'image/png'],
+    activo: puedeSoltar,
+    alSoltar: (aceptados, rechazados) => {
+      setRechazo(
+        rechazados.length
+          ? `${rechazados.map((f) => f.name).join(', ')}: solo se adjuntan PDF, JPG y PNG.`
+          : null,
+      );
+      if (aceptados.length === 0) return;
+      // Quien recibe espera un FileList, como el del botón.
+      const lista = new DataTransfer();
+      aceptados.forEach((f) => lista.items.add(f));
+      onUpload?.(lista.files);
+    },
+  });
 
   useEffect(() => {
     if (adjuntos.length === 0) {
@@ -50,9 +80,7 @@ export default function AdjuntosPreview({
     const fetchUrls = async () => {
       try {
         setLoadingUrls(true);
-        const response = await api.get(
-          `/solicitudes-pago/${solicitudPagoId}/adjuntos/urls`,
-        );
+        const response = await api.get(ruta);
         if (response.data.success) {
           setAdjuntoUrls(response.data.adjuntos);
         }
@@ -63,7 +91,7 @@ export default function AdjuntosPreview({
       }
     };
     fetchUrls();
-  }, [adjuntos, solicitudPagoId]);
+  }, [adjuntos, ruta]);
 
   const getUrl = (adjuntoId: number): string | undefined => {
     return adjuntoUrls.find((u) => u.id === adjuntoId)?.url;
@@ -73,7 +101,7 @@ export default function AdjuntosPreview({
     tipoMime === 'image/jpeg' || tipoMime === 'image/png';
 
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-3 rounded-lg" {...zona}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h4 className="font-medium flex items-center gap-2">
@@ -102,8 +130,12 @@ export default function AdjuntosPreview({
         )}
       </div>
 
+      {rechazo && <p className="text-xs text-error">{rechazo}</p>}
+
       {adjuntos.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin adjuntos</p>
+        <p className="text-sm text-muted-foreground">
+          {puedeSoltar ? 'Sin adjuntos. Arrastra los archivos aquí o usa Adjuntar.' : 'Sin adjuntos'}
+        </p>
       ) : loadingUrls ? (
         <p className="text-sm text-muted-foreground">Cargando previews...</p>
       ) : (
@@ -167,6 +199,12 @@ export default function AdjuntosPreview({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {encima && (
+        <div className="pointer-events-none absolute -inset-2 flex items-center justify-center rounded-lg border-2 border-dashed border-teal bg-card/90 text-sm font-semibold text-teal">
+          Suelta los archivos para adjuntarlos
         </div>
       )}
 

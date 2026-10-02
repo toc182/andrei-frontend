@@ -56,6 +56,8 @@ import ActivarPagoDialog from './dialogs/ActivarPagoDialog';
 import BajaDialog from './dialogs/BajaDialog';
 import OrdenFormDialog from './dialogs/OrdenFormDialog';
 import { BulkApprovalPasswordDialog } from '@/pages/solicitudes/dialogs/BulkApprovalPasswordDialog';
+import AdjuntosPreview from '@/components/AdjuntosPreview';
+import { abrirAdjunto } from './adjuntos';
 
 interface Props {
   ordenId: number;
@@ -89,6 +91,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
   // Aprobar pide la contraseña, igual que una solicitud de pago (Ivan, 01/10).
   const [clave, setClave] = useState('');
   const [errorClave, setErrorClave] = useState<string | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
 
   const traer = useCallback(async () => {
     setCargando(true);
@@ -125,6 +128,44 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     } finally {
       setAccion(null);
     }
+  };
+
+  // Los adjuntos de la orden (la cotización y lo que se quiera guardar con ella).
+  // Uno por petición, como en el formulario: el servidor recibe un archivo a la vez.
+  const subirAdjuntos = async (archivos: FileList | File[]) => {
+    setSubiendo(true);
+    setError(null);
+    try {
+      for (const archivo of Array.from(archivos)) {
+        const fd = new FormData();
+        fd.append('archivo', archivo);
+        await api.post(`/ordenes-compra/${ordenId}/adjuntos`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+    } catch (e) {
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg ?? 'No se pudo subir el archivo');
+    } finally {
+      setSubiendo(false);
+      void traer();
+    }
+  };
+
+  const borrarAdjunto = async (adjuntoId: number) => {
+    setError(null);
+    try {
+      await api.delete(`/ordenes-compra/${ordenId}/adjuntos/${adjuntoId}`);
+    } catch {
+      setError('No se pudo quitar el archivo');
+    } finally {
+      void traer();
+    }
+  };
+
+  /** El documento de una entrega, que no vive en el recuadro de adjuntos. */
+  const abrirDocumento = async (adjuntoId: number) => {
+    if (!(await abrirAdjunto(ordenId, adjuntoId))) setError('No se pudo abrir el archivo');
   };
 
   const aprobar = async () => {
@@ -344,6 +385,17 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
             </div>
           )}
         </div>
+        {/* La cotización y lo que se guarde con la orden. Los documentos de cada
+            entrega van en su entrega, abajo. */}
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <AdjuntosPreview
+            adjuntos={orden.adjuntos}
+            rutaUrls={`/ordenes-compra/${orden.id}/adjuntos/urls`}
+            onUpload={(archivos) => void subirAdjuntos(archivos)}
+            onDelete={(id) => void borrarAdjunto(id)}
+            uploading={subiendo}
+          />
+        </div>
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -511,10 +563,15 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
                     </div>
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                       {e.adjuntos.length > 0 ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <button
+                          type="button"
+                          onClick={() => void abrirDocumento(e.adjuntos[0].id)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                          title={e.adjuntos[0].nombre_original}
+                        >
                           <FileCheck2 className="h-3.5 w-3.5 text-success" />
                           {e.adjuntos[0].descripcion || 'Documento de entrega'}
-                        </span>
+                        </button>
                       ) : (
                         <span className="text-xs text-warning">Sin documento de entrega</span>
                       )}
