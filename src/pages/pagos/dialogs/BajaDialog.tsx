@@ -1,9 +1,8 @@
 /**
  * Dar de baja una orden.
  *
- * Lo importante es lo que el diálogo dice en voz alta, no lo que hace: lo que
- * ya llegó se sigue debiendo y se sigue pudiendo pagar; lo que faltaba por
- * retirar se suelta. Sin decirlo, «dar de baja» suena a borrar.
+ * Solo antes de recibirla: no se debe nada todavía, y la orden no se borra.
+ * Recibida ya no se da de baja, porque se debe completa.
  */
 import { useEffect, useState } from 'react';
 import api from '@/services/api';
@@ -41,9 +40,6 @@ export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props
     setError(null);
   }, [open]);
 
-  const porPagar = Number(orden.por_pagar);
-  const faltaRetirar = Number(orden.falta_por_retirar);
-
   const darDeBaja = async () => {
     setGuardando(true);
     setError(null);
@@ -72,23 +68,9 @@ export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props
         <div className="space-y-3">
           {error && <Alert variant="error" title={error} />}
 
-          {porPagar > 0 && (
-            <Alert
-              variant="warning"
-              title={`Los ${plata(porPagar)} que ya llegaron y no se han pagado se siguen debiendo`}
-              description="Siguen contando en el costo del proyecto, y su pago se puede activar igual."
-            />
-          )}
-
           <p className="text-sm text-slate-700">
-            {faltaRetirar > 0 ? (
-              <>
-                Los <strong className="font-semibold">{plata(faltaRetirar)}</strong> que
-                faltaban por retirar se sueltan: no se podrán registrar más entregas contra
-                esta orden.{' '}
-              </>
-            ) : null}
-            La orden no se borra — queda como Dada de baja, con lo que ya pasó.
+            No se debe nada: la orden todavía no llegó. No se borra — queda como Dada de
+            baja, con su historia.
           </p>
 
           <div>

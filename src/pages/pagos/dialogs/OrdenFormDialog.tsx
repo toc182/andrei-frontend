@@ -47,19 +47,18 @@ interface Renglon {
   id?: number;
   cantidad: string;
   unidad: string;
-  codigo: string;
   descripcion: string;
   precio_unitario: string;
-  /** Lo que ya llegó de este renglón; por debajo de esto no se puede bajar. */
-  recibido: number;
 }
 
-type CampoRenglon = 'cantidad' | 'unidad' | 'codigo' | 'descripcion' | 'precio_unitario';
+// Sin código de producto: Ivan lo quitó el 2026-10-02 —quien lo necesite lo ve
+// en la cotización adjunta—. Una orden recibida ya no se edita, así que aquí no
+// hay renglones con material llegado que cuidar.
+type CampoRenglon = 'cantidad' | 'unidad' | 'descripcion' | 'precio_unitario';
 
 const ETIQUETA_CAMPO: Record<CampoRenglon, string> = {
   cantidad: 'Cantidad',
   unidad: 'Unidad',
-  codigo: 'Código',
   descripcion: 'Descripción',
   precio_unitario: 'Precio unit.',
 };
@@ -79,10 +78,8 @@ const TERMINOS = [0, 15, 30, 45, 60, 90];
 const vacio = (): Renglon => ({
   cantidad: '',
   unidad: 'unidad',
-  codigo: '',
   descripcion: '',
   precio_unitario: '',
-  recibido: 0,
 });
 
 const num = (s: string) => Number(String(s).replace(/,/g, '')) || 0;
@@ -158,10 +155,8 @@ export default function OrdenFormDialog({
           id: i.id,
           cantidad: String(Number(i.cantidad)),
           unidad: i.unidad,
-          codigo: i.codigo ?? '',
           descripcion: i.descripcion,
           precio_unitario: Number(i.precio_unitario).toFixed(2),
-          recibido: Number(i.recibido_cantidad),
         })),
       );
     } else {
@@ -198,13 +193,12 @@ export default function OrdenFormDialog({
     return { conTotal, subtotal, desc, itbms, total: dos(subtotal - desc + itbms) };
   }, [renglones, descuento, tasa]);
 
-  const bajado = renglones.find((r) => r.recibido > 0 && num(r.cantidad) < r.recibido);
   const faltaAlgo =
     renglones.every((r) => !r.descripcion.trim()) ||
     renglones.some((r) => r.descripcion.trim() && (num(r.cantidad) <= 0 || !r.precio_unitario)) ||
     !proveedor.trim();
   const faltaMotivo = Boolean(yaSalio) && motivo.trim().length === 0;
-  const puede = !guardando && !faltaAlgo && !bajado && !faltaMotivo && calculado.desc <= calculado.subtotal;
+  const puede = !guardando && !faltaAlgo && !faltaMotivo && calculado.desc <= calculado.subtotal;
 
   const guardar = async () => {
     setGuardando(true);
@@ -216,7 +210,6 @@ export default function OrdenFormDialog({
           ...(r.id ? { id: r.id } : {}),
           cantidad: num(r.cantidad),
           unidad: r.unidad || 'unidad',
-          codigo: r.codigo.trim() || null,
           descripcion: r.descripcion.trim(),
           precio_unitario: num(r.precio_unitario),
         }));
@@ -273,7 +266,6 @@ export default function OrdenFormDialog({
   type ConTotal = (typeof calculado.conTotal)[number];
   const campoRenglon = (r: ConTotal, i: number, campo: CampoRenglon, className: string) => {
     const numerico = campo === 'cantidad' || campo === 'precio_unitario';
-    const bajadoAqui = campo === 'cantidad' && r.recibido > 0 && num(r.cantidad) < r.recibido;
     return (
       <Input
         inputMode={numerico ? 'decimal' : undefined}
@@ -283,9 +275,7 @@ export default function OrdenFormDialog({
         placeholder={campo === 'descripcion' ? 'Descripción del producto o servicio' : undefined}
         className={cn(
           className,
-          numerico && 'text-right',
-          (numerico || campo === 'codigo') && 'tabular-nums',
-          bajadoAqui && 'border-error',
+          numerico && 'text-right tabular-nums',
         )}
       />
     );
@@ -296,8 +286,7 @@ export default function OrdenFormDialog({
       size="icon"
       className="h-7 w-7"
       aria-label={`Quitar el renglón ${i + 1}`}
-      disabled={r.recibido > 0 || renglones.length === 1}
-      title={r.recibido > 0 ? 'De este renglón ya se recibió material' : undefined}
+      disabled={renglones.length === 1}
       onClick={() => setRenglones((rs) => rs.filter((_, j) => j !== i))}
     >
       <X className="h-3.5 w-3.5 text-error" />
@@ -452,7 +441,7 @@ export default function OrdenFormDialog({
           <Label className="text-xs mb-2 block">Detalle de compra</Label>
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Teléfono: un bloque por renglón, con cajitas donde se puede
-                escribir. En la tabla de siete columnas no cabían y el botón de
+                escribir. En la tabla no cabían y el botón de
                 guardar quedaba fuera de la pantalla (Ivan, 2026-10-02). */}
             <div className="divide-y divide-slate-100 md:hidden">
               {calculado.conTotal.map((r, i) => (
@@ -464,8 +453,8 @@ export default function OrdenFormDialog({
                     {botonQuitar(r, i)}
                   </div>
                   {campoRenglon(r, i, 'descripcion', 'h-9')}
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['cantidad', 'unidad', 'codigo', 'precio_unitario'] as const).map((campo) => (
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['cantidad', 'unidad', 'precio_unitario'] as const).map((campo) => (
                       <div key={campo}>
                         <span className="text-xs text-muted-foreground">{ETIQUETA_CAMPO[campo]}</span>
                         {campoRenglon(r, i, campo, 'mt-1 h-9')}
@@ -489,9 +478,6 @@ export default function OrdenFormDialog({
                     <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Unidad
                     </TableHead>
-                    <TableHead className="w-[96px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Código
-                    </TableHead>
                     <TableHead className="px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Descripción
                     </TableHead>
@@ -509,7 +495,6 @@ export default function OrdenFormDialog({
                     <TableRow key={r.id ?? `n${i}`} className="border-b border-slate-100 last:border-0">
                       <TableCell className="px-2 py-2">{campoRenglon(r, i, 'cantidad', 'h-8')}</TableCell>
                       <TableCell className="px-2 py-2">{campoRenglon(r, i, 'unidad', 'h-8')}</TableCell>
-                      <TableCell className="px-2 py-2">{campoRenglon(r, i, 'codigo', 'h-8')}</TableCell>
                       <TableCell className="px-2 py-2">
                         {campoRenglon(r, i, 'descripcion', 'h-8')}
                       </TableCell>
@@ -562,12 +547,6 @@ export default function OrdenFormDialog({
               </div>
             </div>
           </div>
-          {bajado && (
-            <p className="mt-2 text-xs text-error">
-              De «{bajado.descripcion}» ya se recibieron {bajado.recibido}: no se puede bajar
-              por debajo de eso.
-            </p>
-          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

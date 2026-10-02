@@ -16,6 +16,8 @@ interface RechazarSolicitudDialogProps {
   comment: string;
   onCommentChange: (value: string) => void;
   onConfirm: () => void;
+  /** Para rechazar algo que no es una solicitud (una orden de compra). */
+  title?: string;
 }
 
 export function RechazarSolicitudDialog({
@@ -24,13 +26,14 @@ export function RechazarSolicitudDialog({
   comment,
   onCommentChange,
   onConfirm,
+  title = 'Rechazar Solicitud',
 }: RechazarSolicitudDialogProps) {
   return (
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
       size="confirm"
-      title="Rechazar Solicitud"
+      title={title}
       description="Indique el motivo del rechazo"
       footer={
         <>

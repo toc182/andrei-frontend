@@ -32,10 +32,6 @@ const PASTILLAS: Record<
     etiqueta: 'Enviada',
     clases: 'bg-teal/10 text-teal border-teal/30',
   },
-  entrega_parcial: {
-    etiqueta: 'Entrega parcial',
-    clases: 'bg-warning/10 text-warning border-warning/30',
-  },
   recibida: {
     etiqueta: 'Recibida',
     clases: 'bg-info/10 text-info border-info/30',

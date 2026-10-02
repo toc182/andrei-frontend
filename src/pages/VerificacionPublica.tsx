@@ -89,11 +89,6 @@ const estadoOrdenLabels: Record<
     color: 'text-teal',
     bg: 'bg-teal/10 border-teal/30',
   },
-  entrega_parcial: {
-    label: 'Entrega parcial',
-    color: 'text-warning',
-    bg: 'bg-warning/10 border-warning/30',
-  },
   recibida: {
     label: 'Recibida',
     color: 'text-info',

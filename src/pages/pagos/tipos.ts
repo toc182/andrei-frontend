@@ -6,13 +6,12 @@
  * camino. Se convierten al mostrarlos, nunca antes.
  */
 
-/** Los seis que se guardan, más los dos que salen de las entregas. */
+/** Los seis que se guardan, más «recibida», que sale de la recepción. */
 export type EstadoOrden =
   | 'pendiente'
   | 'rechazada'
   | 'por_enviar'
   | 'enviada'
-  | 'entrega_parcial'
   | 'recibida'
   | 'cerrada'
   | 'dada_de_baja';
