@@ -29,6 +29,9 @@ import { ProjectSelectorDialog } from './solicitudes/dialogs/ProjectSelectorDial
 
 interface Props {
   onNavigate?: (view: string) => void;
+  /** Una solicitud que hay que abrir al entrar (el enlace del WhatsApp de las urgentes). */
+  abrirSolicitudId?: number | null;
+  onSolicitudAbierta?: () => void;
 }
 
 interface ProyectoOpcion {
@@ -37,7 +40,7 @@ interface ProyectoOpcion {
   nombre_corto?: string;
 }
 
-export default function PagosPage({ onNavigate }: Props) {
+export default function PagosPage({ onNavigate, abrirSolicitudId, onSolicitudAbierta }: Props) {
   const { user, hasPermission } = useAuth();
   const verSolicitudes = hasPermission('solicitudes_ver');
   const verOrdenes = hasPermission('ordenes_ver');
@@ -101,7 +104,13 @@ export default function PagosPage({ onNavigate }: Props) {
   );
 
   const listaSolicitudes = (
-    <SolicitudesPagoGeneral onNavigate={onNavigate} enPestana onAccionNueva={recibirAccion} />
+    <SolicitudesPagoGeneral
+      onNavigate={onNavigate}
+      enPestana
+      onAccionNueva={recibirAccion}
+      abrirSolicitudId={abrirSolicitudId}
+      onSolicitudAbierta={onSolicitudAbierta}
+    />
   );
 
   const accion =

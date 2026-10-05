@@ -54,9 +54,27 @@ interface ProjectContext {
   name: string;
 }
 
+/**
+ * El enlace del WhatsApp de una solicitud urgente: /solicitud/<id> entra a
+ * Pagos con esa solicitud abierta. Si no había sesión, el login sale antes y la
+ * dirección sigue ahí cuando se entra.
+ */
+function solicitudDelEnlace(): number | null {
+  const m = window.location.pathname.match(/^\/solicitud\/(\d+)\/?$/);
+  return m ? Number(m[1]) : null;
+}
+
 export default function DashboardNew() {
   const { isAdminOrCoAdmin, user } = useAuth();
-  const [currentView, _setCurrentView] = useState('dashboard');
+  const [abrirSolicitudId, setAbrirSolicitudId] = useState<number | null>(solicitudDelEnlace);
+  const [currentView, _setCurrentView] = useState(() =>
+    abrirSolicitudId !== null ? 'solicitudes-pago' : 'dashboard',
+  );
+  const solicitudAbierta = useCallback(() => setAbrirSolicitudId(null), []);
+  // La dirección se limpia en seguida: recargar la página no vuelve a abrirla.
+  useEffect(() => {
+    if (solicitudDelEnlace() !== null) window.history.replaceState(null, '', '/');
+  }, []);
   const [navKey, setNavKey] = useState(0);
   const setCurrentView = useCallback((view: string) => {
     _setCurrentView(view);
@@ -265,7 +283,13 @@ export default function DashboardNew() {
         return <RequisicionesGeneral />;
 
       case 'solicitudes-pago':
-        return <PagosPage onNavigate={setCurrentView} />;
+        return (
+          <PagosPage
+            onNavigate={setCurrentView}
+            abrirSolicitudId={abrirSolicitudId}
+            onSolicitudAbierta={solicitudAbierta}
+          />
+        );
 
       case 'cajas-menudas':
         return <CajasMenudasPage key={navKey} />;

@@ -4,7 +4,7 @@
  * Accesible desde el sidebar principal
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Check } from 'lucide-react';
@@ -78,6 +78,9 @@ interface SolicitudesPagoGeneralProps {
    * vive aquí; lo único que sube es el disparador.
    */
   onAccionNueva?: (abrir: () => void) => void;
+  /** Una solicitud que hay que abrir al entrar (el enlace del WhatsApp de las urgentes). */
+  abrirSolicitudId?: number | null;
+  onSolicitudAbierta?: () => void;
 }
 
 interface ListaSolicitudes {
@@ -92,6 +95,8 @@ export default function SolicitudesPagoGeneral({
   onNavigate,
   enPestana = false,
   onAccionNueva,
+  abrirSolicitudId = null,
+  onSolicitudAbierta,
 }: SolicitudesPagoGeneralProps) {
   const { user, hasPermission, isAdminOrCoAdmin } = useAuth();
   const canManage = !!user;
@@ -434,8 +439,9 @@ export default function SolicitudesPagoGeneral({
     }
   };
 
-  // Detail
-  const openDetail = async (solicitud: SolicitudPago) => {
+  // Detail. Dice si quedó abierto: el enlace del WhatsApp necesita saberlo para
+  // avisar cuando la solicitud ya no existe o no es de las que puede ver.
+  const openDetail = useCallback(async (solicitud: Pick<SolicitudPago, 'id' | 'revisada'>): Promise<boolean> => {
     try {
       const response = await api.get(`/solicitudes-pago/${solicitud.id}`);
       if (response.data.success) {
@@ -450,7 +456,7 @@ export default function SolicitudesPagoGeneral({
         setDetailReembolso(response.data.reembolso || null);
         setDetailDevolucion(response.data.devolucion || null);
         setDetailPuedeEliminar(!!response.data.puede_eliminar);
-        setDetailRevisada(!!solicitud.revisada);
+        setDetailRevisada(response.data.revisada ?? !!solicitud.revisada);
         // Load corrections
         const corrCount = response.data.solicitud?.correcciones_count || 0;
         if (corrCount > 0) {
@@ -466,11 +472,27 @@ export default function SolicitudesPagoGeneral({
           setDetailCorrecciones([]);
         }
         setShowDetail(true);
+        return true;
       }
     } catch (err) {
       console.error('Error loading detail:', err);
     }
-  };
+    return false;
+  }, []);
+
+  // La solicitud del enlace del WhatsApp: se abre una vez, en cuanto la vista
+  // está montada.
+  const abiertaDelEnlace = useRef<number | null>(null);
+  useEffect(() => {
+    if (abrirSolicitudId === null || abiertaDelEnlace.current === abrirSolicitudId) return;
+    abiertaDelEnlace.current = abrirSolicitudId;
+    void openDetail({ id: abrirSolicitudId }).then((abierta) => {
+      if (!abierta) {
+        setActionError('No se pudo abrir esa solicitud: ya no existe o no tienes acceso a ella.');
+      }
+      onSolicitudAbierta?.();
+    });
+  }, [abrirSolicitudId, openDetail, onSolicitudAbierta]);
 
   const openEditForm = async (solicitud: SolicitudPago) => {
     try {
