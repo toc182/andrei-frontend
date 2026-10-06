@@ -217,12 +217,17 @@ export function SolicitudDetailDialog({
           {/* Bank data */}
           <SolicitudBankDataCard solicitud={solicitud} />
 
-          {/* Adjuntos */}
+          {/* Adjuntos. Quita un archivo quien maneja la solicitud o quien lo
+              subió; es la misma regla del servidor. */}
           <AdjuntosPreview
             adjuntos={adjuntos}
             solicitudPagoId={solicitud.id}
             onUpload={onUploadAdjuntos}
             onDelete={onDeleteAdjunto}
+            puedeBorrar={(id) =>
+              canManageSolicitud(solicitud) ||
+              adjuntos.find((a) => a.id === id)?.subido_por === currentUserId
+            }
             uploading={uploadingFiles}
           />
 
@@ -262,7 +267,9 @@ export function SolicitudDetailDialog({
             resubmitting={resubmitting}
             currentUserId={currentUserId}
             isAdminOrCoAdmin={isAdminOrCoAdmin}
-            canManage={canManage}
+            // Aquí solo decide «Reenviar para aprobación»: reenvía quien puede
+            // editarla, igual que en el servidor.
+            canManage={canManageSolicitud(solicitud)}
             hasPermission={hasPermission}
             onPinellasPagaChange={onPinellasPagaChange}
             onToggleRevisada={onToggleRevisada}

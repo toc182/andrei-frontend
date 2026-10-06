@@ -64,12 +64,6 @@ interface LoginResponse {
   user: User;
 }
 
-interface RegisterResponse {
-  success: boolean;
-  message: string;
-  user: User;
-}
-
 interface ProfileResponse {
   success: boolean;
   user: User;
@@ -87,21 +81,6 @@ export const authAPI = {
     const response = await api.post<LoginResponse>('/auth/login', {
       email,
       password,
-    });
-    return response.data;
-  },
-
-  register: async (
-    nombre: string,
-    email: string,
-    password: string,
-    rol: User['rol'] = 'usuario',
-  ): Promise<RegisterResponse> => {
-    const response = await api.post<RegisterResponse>('/auth/register', {
-      nombre,
-      email,
-      password,
-      rol,
     });
     return response.data;
   },

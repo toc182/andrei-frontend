@@ -24,6 +24,10 @@ interface AdjuntosPreviewProps {
   rutaUrls?: string;
   onUpload?: (files: FileList) => void;
   onDelete?: (id: number) => void;
+  /** Si este archivo se le puede quitar. Sin esto, todos los que tengan
+   *  `onDelete`. El servidor decide igual; esto solo evita ofrecer el bote a
+   *  quien le diria que no. */
+  puedeBorrar?: (id: number) => boolean;
   uploading?: boolean;
   readOnly?: boolean;
   title?: string;
@@ -41,6 +45,7 @@ export default function AdjuntosPreview({
   rutaUrls,
   onUpload,
   onDelete,
+  puedeBorrar,
   uploading,
   readOnly = false,
   title = 'Adjuntos',
@@ -186,14 +191,14 @@ export default function AdjuntosPreview({
                   <span className="text-[10px] text-white truncate flex-1">
                     {adj.nombre_original}
                   </span>
-                  {!readOnly && (
+                  {!readOnly && onDelete && (puedeBorrar?.(adj.id) ?? true) && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-4 w-4 p-0 shrink-0 text-white/70 hover:text-error hover:bg-transparent"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDelete?.(adj.id);
+                        onDelete(adj.id);
                       }}
                     >
                       <Trash2 className="h-2.5 w-2.5" />
