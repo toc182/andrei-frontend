@@ -7,7 +7,7 @@
  * arriba no es decorativo — es lo único que avisa de que esto ya no es un
  * borrador.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ClipboardEvent } from 'react';
 import { Paperclip, Plus, Upload, X } from 'lucide-react';
 import api from '@/services/api';
 import { AppDialog, Alert, DatePicker } from '@/components/shell';
@@ -36,6 +36,7 @@ import { abrirAdjunto } from '../adjuntos';
 import { useSoltarArchivos } from '@/hooks/useSoltarArchivos';
 import { cn } from '@/lib/utils';
 import type { OrdenDetalle } from '../tiposDetalle';
+import { pegarEnRenglones, type CampoRenglon } from '@/lib/ordenPaste';
 
 interface Categoria {
   id: number;
@@ -54,7 +55,6 @@ interface Renglon {
 // Sin código de producto: Ivan lo quitó el 2026-10-02 —quien lo necesite lo ve
 // en la cotización adjunta—. Una orden con facturas ya no se edita, así que aquí
 // no hay renglones con material llegado que cuidar.
-type CampoRenglon = 'cantidad' | 'unidad' | 'descripcion' | 'precio_unitario';
 
 const ETIQUETA_CAMPO: Record<CampoRenglon, string> = {
   cantidad: 'Cantidad',
@@ -261,6 +261,16 @@ export default function OrdenFormDialog({
   const cambiar = (i: number, campo: keyof Renglon, valor: string) =>
     setRenglones((rs) => rs.map((r, j) => (j === i ? { ...r, [campo]: valor } : r)));
 
+  // Varias celdas copiadas de Excel caen directo en la tabla, como en la caja
+  // menuda (Ivan, 2026-10-07): desde la cajita donde se pega, hacia la derecha
+  // y hacia abajo, agregando los renglones que falten.
+  const alPegar = (e: ClipboardEvent<HTMLInputElement>, i: number, campo: CampoRenglon) => {
+    const nuevos = pegarEnRenglones(renglones, i, campo, e.clipboardData.getData('text'), vacio);
+    if (!nuevos) return;
+    e.preventDefault();
+    setRenglones(nuevos);
+  };
+
   // Las cajitas de un renglón y su botón de quitar se escriben una vez y salen
   // en los dos dibujos: la tabla de la computadora y los bloques del teléfono.
   type ConTotal = (typeof calculado.conTotal)[number];
@@ -272,6 +282,7 @@ export default function OrdenFormDialog({
         aria-label={`${ETIQUETA_CAMPO[campo]} del renglón ${i + 1}`}
         value={r[campo]}
         onChange={(e) => cambiar(i, campo, e.target.value)}
+        onPaste={(e) => alPegar(e, i, campo)}
         placeholder={campo === 'descripcion' ? 'Descripción del producto o servicio' : undefined}
         className={cn(
           className,
@@ -282,16 +293,23 @@ export default function OrdenFormDialog({
   };
   const botonQuitar = (r: ConTotal, i: number) => (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
-      className="h-7 w-7"
+      className="h-7 w-7 text-muted-foreground hover:text-error"
       aria-label={`Quitar el renglón ${i + 1}`}
       disabled={renglones.length === 1}
       onClick={() => setRenglones((rs) => rs.filter((_, j) => j !== i))}
     >
-      <X className="h-3.5 w-3.5 text-error" />
+      <X className="h-3.5 w-3.5" />
     </Button>
   );
+  // En la computadora los renglones son una hoja, como en la caja menuda: la
+  // cajita no tiene marco propio, ocupa su celda entera y la tabla pone la
+  // cuadrícula (Ivan, 2026-10-07: «que se vea como una tabla, no que se vean
+  // los campos separados»).
+  const CELDA =
+    'h-10 rounded-none border-0 bg-transparent px-3 shadow-none focus-visible:bg-slate-50 focus-visible:ring-0';
+  const CON_LINEA = 'border-r border-slate-200 p-0';
 
   return (
     <AppDialog
@@ -411,7 +429,7 @@ export default function OrdenFormDialog({
               </SelectContent>
             </Select>
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Los días se cuentan desde cada entrega, por separado.
+              Los días se cuentan desde la fecha de cada factura, por separado.
             </p>
           </div>
           <div>
@@ -438,7 +456,11 @@ export default function OrdenFormDialog({
         </div>
 
         <div>
-          <Label className="text-xs mb-2 block">Detalle de compra</Label>
+          <Label className="text-xs mb-1 block">Detalle de compra</Label>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Puedes copiar los renglones desde Excel —Cant., Unidad, Descripción, P. unit.— y
+            pegarlos aquí.
+          </p>
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Teléfono: un bloque por renglón, con cajitas donde se puede
                 escribir. En la tabla no cabían y el botón de
@@ -472,39 +494,40 @@ export default function OrdenFormDialog({
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                    <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="w-[84px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Cant.
                     </TableHead>
-                    <TableHead className="w-[84px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="w-[96px] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Unidad
                     </TableHead>
-                    <TableHead className="px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Descripción
                     </TableHead>
-                    <TableHead className="w-[104px] px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="w-[112px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       P. Unit.
                     </TableHead>
-                    <TableHead className="w-[112px] px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="w-[120px] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Total
                     </TableHead>
-                    <TableHead className="w-[48px] px-2 py-2" />
+                    <TableHead className="w-[44px] p-0" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {calculado.conTotal.map((r, i) => (
-                    <TableRow key={r.id ?? `n${i}`} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="px-2 py-2">{campoRenglon(r, i, 'cantidad', 'h-8')}</TableCell>
-                      <TableCell className="px-2 py-2">{campoRenglon(r, i, 'unidad', 'h-8')}</TableCell>
-                      <TableCell className="px-2 py-2">
-                        {campoRenglon(r, i, 'descripcion', 'h-8')}
+                    <TableRow
+                      key={r.id ?? `n${i}`}
+                      className="border-b border-slate-200 last:border-0 hover:bg-transparent"
+                    >
+                      <TableCell className={CON_LINEA}>{campoRenglon(r, i, 'cantidad', CELDA)}</TableCell>
+                      <TableCell className={CON_LINEA}>{campoRenglon(r, i, 'unidad', CELDA)}</TableCell>
+                      <TableCell className={CON_LINEA}>{campoRenglon(r, i, 'descripcion', CELDA)}</TableCell>
+                      <TableCell className={CON_LINEA}>
+                        {campoRenglon(r, i, 'precio_unitario', CELDA)}
                       </TableCell>
-                      <TableCell className="px-2 py-2">
-                        {campoRenglon(r, i, 'precio_unitario', 'h-8')}
-                      </TableCell>
-                      <TableCell className="px-2 py-2 text-right text-sm font-semibold tabular-nums">
+                      <TableCell className="border-r border-slate-200 bg-slate-50 px-3 py-0 text-right text-sm font-semibold tabular-nums">
                         {plata(r.total)}
                       </TableCell>
-                      <TableCell className="px-2 py-2 text-center">{botonQuitar(r, i)}</TableCell>
+                      <TableCell className="p-0 text-center">{botonQuitar(r, i)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
