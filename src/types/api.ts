@@ -44,7 +44,6 @@ export interface UserPermissions {
   clientes_editar: boolean;
   clientes_eliminar: boolean;
   solicitudes_editar_todas: boolean;
-  requisiciones_editar_todas: boolean;
   equipos_ver: boolean;
   equipos_agregar: boolean;
   equipos_editar: boolean;
@@ -63,6 +62,8 @@ export interface UserPermissions {
   reportes: boolean;
   solicitudes_ver: boolean;
   requisiciones_ver: boolean;
+  requisiciones_crear: boolean;
+  requisiciones_atender: boolean;
   clientes_ver: boolean;
   costos_ver: boolean;
   ordenes_ver: boolean;
@@ -130,6 +131,16 @@ export interface Project {
   fecha_fin_vigente?: string | null;
   /** Número de la adenda que fijó fecha_fin_vigente; null si es la original. */
   adenda_fecha_numero?: number | null;
+  /** Avance físico según las cuentas, hasta la última (borradores incluidos). null = sin cuentas. */
+  avance_fisico?: number | null;
+  /** La parte del avance que ya está en cuentas presentadas. */
+  avance_presentado?: number | null;
+  /** La parte que está en cuentas todavía en borrador. */
+  avance_sin_presentar?: number | null;
+  /** La última cuenta que aporta avance. */
+  avance_cuenta_numero?: number | null;
+  /** Las cuentas en borrador que aportan avance. */
+  avance_cuentas_sin_presentar?: number[] | null;
   contrato?: string;
   acto_publico?: string;
   tipo_contrato?: 'publico' | 'privado';
@@ -181,72 +192,6 @@ export interface Adenda {
   /** Lo que la adenda suma al contrato, con ITBMS; negativo si lo reduce. */
   monto: string | null;
   observaciones: string | null;
-}
-
-// ============================================
-// REQUISICIONES
-// ============================================
-
-export type EstadoRequisicion =
-  | 'pendiente'
-  | 'en_cotizacion'
-  | 'por_aprobar'
-  | 'aprobada'
-  | 'pagada'
-  | 'rechazada';
-
-export interface Requisicion {
-  id: number;
-  numero: string;
-  proyecto_id: number;
-  proveedor: string;
-  concepto?: string;
-  fecha: string;
-  pdf_url?: string;
-  pdf_nombre?: string;
-  solicitado_por: number;
-  solicitante_id: number;
-  estado: EstadoRequisicion;
-  subtotal: number;
-  itbms: number;
-  monto_total: number;
-  aprobado_por?: number;
-  fecha_aprobacion?: string;
-  pagado_por?: number;
-  fecha_pago?: string;
-  gasto_id?: number;
-  archivada: boolean;
-  fecha_archivado?: string;
-  archivado_por?: number;
-  created_at: string;
-  updated_at: string;
-  // Joined fields
-  proyecto_nombre?: string;
-  proyecto_corto?: string;
-  creador_nombre?: string;
-  solicitante_nombre?: string;
-  aprobador_nombre?: string;
-  pagador_nombre?: string;
-  items_count?: string;
-}
-
-export interface RequisicionItem {
-  id: number;
-  requisicion_id: number;
-  descripcion: string;
-  cantidad: number;
-  unidad: string;
-  precio_unitario: number;
-  subtotal: number;
-  aplica_itbms: boolean;
-  itbms: number;
-  total: number;
-  categoria_id?: number;
-  notas?: string;
-  // Joined fields
-  categoria_nombre?: string;
-  categoria_codigo?: string;
-  categoria_color?: string;
 }
 
 // ============================================
@@ -599,6 +544,10 @@ export interface Cuenta {
   periodo_inicio: string | null;
   periodo_fin: string | null;
   avance_porcentaje: string | null;
+  /** El avance de esta cuenta a precisión completa (vista cuenta_avance). */
+  avance_periodo?: number | null;
+  /** El avance hasta esta cuenta, inclusive. */
+  avance_acumulado?: number | null;
   estado: CuentaEstado;
   desglose_id?: number | null; // no-null = cuenta detallada con cuadro (cuenta_lineas)
   fecha_primera_submision: string | null;
@@ -692,7 +641,6 @@ export interface CuentaDetail extends Cuenta {
   ipt: CuentaIpt | null;
   ajustes: CuentaAjuste[];
   ajuste_opciones: CuentaAjusteOpcion[];
-  avance_acumulado: string;
   /** Avance leído del cuadro, a precisión completa. Solo cuando la cuenta
    *  lleva desglose; es el mismo número que muestra el desglose. */
   avance_desglose?: { acumulado: number; periodo: number } | null;
@@ -722,6 +670,9 @@ export interface Cotizacion {
   proyecto_nombre: string | null;
   ambito: CotizacionAmbito | null;
   created_at: string;
+  /** La requisición de donde viene la entrada (una por línea); solo se consulta aquí. */
+  requisicion_id: number | null;
+  requisicion_numero: string | null;
 }
 
 // Row in the "Por proveedor" tab (one per supplier offer, flattened).
@@ -740,6 +691,8 @@ export interface CotizacionOfertaFlat {
   ambito: CotizacionAmbito | null;
   agregado_por_nombre: string | null;
   archivos_count: number;
+  requisicion_id: number | null;
+  requisicion_numero: string | null;
 }
 
 // Oferta inside a cotización detail.
@@ -766,6 +719,11 @@ export interface CotizacionDetalle {
   created_at: string;
   updated_at: string;
   ofertas: CotizacionOferta[];
+  /** Si viene de una requisición: cuál, su descripción y el número de la línea. */
+  requisicion_id: number | null;
+  requisicion_numero: string | null;
+  requisicion_descripcion: string | null;
+  requisicion_linea: number | null;
 }
 
 export interface CotizacionArchivo {

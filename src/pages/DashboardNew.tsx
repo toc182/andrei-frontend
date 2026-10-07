@@ -71,6 +71,9 @@ export default function DashboardNew() {
     abrirSolicitudId !== null ? 'solicitudes-pago' : 'dashboard',
   );
   const solicitudAbierta = useCallback(() => setAbrirSolicitudId(null), []);
+  // La requisición que se pidió abrir desde otra sección (Cotizaciones).
+  const [abrirRequisicionId, setAbrirRequisicionId] = useState<number | null>(null);
+  const requisicionAbierta = useCallback(() => setAbrirRequisicionId(null), []);
   // La dirección se limpia en seguida: recargar la página no vuelve a abrirla.
   useEffect(() => {
     if (solicitudDelEnlace() !== null) window.history.replaceState(null, '', '/');
@@ -276,7 +279,15 @@ export default function DashboardNew() {
         return <ClientesN />;
 
       case 'requisiciones':
-        return <RequisicionesGeneral />;
+        return (
+          <RequisicionesGeneral
+            // Tocar «Requisiciones» en el menú con una abierta vuelve a la lista.
+            key={navKey}
+            onNavigate={setCurrentView}
+            abrirRequisicionId={abrirRequisicionId}
+            onRequisicionAbierta={requisicionAbierta}
+          />
+        );
 
       case 'solicitudes-pago':
         return (
@@ -299,7 +310,15 @@ export default function DashboardNew() {
         );
 
       case 'cotizaciones':
-        return <CotizacionesPage key={navKey} />;
+        return (
+          <CotizacionesPage
+            key={navKey}
+            onAbrirRequisicion={(id) => {
+              setAbrirRequisicionId(id);
+              setCurrentView('requisiciones');
+            }}
+          />
+        );
 
       case 'cronogramas':
         return canUseCronogramas(user) ? (

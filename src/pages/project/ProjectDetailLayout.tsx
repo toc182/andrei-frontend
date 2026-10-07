@@ -294,7 +294,13 @@ export default function ProjectDetailLayout({
         return <ProjectControlCostos projectId={projectId} onNavigate={onNavigate} />;
 
       case 'requisiciones':
-        return <ProjectRequisiciones projectId={projectId} />;
+        return (
+          <ProjectRequisiciones
+            projectId={projectId}
+            projectName={project.nombre_corto || project.nombre}
+            onNavigate={onNavigate}
+          />
+        );
 
       case 'solicitudes-pago':
         return (

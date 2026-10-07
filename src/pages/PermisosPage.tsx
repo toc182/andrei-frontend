@@ -37,7 +37,6 @@ interface PermUser {
   clientes_editar: boolean | null;
   clientes_eliminar: boolean | null;
   solicitudes_editar_todas: boolean | null;
-  requisiciones_editar_todas: boolean | null;
   equipos_ver: boolean | null;
   equipos_agregar: boolean | null;
   equipos_editar: boolean | null;
@@ -56,6 +55,8 @@ interface PermUser {
   reportes: boolean | null;
   solicitudes_ver: boolean | null;
   requisiciones_ver: boolean | null;
+  requisiciones_crear: boolean | null;
+  requisiciones_atender: boolean | null;
   clientes_ver: boolean | null;
   costos_ver: boolean | null;
   ordenes_ver: boolean | null;
@@ -81,7 +82,6 @@ const DEFAULT_PERMS: UserPermissions = {
   clientes_editar: false,
   clientes_eliminar: false,
   solicitudes_editar_todas: false,
-  requisiciones_editar_todas: false,
   equipos_ver: true,
   equipos_agregar: false,
   equipos_editar: false,
@@ -100,6 +100,8 @@ const DEFAULT_PERMS: UserPermissions = {
   reportes: false,
   solicitudes_ver: false,
   requisiciones_ver: false,
+  requisiciones_crear: false,
+  requisiciones_atender: false,
   clientes_ver: false,
   costos_ver: false,
   ordenes_ver: false,
@@ -473,18 +475,13 @@ export default function PermisosPage() {
               {/* Solicitudes y Requisiciones */}
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  Solicitudes y Requisiciones
+                  Solicitudes
                 </Label>
                 <div className="space-y-2">
                   <PermCheckbox
                     label="Editar todas las solicitudes de pago"
                     checked={perms.solicitudes_editar_todas}
                     onChange={() => togglePerm('solicitudes_editar_todas')}
-                  />
-                  <PermCheckbox
-                    label="Editar todas las requisiciones"
-                    checked={perms.requisiciones_editar_todas}
-                    onChange={() => togglePerm('requisiciones_editar_todas')}
                   />
                   <PermCheckbox
                     label="Registrar pagos y facturas"
@@ -528,6 +525,37 @@ export default function PermisosPage() {
                     label="Registrar entregas"
                     checked={perms.ordenes_entregas}
                     onChange={() => togglePerm('ordenes_entregas')}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Requisiciones (Ivan, 2026-10-06). Para aprobar no hace falta
+                  ninguna: cada proyecto dice quién aprueba sus requisiciones,
+                  en Personal del proyecto. */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">
+                  Requisiciones
+                </Label>
+                <p className="text-xs text-muted-foreground -mt-1 mb-2">
+                  Para aprobar no hace falta ninguna: cada proyecto dice quién aprueba.
+                </p>
+                <div className="space-y-2">
+                  <PermCheckbox
+                    label="Ver las aprobadas de sus proyectos"
+                    checked={perms.requisiciones_ver}
+                    onChange={() => togglePerm('requisiciones_ver')}
+                  />
+                  <PermCheckbox
+                    label="Escribir requisiciones en sus proyectos"
+                    checked={perms.requisiciones_crear}
+                    onChange={() => togglePerm('requisiciones_crear')}
+                  />
+                  <PermCheckbox
+                    label="Atender requisiciones (Compras)"
+                    checked={perms.requisiciones_atender}
+                    onChange={() => togglePerm('requisiciones_atender')}
                   />
                 </div>
               </div>
@@ -589,11 +617,6 @@ export default function PermisosPage() {
                     label="Ver solicitudes de pago"
                     checked={perms.solicitudes_ver}
                     onChange={() => togglePerm('solicitudes_ver')}
-                  />
-                  <PermCheckbox
-                    label="Ver requisiciones"
-                    checked={perms.requisiciones_ver}
-                    onChange={() => togglePerm('requisiciones_ver')}
                   />
                   <PermCheckbox
                     label="Ver control de costos y presupuestos"

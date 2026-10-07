@@ -1,6 +1,9 @@
 // Cotizaciones — purchasing quote pool. Two tabs: "Por solicitud" (one
 // row per request) and "Por proveedor" (one row per supplier offer).
 // Client-side sort/filter/pagination, mirroring SolicitudesPagoGeneral.
+//
+// Las cotizaciones de una requisición también salen aquí, una entrada por
+// línea, de solo consulta; «Abrir la requisición» lleva a ella.
 
 import { useState, useEffect, useMemo } from 'react';
 import { Plus } from 'lucide-react';
@@ -53,8 +56,20 @@ type ProvView = CotizacionOfertaFlat & {
   monto_num: number;
 };
 
-export default function CotizacionesPage() {
-  const { isAdminOrCoAdmin } = useAuth();
+interface Props {
+  /** Lleva a Requisiciones con esa abierta. */
+  onAbrirRequisicion?: (requisicionId: number) => void;
+}
+
+export default function CotizacionesPage({ onAbrirRequisicion }: Props) {
+  const { isAdminOrCoAdmin, hasPermission } = useAuth();
+  // Solo a quien tiene la sección de requisiciones; a los demás no se les
+  // ofrece un botón que acabaría en «no encontrada».
+  const veRequisiciones =
+    isAdminOrCoAdmin ||
+    hasPermission('requisiciones_ver') ||
+    hasPermission('requisiciones_crear') ||
+    hasPermission('requisiciones_atender');
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
   const [ofertas, setOfertas] = useState<CotizacionOfertaFlat[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -139,7 +154,8 @@ export default function CotizacionesPage() {
     return solViews.filter(
       (r) =>
         r.descripcion.toLowerCase().includes(q) ||
-        r.proyecto.toLowerCase().includes(q),
+        r.proyecto.toLowerCase().includes(q) ||
+        !!r.requisicion_numero?.toLowerCase().includes(q),
     );
   }, [solViews, search]);
 
@@ -184,7 +200,8 @@ export default function CotizacionesPage() {
       (r) =>
         r.proveedor.toLowerCase().includes(q) ||
         r.descripcion.toLowerCase().includes(q) ||
-        r.proyecto.toLowerCase().includes(q),
+        r.proyecto.toLowerCase().includes(q) ||
+        !!r.requisicion_numero?.toLowerCase().includes(q),
     );
   }, [provViews, search]);
 
@@ -223,6 +240,7 @@ export default function CotizacionesPage() {
       tipo: row.tipo,
       proyecto_nombre: row.proyecto_nombre,
       ambito: row.ambito,
+      requisicion_numero: row.requisicion_numero,
     });
 
   return (
@@ -333,6 +351,7 @@ export default function CotizacionesPage() {
         cotizacionId={detailId}
         projects={projects}
         onChanged={loadAll}
+        onAbrirRequisicion={veRequisiciones ? onAbrirRequisicion : undefined}
       />
 
       <OfertaDetailDialog

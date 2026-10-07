@@ -154,6 +154,15 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
     Record<number, number>
   >({});
 
+  // Requisiciones: el globito (lo que espera a esta persona: aprobar, o
+  // atender en Compras) y en qué proyectos aprueba. Aprobar no pide llave, así
+  // que sin esto el que aprueba no vería la sección.
+  const [reqPendientes, setReqPendientes] = useState<{
+    total: number;
+    porProyecto: Record<string, number>;
+    apruebaEn: number[];
+  }>({ total: 0, porProyecto: {}, apruebaEn: [] });
+
   // ── Fetch projects ──
   // Trae TODOS los proyectos activos (el switcher los lista todos, sin paginar)
   // y se recarga cuando otro lugar crea/borra un proyecto (evento global), para
@@ -207,6 +216,35 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
       };
     }
   }, [user]);
+
+  // ── Requisiciones pendientes ──
+  useEffect(() => {
+    if (!user) return;
+    const cargar = async () => {
+      try {
+        const res = await api.get('/requisiciones/pendientes');
+        if (res.data.success) {
+          setReqPendientes({
+            total: res.data.data.total,
+            porProyecto: res.data.data.por_proyecto ?? {},
+            apruebaEn: res.data.data.aprueba_en ?? [],
+          });
+        }
+      } catch {
+        /* silencio */
+      }
+    };
+    cargar();
+    const intervalo = setInterval(cargar, 30000);
+    window.addEventListener('requisicion-cambio', cargar);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener('requisicion-cambio', cargar);
+    };
+  }, [user]);
+
+  const conLlaveRequisiciones =
+    hasPermission('requisiciones_ver') || hasPermission('requisiciones_crear') || hasPermission('requisiciones_atender');
 
   // ── Sync switcher when currentView changes to project-{id}-* ──
   useEffect(() => {
@@ -313,7 +351,8 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   .filter((item) => {
                     if (item.view === 'solicitudes-pago')
                       return hasPermission('solicitudes_ver') || hasPermission('ordenes_ver');
-                    if (item.view === 'requisiciones') return hasPermission('requisiciones_ver');
+                    if (item.view === 'requisiciones')
+                      return conLlaveRequisiciones || reqPendientes.apruebaEn.length > 0;
                     if (item.view === 'cajas-menudas') return showCajasMenudas;
                     if (item.view === 'cuentas') return showCuentas;
                     if (item.view === 'cotizaciones') return showCotizaciones;
@@ -334,6 +373,9 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                           {item.view === 'solicitudes-pago' && (
                             <PendingBadge count={pendingApprovalCount} />
                           )}
+                          {item.view === 'requisiciones' && (
+                            <PendingBadge count={reqPendientes.total} />
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
@@ -351,7 +393,8 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   .filter((item) => {
                     if (item.key === 'solicitudes-pago')
                       return hasPermission('solicitudes_ver') || hasPermission('ordenes_ver');
-                    if (item.key === 'requisiciones') return hasPermission('requisiciones_ver');
+                    if (item.key === 'requisiciones')
+                      return conLlaveRequisiciones || reqPendientes.apruebaEn.includes(selectedProjectId);
                     // Costos ensena el dinero del proyecto y enlaza a las
                     // solicitudes: se esconde con su propia llave.
                     if (item.key === 'costos') return hasPermission('costos_ver');
@@ -370,7 +413,9 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                   const pendingCount =
                     item.key === 'solicitudes-pago'
                       ? pendingByProject[selectedProjectId] ?? 0
-                      : 0;
+                      : item.key === 'requisiciones'
+                        ? reqPendientes.porProyecto[String(selectedProjectId)] ?? 0
+                        : 0;
 
                   return (
                     <SidebarMenuItem key={item.key}>
@@ -381,7 +426,7 @@ export function AppSidebar({ currentView, onNavigate }: AppSidebarProps) {
                       >
                         <Icon />
                         <span>{item.label}</span>
-                        {item.key === 'solicitudes-pago' && (
+                        {(item.key === 'solicitudes-pago' || item.key === 'requisiciones') && (
                           <PendingBadge count={pendingCount} />
                         )}
                       </SidebarMenuButton>

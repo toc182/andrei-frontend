@@ -23,6 +23,7 @@ import type { CotizacionOfertaFlat } from '@/types/api';
 import { formatMoney } from '@/utils/formatters';
 import { formatFecha, proyectoLabel } from '../shared';
 import { TipoBadge } from './TipoBadge';
+import { DeRequisicion } from './DeRequisicion';
 
 interface Props {
   rows: CotizacionOfertaFlat[];
@@ -76,7 +77,10 @@ export function OfertasProveedorTable({
                       {formatMoney(row.monto)}
                     </span>
                   </div>
-                  <div className="text-sm text-foreground">{row.descripcion}</div>
+                  <div className="text-sm text-foreground">
+                    {row.descripcion}
+                    <DeRequisicion numero={row.requisicion_numero} />
+                  </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted-foreground">
                     <span>{proyectoLabel(row.proyecto_nombre, row.ambito)}</span>
                     <span>{formatFecha(row.created_at)}</span>
@@ -169,7 +173,10 @@ export function OfertasProveedorTable({
                     <TableCell className="px-4 py-3 font-medium text-foreground">
                       {row.proveedor}
                     </TableCell>
-                    <TableCell className="px-4 py-3">{row.descripcion}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      {row.descripcion}
+                      <DeRequisicion numero={row.requisicion_numero} />
+                    </TableCell>
                     <TableCell className="px-4 py-3">
                       <TipoBadge tipo={row.tipo} />
                     </TableCell>

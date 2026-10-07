@@ -38,6 +38,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert } from '@/components/shell/Alert';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { PageHeader } from '@/components/shell/PageHeader';
+import AjustesRequisiciones from '@/pages/requisiciones/AjustesRequisiciones';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -406,7 +407,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
   return (
     <div className="space-y-6 overflow-x-hidden">
-      <PageHeader title="Equipo del Proyecto">
+      <PageHeader title="Personal del proyecto">
         <Button
           onClick={() => {
             resetAddModal();
@@ -599,6 +600,18 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           </div>
         )}
       </div>
+
+      {/* Quién aprueba las requisiciones: las mismas personas del proyecto. */}
+      <AjustesRequisiciones
+        proyectoId={projectId}
+        candidatos={users
+          .filter(
+            (u) =>
+              u.tipo_usuario === 'interno' &&
+              members.some((m) => m.tipo_miembro === 'usuario' && m.user_id === u.id),
+          )
+          .map((u) => ({ id: u.id, nombre: u.nombre }))}
+      />
 
       {/* Approvers Config Modal */}
       <AppDialog

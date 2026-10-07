@@ -19,6 +19,7 @@ import type {
 import type { Cotizacion } from '@/types/api';
 import { formatFecha, proyectoLabel } from '../shared';
 import { TipoBadge } from './TipoBadge';
+import { DeRequisicion } from './DeRequisicion';
 
 interface Props {
   rows: Cotizacion[];
@@ -56,7 +57,10 @@ export function CotizacionesSolicitudTable({
               <CardContent className="pt-4">
                 <div className="cursor-pointer" onClick={() => onRowClick(row)}>
                   <div className="mb-1 flex items-start justify-between gap-2">
-                    <span className="font-semibold">{row.descripcion}</span>
+                    <span className="font-semibold">
+                      {row.descripcion}
+                      <DeRequisicion numero={row.requisicion_numero} />
+                    </span>
                     <TipoBadge tipo={row.tipo} />
                   </div>
                   <div className="text-sm text-muted-foreground">
@@ -133,6 +137,7 @@ export function CotizacionesSolicitudTable({
                   >
                     <TableCell className="px-4 py-3 font-medium text-foreground">
                       {row.descripcion}
+                      <DeRequisicion numero={row.requisicion_numero} />
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <TipoBadge tipo={row.tipo} />
