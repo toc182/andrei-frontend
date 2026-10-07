@@ -74,10 +74,22 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
       diasTotales > 0 ? (diasTranscurridos / diasTotales) * 100 : 0;
   }
 
-  // Get progress percentage
-  const porcentajeAvance =
-    (project?.datos_adicionales as { porcentaje_avance?: number })
-      ?.porcentaje_avance || 0;
+  // El avance físico es el de las cuentas, borradores incluidos (Ivan,
+  // 2026-10-01); lo que está en borrador se pinta aparte y lleva nota.
+  const porcentajeAvance = project?.avance_fisico ?? 0;
+  const sinPresentar = project?.avance_sin_presentar ?? 0;
+  const presentado = project?.avance_presentado ?? porcentajeAvance;
+  const anchoPresentado = Math.min(100, Math.max(0, presentado));
+  const anchoSinPresentar = Math.min(100 - anchoPresentado, Math.max(0, sinPresentar));
+  const borradores = project?.avance_cuentas_sin_presentar ?? [];
+  const listaCuentas =
+    borradores.length > 1
+      ? `${borradores.slice(0, -1).join(', ')} y ${borradores[borradores.length - 1]}`
+      : String(borradores[0] ?? '');
+  const notaBorrador =
+    borradores.length > 1
+      ? `* Incluye ${sinPresentar.toFixed(2)}% de las Cuentas ${listaCuentas}, todavía no presentadas.`
+      : `* Incluye ${sinPresentar.toFixed(2)}% de la Cuenta ${listaCuentas}, todavía no presentada.`;
 
   return (
     <div
@@ -130,18 +142,24 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
           <TrendingUp className="h-4 w-4 text-muted-foreground shrink-0" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {porcentajeAvance.toFixed(1)}%
+          <div className="text-2xl font-bold tabular-nums">
+            {porcentajeAvance.toFixed(2)}%
+            {sinPresentar > 0 && '*'}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Progreso del proyecto
+            {project?.avance_cuenta_numero != null
+              ? `Hasta la Cuenta ${project.avance_cuenta_numero}`
+              : 'Sin avance en cuentas'}
           </p>
-          <div className="w-full bg-secondary rounded-full h-2 mt-2">
-            <div
-              className="bg-success h-2 rounded-full"
-              style={{ width: `${Math.min(porcentajeAvance, 100)}%` }}
-            />
+          <div className="flex w-full overflow-hidden bg-secondary rounded-full h-2 mt-2">
+            <div className="h-full bg-success" style={{ width: `${anchoPresentado}%` }} />
+            {anchoSinPresentar > 0 && (
+              <div className="h-full bg-success/30" style={{ width: `${anchoSinPresentar}%` }} />
+            )}
           </div>
+          {sinPresentar > 0 && borradores.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-2">{notaBorrador}</p>
+          )}
         </CardContent>
       </Card>
 

@@ -83,12 +83,13 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
   const pendientes = sorted.filter((c) => PENDING_STATES.includes(c.estado)).reverse();
   const pagadas = sorted.filter((c) => PAGADA_STATES.includes(c.estado)).reverse();
 
-  // Compute avance_previo for each cuenta (sum of all cuentas before it)
+  // El avance de cada cuenta sale de la única cuenta del avance físico
+  // (cuenta_avance): «previo» = su acumulado menos su periodo, así la barra de
+  // cada fila llega justo a su acumulado.
+  const periodoDe = (c: Cuenta) => c.avance_periodo ?? 0;
   const avancePrevioMap = new Map<number, number>();
-  let cumAvance = 0;
   for (const c of sorted) {
-    avancePrevioMap.set(c.id, cumAvance);
-    cumAvance += c.avance_porcentaje ? Number(c.avance_porcentaje) : 0;
+    avancePrevioMap.set(c.id, (c.avance_acumulado ?? 0) - periodoDe(c));
   }
 
   // Section totals (used in the table band headers)
@@ -107,11 +108,13 @@ export default function CuentasProjectView({ projectId, onCuentaClick }: Props) 
     : null;
   const totalContratado = projectMontoTotal ?? (totalPagMonto + totalPendMonto + totalPorPresentar);
 
-  // Resumen avance (physical project progress, sum of avance_porcentaje per state).
-  const sumAvancePagado = pagadas.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
-  const sumAvancePendiente = pendientes.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
-  const sumAvanceBorrador = borradores.reduce((s, c) => s + Number(c.avance_porcentaje || 0), 0);
-  const sumAvance = sumAvancePagado + sumAvancePendiente + sumAvanceBorrador;
+  // Avance del proyecto: el acumulado de la última cuenta, el mismo número que
+  // el Resumen. Se parte por estado con el periodo de cada cuenta; lo pagado es
+  // lo que queda, para que las tres partes sumen justo el total.
+  const sumAvance = sorted.length ? (sorted[sorted.length - 1].avance_acumulado ?? 0) : 0;
+  const sumAvancePendiente = pendientes.reduce((s, c) => s + periodoDe(c), 0);
+  const sumAvanceBorrador = borradores.reduce((s, c) => s + periodoDe(c), 0);
+  const sumAvancePagado = Math.max(0, sumAvance - sumAvancePendiente - sumAvanceBorrador);
 
   const hasAnyCuenta =
     borradores.length > 0 ||
@@ -448,7 +451,7 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
   isPagada?: boolean;
 }) {
   const obs = isObservaciones(c.estado);
-  const curr = c.avance_porcentaje ? Number(c.avance_porcentaje) : 0;
+  const curr = c.avance_periodo ?? (c.avance_porcentaje ? Number(c.avance_porcentaje) : 0);
   const prev = avancePrevio;
   const pp = formatPeriodoParts(c.periodo_inicio, c.periodo_fin);
   const dColor = days != null ? waitColor(days) : 'text-muted-foreground';
@@ -484,7 +487,7 @@ function CuentaTableRow({ cuenta: c, avancePrevio, days, onClick, isPagada }: {
         </div>
       </TableCell>
       <TableCell className="w-[1%] whitespace-nowrap text-center text-xs text-muted-foreground tabular-nums pl-2 pr-1 py-3 group-hover:text-white/85">
-        {curr}%
+        {Number(curr.toFixed(2))}%
       </TableCell>
       <TableCell
         className={`w-[1%] whitespace-nowrap text-center text-xs tabular-nums px-1 py-3 group-hover:text-white/85 ${
