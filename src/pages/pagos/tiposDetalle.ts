@@ -21,21 +21,34 @@ export interface OrdenAdjunto {
   subido_por_nombre: string | null;
 }
 
-/** La recepción de la orden: llega completa, una sola vez. */
+/** Una solicitud de pago que cubre (parte de) una factura. */
+export interface SolicitudDeFactura {
+  id: number;
+  numero: string;
+  estado: string;
+  /** Lo que esta solicitud paga de ESA factura. */
+  monto: string;
+}
+
+/**
+ * Una entrega de la orden, registrada por su factura (Ivan, 2026-10-05). Las
+ * recepciones de antes no tienen número de factura.
+ */
 export interface Entrega {
   id: number;
+  numero_factura: string | null;
+  /** La fecha de la factura. */
   fecha: string;
-  /** Congelado al recibirla: fecha + el término de ese momento. */
+  /** Congelado al registrarla: fecha + el término de ese momento. */
   vence: string;
-  subtotal: string;
-  itbms: string;
   monto_total: string;
   nota: string | null;
   registrada_por_nombre: string | null;
   pagado: string;
   /** Lo que ya tiene una solicitud encima, aunque no se haya pagado. */
   reclamado: string;
-  /** El vale firmado y lo que se haya subido con la recepción. */
+  solicitudes: SolicitudDeFactura[];
+  /** El papel de la factura y el vale, si se subió. */
   adjuntos: OrdenAdjunto[];
 }
 
@@ -45,6 +58,17 @@ export interface PagoDeOrden {
   estado: string;
   fecha: string;
   monto: string;
+}
+
+/** Una factura anulada por mal digitada: ya no cuenta, pero la historia la dice. */
+export interface FacturaAnulada {
+  id: number;
+  numero_factura: string | null;
+  fecha: string;
+  monto_total: string;
+  anulada_at: string;
+  anulada_motivo: string | null;
+  anulada_por_nombre: string | null;
 }
 
 export interface CambioAnotado {
@@ -84,6 +108,10 @@ export interface OrdenDetalle {
   enviada_por_nombre: string | null;
   baja_motivo: string | null;
   baja_at: string | null;
+  /** Cuándo alguien la marcó como completa: desde ahí no admite facturas. */
+  completa_at: string | null;
+  completa_por_nombre: string | null;
+  /** La suma de las facturas. */
   recibido: string;
   pagado: string;
   por_pagar: string;
@@ -103,6 +131,7 @@ export interface OrdenDetalle {
   }[];
   cambios: CambioAnotado[];
   pagos: PagoDeOrden[];
+  anuladas: FacturaAnulada[];
 }
 
 /** La cadena de firmas con lo que cada quien hizo, para la barra de iniciales. */

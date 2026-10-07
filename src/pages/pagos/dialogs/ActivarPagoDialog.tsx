@@ -1,19 +1,22 @@
 /**
- * Activar la solicitud de pago de una orden recibida.
+ * Activar una solicitud de pago con las facturas de la orden.
  *
- * La orden llega completa, una sola vez, y el pago se amarra a esa recepción
- * (es la que tiene el vencimiento). Arranca con todo lo que falta por pedir:
- * pagar completo es lo normal, pero se puede pagar menos y dejar el resto para
- * después.
+ * Cada factura vence por su cuenta, pero lo normal es pagarlas juntas (Ivan,
+ * 2026-10-06: «lo más seguro es que la pague toda junta»). Así que la ventana
+ * arranca con todas las que tienen algo por pedir marcadas, cada una por lo que
+ * le falta; se desmarcan las que no van, y de cada una se puede pedir menos y
+ * dejar el resto para después. Sale UNA solicitud, con un renglón por factura.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '@/services/api';
 import { AppDialog, Alert, ApprovalPillBar } from '@/components/shell';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { diasHasta, fechaCorta, plata } from '../formato';
+import { cn } from '@/lib/utils';
+import { diasHasta, fechaCorta, nombreFactura, plata } from '../formato';
 import { aprobadoresDe, type OrdenDetalle } from '../tiposDetalle';
 
 interface Props {
@@ -24,34 +27,56 @@ interface Props {
 }
 
 const dos = (n: number) => Math.round(n * 100) / 100;
+const numero = (s: string) => dos(Number(s.replace(/,/g, '')) || 0);
 
 export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }: Props) {
-  const recepcion = orden.entregas[0] ?? null;
-  const disponible = recepcion ? dos(Number(recepcion.monto_total) - Number(recepcion.reclamado)) : 0;
+  // Las que todavía tienen algo por pedir, la que vence primero arriba.
+  const pendientes = useMemo(
+    () =>
+      orden.entregas
+        .map((f) => ({ ...f, disponible: dos(Number(f.monto_total) - Number(f.reclamado)) }))
+        .filter((f) => f.disponible > 0)
+        .sort((a, b) => a.vence.localeCompare(b.vence)),
+    [orden.entregas],
+  );
 
-  const [monto, setMonto] = useState('');
+  const [marcadas, setMarcadas] = useState<Record<number, boolean>>({});
+  const [montos, setMontos] = useState<Record<number, string>>({});
   const [observaciones, setObservaciones] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setMonto(disponible > 0 ? disponible.toFixed(2) : '');
+    setMarcadas(Object.fromEntries(pendientes.map((f) => [f.id, true])));
+    setMontos(
+      Object.fromEntries(
+        pendientes.map((f) => [
+          f.id,
+          f.disponible.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        ]),
+      ),
+    );
     setObservaciones('');
     setError(null);
-  }, [open, disponible]);
+    // Solo al abrir: un refresco de la orden por detrás no debe deshacer lo marcado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const escrito = dos(Number(monto.replace(/,/g, '')) || 0);
-  const deMas = escrito > disponible;
-  const puede = !guardando && escrito > 0 && !deMas && recepcion !== null;
+  const elegidas = pendientes.filter((f) => marcadas[f.id]);
+  const deMas = (f: (typeof pendientes)[number]) => numero(montos[f.id] ?? '') > f.disponible;
+  const total = dos(elegidas.reduce((s, f) => s + numero(montos[f.id] ?? ''), 0));
+  const puede =
+    !guardando &&
+    elegidas.length > 0 &&
+    elegidas.every((f) => numero(montos[f.id] ?? '') > 0 && !deMas(f));
 
   const guardar = async () => {
-    if (!recepcion) return;
     setGuardando(true);
     setError(null);
     try {
       await api.post(`/ordenes-compra/${orden.id}/activar-pago`, {
-        entregas: [{ entrega_id: recepcion.id, monto: escrito }],
+        entregas: elegidas.map((f) => ({ entrega_id: f.id, monto: numero(montos[f.id] ?? '') })),
         observaciones: observaciones.trim() || undefined,
       });
       onListo();
@@ -63,8 +88,6 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
       setGuardando(false);
     }
   };
-
-  const vencida = recepcion ? diasHasta(recepcion.vence) < 0 : false;
 
   return (
     <AppDialog
@@ -92,7 +115,7 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
       <div className="space-y-5">
         {error && <Alert variant="error" title={error} />}
 
-        {!recepcion || disponible <= 0 ? (
+        {pendientes.length === 0 ? (
           <Alert
             variant="info"
             title="No hay nada por pedir"
@@ -100,47 +123,69 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
           />
         ) : (
           <>
-            <div className="divide-y divide-slate-100 rounded-lg border border-border">
-              <div className="flex justify-between gap-3 px-4 py-2.5 text-sm">
-                <span className="text-muted-foreground">Total de la orden</span>
-                <span className="tabular-nums">{plata(recepcion.monto_total)}</span>
-              </div>
-              {Number(recepcion.reclamado) > 0 && (
-                <div className="flex justify-between gap-3 px-4 py-2.5 text-sm">
-                  <span className="text-muted-foreground">Ya tiene solicitud de pago</span>
-                  <span className="tabular-nums">{plata(recepcion.reclamado)}</span>
-                </div>
-              )}
-              <div className="flex justify-between gap-3 px-4 py-2.5 text-sm font-semibold">
-                <span>Falta por pedir</span>
-                <span className="tabular-nums">{plata(disponible)}</span>
-              </div>
-              <div className="flex justify-between gap-3 px-4 py-2.5 text-sm">
-                <span className="text-muted-foreground">Vence</span>
-                <span className={vencida ? 'font-semibold text-error' : 'text-slate-700'}>
-                  {fechaCorta(recepcion.vence)}
-                  {vencida ? ' · vencida' : ''}
-                </span>
-              </div>
-            </div>
-
             <div>
-              <Label className="text-xs" htmlFor="monto-pago">
-                Monto de la solicitud
-              </Label>
-              <Input
-                id="monto-pago"
-                inputMode="decimal"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-                className={`mt-1.5 h-10 text-right text-base font-semibold tabular-nums ${
-                  deMas ? 'border-error' : ''
-                }`}
-              />
-              <p className={`mt-1.5 text-xs ${deMas ? 'text-error' : 'text-muted-foreground'}`}>
-                {deMas
-                  ? `Solo quedan ${plata(disponible)} por pedir.`
-                  : 'Se puede pagar menos y dejar el resto para después.'}
+              <Label className="text-xs">Facturas que se pagan</Label>
+              <div className="mt-1.5 divide-y divide-slate-100 rounded-lg border border-border">
+                {pendientes.map((f) => {
+                  const marcada = !!marcadas[f.id];
+                  const vencida = diasHasta(f.vence) < 0;
+                  const conSolicitud = Number(f.reclamado) > 0;
+                  return (
+                    <div key={f.id} className="flex items-center gap-3 px-4 py-2.5">
+                      <Checkbox
+                        id={`pagar-${f.id}`}
+                        checked={marcada}
+                        onCheckedChange={(v) => setMarcadas((m) => ({ ...m, [f.id]: v === true }))}
+                        aria-label={`Pagar ${nombreFactura(f)}`}
+                      />
+                      <label htmlFor={`pagar-${f.id}`} className="min-w-0 flex-1 cursor-pointer">
+                        <span className="block text-sm font-medium text-foreground">
+                          {nombreFactura(f)}
+                        </span>
+                        <span
+                          className={cn(
+                            'block text-xs tabular-nums',
+                            vencida ? 'font-semibold text-error' : 'text-muted-foreground',
+                          )}
+                        >
+                          Vence {fechaCorta(f.vence)}
+                          {vencida ? ' · vencida' : ''}
+                          {conSolicitud ? ` · ya tiene solicitud por ${plata(f.reclamado)}` : ''}
+                        </span>
+                      </label>
+                      <Input
+                        inputMode="decimal"
+                        value={montos[f.id] ?? ''}
+                        onChange={(e) => setMontos((m) => ({ ...m, [f.id]: e.target.value }))}
+                        disabled={!marcada}
+                        aria-label={`Monto de ${nombreFactura(f)}`}
+                        className={cn(
+                          'h-9 w-32 shrink-0 text-right tabular-nums',
+                          marcada && deMas(f) && 'border-error',
+                        )}
+                      />
+                    </div>
+                  );
+                })}
+                <div className="flex items-baseline justify-between gap-3 bg-slate-50 px-4 py-2.5">
+                  <span className="text-sm font-semibold text-foreground">
+                    Total de la solicitud
+                    <span className="ml-1.5 font-normal text-muted-foreground">
+                      · {elegidas.length} {elegidas.length === 1 ? 'factura' : 'facturas'}
+                    </span>
+                  </span>
+                  <span className="text-lg font-bold tabular-nums">{plata(total)}</span>
+                </div>
+              </div>
+              <p
+                className={cn(
+                  'mt-1.5 text-xs',
+                  elegidas.some(deMas) ? 'text-error' : 'text-muted-foreground',
+                )}
+              >
+                {elegidas.some(deMas)
+                  ? 'Un monto es mayor que lo que falta por pedir de su factura.'
+                  : 'De cada factura se puede pedir menos y dejar el resto para después.'}
               </p>
             </div>
 

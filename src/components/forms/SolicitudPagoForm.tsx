@@ -104,11 +104,6 @@ interface MemberOption {
   tipo_usuario: string | null;
 }
 
-interface RequisicionOption {
-  id: number;
-  numero: string;
-}
-
 interface ItemFormData {
   descripcion: string;
   descripcion_detallada: string;
@@ -212,7 +207,6 @@ export default function SolicitudPagoForm({
 
   // Options
   const [miembrosProyecto, setMiembrosProyecto] = useState<MemberOption[]>([]);
-  const [, setRequisiciones] = useState<RequisicionOption[]>([]);
   const [nextNumero, setNextNumero] = useState<string>('');
 
   // Form (react-hook-form + Zod)
@@ -301,9 +295,8 @@ export default function SolicitudPagoForm({
 
   const loadOptions = async () => {
     try {
-      const [membersRes, reqRes, numRes] = await Promise.all([
+      const [membersRes, numRes] = await Promise.all([
         api.get(`/project-members/project/${projectId}`),
-        api.get(`/requisiciones/project/${projectId}`),
         editingSolicitud
           ? Promise.resolve(null)
           : api.get(`/solicitudes-pago/project/${projectId}/next-number`),
@@ -324,16 +317,6 @@ export default function SolicitudPagoForm({
                 tipo_usuario: m.tipo_usuario || null,
               }),
             ),
-        );
-      }
-      if (reqRes.data.success) {
-        setRequisiciones(
-          (reqRes.data.requisiciones || []).map(
-            (r: { id: number; numero: string }) => ({
-              id: r.id,
-              numero: r.numero,
-            }),
-          ),
         );
       }
       if (numRes?.data?.success) {
@@ -666,8 +649,9 @@ export default function SolicitudPagoForm({
                   </FormItem>
                 )}
               />
-              {/* Requisicion vinculada — oculto temporalmente; siempre se envia null.
-                  Su hueco lo ocupa ahora la categoria de gasto (issue #71). */}
+              {/* La requisición de la que sale una solicitud no se escoge aquí: la
+                  pone el sistema cuando la solicitud se crea DESDE la requisición.
+                  Su hueco lo ocupa la categoria de gasto (issue #71). */}
               <FormField
                 control={form.control}
                 name="categoria_id"

@@ -1,10 +1,11 @@
 /**
- * Las tres maneras de escribir un número o una fecha en la sección Pagos.
+ * Las maneras de escribir un número, una fecha o una factura en la sección Pagos.
  *
  * Viven aparte de las pastillas porque un archivo que exporta componentes Y
- * funciones rompe el refresco en caliente de Vite —y porque estas tres las usa
+ * funciones rompe el refresco en caliente de Vite —y porque estas las usa
  * medio módulo, no solo lo que se dibuja.
  */
+import type { Entrega } from './tiposDetalle';
 
 /**
  * Los días que faltan para una fecha, contados en días de CALENDARIO.
@@ -40,4 +41,9 @@ export function fechaCorta(valor: string | null): string {
   return `${String(d.getUTCDate()).padStart(2, '0')}/${String(
     d.getUTCMonth() + 1,
   ).padStart(2, '0')}/${d.getUTCFullYear()}`;
+}
+
+/** Cómo se nombra una factura; las recepciones de antes del 05/10 no tienen número. */
+export function nombreFactura(f: Pick<Entrega, 'numero_factura' | 'fecha'>): string {
+  return f.numero_factura ? `Factura ${f.numero_factura}` : `Recepción del ${fechaCorta(f.fecha)}`;
 }

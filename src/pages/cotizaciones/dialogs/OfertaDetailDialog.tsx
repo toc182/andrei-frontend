@@ -1,10 +1,13 @@
 // Detail of one supplier oferta: key facts, notes, files, and a link back
 // to its parent cotización. Opened from the "Por proveedor" tab and from
 // inside the cotización detail.
+//
+// La oferta que viene de una requisición solo se consulta: se cambia desde la
+// requisición, y el servidor contesta 409 a cualquier cambio hecho desde aquí.
 
 import { useState } from 'react';
 import { Loader2, Pencil, Trash2 } from 'lucide-react';
-import { AppDialog } from '@/components/shell';
+import { Alert, AppDialog } from '@/components/shell';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -37,6 +40,8 @@ export interface OfertaDetailData {
   tipo: import('@/types/api').CotizacionTipo | null;
   proyecto_nombre: string | null;
   ambito: CotizacionAmbito | null;
+  /** La requisición de donde viene, si viene de una. */
+  requisicion_numero?: string | null;
 }
 
 interface Props {
@@ -59,6 +64,7 @@ export function OfertaDetailDialog({
   const [deleting, setDeleting] = useState(false);
 
   if (!oferta) return null;
+  const deRequisicion = !!oferta.requisicion_numero;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -92,29 +98,43 @@ export function OfertaDetailDialog({
         size="standard"
         title={oferta.proveedor}
         footer={
-          <>
-            <Button
-              variant="ghost"
-              className="text-error hover:text-error"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditOpen(true)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </Button>
+          deRequisicion ? (
+            <>
+              <span />
               <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
-            </div>
-          </>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                className="text-error hover:text-error"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditOpen(true)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Button>
+                <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
+              </div>
+            </>
+          )
         }
       >
         <div className="space-y-4">
+          {deRequisicion && (
+            <Alert
+              variant="info"
+              title={`Viene de la requisición ${oferta.requisicion_numero}`}
+              description="Se cambia desde la requisición. Aquí se consulta."
+            />
+          )}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">{oferta.descripcion}</span>
-            <TipoBadge tipo={oferta.tipo} />
+            {!deRequisicion && <TipoBadge tipo={oferta.tipo} />}
           </div>
 
           <div className="grid grid-cols-2 gap-4 border-b border-slate-100 pb-4 sm:grid-cols-4">
@@ -167,7 +187,7 @@ export function OfertaDetailDialog({
             </div>
           )}
 
-          <CotizacionArchivos ofertaId={oferta.id} onChanged={onChanged} />
+          <CotizacionArchivos ofertaId={oferta.id} onChanged={onChanged} readOnly={deRequisicion} />
         </div>
       </AppDialog>
 

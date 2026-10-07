@@ -6,12 +6,17 @@
  * camino. Se convierten al mostrarlos, nunca antes.
  */
 
-/** Los seis que se guardan, más «recibida», que sale de la recepción. */
+/**
+ * Los seis que se guardan, más los que salen de las facturas: «entrega
+ * parcial» (tiene facturas y no se ha marcado completa) y «recibida» (ya está
+ * completa). Una completa y pagada se ve «cerrada» sin que nadie la cierre.
+ */
 export type EstadoOrden =
   | 'pendiente'
   | 'rechazada'
   | 'por_enviar'
   | 'enviada'
+  | 'entrega_parcial'
   | 'recibida'
   | 'cerrada'
   | 'dada_de_baja';
@@ -31,7 +36,7 @@ export interface OrdenFila {
   descripcion: string | null;
   monto_total: string;
   estado: EstadoOrden;
-  /** El que se enseña: mientras está enviada, manda lo que llegó. */
+  /** El que se enseña: mientras está enviada, mandan sus facturas. */
   estado_calculado: EstadoOrden;
   proyecto_id: number;
   proyecto_nombre: string | null;

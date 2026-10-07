@@ -1,9 +1,9 @@
 /**
- * Dar de baja una orden.
+ * Anular una factura mal digitada, para registrarla de nuevo bien.
  *
- * Solo antes de la primera factura: no se debe nada todavía, y la orden no se
- * borra. Con facturas ya no se da de baja; si no va a llegar el resto, se marca
- * como completa.
+ * Solo mientras no tenga una solicitud de pago encima (Ivan, 2026-10-07). No
+ * se borra: deja de contar en lo que se debe y queda en la historia, con su
+ * motivo. Si la orden ya estaba completa, vuelve a admitir facturas.
  */
 import { useEffect, useState } from 'react';
 import api from '@/services/api';
@@ -20,17 +20,18 @@ import {
 import { Alert } from '@/components/shell';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { plata } from '../formato';
-import type { OrdenDetalle } from '../tiposDetalle';
+import { fechaCorta, nombreFactura, plata } from '../formato';
+import type { Entrega, OrdenDetalle } from '../tiposDetalle';
 
 interface Props {
   orden: OrdenDetalle;
+  factura: Entrega | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onListo: () => void;
 }
 
-export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props) {
+export default function AnularFacturaDialog({ orden, factura, open, onOpenChange, onListo }: Props) {
   const [motivo, setMotivo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,16 +42,19 @@ export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props
     setError(null);
   }, [open]);
 
-  const darDeBaja = async () => {
+  const anular = async () => {
+    if (!factura) return;
     setGuardando(true);
     setError(null);
     try {
-      await api.post(`/ordenes-compra/${orden.id}/baja`, { motivo: motivo.trim() });
+      await api.post(`/ordenes-compra/${orden.id}/facturas/${factura.id}/anular`, {
+        motivo: motivo.trim(),
+      });
       onListo();
       onOpenChange(false);
     } catch (e) {
       const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setError(msg ?? 'No se pudo dar de baja la orden');
+      setError(msg ?? 'No se pudo anular la factura');
     } finally {
       setGuardando(false);
     }
@@ -60,9 +64,11 @@ export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Dar de baja esta orden?</AlertDialogTitle>
+          <AlertDialogTitle>Anular factura</AlertDialogTitle>
           <AlertDialogDescription>
-            {orden.numero} · {orden.proveedor} · {plata(orden.monto_total)}
+            {factura
+              ? `${nombreFactura(factura)} · ${fechaCorta(factura.fecha)} · ${plata(factura.monto_total)} · ${orden.numero}`
+              : orden.numero}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -70,19 +76,20 @@ export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props
           {error && <Alert variant="error" title={error} />}
 
           <p className="text-sm text-slate-700">
-            No se debe nada: la orden todavía no llegó. No se borra — queda como Dada de
-            baja, con su historia.
+            Deja de contar en lo que se debe y queda anotada en la historia. Después se registra
+            de nuevo, bien.
+            {orden.completa_at && ' La orden vuelve a admitir facturas.'}
           </p>
 
           <div>
-            <Label className="text-xs" htmlFor="motivo-baja">
+            <Label className="text-xs" htmlFor="motivo-anular">
               Motivo *
             </Label>
             <Input
-              id="motivo-baja"
+              id="motivo-anular"
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Por qué se da de baja"
+              placeholder="Qué estaba mal"
               className="mt-1.5"
             />
           </div>
@@ -95,12 +102,12 @@ export default function BajaDialog({ orden, open, onOpenChange, onListo }: Props
               // Sin esto el diálogo se cierra antes de que la petición salga, y
               // un fallo del servidor no se vería en ninguna parte.
               e.preventDefault();
-              void darDeBaja();
+              void anular();
             }}
             disabled={guardando || motivo.trim().length === 0}
             className="bg-error text-white hover:bg-error/90"
           >
-            {guardando ? 'Dando de baja...' : 'Dar de baja'}
+            {guardando ? 'Anulando...' : 'Anular factura'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

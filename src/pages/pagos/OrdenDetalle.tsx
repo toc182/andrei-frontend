@@ -1,17 +1,20 @@
 /**
  * Una orden de compra por dentro (rediseñada con Ivan el 2026-10-02: «para
- * entenderla era más fácil bajar el PDF»).
+ * entenderla era más fácil bajar el PDF»; con facturas desde el 2026-10-05).
  *
  * De arriba abajo, lo que cualquiera tiene que poder leer de un vistazo:
  *
  *   1. Dónde va: Aprobada → Enviada al proveedor → Recibida → Pagada y
- *      cerrada, y debajo el SIGUIENTE PASO con el único botón que toca.
- *   2. La orden como el papel: proveedor, proyecto, términos de pago, los
- *      renglones y los totales —y, recibida, lo pagado y lo que se debe—.
- *   3. La historia y los documentos.
- *
- * La orden llega completa, en un solo paso: no hay entregas parciales ni «qué
- * se pidió contra qué llegó».
+ *      cerrada, y debajo el SIGUIENTE PASO con lo que toca.
+ *   2. Sus facturas: la orden llega por partes, cada una con su factura, y
+ *      cada factura vence por su cuenta. Se pagan juntas o por separado desde
+ *      un solo botón (Ivan, 2026-10-06: «lo más seguro es que la pague toda
+ *      junta»). Una mal digitada se anula desde su renglón y se registra de
+ *      nuevo.
+ *   3. La orden como el papel: proveedor, proyecto, términos de pago, los
+ *      renglones y los totales. Su total es referencial: lo que se debe es lo
+ *      facturado.
+ *   4. La historia y los documentos.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -19,10 +22,12 @@ import {
   Check,
   ChevronLeft,
   Download,
-  FileCheck2,
+  Ellipsis,
   PackageCheck,
+  Paperclip,
   Pencil,
   Plus,
+  ReceiptText,
   Send,
   Settings,
   TriangleAlert,
@@ -33,6 +38,7 @@ import { recordado, recordar } from '@/lib/recordados';
 import { useCargaLenta } from '@/hooks/useCargaLenta';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,9 +57,11 @@ import {
 } from '@/components/ui/table';
 import { Alert, ApprovalPillBar, ErrorState, SectionHeader, TableSkeleton } from '@/components/shell';
 import { EstadoOrdenBadge } from './estados';
-import { diasHasta, fechaCorta, plata } from './formato';
-import { aprobadoresDe, type OrdenDetalle as Orden } from './tiposDetalle';
-import RecibirDialog from './dialogs/RecibirDialog';
+import { diasHasta, fechaCorta, nombreFactura, plata } from './formato';
+import { aprobadoresDe, type Entrega, type OrdenDetalle as Orden } from './tiposDetalle';
+import FacturaDialog from './dialogs/FacturaDialog';
+import CompletaDialog from './dialogs/CompletaDialog';
+import AnularFacturaDialog from './dialogs/AnularFacturaDialog';
 import ActivarPagoDialog from './dialogs/ActivarPagoDialog';
 import BajaDialog from './dialogs/BajaDialog';
 import OrdenFormDialog from './dialogs/OrdenFormDialog';
@@ -70,7 +78,7 @@ interface Props {
 
 const PASOS = ['Aprobada', 'Enviada al proveedor', 'Recibida', 'Pagada y cerrada'];
 
-/** Cómo se dice el estado de una solicitud de pago en la historia de la orden. */
+/** Cómo se dice el estado de una solicitud de pago en la orden. */
 const ESTADO_SOLICITUD: Record<string, string> = {
   pendiente: 'Esperando aprobación',
   aprobada: 'Aprobada, falta pagarla',
@@ -79,6 +87,8 @@ const ESTADO_SOLICITUD: Record<string, string> = {
   rechazada: 'Rechazada',
   devolucion: 'Devuelta',
 };
+/** Una solicitud que ya no va a pagar nada, o que ya pagó. */
+const TERMINADA = ['pagada', 'facturada', 'rechazada', 'devolucion'];
 
 /** Día de un momento guardado con hora: en la hora de Panamá, no en UTC. */
 const diaDe = (ts: string) => {
@@ -89,6 +99,11 @@ const diaDe = (ts: string) => {
 const momentoDe = (valor: string, esFecha: boolean) =>
   esFecha ? new Date(`${valor.slice(0, 10)}T12:00:00`).getTime() : new Date(valor).getTime();
 
+const dos = (n: number) => Math.round(n * 100) / 100;
+const pagadaDe = (f: Entrega) => dos(Number(f.monto_total) - Number(f.pagado)) <= 0;
+const disponibleDe = (f: Entrega) => dos(Number(f.monto_total) - Number(f.reclamado));
+const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
+
 interface Evento {
   clave: string;
   momento: number;
@@ -97,7 +112,35 @@ interface Evento {
   detalle?: string | null;
   monto?: string;
   tipo: 'paso' | 'recibida' | 'pago' | 'alerta';
-  extra?: ReactNode;
+}
+
+/** El vencimiento de una factura: gris si falta, ámbar si aprieta, rojo si ya pasó. */
+function VenceFactura({ f, chico }: { f: Entrega; chico?: boolean }) {
+  const tam = chico ? 'text-xs' : 'text-sm';
+  if (pagadaDe(f)) {
+    return <span className={cn(tam, 'tabular-nums text-muted-foreground')}>{fechaCorta(f.vence)}</span>;
+  }
+  const d = diasHasta(f.vence);
+  if (d < 0) {
+    return (
+      <span className={cn(tam, 'inline-flex items-center gap-1.5 font-semibold tabular-nums text-error')}>
+        <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+        {fechaCorta(f.vence)} · hace {dias(-d)}
+      </span>
+    );
+  }
+  if (d <= 7) {
+    return (
+      <span className={cn(tam, 'font-semibold tabular-nums text-warning')}>
+        {fechaCorta(f.vence)} · {d === 0 ? 'hoy' : `en ${dias(d)}`}
+      </span>
+    );
+  }
+  return (
+    <span className={cn(tam, 'tabular-nums text-slate-700')}>
+      {fechaCorta(f.vence)} <span className="text-muted-foreground">· en {dias(d)}</span>
+    </span>
+  );
 }
 
 export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props) {
@@ -112,14 +155,18 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
   const [error, setError] = useState<string | null>(null);
   const [accion, setAccion] = useState<string | null>(null);
   const [dialogo, setDialogo] = useState<
-    'recibir' | 'pago' | 'baja' | 'editar' | 'aprobar' | 'rechazar' | null
+    'factura' | 'completa' | 'pago' | 'anular' | 'baja' | 'editar' | 'aprobar' | 'rechazar' | null
   >(null);
+  /** La factura que se está anulando. */
+  const [porAnular, setPorAnular] = useState<Entrega | null>(null);
   // Aprobar pide la contraseña, igual que una solicitud de pago (Ivan, 01/10).
   const [clave, setClave] = useState('');
   const [errorClave, setErrorClave] = useState<string | null>(null);
   const [comentario, setComentario] = useState('');
   const [subiendo, setSubiendo] = useState(false);
-  const valeRef = useRef<HTMLInputElement>(null);
+  /** El papel de una factura que no se subió al registrarla se sube desde su renglón. */
+  const papelRef = useRef<HTMLInputElement>(null);
+  const [papelPara, setPapelPara] = useState<number | null>(null);
 
   const traer = useCallback(async () => {
     setCargando(true);
@@ -162,7 +209,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     }
   };
 
-  /** Sube archivos a la orden; con `entregaId`, a su recepción (el vale). */
+  /** Sube archivos a la orden; con `entregaId`, a esa factura. */
   const subirAdjuntos = async (archivos: FileList | File[], entregaId?: number) => {
     setSubiendo(true);
     setError(null);
@@ -170,10 +217,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       for (const archivo of Array.from(archivos)) {
         const fd = new FormData();
         fd.append('archivo', archivo);
-        if (entregaId) {
-          fd.append('entrega_id', String(entregaId));
-          fd.append('descripcion', 'Vale de entrega');
-        }
+        if (entregaId) fd.append('entrega_id', String(entregaId));
         await api.post(`/ordenes-compra/${ordenId}/adjuntos`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
@@ -246,28 +290,34 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
 
   // ------------------------------------------------------------ lo que toca
   const estado = orden.estado_calculado;
-  const recepcion = orden.entregas[0] ?? null;
-  const recibida = recepcion !== null;
+  const facturas = orden.entregas;
+  const conFacturas = facturas.length > 0;
   const esAdmin = user?.rol === 'admin';
   const esAdminOCo = esAdmin || user?.rol === 'co-admin';
   const siguienteFirma = orden.aprobadores[orden.aprobaciones.length];
   const miTurno = orden.estado === 'pendiente' && siguienteFirma?.user_id === user?.id;
-  const puedeRecibir = hasPermission('ordenes_entregas') && estado === 'enviada';
-  const puedeActivar = recibida && Number(orden.disponible_para_activar) > 0;
+  const puedeFacturar =
+    hasPermission('ordenes_entregas') && (estado === 'enviada' || estado === 'entrega_parcial');
+  // Se anula la que no tiene solicitud de pago encima; la orden puede estar ya completa.
+  const puedeAnular = (f: Entrega) =>
+    hasPermission('ordenes_entregas') && orden.estado === 'enviada' && Number(f.reclamado) <= 0;
   const yaSalio = orden.estado === 'enviada' || orden.estado === 'cerrada';
   const puedeEditar =
-    !recibida &&
+    !conFacturas &&
     (yaSalio ? esAdmin : orden.estado === 'pendiente' || orden.estado === 'por_enviar');
   const puedeDarDeBaja =
     esAdminOCo &&
-    !recibida &&
+    !conFacturas &&
     (orden.estado === 'pendiente' || orden.estado === 'por_enviar' || orden.estado === 'enviada');
-  const vencida =
-    estado === 'recibida' && !!orden.vence && Number(orden.por_pagar) > 0 && diasHasta(orden.vence) < 0;
-  const enCamino = Math.max(
-    0,
-    Number(orden.recibido) - Number(orden.disponible_para_activar) - Number(orden.pagado),
-  );
+
+  // Las vencidas, la más vieja primero: la franja roja habla de esa.
+  const vencidas = facturas
+    .filter((f) => !pagadaDe(f) && diasHasta(f.vence) < 0)
+    .sort((a, b) => a.vence.localeCompare(b.vence));
+  const hayVencidas =
+    vencidas.length > 0 && (estado === 'entrega_parcial' || estado === 'recibida');
+  const porPagarN = facturas.filter((f) => !pagadaDe(f)).length;
+  const enCamino = orden.pagos.filter((p) => !TERMINADA.includes(p.estado));
 
   const abrirPdf = () => {
     const token = localStorage.getItem('token');
@@ -277,9 +327,22 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     );
   };
 
-  // El paso en que va: 0 aprobándose, 1 por enviar, 2 enviada, 3 recibida, 4 cerrada.
+  const subirPapel = (entregaId: number) => {
+    setPapelPara(entregaId);
+    papelRef.current?.click();
+  };
+
+  // El paso en que va: 0 aprobándose, 1 por enviar, 2 recibiéndose, 3 pagándose, 4 cerrada.
   const paso =
-    estado === 'pendiente' ? 0 : estado === 'por_enviar' ? 1 : estado === 'enviada' ? 2 : estado === 'recibida' ? 3 : 4;
+    estado === 'pendiente'
+      ? 0
+      : estado === 'por_enviar'
+        ? 1
+        : estado === 'enviada' || estado === 'entrega_parcial'
+          ? 2
+          : estado === 'recibida'
+            ? 3
+            : 4;
   const ultimaFirma = orden.aprobaciones.length
     ? orden.aprobaciones[orden.aprobaciones.length - 1].fecha
     : null;
@@ -290,8 +353,12 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
         ? diaDe(ultimaFirma)
         : '',
     orden.enviada_at ? diaDe(orden.enviada_at) : '',
-    recepcion ? fechaCorta(recepcion.fecha) : '',
-    paso === 3 ? `${plata(orden.pagado)} de ${plata(orden.monto_total)}` : '',
+    orden.completa_at
+      ? diaDe(orden.completa_at)
+      : conFacturas
+        ? `${facturas.length} ${facturas.length === 1 ? 'factura' : 'facturas'}`
+        : '',
+    paso === 3 ? `${plata(orden.pagado)} de ${plata(orden.recibido)}` : '',
   ];
 
   // ----------------------------------------------------- el siguiente paso
@@ -369,13 +436,37 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       titulo: 'Siguiente paso: recibir el material',
       texto:
         orden.termino_dias === 0
-          ? 'Cuando llegue, márcala como recibida. Se paga de contado.'
-          : `Cuando llegue, márcala como recibida. Desde ese día corren los ${orden.termino_dias} días para pagarla.`,
-      botones: puedeRecibir ? (
-        <Button onClick={() => setDialogo('recibir')}>
-          <PackageCheck className="mr-2 h-4 w-4" />
-          Marcar como recibida
+          ? 'Registra cada factura que llegue. Se pagan de contado.'
+          : `Registra cada factura que llegue. Cada una se paga a los ${orden.termino_dias} días de su fecha.`,
+      botones: puedeFacturar ? (
+        <Button onClick={() => setDialogo('factura')}>
+          <ReceiptText className="mr-2 h-4 w-4" />
+          Registrar factura
         </Button>
+      ) : undefined,
+    };
+  } else if (estado === 'entrega_parcial') {
+    siguiente = {
+      titulo: 'Siguiente paso: recibir el resto',
+      texto: (
+        <>
+          {facturas.length === 1 ? 'Va 1 factura' : `Van ${facturas.length} facturas`} por{' '}
+          <strong className="font-semibold text-foreground">{plata(orden.recibido)}</strong> de{' '}
+          {plata(orden.monto_total)} pedidos. Cuando el proveedor ya no vaya a enviar nada más,
+          márcala como completa.
+        </>
+      ),
+      botones: puedeFacturar ? (
+        <>
+          <Button variant="outline" onClick={() => setDialogo('completa')}>
+            <PackageCheck className="mr-2 h-4 w-4" />
+            Marcar como completa
+          </Button>
+          <Button onClick={() => setDialogo('factura')}>
+            <ReceiptText className="mr-2 h-4 w-4" />
+            Registrar factura
+          </Button>
+        </>
       ) : undefined,
     };
   } else if (estado === 'recibida') {
@@ -383,29 +474,32 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       titulo: 'Siguiente paso: pagarla',
       texto: (
         <>
-          Llegó completa el {recepcion ? fechaCorta(recepcion.fecha) : '—'}. Se debe{' '}
-          <strong className="font-semibold text-foreground">{plata(orden.por_pagar)}</strong>
-          {enCamino > 0 && (
+          Se deben <strong className="font-semibold text-foreground">{plata(orden.por_pagar)}</strong>{' '}
+          de {porPagarN === 1 ? '1 factura' : `${porPagarN} facturas`}
+          {enCamino.length === 1 && (
             <>
-              ; ya hay solicitudes de pago por{' '}
-              <strong className="font-semibold text-foreground">{plata(enCamino)}</strong> en
-              camino
+              ; la solicitud de pago {enCamino[0].numero} por{' '}
+              <strong className="font-semibold text-foreground">{plata(enCamino[0].monto)}</strong>{' '}
+              está en camino
             </>
           )}
-          .
-          {!puedeActivar && ' Todo lo que se debe ya tiene su solicitud de pago.'}
+          {enCamino.length > 1 && (
+            <>
+              ; hay solicitudes de pago por{' '}
+              <strong className="font-semibold text-foreground">
+                {plata(enCamino.reduce((s, p) => s + Number(p.monto), 0))}
+              </strong>{' '}
+              en camino
+            </>
+          )}
+          .{Number(orden.disponible_para_activar) <= 0 && ' Todo lo que se debe ya tiene su solicitud de pago.'}
         </>
       ),
-      botones: puedeActivar ? (
-        <Button onClick={() => setDialogo('pago')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Activar solicitud de pago
-        </Button>
-      ) : undefined,
     };
   }
 
   // ------------------------------------------------------------ la historia
+  // Las facturas no van aquí: tienen su propia tabla arriba.
   const eventos: Evento[] = [];
   eventos.push({
     clave: 'creada',
@@ -435,36 +529,25 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       tipo: 'paso',
     });
   }
-  for (const e of orden.entregas) {
-    const valeDoc = e.adjuntos[0];
+  for (const a of orden.anuladas) {
     eventos.push({
-      clave: `rec-${e.id}`,
-      momento: momentoDe(e.fecha, true),
-      dia: fechaCorta(e.fecha),
-      titulo: 'Recibida completa',
-      detalle: [e.nota, `Vence el ${fechaCorta(e.vence)}`].filter(Boolean).join(' · '),
+      clave: `anulada-${a.id}`,
+      momento: momentoDe(a.anulada_at, false),
+      dia: diaDe(a.anulada_at),
+      titulo: `${nombreFactura(a)} anulada`,
+      detalle: [a.anulada_motivo, a.anulada_por_nombre].filter(Boolean).join(' · '),
+      monto: plata(a.monto_total),
+      tipo: 'alerta',
+    });
+  }
+  if (orden.completa_at) {
+    eventos.push({
+      clave: 'completa',
+      momento: momentoDe(orden.completa_at, false),
+      dia: diaDe(orden.completa_at),
+      titulo: 'Marcada como completa',
+      detalle: orden.completa_por_nombre,
       tipo: 'recibida',
-      extra: valeDoc ? (
-        <button
-          type="button"
-          onClick={() => void abrirDocumento(valeDoc.id)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-navy/25 bg-navy/[0.06] px-2 py-0.5 text-xs font-semibold text-navy hover:bg-navy/10"
-          title={valeDoc.nombre_original}
-        >
-          <FileCheck2 className="h-3.5 w-3.5" />
-          {valeDoc.descripcion || 'Vale de entrega'}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => valeRef.current?.click()}
-          disabled={subiendo}
-          className="inline-flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning hover:bg-warning/15"
-        >
-          <Upload className="h-3.5 w-3.5" />
-          {subiendo ? 'Subiendo...' : 'Sin vale · subirlo'}
-        </button>
-      ),
     });
   }
   for (const p of orden.pagos) {
@@ -503,6 +586,90 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
   eventos.sort((a, b) => b.momento - a.momento);
 
   const rechazo = orden.aprobaciones.find((a) => a.accion === 'rechazado');
+
+  // ------------------------------------------------- piezas de cada factura
+  const papeles = (f: Entrega) => (
+    <span className="inline-flex items-center">
+      {f.adjuntos.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          onClick={() => void abrirDocumento(a.id)}
+          title={a.descripcion || a.nombre_original}
+          aria-label={`Abrir ${a.nombre_original}`}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-navy hover:bg-navy/10"
+        >
+          <Paperclip className="h-4 w-4" />
+        </button>
+      ))}
+      {f.adjuntos.length === 0 && (
+        <button
+          type="button"
+          onClick={() => subirPapel(f.id)}
+          disabled={subiendo}
+          title="Subir la factura"
+          aria-label={`Subir el papel de ${nombreFactura(f)}`}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-warning hover:bg-warning/10"
+        >
+          <Upload className="h-4 w-4" />
+        </button>
+      )}
+    </span>
+  );
+
+  const menuDe = (f: Entrega) =>
+    puedeAnular(f) ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            title="Más acciones"
+            aria-label={`Más acciones de ${nombreFactura(f)}`}
+          >
+            <Ellipsis className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => {
+              setPorAnular(f);
+              setDialogo('anular');
+            }}
+            className="text-error focus:text-error"
+          >
+            <Ban className="mr-2 h-4 w-4" />
+            Anular factura
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : null;
+
+  /** En qué va el pago de una factura. El pago se activa con el botón de la sección. */
+  const pagoDe = (f: Entrega) => {
+    if (pagadaDe(f)) {
+      const cuales = f.solicitudes.filter((s) => s.estado === 'pagada' || s.estado === 'facturada');
+      return (
+        <Badge className="gap-1 border bg-success/10 text-success border-success/30">
+          <Check className="h-3 w-3" />
+          Pagada{cuales.length ? ` · ${cuales.map((s) => s.numero).join(', ')}` : ''}
+        </Badge>
+      );
+    }
+    const enEsta = f.solicitudes.filter((s) => !TERMINADA.includes(s.estado));
+    if (enEsta.length === 0) return <span className="text-sm text-muted-foreground">Por pagar</span>;
+    return (
+      <span className="inline-flex flex-wrap items-center gap-2 md:justify-end">
+        {enEsta.map((s) => (
+          <Badge key={s.id} className="border bg-warning/10 text-warning border-warning/30">
+            {s.numero} · {(ESTADO_SOLICITUD[s.estado] ?? s.estado).toLowerCase()}
+          </Badge>
+        ))}
+        {disponibleDe(f) > 0 && <span className="text-xs text-muted-foreground">y queda por pedir</span>}
+      </span>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -648,14 +815,145 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
               )}
             </div>
           )}
-          {vencida && orden.vence && (
+          {hayVencidas && (
             <div className="flex items-center gap-2 border-t border-error/25 bg-error/[0.06] px-5 py-2.5 text-sm font-semibold text-error">
               <TriangleAlert className="h-4 w-4 shrink-0" />
-              Vencida desde el {fechaCorta(orden.vence)} (hace {Math.abs(diasHasta(orden.vence))}{' '}
-              {Math.abs(diasHasta(orden.vence)) === 1 ? 'día' : 'días'}).
+              {vencidas.length === 1
+                ? `${nombreFactura(vencidas[0])} vencida desde el ${fechaCorta(vencidas[0].vence)} (hace ${dias(-diasHasta(vencidas[0].vence))}).`
+                : `${vencidas.length} facturas vencidas. La más antigua, desde el ${fechaCorta(vencidas[0].vence)} (hace ${dias(-diasHasta(vencidas[0].vence))}).`}
             </div>
           )}
         </Card>
+      )}
+
+      {/* Las facturas: cada entrega llegó con la suya, vence por su cuenta y
+          se paga desde su renglón. */}
+      {conFacturas && (
+        <div className="space-y-3">
+          <SectionHeader
+            title="Facturas"
+            action={
+              Number(orden.disponible_para_activar) > 0 &&
+              (estado === 'entrega_parcial' || estado === 'recibida') ? (
+                <Button size="sm" onClick={() => setDialogo('pago')}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Activar solicitud de pago
+                </Button>
+              ) : undefined
+            }
+          />
+          <Card className="overflow-hidden p-0">
+            {/* Teléfono: un bloque por factura. */}
+            <div className="divide-y divide-slate-100 md:hidden">
+              {facturas.map((f) => (
+                <div key={f.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="inline-flex min-w-0 items-center gap-1 text-sm font-medium text-foreground">
+                      {f.numero_factura ?? <span className="text-muted-foreground">Sin número</span>}
+                      {papeles(f)}
+                    </p>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums">{plata(f.monto_total)}</p>
+                  </div>
+                  {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs tabular-nums text-muted-foreground">
+                    <span>{fechaCorta(f.fecha)} · vence</span>
+                    <VenceFactura f={f} chico />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    {pagoDe(f)}
+                    {menuDe(f)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                    <TableHead className="w-[200px] px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Factura
+                    </TableHead>
+                    <TableHead className="w-[130px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Fecha
+                    </TableHead>
+                    <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Vence
+                    </TableHead>
+                    <TableHead className="w-[140px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Monto
+                    </TableHead>
+                    <TableHead className="px-5 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Pago
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {facturas.map((f) => (
+                    <TableRow key={f.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="px-5 py-3 text-sm text-foreground">
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          {f.numero_factura ?? (
+                            <span className="font-normal text-muted-foreground">Sin número</span>
+                          )}
+                          {papeles(f)}
+                        </span>
+                        {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">
+                        {fechaCorta(f.fecha)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <VenceFactura f={f} />
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
+                        {plata(f.monto_total)}
+                      </TableCell>
+                      <TableCell className="px-5 py-3 text-right">
+                        <span className="inline-flex items-center justify-end gap-1">
+                          {pagoDe(f)}
+                          {menuDe(f)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex justify-end border-t border-border px-5 py-4">
+              <dl className="w-full space-y-1 text-sm sm:w-72">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Total de la orden</dt>
+                  <dd className="tabular-nums text-muted-foreground">{plata(orden.monto_total)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Facturado</dt>
+                  <dd className="tabular-nums text-slate-700">{plata(orden.recibido)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Pagado</dt>
+                  <dd className="font-semibold tabular-nums text-success">{plata(orden.pagado)}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-t border-border pt-1.5 text-base font-bold">
+                  <dt className="text-foreground">Por pagar</dt>
+                  <dd className={cn('tabular-nums', vencidas.length ? 'text-error' : 'text-warning')}>
+                    {plata(orden.por_pagar)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </Card>
+          <input
+            ref={papelRef}
+            type="file"
+            multiple
+            className="hidden"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              if (e.target.files?.length && papelPara) void subirAdjuntos(e.target.files, papelPara);
+              e.target.value = '';
+            }}
+          />
+        </div>
       )}
 
       {/* La orden, como el papel que recibe el proveedor. */}
@@ -683,11 +981,10 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
               Términos de pago
             </p>
             <p className="mt-0.5 text-sm font-semibold text-foreground">
-              {orden.termino_dias === 0 ? 'Contado' : `${orden.termino_dias} días desde que llega`}
+              {orden.termino_dias === 0 ? 'Contado' : `${orden.termino_dias} días desde cada factura`}
             </p>
             <p className="text-xs tabular-nums text-muted-foreground">
               {orden.entrega === 'sitio' ? 'Entrega en sitio' : 'Retiro en el local'}
-              {recibida && orden.vence ? ` · vence ${fechaCorta(orden.vence)}` : ''}
             </p>
           </div>
         </div>
@@ -777,20 +1074,6 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
               <dt>Total</dt>
               <dd className="tabular-nums">{plata(orden.monto_total)}</dd>
             </div>
-            {recibida && (
-              <>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Pagado</dt>
-                  <dd className="font-semibold tabular-nums text-success">{plata(orden.pagado)}</dd>
-                </div>
-                <div className="flex justify-between gap-3 text-base font-bold">
-                  <dt className="text-foreground">Por pagar</dt>
-                  <dd className={cn('tabular-nums', vencida ? 'text-error' : 'text-warning')}>
-                    {plata(orden.por_pagar)}
-                  </dd>
-                </div>
-              </>
-            )}
           </dl>
         </div>
       </Card>
@@ -826,22 +1109,10 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
                     )}
                   </div>
                   {ev.detalle && <p className="mt-0.5 text-xs text-muted-foreground">{ev.detalle}</p>}
-                  {ev.extra && <div className="mt-1.5">{ev.extra}</div>}
                 </div>
               </div>
             ))}
           </Card>
-          {/* El vale que no se subió al recibirla, se sube desde aquí. */}
-          <input
-            ref={valeRef}
-            type="file"
-            className="hidden"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) => {
-              if (e.target.files?.length && recepcion) void subirAdjuntos(e.target.files, recepcion.id);
-              e.target.value = '';
-            }}
-          />
         </div>
 
         <div className="space-y-3">
@@ -859,10 +1130,23 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
         </div>
       </div>
 
-      <RecibirDialog
+      <FacturaDialog
         orden={orden}
-        open={dialogo === 'recibir'}
-        onOpenChange={(v) => setDialogo(v ? 'recibir' : null)}
+        open={dialogo === 'factura'}
+        onOpenChange={(v) => setDialogo(v ? 'factura' : null)}
+        onListo={refrescar}
+      />
+      <CompletaDialog
+        orden={orden}
+        open={dialogo === 'completa'}
+        onOpenChange={(v) => setDialogo(v ? 'completa' : null)}
+        onListo={refrescar}
+      />
+      <AnularFacturaDialog
+        orden={orden}
+        factura={porAnular}
+        open={dialogo === 'anular'}
+        onOpenChange={(v) => setDialogo(v ? 'anular' : null)}
         onListo={refrescar}
       />
       <ActivarPagoDialog

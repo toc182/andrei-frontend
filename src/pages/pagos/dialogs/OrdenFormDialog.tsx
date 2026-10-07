@@ -52,8 +52,8 @@ interface Renglon {
 }
 
 // Sin código de producto: Ivan lo quitó el 2026-10-02 —quien lo necesite lo ve
-// en la cotización adjunta—. Una orden recibida ya no se edita, así que aquí no
-// hay renglones con material llegado que cuidar.
+// en la cotización adjunta—. Una orden con facturas ya no se edita, así que aquí
+// no hay renglones con material llegado que cuidar.
 type CampoRenglon = 'cantidad' | 'unidad' | 'descripcion' | 'precio_unitario';
 
 const ETIQUETA_CAMPO: Record<CampoRenglon, string> = {

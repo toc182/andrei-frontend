@@ -2,10 +2,14 @@
 // Mark one oferta elegida, add ofertas, edit/delete the cotización, and
 // open an oferta for its files. Fetches its own detail and refreshes the
 // page lists via onChanged.
+//
+// Una entrada que viene de una requisición (una por línea) solo se consulta:
+// sus cotizaciones se agregan y se cambian desde la requisición, y el servidor
+// contesta 409 a cualquier cambio hecho desde aquí (Ivan, 2026-10-05).
 
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Plus, Trash2, Check, Paperclip } from 'lucide-react';
-import { AppDialog } from '@/components/shell';
+import { Alert, AppDialog } from '@/components/shell';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -47,6 +51,8 @@ interface Props {
   cotizacionId: number | null;
   projects: ProjectOption[];
   onChanged: () => void;
+  /** Abre la requisición de donde viene la entrada. Sin él, no se ofrece. */
+  onAbrirRequisicion?: (requisicionId: number) => void;
 }
 
 export function CotizacionDetailDialog({
@@ -55,6 +61,7 @@ export function CotizacionDetailDialog({
   cotizacionId,
   projects,
   onChanged,
+  onAbrirRequisicion,
 }: Props) {
   const [detalle, setDetalle] = useState<CotizacionDetalle | null>(null);
   const [loading, setLoading] = useState(false);
@@ -113,6 +120,10 @@ export function CotizacionDetailDialog({
     }
   };
 
+  const deRequisicion = detalle?.requisicion_id != null;
+  const abrirRequisicion =
+    deRequisicion && onAbrirRequisicion ? () => onAbrirRequisicion(detalle!.requisicion_id!) : null;
+
   const openOferta = (oferta: CotizacionOferta) => {
     if (!detalle) return;
     setOfertaDetail({
@@ -127,6 +138,7 @@ export function CotizacionDetailDialog({
       tipo: detalle.tipo,
       proyecto_nombre: detalle.proyecto_nombre,
       ambito: detalle.ambito,
+      requisicion_numero: detalle.requisicion_numero,
     });
   };
 
@@ -138,31 +150,51 @@ export function CotizacionDetailDialog({
         size="detail"
         title={detalle?.descripcion ?? 'Cotización'}
         footer={
-          <>
-            <Button
-              variant="ghost"
-              className="text-error hover:text-error"
-              onClick={() => setConfirmDelete(true)}
-              disabled={!detalle}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditOpen(true)} disabled={!detalle}>
-                Editar
-              </Button>
+          deRequisicion ? (
+            <>
+              {abrirRequisicion ? (
+                <Button variant="outline" onClick={abrirRequisicion}>
+                  Abrir la requisición
+                </Button>
+              ) : (
+                <span />
+              )}
               <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
-            </div>
-          </>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                className="text-error hover:text-error"
+                onClick={() => setConfirmDelete(true)}
+                disabled={!detalle}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditOpen(true)} disabled={!detalle}>
+                  Editar
+                </Button>
+                <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
+              </div>
+            </>
+          )
         }
       >
         {loading || !detalle ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Cargando...</p>
         ) : (
           <div className="space-y-4">
+            {deRequisicion && (
+              <Alert
+                variant="info"
+                title={`Viene de la requisición ${detalle.requisicion_numero}, línea ${detalle.requisicion_linea}`}
+                description="Las cotizaciones se agregan y se cambian desde la requisición. Aquí se consultan."
+              />
+            )}
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-              <TipoBadge tipo={detalle.tipo} />
+              {!deRequisicion && <TipoBadge tipo={detalle.tipo} />}
               <span>
                 Proyecto:{' '}
                 <span className="font-medium text-foreground">
@@ -181,9 +213,29 @@ export function CotizacionDetailDialog({
                   {detalle.pedido_por_nombre || '—'}
                 </span>
               </span>
+              {deRequisicion && (
+                <span>
+                  Requisición:{' '}
+                  {abrirRequisicion ? (
+                    <button
+                      type="button"
+                      onClick={abrirRequisicion}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {detalle.requisicion_numero} · {detalle.requisicion_descripcion}
+                    </button>
+                  ) : (
+                    <span className="font-medium text-foreground">
+                      {detalle.requisicion_numero} · {detalle.requisicion_descripcion}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
 
-            {detalle.descripcion_larga && (
+            {/* La de una requisición repite el número y la descripción, que ya
+                están arriba. */}
+            {detalle.descripcion_larga && !deRequisicion && (
               <div>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Descripción
@@ -196,10 +248,12 @@ export function CotizacionDetailDialog({
               <h3 className="border-l-2 border-l-navy pl-2 text-sm font-bold text-navy">
                 Cotizaciones recibidas ({detalle.ofertas.length})
               </h3>
-              <Button variant="outline" size="sm" onClick={() => setAddOfertaOpen(true)}>
-                <Plus className="mr-1 h-3 w-3" />
-                Agregar oferta
-              </Button>
+              {!deRequisicion && (
+                <Button variant="outline" size="sm" onClick={() => setAddOfertaOpen(true)}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Agregar oferta
+                </Button>
+              )}
             </div>
 
             {detalle.ofertas.length === 0 ? (
@@ -215,7 +269,7 @@ export function CotizacionDetailDialog({
                       <TableHead className="px-3 py-2 text-right">Precio</TableHead>
                       <TableHead className="px-3 py-2">Nota</TableHead>
                       <TableHead className="px-3 py-2 text-center">Archivos</TableHead>
-                      <TableHead className="px-3 py-2"></TableHead>
+                      {!deRequisicion && <TableHead className="px-3 py-2"></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -248,22 +302,24 @@ export function CotizacionDetailDialog({
                             {o.archivos_count}
                           </span>
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-right">
-                          <Button
-                            variant={o.elegida ? 'ghost' : 'outline'}
-                            size="sm"
-                            disabled={togglingId === o.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleEleccion(o);
-                            }}
-                          >
-                            {togglingId === o.id && (
-                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                            )}
-                            {o.elegida ? 'Quitar' : 'Elegir'}
-                          </Button>
-                        </TableCell>
+                        {!deRequisicion && (
+                          <TableCell className="px-3 py-2.5 text-right">
+                            <Button
+                              variant={o.elegida ? 'ghost' : 'outline'}
+                              size="sm"
+                              disabled={togglingId === o.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleEleccion(o);
+                              }}
+                            >
+                              {togglingId === o.id && (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              )}
+                              {o.elegida ? 'Quitar' : 'Elegir'}
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -274,7 +330,7 @@ export function CotizacionDetailDialog({
         )}
       </AppDialog>
 
-      {detalle && (
+      {detalle && !deRequisicion && (
         <>
           <CotizacionFormDialog
             open={editOpen}

@@ -32,6 +32,11 @@ const PASTILLAS: Record<
     etiqueta: 'Enviada',
     clases: 'bg-teal/10 text-teal border-teal/30',
   },
+  // Van llegando facturas y nadie la ha marcado completa todavía.
+  entrega_parcial: {
+    etiqueta: 'Entrega parcial',
+    clases: 'bg-navy/10 text-navy border-navy/30',
+  },
   recibida: {
     etiqueta: 'Recibida',
     clases: 'bg-info/10 text-info border-info/30',
