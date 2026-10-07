@@ -92,7 +92,6 @@ export default function DashboardNew() {
   const [projectContext, setProjectContext] = useState<ProjectContext | null>(
     null,
   );
-  const [showProjectInfo, setShowProjectInfo] = useState(false);
 
   // Clear project context and pageTitle when leaving project views
   useEffect(() => {
@@ -100,7 +99,6 @@ export default function DashboardNew() {
       setPageTitle(null);
       setBreadcrumbs(null);
       setProjectContext(null);
-      setShowProjectInfo(false);
     }
   }, [currentView]);
 
@@ -166,8 +164,6 @@ export default function DashboardNew() {
             onTitleChange={setPageTitle}
             onBreadcrumbsChange={setBreadcrumbs}
             onProjectLoad={(ctx) => setProjectContext(ctx)}
-            showInfo={showProjectInfo}
-            onCloseInfo={() => setShowProjectInfo(false)}
           />
         );
       }

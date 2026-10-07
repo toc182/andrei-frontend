@@ -6,25 +6,17 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { DesgloseView } from '@/components/desglose/DesgloseView';
+import { AdendaTarjeta } from '@/components/project/AdendaTarjeta';
+import { InfoRow } from '@/components/project/InfoRow';
 import ProyectoDocumentos from './ProyectoDocumentos';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
+import { diasConSigno, diasEntre, montoConSigno } from '@/lib/adendas';
 import { formatDate } from '../../utils/dateUtils';
 import { formatMoney } from '../../utils/formatters';
 import type { Project, Adenda } from '@/types';
@@ -34,7 +26,8 @@ interface ProjectInformacionProps {
   adendas: Adenda[];
   onOpenAdendaForm: () => void;
   onEditAdenda: (adenda: Adenda) => void;
-  onDeleteAdenda: (adendaId: number) => void;
+  /** Pide borrarla; la confirmación la hace la pantalla de arriba. */
+  onDeleteAdenda: (adenda: Adenda) => void;
   /** Abre la ventana de edición del proyecto. La dueña del proyecto es la
    *  pantalla de arriba, así que el botón solo avisa. */
   onEditProject: () => void;
@@ -54,34 +47,6 @@ const getEstadoBadge = (estado: string) => {
   return <Badge className={c.className}>{c.label}</Badge>;
 };
 
-const getAdendaStatusBadge = (estado: string) => {
-  const config: Record<string, { label: string; className: string }> = {
-    en_proceso: { label: 'En Proceso', className: 'bg-info/10 text-info border-info/30 border' },
-    aprobada: { label: 'Aprobada', className: 'bg-success/10 text-success border-success/30 border' },
-    rechazada: { label: 'Rechazada', className: 'bg-error/10 text-error border-error/30 border' },
-  };
-  const c = config[estado] || { label: estado, className: 'bg-slate-100 text-slate-600 border-slate-200 border' };
-  return <Badge className={c.className}>{c.label}</Badge>;
-};
-
-const getAdendaTypeText = (tipo: string) => {
-  const types: Record<string, string> = {
-    tiempo: 'Extensión de Tiempo',
-    costo: 'Modificación de Costo',
-    mixta: 'Tiempo y Costo',
-  };
-  return types[tipo] || tipo;
-};
-
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <span className="text-sm">{children}</span>
-    </div>
-  );
-}
-
 function SinDato() {
   return <span className="text-muted-foreground">—</span>;
 }
@@ -94,7 +59,6 @@ export default function ProjectInformacion({
   onDeleteAdenda,
   onEditProject,
 }: ProjectInformacionProps) {
-  const [deleteAdendaId, setDeleteAdendaId] = useState<number | null>(null);
   const [seccion, setSeccion] = useState<'datos' | 'desglose'>('datos');
   // Once opened, Desglose stays mounted (forceMount + hidden) so coming back to
   // the tab neither re-fetches nor flashes a skeleton, and unsaved edits survive
@@ -106,6 +70,11 @@ export default function ProjectInformacion({
     user?.rol === 'admin' || user?.rol === 'co-admin' || !!user?.permissions?.desglose_ver;
   // Render guard: desglose only when BOTH selected and permitted.
   const showDesglose = seccion === 'desglose' && puedeVerDesglose;
+  // Días que las adendas aprobadas le sumaron a la terminación original.
+  const extension =
+    project.fecha_fin_estimada && project.fecha_fin_vigente
+      ? diasEntre(project.fecha_fin_estimada, project.fecha_fin_vigente)
+      : null;
 
   return (
     <div className="space-y-6">
@@ -180,6 +149,18 @@ export default function ProjectInformacion({
                 <InfoRow label="Fecha de Terminación:">{formatDate(project.fecha_fin_estimada)}</InfoRow>
               )}
 
+              {/* Solo cuando una adenda aprobada la cambió (adenda_fecha_numero). */}
+              {project.adenda_fecha_numero != null && project.fecha_fin_vigente && (
+                <InfoRow label="Terminación Vigente:">
+                  {formatDate(project.fecha_fin_vigente)}
+                  {extension != null && (
+                    <span className="text-muted-foreground">
+                      {' '}({diasConSigno(extension)})
+                    </span>
+                  )}
+                </InfoRow>
+              )}
+
               {project.orden_proceder && (
                 <InfoRow label="Orden de Proceder:">{formatDate(project.orden_proceder)}</InfoRow>
               )}
@@ -194,6 +175,15 @@ export default function ProjectInformacion({
 
               {project.monto_total && (
                 <InfoRow label="Monto Total:">{formatMoney(project.monto_total)}</InfoRow>
+              )}
+
+              {(project.adendas_con_monto ?? 0) > 0 && project.monto_vigente != null && (
+                <>
+                  <InfoRow label="Adendas Aprobadas:">{montoConSigno(project.monto_adendas ?? 0)}</InfoRow>
+                  <InfoRow label="Monto Vigente:">
+                    <span className="font-semibold">{formatMoney(project.monto_vigente)}</span>
+                  </InfoRow>
+                </>
               )}
 
               {project.contrato && (
@@ -230,71 +220,12 @@ export default function ProjectInformacion({
               ) : (
                 <div className="space-y-4">
                   {adendas.map((adenda) => (
-                    <div key={adenda.id} className="space-y-3 p-4 border rounded-lg">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">
-                            Adenda #{adenda.numero_adenda}
-                          </span>
-                          {getAdendaStatusBadge(adenda.estado)}
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => onEditAdenda(adenda)}
-                            title="Editar adenda"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteAdendaId(adenda.id)}
-                            title="Eliminar adenda"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <InfoRow label="Tipo:">{getAdendaTypeText(adenda.tipo)}</InfoRow>
-
-                      {adenda.nueva_fecha_fin && (
-                        <InfoRow label="Nueva Fecha:">
-                          {formatDate(adenda.nueva_fecha_fin)}
-                          {adenda.dias_extension && (
-                            <span className="text-muted-foreground">
-                              {' '}(+{adenda.dias_extension} días)
-                            </span>
-                          )}
-                        </InfoRow>
-                      )}
-
-                      {adenda.nuevo_monto && (
-                        <InfoRow label="Nuevo Monto:">{formatMoney(adenda.nuevo_monto)}</InfoRow>
-                      )}
-
-                      {adenda.monto_adicional && (
-                        <InfoRow label="Monto Adicional:">{formatMoney(adenda.monto_adicional)}</InfoRow>
-                      )}
-
-                      {adenda.observaciones && (
-                        <InfoRow label="Observaciones:">{adenda.observaciones}</InfoRow>
-                      )}
-
-                      <InfoRow label="Solicitada:">
-                        {formatDate(adenda.fecha_solicitud)}
-                        {adenda.fecha_aprobacion && (
-                          <span className="text-muted-foreground">
-                            {' | Aprobada: '}
-                            {formatDate(adenda.fecha_aprobacion)}
-                          </span>
-                        )}
-                      </InfoRow>
-                    </div>
+                    <AdendaTarjeta
+                      key={adenda.id}
+                      adenda={adenda}
+                      onEditar={() => onEditAdenda(adenda)}
+                      onEliminar={() => onDeleteAdenda(adenda)}
+                    />
                   ))}
                 </div>
               )}
@@ -304,30 +235,6 @@ export default function ProjectInformacion({
           <ProyectoDocumentos projectId={project.id} />
           </div>
 
-          <AlertDialog open={deleteAdendaId !== null} onOpenChange={(open) => { if (!open) setDeleteAdendaId(null); }}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Eliminar adenda?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta acción no se puede deshacer. La adenda será eliminada permanentemente.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={() => {
-                    if (deleteAdendaId !== null) {
-                      onDeleteAdenda(deleteAdendaId);
-                      setDeleteAdendaId(null);
-                    }
-                  }}
-                >
-                  Eliminar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </TabsContent>
 
         {/* forceMount keeps it alive once opened; Radix leaves a force-mounted

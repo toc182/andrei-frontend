@@ -6,17 +6,15 @@
 
 import { useState, useEffect } from 'react';
 import type { Crumb } from '@/components/layout/AppLayout';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { buttonVariants } from '@/components/ui/button';
-import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
+import { toast } from 'sonner';
 import ProjectInformacion from './ProjectInformacion';
 import ProjectSummary from './ProjectSummary';
 import ProjectControlCostos from './ProjectControlCostos';
@@ -25,7 +23,6 @@ import ProjectMembers from './ProjectMembers';
 import ProjectTodos from './ProjectTodos';
 import ProjectReportes from './ProjectReportes';
 import ProjectPagos from './ProjectPagos';
-import ProjectAdendas from './ProjectAdendas';
 import CajasMenudasPage from '../CajasMenudasPage';
 import CuentasProjectView from '../cuentas/CuentasProjectView';
 import CuentaDetailPage from '../cuentas/CuentaDetailPage';
@@ -36,8 +33,6 @@ import api from '../../services/api';
 import { recordado, recordar } from '@/lib/recordados';
 import { useCargaLenta } from '@/hooks/useCargaLenta';
 import { cn } from '@/lib/utils';
-import { formatDate } from '../../utils/dateUtils';
-import { formatMoney } from '../../utils/formatters';
 import type { Project, Adenda } from '@/types';
 
 interface ProyectoRecordado {
@@ -53,22 +48,7 @@ interface ProjectDetailLayoutProps {
   onTitleChange?: (title: string) => void;
   onBreadcrumbsChange?: (crumbs: Crumb[]) => void;
   onProjectLoad?: (ctx: { id: number; name: string }) => void;
-  showInfo?: boolean;
-  onCloseInfo?: () => void;
 }
-
-const getEstadoBadge = (estado: string) => {
-  const variants: Record<string, { className: string; label: string }> = {
-    planificacion: { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: 'Planificación' },
-    en_curso: { className: 'bg-info/10 text-info border-info/30 border', label: 'En Curso' },
-    pausado: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Pausado' },
-    completado: { className: 'bg-success/10 text-success border-success/30 border', label: 'Completado' },
-    cancelado: { className: 'bg-error/10 text-error border-error/30 border', label: 'Cancelado' },
-  };
-
-  const config = variants[estado] || { className: 'bg-slate-100 text-slate-600 border-slate-200 border', label: estado };
-  return <Badge className={config.className}>{config.label}</Badge>;
-};
 
 export default function ProjectDetailLayout({
   projectId,
@@ -78,8 +58,6 @@ export default function ProjectDetailLayout({
   onTitleChange,
   onBreadcrumbsChange,
   onProjectLoad,
-  showInfo = false,
-  onCloseInfo,
 }: ProjectDetailLayoutProps) {
   // Un proyecto ya abierto en la sesión sale al instante con lo que tenía y se
   // refresca por detrás; el esqueleto queda para la primera vez, y solo si
@@ -113,7 +91,14 @@ export default function ProjectDetailLayout({
   const [cuentaNumero, setCuentaNumero] = useState<number | null>(null);
   const [showAdendaForm, setShowAdendaForm] = useState<boolean>(false);
   const [editingAdenda, setEditingAdenda] = useState<Adenda | null>(null);
-  const [adendaToDelete, setAdendaToDelete] = useState<number | null>(null);
+  // La adenda que se va a borrar se queda aquí mientras la ventana se cierra:
+  // así el título no pierde el número durante la animación de salida.
+  const [adendaToDelete, setAdendaToDelete] = useState<Adenda | null>(null);
+  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
+  const pedirBorrado = (adenda: Adenda) => {
+    setAdendaToDelete(adenda);
+    setConfirmarBorrado(true);
+  };
   const [editingProject, setEditingProject] = useState<boolean>(false);
 
   // Load project data
@@ -139,7 +124,7 @@ export default function ProjectDetailLayout({
         }
 
         if (adendasResponse.data.success) {
-          setProjectAdendas(adendasResponse.data.adendas || []);
+          setProjectAdendas(adendasResponse.data.data || []);
         }
       } catch (err) {
         console.error('Error loading project:', err);
@@ -169,7 +154,6 @@ export default function ProjectDetailLayout({
       avance: 'Avance Fisico',
       equipos: 'Equipos',
       miembros: 'Miembros',
-      adendas: 'Adendas',
       configuracion: 'Personal',
       cronograma: 'Cronograma',
     };
@@ -210,60 +194,51 @@ export default function ProjectDetailLayout({
     }
   };
 
-  // Reload adendas after mutations
+  // Después de tocar una adenda se recargan las dos cosas: la lista y el
+  // proyecto, cuyo monto y terminación vigentes dependen de las aprobadas.
   const reloadAdendas = async () => {
     try {
       const response = await api.get(`/adendas/project/${projectId}`);
       if (response.data.success) {
-        setProjectAdendas(response.data.adendas || []);
+        setProjectAdendas(response.data.data || []);
       }
     } catch (err) {
       console.error('Error reloading adendas:', err);
     }
+    await reloadProject();
   };
 
-  // Handle adenda save (create or update)
-  const handleAdendaSave = async (adendaData: Partial<Adenda>) => {
+  // Guardar una adenda (nueva o editada). Devuelve el mensaje de error para que
+  // el formulario lo enseñe y no se cierre; null si se guardó.
+  const handleAdendaSave = async (adendaData: Record<string, unknown>): Promise<string | null> => {
     try {
-      setLoading(true);
-      let response;
-
-      if (editingAdenda) {
-        response = await api.put(`/adendas/${editingAdenda.id}`, adendaData);
-      } else {
-        response = await api.post('/adendas', adendaData);
-      }
-
-      if (response.data.success) {
-        await reloadAdendas();
-        setShowAdendaForm(false);
-        setEditingAdenda(null);
-      }
-    } catch (error) {
-      console.error('Error guardando adenda:', error);
-    } finally {
-      setLoading(false);
+      const response = editingAdenda
+        ? await api.put(`/adendas/project/${projectId}/${editingAdenda.id}`, adendaData)
+        : await api.post(`/adendas/project/${projectId}`, adendaData);
+      if (!response.data.success) return response.data.message || 'No se pudo guardar la adenda';
+      await reloadAdendas();
+      setShowAdendaForm(false);
+      setEditingAdenda(null);
+      return null;
+    } catch (err) {
+      const data = (err as { response?: { data?: { message?: string } } }).response?.data;
+      return data?.message || 'No se pudo guardar la adenda';
     }
   };
 
-  // Handle adenda delete — called after confirmation
+  // Borrar una adenda: la esconde y deja de contar para el contrato.
   const confirmDeleteAdenda = async () => {
     if (!adendaToDelete) return;
     try {
-      setLoading(true);
-      await api.delete(`/adendas/${adendaToDelete}`);
+      await api.delete(`/adendas/project/${projectId}/${adendaToDelete.id}`);
       await reloadAdendas();
-    } catch (error) {
-      console.error('Error eliminando adenda:', error);
+    } catch (err) {
+      console.error('Error eliminando adenda:', err);
+      const data = (err as { response?: { data?: { message?: string } } }).response?.data;
+      toast.error('No se pudo eliminar la adenda', { description: data?.message });
     } finally {
-      setLoading(false);
-      setAdendaToDelete(null);
+      setConfirmarBorrado(false);
     }
-  };
-
-  // Request delete confirmation
-  const handleDeleteAdenda = (adendaId: number) => {
-    setAdendaToDelete(adendaId);
   };
 
   // Render subview content
@@ -295,7 +270,7 @@ export default function ProjectDetailLayout({
               setEditingAdenda(adenda);
               setShowAdendaForm(true);
             }}
-            onDeleteAdenda={handleDeleteAdenda}
+            onDeleteAdenda={pedirBorrado}
             onEditProject={() => setEditingProject(true)}
           />
         );
@@ -375,20 +350,6 @@ export default function ProjectDetailLayout({
       case 'configuracion':
         return <ProjectMembers projectId={projectId} />;
 
-      case 'adendas':
-        return (
-          <ProjectAdendas
-            projectId={projectId}
-            adendas={projectAdendas}
-            onOpenForm={() => setShowAdendaForm(true)}
-            onEditAdenda={(adenda) => {
-              setEditingAdenda(adenda);
-              setShowAdendaForm(true);
-            }}
-            onDeleteAdenda={handleDeleteAdenda}
-          />
-        );
-
       case 'cronograma':
         return <CronogramaWorkspace projectId={projectId} embedded onNavigate={onNavigate} />;
 
@@ -440,298 +401,16 @@ export default function ProjectDetailLayout({
       {/* Content — no header, no submenu */}
       {renderSubview()}
 
-      {/* Info Modal — triggered from sidebar (i) button */}
-      <AppDialog
-        open={showInfo}
-        onOpenChange={(open) => {
-          if (!open) onCloseInfo?.();
-        }}
-        size="standard"
-        title="Información del Proyecto"
-      >
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-              <label className="font-medium text-sm text-muted-foreground">
-                Nombre:
-              </label>
-              <span className="text-sm">{project.nombre}</span>
-            </div>
-
-            {project.nombre_corto && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Nombre Corto:
-                </label>
-                <span className="text-sm">{project.nombre_corto}</span>
-              </div>
-            )}
-
-            {project.cliente_nombre && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Cliente:
-                </label>
-                <span className="text-sm">{project.cliente_nombre}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-              <label className="font-medium text-sm text-muted-foreground">
-                Estado:
-              </label>
-              <div>{getEstadoBadge(project.estado)}</div>
-            </div>
-
-            {project.fecha_inicio && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Fecha de Inicio:
-                </label>
-                <span className="text-sm">
-                  {formatDate(project.fecha_inicio)}
-                </span>
-              </div>
-            )}
-
-            {project.fecha_fin_estimada && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Fecha de Terminación:
-                </label>
-                <span className="text-sm">
-                  {formatDate(project.fecha_fin_estimada)}
-                </span>
-              </div>
-            )}
-
-            {project.presupuesto_base && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Presupuesto Base:
-                </label>
-                <span className="text-sm">
-                  {formatMoney(project.presupuesto_base)}
-                </span>
-              </div>
-            )}
-
-            {project.itbms && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  ITBMS (7%):
-                </label>
-                <span className="text-sm">{formatMoney(project.itbms)}</span>
-              </div>
-            )}
-
-            {project.monto_total && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Monto Total:
-                </label>
-                <span className="text-sm">
-                  {formatMoney(project.monto_total)}
-                </span>
-              </div>
-            )}
-
-            {project.contrato && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Número de Contrato:
-                </label>
-                <span className="text-sm">{project.contrato}</span>
-              </div>
-            )}
-
-            {project.acto_publico && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Acto Público:
-                </label>
-                <span className="text-sm">{project.acto_publico}</span>
-              </div>
-            )}
-
-            {project.datos_adicionales?.observaciones && (
-              <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                <label className="font-medium text-sm text-muted-foreground">
-                  Observaciones:
-                </label>
-                <span className="text-sm">
-                  {project.datos_adicionales.observaciones}
-                </span>
-              </div>
-            )}
-
-            {/* Adendas Section in Info Modal */}
-            <div className="space-y-4 mt-6 pt-6 border-t">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base">Adendas</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    onCloseInfo?.();
-                    setShowAdendaForm(true);
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
-              </div>
-              {projectAdendas.map((adenda) => {
-                const getAdendaStatusClassName = (estado: string) => {
-                  const variants: Record<string, string> = {
-                    en_proceso: 'bg-info/10 text-info border-info/30 border',
-                    aprobada: 'bg-success/10 text-success border-success/30 border',
-                    rechazada: 'bg-error/10 text-error border-error/30 border',
-                  };
-                  return variants[estado] || 'bg-slate-100 text-slate-600 border-slate-200 border';
-                };
-
-                const getAdendaStatusText = (estado: string) => {
-                  const statusTexts: Record<string, string> = {
-                    en_proceso: 'En Proceso',
-                    aprobada: 'Aprobada',
-                    rechazada: 'Rechazada',
-                  };
-                  return statusTexts[estado] || estado;
-                };
-
-                const getAdendaTypeText = (tipo: string) => {
-                  const typeTexts: Record<string, string> = {
-                    tiempo: 'Extensión de Tiempo',
-                    costo: 'Modificación de Costo',
-                    mixta: 'Tiempo y Costo',
-                  };
-                  return typeTexts[tipo] || tipo;
-                };
-
-                return (
-                  <div
-                    key={adenda.id}
-                    className="space-y-3 p-4 bg-card border rounded-lg"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <label className="font-medium text-sm">
-                          Adenda #{adenda.numero_adenda}
-                        </label>
-                        <Badge className={getAdendaStatusClassName(adenda.estado)}>
-                          {getAdendaStatusText(adenda.estado)}
-                        </Badge>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            setEditingAdenda(adenda);
-                            onCloseInfo?.();
-                            setShowAdendaForm(true);
-                          }}
-                          title="Editar adenda"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteAdenda(adenda.id)}
-                          title="Eliminar adenda"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                      <label className="font-medium text-sm text-muted-foreground">
-                        Tipo:
-                      </label>
-                      <span className="text-sm">
-                        {getAdendaTypeText(adenda.tipo)}
-                      </span>
-                    </div>
-
-                    {adenda.nueva_fecha_fin && (
-                      <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                        <label className="font-medium text-sm text-muted-foreground">
-                          Nueva Fecha:
-                        </label>
-                        <span className="text-sm">
-                          {formatDate(adenda.nueva_fecha_fin)}
-                          {adenda.dias_extension && (
-                            <span className="text-muted-foreground">
-                              {' '}
-                              (+{adenda.dias_extension} días)
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    )}
-
-                    {adenda.nuevo_monto && (
-                      <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                        <label className="font-medium text-sm text-muted-foreground">
-                          Nuevo Monto:
-                        </label>
-                        <span className="text-sm">
-                          {formatMoney(adenda.nuevo_monto)}
-                        </span>
-                      </div>
-                    )}
-
-                    {adenda.monto_adicional && (
-                      <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                        <label className="font-medium text-sm text-muted-foreground">
-                          Monto Adicional:
-                        </label>
-                        <span className="text-sm">
-                          {formatMoney(adenda.monto_adicional)}
-                        </span>
-                      </div>
-                    )}
-
-                    {adenda.observaciones && (
-                      <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                        <label className="font-medium text-sm text-muted-foreground">
-                          Observaciones:
-                        </label>
-                        <span className="text-sm">{adenda.observaciones}</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-[140px_1fr] gap-2 items-start">
-                      <label className="font-medium text-sm text-muted-foreground">
-                        Solicitada:
-                      </label>
-                      <span className="text-sm">
-                        {formatDate(adenda.fecha_solicitud)}
-                        {adenda.fecha_aprobacion && (
-                          <span className="text-muted-foreground">
-                            {' | Aprobada: '}
-                            {formatDate(adenda.fecha_aprobacion)}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-      </AppDialog>
-
       {/* Delete Adenda Confirmation */}
-      <AlertDialog open={adendaToDelete !== null} onOpenChange={(open) => { if (!open) setAdendaToDelete(null); }}>
+      <AlertDialog open={confirmarBorrado} onOpenChange={setConfirmarBorrado}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta adenda?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+            <AlertDialogTitle>
+              ¿Eliminar la Adenda #{adendaToDelete?.numero_adenda}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deja de contar para el monto y la fecha de terminación vigentes del contrato.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -747,7 +426,8 @@ export default function ProjectDetailLayout({
 
       {/* Adenda Form Modal */}
       <AdendaForm
-        projectId={projectId}
+        project={project}
+        adendas={projectAdendas}
         isOpen={showAdendaForm}
         onClose={() => {
           setShowAdendaForm(false);

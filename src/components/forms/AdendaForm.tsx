@@ -1,5 +1,7 @@
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { AppDialog } from '@/components/shell/AppDialog';
+import { Alert } from '@/components/shell/Alert';
+import { DatePicker } from '@/components/shell/DatePicker';
 import {
   Select,
   SelectContent,
@@ -8,349 +10,287 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/shell/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import type { Adenda } from '@/types';
-
-interface AdendaFormData {
-  tipo: 'tiempo' | 'costo' | 'mixta';
-  nueva_fecha_fin: string;
-  dias_extension: string;
-  nuevo_monto: string;
-  monto_adicional: string;
-  justificacion: string | null;
-  observaciones: string;
-  estado: 'en_proceso' | 'aprobada' | 'rechazada';
-}
+import { diasEntre, tieneFecha, tieneMonto, terminacionAntesDe, TIPO_ADENDA } from '@/lib/adendas';
+import { formatMoney } from '@/utils/formatters';
+import type { Adenda, Project } from '@/types';
 
 interface AdendaFormProps {
-  projectId: number;
+  project: Project;
+  /** Las adendas del proyecto: de ellas sale la terminación anterior a esta. */
+  adendas: Adenda[];
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Record<string, unknown>) => void;
+  /** Guarda; devuelve el mensaje de error, o null si se guardó. */
+  onSave: (data: Record<string, unknown>) => Promise<string | null>;
   editingAdenda?: Adenda | null;
 }
 
-const AdendaForm = ({
-  projectId,
-  isOpen,
-  onClose,
-  onSave,
-  editingAdenda = null,
-}: AdendaFormProps) => {
-  const [loading, setLoading] = useState(false);
+const ESTADOS: { value: Adenda['estado']; label: string }[] = [
+  { value: 'en_proceso', label: 'En Proceso' },
+  { value: 'aprobada', label: 'Aprobada' },
+  { value: 'rechazada', label: 'Rechazada' },
+];
+
+/** 'YYYY-MM-DD' → 'DD/MM/YYYY', como lo muestra el DatePicker de al lado. */
+const fechaCorta = (iso: string) => iso.split('-').reverse().join('/');
+
+/** El monto escrito, o null si no es un número. */
+const leerMonto = (s: string): number | null => {
+  if (s.trim() === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Crear o editar una adenda. Un solo monto, con ITBMS y en negativo si reduce
+ * el contrato. Los días se llenan solos con lo que hay entre la terminación
+ * anterior y la nueva, pero se pueden cambiar: van como los dice la adenda, y a
+ * veces se cuentan desde otra fecha (Ivan, 2026-10-07).
+ */
+const AdendaForm = ({ project, adendas, isOpen, onClose, onSave, editingAdenda = null }: AdendaFormProps) => {
+  const [tipo, setTipo] = useState<Adenda['tipo']>('tiempo');
+  const [estado, setEstado] = useState<Adenda['estado']>('en_proceso');
+  const [nuevaFecha, setNuevaFecha] = useState('');
+  const [dias, setDias] = useState('');
+  // El último valor que el formulario puso solo en Días: si la persona no lo
+  // cambió, se sigue recalculando al mover la fecha; si lo cambió, se respeta.
+  const [diasAuto, setDiasAuto] = useState<string | null>(null);
+  const [monto, setMonto] = useState('');
+  const [observaciones, setObservaciones] = useState('');
+  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState<AdendaFormData>({
-    tipo: 'tiempo',
-    nueva_fecha_fin: '',
-    dias_extension: '',
-    nuevo_monto: '',
-    monto_adicional: '',
-    justificacion: null,
-    observaciones: '',
-    estado: 'en_proceso',
-  });
+
+  const numero = editingAdenda?.numero_adenda ?? null;
+  const terminacionAnterior = terminacionAntesDe(project, adendas, numero);
+  const calcularDias = (fecha: string): string => {
+    const d = terminacionAnterior && fecha ? diasEntre(terminacionAnterior, fecha) : null;
+    return d === null ? '' : String(d);
+  };
 
   useEffect(() => {
+    if (!isOpen) return;
+    setError('');
+    setGuardando(false);
     if (editingAdenda) {
-      setFormData({
-        tipo: editingAdenda.tipo || 'tiempo',
-        nueva_fecha_fin: editingAdenda.nueva_fecha_fin
-          ? editingAdenda.nueva_fecha_fin.split('T')[0]
-          : '',
-        dias_extension: editingAdenda.dias_extension?.toString() || '',
-        nuevo_monto: editingAdenda.nuevo_monto?.toString() || '',
-        monto_adicional: editingAdenda.monto_adicional?.toString() || '',
-        justificacion: null,
-        observaciones: editingAdenda.observaciones || '',
-        estado: editingAdenda.estado || 'en_proceso',
-      });
+      const fecha = editingAdenda.nueva_fecha_fin ?? '';
+      const d = editingAdenda.dias_extension != null ? String(editingAdenda.dias_extension) : '';
+      setTipo(editingAdenda.tipo);
+      setEstado(editingAdenda.estado);
+      setNuevaFecha(fecha);
+      setDias(d);
+      setDiasAuto(d !== '' && d === calcularDias(fecha) ? d : null);
+      setMonto(editingAdenda.monto ?? '');
+      setObservaciones(editingAdenda.observaciones ?? '');
     } else {
-      setFormData({
-        tipo: 'tiempo',
-        nueva_fecha_fin: '',
-        dias_extension: '',
-        nuevo_monto: '',
-        monto_adicional: '',
-        justificacion: null,
-        observaciones: '',
-        estado: 'en_proceso',
-      });
+      setTipo('tiempo');
+      setEstado('en_proceso');
+      setNuevaFecha('');
+      setDias('');
+      setDiasAuto(null);
+      setMonto('');
+      setObservaciones('');
     }
-  }, [editingAdenda, isOpen]);
+    // calcularDias depende de las mismas adendas y proyecto: basta al abrir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editingAdenda]);
 
-  const tipos = [
-    { value: 'tiempo', label: 'Extensión de Tiempo' },
-    { value: 'costo', label: 'Modificación de Costo' },
-    { value: 'mixta', label: 'Tiempo y Costo' },
-  ];
-
-  const estados = [
-    { value: 'en_proceso', label: 'En Proceso' },
-    { value: 'aprobada', label: 'Aprobada' },
-    { value: 'rechazada', label: 'Rechazada' },
-  ];
-
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const cambiarFecha = (fecha: string) => {
+    setNuevaFecha(fecha);
+    if (dias === '' || dias === diasAuto) {
+      const d = calcularDias(fecha);
+      setDias(d);
+      setDiasAuto(d);
+    }
   };
 
-  const handleSelectChange = (name: keyof AdendaFormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  // El contrato si esta adenda queda aprobada con este monto. Si se está
+  // editando una que ya contaba, su monto de antes se quita primero.
+  const vigenteActual = project.monto_vigente != null ? Number(project.monto_vigente) : null;
+  const yaContaba =
+    editingAdenda?.estado === 'aprobada' && editingAdenda.monto != null ? Number(editingAdenda.monto) : 0;
+  const montoNum = leerMonto(monto);
+  const resultante = vigenteActual !== null ? vigenteActual - yaContaba + (montoNum ?? 0) : null;
 
-  const validateForm = (): string[] => {
-    const errors: string[] = [];
-
-    if (
-      (formData.tipo === 'tiempo' || formData.tipo === 'mixta') &&
-      !formData.nueva_fecha_fin
-    ) {
-      errors.push('Nueva fecha de fin es requerida para adendas de tiempo');
+  const validar = (): string | null => {
+    if (tieneFecha(tipo) && !nuevaFecha) return 'Falta la nueva fecha de terminación';
+    if (tieneFecha(tipo) && dias !== '' && !Number.isInteger(Number(dias))) {
+      return 'Los días de extensión tienen que ser un número entero';
     }
-
-    if (
-      (formData.tipo === 'costo' || formData.tipo === 'mixta') &&
-      !formData.nuevo_monto &&
-      !formData.monto_adicional
-    ) {
-      errors.push(
-        'Nuevo monto o monto adicional es requerido para adendas de costo',
-      );
+    if (tieneMonto(tipo)) {
+      if (montoNum === null) return 'Falta el monto de la adenda';
+      if (montoNum === 0) return 'El monto de la adenda no puede ser cero';
     }
-
-    return errors;
+    return null;
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(', '));
+    const problema = validar();
+    if (problema) {
+      setError(problema);
       return;
     }
-
-    try {
-      setLoading(true);
-      setError('');
-
-      const submitData: Record<string, unknown> = {
-        proyecto_id: projectId,
-        ...formData,
-        nuevo_monto: formData.nuevo_monto
-          ? parseFloat(formData.nuevo_monto)
-          : null,
-        monto_adicional: formData.monto_adicional
-          ? parseFloat(formData.monto_adicional)
-          : null,
-        dias_extension: formData.dias_extension
-          ? parseInt(formData.dias_extension)
-          : null,
-        justificacion: null,
-        fecha_solicitud: new Date().toISOString().split('T')[0],
-      };
-
-      Object.keys(submitData).forEach((key) => {
-        if (submitData[key] === '') {
-          submitData[key] = null;
-        }
-      });
-
-      onSave(submitData);
-    } catch (err) {
-      console.error('Error guardando adenda:', err);
-      setError('Error al guardar la adenda');
-    } finally {
-      setLoading(false);
-    }
+    setGuardando(true);
+    setError('');
+    const fallo = await onSave({
+      tipo,
+      estado,
+      nueva_fecha_fin: tieneFecha(tipo) ? nuevaFecha : null,
+      dias_extension: tieneFecha(tipo) && dias !== '' ? Number(dias) : null,
+      monto: tieneMonto(tipo) ? monto.trim() : null,
+      observaciones: observaciones.trim() || null,
+    });
+    setGuardando(false);
+    if (fallo) setError(fallo);
   };
 
   return (
     <AppDialog
       open={isOpen}
-      onOpenChange={onClose}
+      onOpenChange={(open) => {
+        if (!open && !guardando) onClose();
+      }}
       size="standard"
-      title={editingAdenda ? 'Editar Adenda' : 'Nueva Adenda'}
+      title={editingAdenda ? `Editar Adenda #${editingAdenda.numero_adenda}` : 'Nueva Adenda'}
       description="Registra o modifica una adenda del contrato"
       footer={
         <>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={loading}
-          >
+          <Button type="button" variant="outline" onClick={onClose} disabled={guardando}>
             Cancelar
           </Button>
-          <Button type="submit" form="adenda-form" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {editingAdenda ? 'Actualizar Adenda' : 'Crear Adenda'}
+          <Button type="submit" form="adenda-form" disabled={guardando}>
+            {guardando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {editingAdenda ? 'Guardar Cambios' : 'Crear Adenda'}
           </Button>
         </>
       }
     >
-        <form id="adenda-form" onSubmit={handleSubmit} className="space-y-6">
-          {/* Información de la Adenda */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground">
-              Información de la Adenda
-            </h3>
+      <form id="adenda-form" onSubmit={handleSubmit} className="space-y-6">
+        {error && <Alert variant="error" title={error} />}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo de Adenda *</Label>
-                <Select
-                  value={formData.tipo}
-                  onValueChange={(value) => handleSelectChange('tipo', value)}
-                  disabled={loading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tipos.map((tipo) => (
-                      <SelectItem key={tipo.value} value={tipo.value}>
-                        {tipo.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select
-                  value={formData.estado}
-                  onValueChange={(value) => handleSelectChange('estado', value)}
-                  disabled={loading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {estados.map((estado) => (
-                      <SelectItem key={estado.value} value={estado.value}>
-                        {estado.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground">Información de la Adenda</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tipo de Adenda *</Label>
+              <Select value={tipo} onValueChange={(v) => setTipo(v as Adenda['tipo'])} disabled={guardando}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(TIPO_ADENDA) as Adenda['tipo'][]).map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {TIPO_ADENDA[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-
-          {/* Cambios de Tiempo */}
-          {(formData.tipo === 'tiempo' || formData.tipo === 'mixta') && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">
-                Modificación de Tiempo
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nueva Fecha de Terminación *</Label>
-                  <DatePicker
-                    value={formData.nueva_fecha_fin}
-                    onChange={(value) => setFormData(prev => ({ ...prev, nueva_fecha_fin: value }))}
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Días de Extensión</Label>
-                  <Input
-                    type="number"
-                    name="dias_extension"
-                    value={formData.dias_extension}
-                    onChange={handleInputChange}
-                    placeholder="90"
-                    min="1"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Cambios de Costo */}
-          {(formData.tipo === 'costo' || formData.tipo === 'mixta') && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">
-                Modificación de Costo
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nuevo Monto Total (USD)</Label>
-                  <Input
-                    type="number"
-                    name="nuevo_monto"
-                    value={formData.nuevo_monto}
-                    onChange={handleInputChange}
-                    placeholder="2500000"
-                    step="0.01"
-                    min="0"
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Monto Adicional (USD)</Label>
-                  <Input
-                    type="number"
-                    name="monto_adicional"
-                    value={formData.monto_adicional}
-                    onChange={handleInputChange}
-                    placeholder="250000"
-                    step="0.01"
-                    min="0"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Observaciones */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground">
-              Observaciones
-            </h3>
 
             <div className="space-y-2">
-              <Label>Observaciones Adicionales</Label>
-              <Textarea
-                name="observaciones"
-                value={formData.observaciones}
-                onChange={handleInputChange}
-                placeholder="Observaciones adicionales..."
-                rows={2}
-                disabled={loading}
-              />
+              <Label>Estado</Label>
+              <Select value={estado} onValueChange={(v) => setEstado(v as Adenda['estado'])} disabled={guardando}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ESTADOS.map((e) => (
+                    <SelectItem key={e.value} value={e.value}>
+                      {e.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+        </div>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+        {tieneFecha(tipo) && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground">Modificación de Tiempo</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nueva Fecha de Terminación *</Label>
+                <DatePicker value={nuevaFecha} onChange={cambiarFecha} disabled={guardando} />
+              </div>
 
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="adenda-dias">Días de Extensión</Label>
+                <Input
+                  id="adenda-dias"
+                  type="number"
+                  step="1"
+                  value={dias}
+                  onChange={(e) => setDias(e.target.value)}
+                  className="tabular-nums"
+                  disabled={guardando}
+                />
+                {terminacionAnterior && (
+                  <p className="text-xs text-muted-foreground">
+                    {editingAdenda ? 'Desde la terminación anterior: ' : 'Desde la terminación vigente: '}
+                    {fechaCorta(terminacionAnterior)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tieneMonto(tipo) && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground">Modificación de Costo</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="adenda-monto">Monto de la Adenda (ITBMS incluido) *</Label>
+                <Input
+                  id="adenda-monto"
+                  type="number"
+                  step="0.01"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  className="tabular-nums"
+                  disabled={guardando}
+                />
+                <p className="text-xs text-muted-foreground">En negativo si la adenda reduce el monto.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="adenda-resultante">Monto Vigente Resultante</Label>
+                <Input
+                  id="adenda-resultante"
+                  value={resultante !== null ? formatMoney(resultante) : '—'}
+                  readOnly
+                  tabIndex={-1}
+                  className="bg-muted tabular-nums"
+                />
+                {vigenteActual !== null && (
+                  <p className="text-xs text-muted-foreground">
+                    Monto vigente actual: {formatMoney(vigenteActual)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground">Observaciones</h3>
+          <div className="space-y-2">
+            <Label htmlFor="adenda-observaciones">Observaciones Adicionales</Label>
+            <Textarea
+              id="adenda-observaciones"
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              rows={2}
+              disabled={guardando}
+            />
+          </div>
+        </div>
+      </form>
     </AppDialog>
   );
 };

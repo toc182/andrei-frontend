@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useSidebar } from '@/components/ui/sidebar';
+import { fechaLocal } from '@/utils/dateUtils';
 import type { Project } from '@/types';
 
 const formatCurrency = (amount: number | null | undefined) => {
@@ -42,8 +43,8 @@ interface ProjectKPIsCardsProps {
 export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
   const { open: sidebarOpen } = useSidebar();
 
-  // Calculate budget metrics
-  const presupuesto = project?.monto_total || project?.presupuesto_base || 0;
+  // El monto de contrato vigente: con las adendas aprobadas.
+  const presupuesto = Number(project?.monto_vigente ?? project?.monto_total ?? 0);
   const gastado =
     (project?.datos_adicionales as { total_gastado?: number })?.total_gastado ||
     0;
@@ -51,12 +52,10 @@ export default function ProjectKPIsCards({ project }: ProjectKPIsCardsProps) {
   const porcentajeGastado = presupuesto > 0 ? (gastado / presupuesto) * 100 : 0;
 
   // Calculate time metrics
-  const fechaInicio = project?.fecha_inicio
-    ? new Date(project.fecha_inicio)
-    : null;
-  const fechaFin = project?.fecha_fin_estimada
-    ? new Date(project.fecha_fin_estimada)
-    : null;
+  const fechaInicio = project?.fecha_inicio ? fechaLocal(project.fecha_inicio) : null;
+  // La terminación vigente: la de la última adenda aprobada que la cambió.
+  const finVigente = project?.fecha_fin_vigente ?? project?.fecha_fin_estimada;
+  const fechaFin = finVigente ? fechaLocal(finVigente) : null;
   const hoy = new Date();
 
   let diasTranscurridos = 0;

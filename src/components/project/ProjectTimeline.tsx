@@ -5,11 +5,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, Flag, Clock } from 'lucide-react';
+import { fechaLocal } from '@/utils/dateUtils';
 import type { Project } from '@/types';
 
-const formatDate = (dateString: string | null | undefined) => {
-  if (!dateString) return 'No definida';
-  const date = new Date(dateString);
+const formatDate = (date: Date | null) => {
+  if (!date) return 'No definida';
   return new Intl.DateTimeFormat('es-PA', {
     year: 'numeric',
     month: 'long',
@@ -17,21 +17,24 @@ const formatDate = (dateString: string | null | undefined) => {
   }).format(date);
 };
 
-const calculateDaysRemaining = (fechaFin: string | null | undefined) => {
-  if (!fechaFin) return null;
-  const hoy = new Date();
-  const fin = new Date(fechaFin);
-  const diff = fin.getTime() - hoy.getTime();
-  const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  return dias;
-};
-
 interface ProjectTimelineProps {
   project: Project | null;
 }
 
 export default function ProjectTimeline({ project }: ProjectTimelineProps) {
-  const diasRestantes = calculateDaysRemaining(project?.fecha_fin_estimada);
+  const inicio = project?.fecha_inicio ? fechaLocal(project.fecha_inicio) : null;
+  // La terminación vigente: la de la última adenda aprobada que la cambió.
+  const finVigente = project?.fecha_fin_vigente ?? project?.fecha_fin_estimada;
+  const fin = finVigente ? fechaLocal(finVigente) : null;
+  const finOriginal = project?.fecha_fin_estimada ? fechaLocal(project.fecha_fin_estimada) : null;
+  const porAdenda = project?.adenda_fecha_numero != null;
+  const hoy = new Date();
+
+  const diasRestantes = fin ? Math.ceil((fin.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const porcentaje =
+    inicio && fin
+      ? Math.max(0, Math.min(100, ((hoy.getTime() - inicio.getTime()) / (fin.getTime() - inicio.getTime())) * 100))
+      : null;
 
   return (
     <Card>
@@ -50,9 +53,7 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Fecha de Inicio</p>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(project?.fecha_inicio)}
-              </p>
+              <p className="text-sm text-muted-foreground">{formatDate(inicio)}</p>
             </div>
           </div>
 
@@ -66,9 +67,7 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Hoy</p>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(new Date().toISOString())}
-              </p>
+              <p className="text-sm text-muted-foreground">{formatDate(hoy)}</p>
               {diasRestantes !== null && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {diasRestantes > 0
@@ -97,52 +96,27 @@ export default function ProjectTimeline({ project }: ProjectTimelineProps) {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Fecha de Fin Estimada</p>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(project?.fecha_fin_estimada)}
-              </p>
+              <p className="text-sm text-muted-foreground">{formatDate(fin)}</p>
+              {porAdenda && finOriginal && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Original: {formatDate(finOriginal)} · Adenda #{project?.adenda_fecha_numero}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Progress Bar */}
-        {project?.fecha_inicio && project?.fecha_fin_estimada && (
+        {porcentaje !== null && (
           <div className="mt-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">
                 Progreso temporal
               </span>
-              <span className="text-xs font-medium">
-                {(() => {
-                  const inicio = new Date(project.fecha_inicio);
-                  const fin = new Date(project.fecha_fin_estimada);
-                  const hoy = new Date();
-                  const total = fin.getTime() - inicio.getTime();
-                  const transcurrido = hoy.getTime() - inicio.getTime();
-                  const porcentaje = Math.max(
-                    0,
-                    Math.min(100, (transcurrido / total) * 100),
-                  );
-                  return `${porcentaje.toFixed(0)}%`;
-                })()}
-              </span>
+              <span className="text-xs font-medium">{porcentaje.toFixed(0)}%</span>
             </div>
             <div className="w-full bg-secondary rounded-full h-2">
-              <div
-                className="bg-info h-2 rounded-full"
-                style={{
-                  width: `${(() => {
-                    const inicio = new Date(project.fecha_inicio);
-                    const fin = new Date(project.fecha_fin_estimada);
-                    const hoy = new Date();
-                    const total = fin.getTime() - inicio.getTime();
-                    const transcurrido = hoy.getTime() - inicio.getTime();
-                    return Math.max(
-                      0,
-                      Math.min(100, (transcurrido / total) * 100),
-                    );
-                  })()}%`,
-                }}
-              />
+              <div className="bg-info h-2 rounded-full" style={{ width: `${porcentaje}%` }} />
             </div>
           </div>
         )}

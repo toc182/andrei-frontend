@@ -120,6 +120,16 @@ export interface Project {
   itbms?: number;
   monto_total?: number;
   monto_contrato_original?: number;
+  /** El contrato vigente: Monto Total más las adendas aprobadas (con ITBMS). */
+  monto_vigente?: string | null;
+  /** Lo que suman las adendas aprobadas, con signo. */
+  monto_adendas?: string;
+  /** Cuántas adendas aprobadas cambian el monto. */
+  adendas_con_monto?: number;
+  /** La terminación vigente: la de la última adenda aprobada que la cambia. */
+  fecha_fin_vigente?: string | null;
+  /** Número de la adenda que fijó fecha_fin_vigente; null si es la original. */
+  adenda_fecha_numero?: number | null;
   contrato?: string;
   acto_publico?: string;
   tipo_contrato?: 'publico' | 'privado';
@@ -164,14 +174,13 @@ export interface Adenda {
   tipo: 'tiempo' | 'costo' | 'mixta';
   estado: 'en_proceso' | 'aprobada' | 'rechazada';
   fecha_solicitud: string;
-  fecha_aprobacion?: string;
-  nueva_fecha_fin?: string;
-  dias_extension?: number;
-  nuevo_monto?: number;
-  monto_adicional?: number;
-  observaciones?: string;
-  created_at: string;
-  updated_at: string;
+  fecha_aprobacion: string | null;
+  nueva_fecha_fin: string | null;
+  /** Los días como los dice la adenda; pueden no cuadrar con las fechas. */
+  dias_extension: number | null;
+  /** Lo que la adenda suma al contrato, con ITBMS; negativo si lo reduce. */
+  monto: string | null;
+  observaciones: string | null;
 }
 
 // ============================================

@@ -25,6 +25,14 @@ export const formatDate = (dateString: string | null | undefined): string => {
 };
 
 /**
+ * Una fecha 'YYYY-MM-DD' como medianoche LOCAL. `new Date('2027-04-30')` la lee
+ * como medianoche UTC, que en Panamá es el día anterior a las 7 de la noche:
+ * por eso el resumen del proyecto mostraba las fechas un día antes.
+ */
+export const fechaLocal = (dateString: string): Date =>
+  new Date(dateString.includes('T') ? dateString : `${dateString}T00:00:00`);
+
+/**
  * Format a date to ISO string (YYYY-MM-DD)
  * @param date - Date object or string
  * @returns ISO date string
