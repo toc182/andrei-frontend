@@ -276,7 +276,7 @@ export function CotizacionDetailDialog({
                     {detalle.ofertas.map((o) => (
                       <TableRow
                         key={o.id}
-                        className={`cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60 ${o.elegida ? 'bg-success/5' : ''}`}
+                        className={`cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60 ${o.elegida || o.comprada_en?.length ? 'bg-success/5' : ''}`}
                         onClick={() => openOferta(o)}
                       >
                         <TableCell className="px-3 py-2.5 font-semibold">
@@ -286,6 +286,12 @@ export function CotizacionDetailDialog({
                               <Badge className="border border-success/30 bg-success/10 text-success">
                                 <Check className="mr-1 h-3 w-3" />
                                 Elegida
+                              </Badge>
+                            )}
+                            {!!o.comprada_en?.length && (
+                              <Badge className="border border-success/30 bg-success/10 text-success">
+                                <Check className="mr-1 h-3 w-3" />
+                                Comprada · {o.comprada_en.join(', ')}
                               </Badge>
                             )}
                           </span>

@@ -35,11 +35,22 @@ import { BulkApprovalPasswordDialog } from '@/pages/solicitudes/dialogs/BulkAppr
 import { useAuth } from '@/context/AuthContext';
 import { useCargaLenta } from '@/hooks/useCargaLenta';
 import { cn } from '@/lib/utils';
+import SolicitudPagoForm from '@/components/forms/SolicitudPagoForm';
+import OrdenFormDialog from '@/pages/pagos/dialogs/OrdenFormDialog';
 import RequisicionFormDialog from './RequisicionFormDialog';
 import CotizacionesSeccion from './CotizacionesSeccion';
-import { cantidadDe, diaDe, diaDeMomento, momentoCorto } from './formato';
+import ComprarDialog from './ComprarDialog';
+import { cantidadDe, diaDe, diaDeMomento, momentoCorto, textoLineas } from './formato';
 import { EstadoBadge, MarcaBadge, MarcaSelector, PrioridadEtiqueta } from './etiquetas';
-import type { CambioRequisicion, LineaRequisicion, Marca, RequisicionDetalle as Detalle } from './tipos';
+import type {
+  CambioRequisicion,
+  CompraLinea,
+  DesdeRequisicion,
+  LineaRequisicion,
+  Marca,
+  RequisicionDetalle as Detalle,
+  TipoCompra,
+} from './tipos';
 
 interface Props {
   requisicionId: number;
@@ -82,7 +93,7 @@ function Dato({ etiqueta, children, sub }: { etiqueta: string; children: ReactNo
 }
 
 export default function RequisicionDetallePage({ requisicionId, volverA, onVolver, onCambio, avisoInicial }: Props) {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [req, setReq] = useState<Detalle | null>(null);
   const [cargando, setCargando] = useState(true);
   const lenta = useCargaLenta(cargando);
@@ -95,6 +106,10 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
   const [clave, setClave] = useState('');
   const [errorClave, setErrorClave] = useState<string | null>(null);
   const [marcando, setMarcando] = useState<number | null>(null);
+  // Compras crea la solicitud desde aquí: primero escoge (ComprarDialog) y
+  // luego se abre el formulario de siempre, ya lleno.
+  const [comprando, setComprando] = useState<TipoCompra | null>(null);
+  const [desde, setDesde] = useState<{ tipo: TipoCompra; datos: DesdeRequisicion } | null>(null);
 
   const traer = useCallback(async () => {
     try {
@@ -187,6 +202,30 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
       <MarcaBadge marca={l.marca} />
     );
 
+  // La solicitud o la orden se abre en Pagos. Solo se ofrece a quien puede
+  // verlas; a los demás, el número a secas.
+  const puedeAbrir = (c: CompraLinea) =>
+    c.tipo === 'solicitud' ? hasPermission('solicitudes_ver') : hasPermission('ordenes_ver');
+  const enlaceCompra = (c: CompraLinea) =>
+    puedeAbrir(c) ? (
+      <button
+        key={`${c.tipo}-${c.id}`}
+        type="button"
+        onClick={() =>
+          window.dispatchEvent(new CustomEvent(c.tipo === 'solicitud' ? 'abrir-solicitud' : 'abrir-orden', { detail: c.id }))
+        }
+        className="tabular-nums text-primary hover:underline"
+      >
+        {c.numero}
+      </button>
+    ) : (
+      <span key={`${c.tipo}-${c.id}`} className="tabular-nums">
+        {c.numero}
+      </span>
+    );
+  const comprasDe = (l: LineaRequisicion) =>
+    l.compras.flatMap((c, i) => (i === 0 ? [enlaceCompra(c)] : [<span key={`coma-${i}`}>, </span>, enlaceCompra(c)]));
+
   const abrirPdf = () => {
     const token = localStorage.getItem('token');
     window.open(`${api.defaults.baseURL}/requisiciones/${req.id}/pdf?token=${token ?? ''}`, '_blank');
@@ -270,6 +309,16 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
         pendientes === 0
           ? 'Todas las líneas están marcadas.'
           : `${pendientes} de ${req.lineas.length} ${req.lineas.length === 1 ? 'línea pendiente' : pendientes === 1 ? 'líneas pendiente' : 'líneas pendientes'}.`,
+      botones: (
+        <>
+          {hasPermission('ordenes_ver') && (
+            <Button variant="outline" onClick={() => setComprando('orden')}>
+              Crear orden de compra
+            </Button>
+          )}
+          <Button onClick={() => setComprando('solicitud')}>Crear solicitud de pago</Button>
+        </>
+      ),
     };
   }
 
@@ -307,6 +356,15 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
       titulo: 'Cuadro comparativo agregado',
       detalle: a.subido_por_nombre,
       punto: 'bg-slate-300',
+    });
+  }
+  for (const c of req.compras) {
+    eventos.push({
+      clave: `${c.tipo}-${c.id}`,
+      momento: c.created_at,
+      titulo: c.tipo === 'solicitud' ? `Solicitud ${c.numero} creada` : `Orden ${c.numero} creada`,
+      detalle: `${c.creado_por_nombre} · ${textoLineas(c.lineas, req.lineas)}`,
+      punto: 'bg-teal',
     });
   }
   // Lo más nuevo arriba; si dos pasan en el mismo instante (corregir y aprobar
@@ -417,6 +475,7 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
               <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                 {cantidadDe(l.cantidad)} {l.unidad ?? ''}
                 {l.renglon_desglose ? ` · desglose ${l.renglon_desglose}` : ''}
+                {l.compras.length > 0 && <> · {comprasDe(l)}</>}
               </p>
             </div>
           ))}
@@ -425,27 +484,37 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                <TableHead className="w-[64px] px-5 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">N°</TableHead>
-                <TableHead className="w-[96px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cant.</TableHead>
-                <TableHead className="w-[110px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Unidad</TableHead>
+                <TableHead className="w-[56px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">N°</TableHead>
+                <TableHead className="w-[80px] px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cant.</TableHead>
+                <TableHead className="w-[88px] px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Unidad</TableHead>
                 <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descripción</TableHead>
-                <TableHead className="w-[190px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renglón del desglose</TableHead>
+                <TableHead className="w-[180px] px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Renglón del desglose</TableHead>
                 {aprobada && (
-                  <TableHead className="w-[150px] px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Marca</TableHead>
+                  <>
+                    <TableHead className="w-[136px] px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Marca</TableHead>
+                    <TableHead className="w-[128px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pago</TableHead>
+                  </>
                 )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {req.lineas.map((l, i) => (
                 <TableRow key={l.id} className="border-b border-slate-100 last:border-0 hover:bg-transparent">
-                  <TableCell className="px-5 py-3 text-center text-sm tabular-nums text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">{cantidadDe(l.cantidad)}</TableCell>
-                  <TableCell className="px-4 py-3 text-sm text-slate-700">{l.unidad ?? ''}</TableCell>
+                  <TableCell className="px-4 py-3 text-center text-sm tabular-nums text-muted-foreground">{i + 1}</TableCell>
+                  <TableCell className="px-3 py-3 text-right text-sm tabular-nums text-slate-700">{cantidadDe(l.cantidad)}</TableCell>
+                  <TableCell className="px-3 py-3 text-sm text-slate-700">{l.unidad ?? ''}</TableCell>
                   <TableCell className="px-4 py-3 text-sm text-foreground">{l.descripcion}</TableCell>
-                  <TableCell className="px-4 py-3 text-center text-sm tabular-nums text-slate-700">
+                  <TableCell className="px-3 py-3 text-center text-sm tabular-nums text-slate-700">
                     {l.renglon_desglose ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  {aprobada && <TableCell className="px-5 py-2.5">{marcaDe(l)}</TableCell>}
+                  {aprobada && (
+                    <>
+                      <TableCell className="px-3 py-2.5">{marcaDe(l)}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">
+                        {l.compras.length > 0 ? comprasDe(l) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -520,6 +589,45 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
           </Card>
         </div>
       </div>
+
+      {req.puede.atender && (
+        <>
+          <ComprarDialog
+            open={comprando !== null}
+            onOpenChange={(v) => !v && setComprando(null)}
+            requisicion={req}
+            tipo={comprando ?? 'solicitud'}
+            onContinuar={(datos) => {
+              setDesde({ tipo: comprando ?? 'solicitud', datos });
+              setComprando(null);
+            }}
+          />
+          <SolicitudPagoForm
+            projectId={req.proyecto_id}
+            isOpen={desde?.tipo === 'solicitud'}
+            onClose={() => setDesde(null)}
+            desdeRequisicion={desde?.tipo === 'solicitud' ? desde.datos : null}
+            onSave={(creada) => {
+              if (creada?.adjuntosFallidos.length) {
+                setAviso(`${creada.numero} se creó, pero no se pudo adjuntar: ${creada.adjuntosFallidos.join(', ')}`);
+              }
+              refrescar();
+            }}
+          />
+          <OrdenFormDialog
+            open={desde?.tipo === 'orden'}
+            onOpenChange={(v) => !v && setDesde(null)}
+            proyectoId={req.proyecto_id}
+            proyectoNombre={req.proyecto_nombre}
+            esAdmin={user?.rol === 'admin'}
+            desdeRequisicion={desde?.tipo === 'orden' ? desde.datos : null}
+            onListo={(_id, sinAdjuntar) => {
+              if (sinAdjuntar?.length) setAviso(`La orden se creó, pero no se pudo adjuntar: ${sinAdjuntar.join(', ')}`);
+              refrescar();
+            }}
+          />
+        </>
+      )}
 
       <RequisicionFormDialog
         open={dialogo === 'editar'}

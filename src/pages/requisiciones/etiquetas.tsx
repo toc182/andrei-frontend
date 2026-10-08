@@ -42,12 +42,15 @@ export function MarcaSelector({
   onCambiar,
   ocupado,
   titulo,
+  opciones = MARCAS,
 }: {
   marca: Marca;
   onCambiar: (m: Marca) => void;
   ocupado?: boolean;
   /** Quién la marcó y cuándo, al pasar el ratón. */
   titulo?: string;
+  /** Las que se pueden escoger; por omisión, las cuatro. */
+  opciones?: Marca[];
 }) {
   return (
     <DropdownMenu>
@@ -70,7 +73,7 @@ export function MarcaSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuRadioGroup value={marca} onValueChange={(v) => v !== marca && onCambiar(v as Marca)}>
-          {MARCAS.map((m) => (
+          {opciones.map((m) => (
             <DropdownMenuRadioItem key={m} value={m}>
               {ETIQUETA_MARCA[m]}
             </DropdownMenuRadioItem>

@@ -44,6 +44,7 @@ import {
 import api from '../../services/api';
 import { formatMoney } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
+import type { ArchivoQueVa, DesdeRequisicion } from '@/pages/requisiciones/tipos';
 
 // --- Types ---
 
@@ -119,14 +120,28 @@ interface AjusteFormData {
   monto: string;
 }
 
+/** Lo que se sabe de la solicitud recién creada (al editar no viene). */
+export interface SolicitudCreada {
+  id: number;
+  numero: string;
+  /** Los archivos de la requisición que no se pudieron adjuntar. */
+  adjuntosFallidos: string[];
+}
+
 interface SolicitudPagoFormProps {
   projectId: number;
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (creada?: SolicitudCreada) => void;
   editingSolicitud?: SolicitudPago | null;
   existingItems?: SolicitudItem[];
   existingAjustes?: SolicitudAjuste[];
+  /**
+   * La que Compras crea desde una requisición: el proveedor, la urgencia, los
+   * datos bancarios y los adjuntos vienen puestos y se pueden cambiar. El
+   * servidor la amarra a la requisición al crearla.
+   */
+  desdeRequisicion?: DesdeRequisicion | null;
 }
 
 const emptyItem: ItemFormData = {
@@ -191,8 +206,11 @@ export default function SolicitudPagoForm({
   editingSolicitud,
   existingItems = [],
   existingAjustes = [],
+  desdeRequisicion = null,
 }: SolicitudPagoFormProps) {
   const { user } = useAuth();
+  // Los archivos de la requisición que van: se puede quitar alguno antes de guardar.
+  const [archivosRequisicion, setArchivosRequisicion] = useState<ArchivoQueVa[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [itemsError, setItemsError] = useState<string | null>(null);
@@ -281,8 +299,22 @@ export default function SolicitudPagoForm({
         setAjustes([]);
       }
     } else {
-      // New solicitud
-      form.reset(defaultFormValues(user?.id));
+      // New solicitud; si nace de una requisición, con lo de ella ya puesto.
+      const d = desdeRequisicion;
+      form.reset(
+        d
+          ? {
+              ...defaultFormValues(user?.id),
+              proveedor: d.proveedor,
+              urgente: d.urgente,
+              beneficiario: d.beneficiario ?? '',
+              banco: d.banco ?? '',
+              tipo_cuenta: d.tipo_cuenta ?? 'none',
+              numero_cuenta: d.numero_cuenta ?? '',
+            }
+          : defaultFormValues(user?.id),
+      );
+      setArchivosRequisicion(d?.archivos ?? []);
       setItems([{ ...emptyItem }]);
       setItbmsActivo(true);
       setAjustes([]);
@@ -291,7 +323,7 @@ export default function SolicitudPagoForm({
     setError(null);
     setItemsError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingSolicitud, isOpen, user]);
+  }, [editingSolicitud, isOpen, user, desdeRequisicion]);
 
   const loadOptions = async () => {
     try {
@@ -416,6 +448,7 @@ export default function SolicitudPagoForm({
     setError(null);
     setLoading(true);
 
+    let creada: SolicitudCreada | undefined;
     try {
       const payload = {
         proyecto_id: projectId,
@@ -425,7 +458,6 @@ export default function SolicitudPagoForm({
           data.solicitado_por && data.solicitado_por !== 'none'
             ? parseInt(data.solicitado_por, 10)
             : null,
-        requisicion_id: null,
         observaciones: data.observaciones.trim() || null,
         urgente: data.urgente,
         pinellas_paga: data.pinellas_paga,
@@ -483,7 +515,26 @@ export default function SolicitudPagoForm({
         const createRes = await api.post('/solicitudes-pago', {
           ...payload,
           mensaje: data.mensaje.trim() || null,
+          ...(desdeRequisicion
+            ? {
+                desde_requisicion: {
+                  requisicion_id: desdeRequisicion.requisicion_id,
+                  lineas: desdeRequisicion.lineas,
+                  cotizacion_id: desdeRequisicion.cotizacion_id,
+                  adjuntar: {
+                    cotizaciones: archivosRequisicion.filter((a) => a.tipo === 'cotizacion').map((a) => a.id),
+                    cuadros: archivosRequisicion.filter((a) => a.tipo === 'cuadro').map((a) => a.id),
+                    papel: archivosRequisicion.some((a) => a.tipo === 'papel'),
+                  },
+                },
+              }
+            : {}),
         });
+        creada = {
+          id: createRes.data.solicitud?.id,
+          numero: createRes.data.solicitud?.numero,
+          adjuntosFallidos: createRes.data.adjuntos_fallidos ?? [],
+        };
 
         // Upload pending files if any
         if (pendingFiles.length > 0 && createRes.data.solicitud?.id) {
@@ -503,7 +554,7 @@ export default function SolicitudPagoForm({
         }
       }
 
-      onSave();
+      onSave(creada);
       onClose();
     } catch (err: unknown) {
       console.error('Error saving solicitud:', err);
@@ -561,6 +612,13 @@ export default function SolicitudPagoForm({
           className="space-y-5"
         >
           {error && <Alert variant="error" title={error} className="mb-1" />}
+          {desdeRequisicion && !editingSolicitud && (
+            <Alert
+              variant="info"
+              title={`Desde la requisición ${desdeRequisicion.numero}, ${desdeRequisicion.lineasTexto}`}
+              description="El proveedor, la urgencia y los adjuntos ya vienen puestos. Se pueden cambiar."
+            />
+          )}
 
           {/* Section 1: Datos principales */}
           <div className="space-y-3">
@@ -1292,6 +1350,36 @@ export default function SolicitudPagoForm({
                   PDF, JPG o PNG. Max 10MB por archivo.
                 </span>
               </div>
+              {archivosRequisicion.length > 0 && (
+                <div className="space-y-1">
+                  {archivosRequisicion.map((a) => (
+                    <div
+                      key={a.clave}
+                      className="flex items-center justify-between p-2 border rounded text-sm"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Paperclip className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{a.nombre}</span>
+                        <span className="hidden text-xs text-muted-foreground shrink-0 sm:inline">
+                          {a.detalle}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label={`Quitar ${a.nombre}`}
+                        onClick={() =>
+                          setArchivosRequisicion((prev) => prev.filter((x) => x.clave !== a.clave))
+                        }
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {pendingFiles.length > 0 && (
                 <div className="space-y-1">
                   {pendingFiles.map((file, index) => (

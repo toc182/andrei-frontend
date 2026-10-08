@@ -31,6 +31,24 @@ export interface LineaRequisicion {
   marca: Marca;
   marca_at: string | null;
   marca_por_nombre: string | null;
+  /** Las solicitudes de pago y órdenes de compra en que va esta línea. */
+  compras: CompraLinea[];
+}
+
+export type TipoCompra = 'solicitud' | 'orden';
+
+export interface CompraLinea {
+  tipo: TipoCompra;
+  id: number;
+  numero: string;
+}
+
+/** Una solicitud u orden que salió de la requisición, con las líneas que lleva. */
+export interface CompraRequisicion extends CompraLinea {
+  proveedor: string;
+  created_at: string;
+  creado_por_nombre: string;
+  lineas: number[];
 }
 
 export interface AdjuntoRequisicion {
@@ -92,7 +110,41 @@ export interface RequisicionDetalle {
   adjuntos: AdjuntoRequisicion[];
   cotizaciones: CotizacionRequisicion[];
   cambios: CambioRequisicion[];
+  compras: CompraRequisicion[];
   puede: { editar: boolean; aprobar: boolean; anular: boolean; atender: boolean };
+}
+
+/** Un archivo que va adjunto a la solicitud u orden que nace de la requisición. */
+export interface ArchivoQueVa {
+  clave: string;
+  tipo: 'cotizacion' | 'cuadro' | 'papel';
+  /** De la cotización o del cuadro; el papel no tiene. */
+  id: number | null;
+  nombre: string;
+  /** «Cotización · Aceros del Istmo», «La requisición, con la línea 1 marcada». */
+  detalle: string;
+}
+
+/**
+ * Lo que la solicitud de pago o la orden de compra trae puesto cuando nace de
+ * una requisición (mock 15–16). Se puede cambiar todo antes de guardar.
+ */
+export interface DesdeRequisicion {
+  requisicion_id: number;
+  numero: string;
+  /** «línea 1», «líneas 1 y 2». */
+  lineasTexto: string;
+  proveedor: string;
+  urgente: boolean;
+  beneficiario: string | null;
+  banco: string | null;
+  tipo_cuenta: TipoCuenta | null;
+  numero_cuenta: string | null;
+  lineas: { id: number; marca: 'atendida' | 'parcial' }[];
+  cotizacion_id: number | null;
+  archivos: ArchivoQueVa[];
+  /** Para la orden: sus renglones ya escritos, sin precio. */
+  renglones: { cantidad: string; unidad: string | null; descripcion: string }[];
 }
 
 /** Una línea como la escribe el formulario: todo texto, como se teclea. */

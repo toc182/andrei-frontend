@@ -36,6 +36,7 @@ import { abrirAdjunto } from '../adjuntos';
 import { useSoltarArchivos } from '@/hooks/useSoltarArchivos';
 import { cn } from '@/lib/utils';
 import type { OrdenDetalle } from '../tiposDetalle';
+import type { ArchivoQueVa, DesdeRequisicion } from '@/pages/requisiciones/tipos';
 import { pegarEnRenglones, type CampoRenglon } from '@/lib/ordenPaste';
 
 interface Categoria {
@@ -71,7 +72,14 @@ interface Props {
   proyectoId?: number | null;
   proyectoNombre?: string;
   esAdmin: boolean;
-  onListo: (ordenId: number) => void;
+  /** `sinAdjuntar`: los archivos de la requisición que no se pudieron adjuntar. */
+  onListo: (ordenId: number, sinAdjuntar?: string[]) => void;
+  /**
+   * La que Compras crea desde una requisición: el proveedor, los renglones (sin
+   * precio) y los adjuntos vienen puestos y se pueden cambiar. El servidor la
+   * amarra a la requisición al crearla.
+   */
+  desdeRequisicion?: DesdeRequisicion | null;
 }
 
 const TERMINOS = [0, 15, 30, 45, 60, 90];
@@ -93,6 +101,7 @@ export default function OrdenFormDialog({
   proyectoNombre,
   esAdmin,
   onListo,
+  desdeRequisicion = null,
 }: Props) {
   const editando = Boolean(orden);
   const yaSalio = orden?.estado === 'enviada' || orden?.estado === 'cerrada';
@@ -113,6 +122,8 @@ export default function OrdenFormDialog({
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rechazados, setRechazados] = useState<string | null>(null);
+  // Los archivos de la requisición que van: se puede quitar alguno antes de guardar.
+  const [archivosRequisicion, setArchivosRequisicion] = useState<ArchivoQueVa[]>([]);
 
   // Los archivos también se pueden arrastrar al recuadro de adjuntos. Se suben
   // al guardar, igual que los del botón.
@@ -160,7 +171,9 @@ export default function OrdenFormDialog({
         })),
       );
     } else {
-      setProveedor('');
+      // Nueva; si nace de una requisición, con lo de ella ya puesto.
+      const d = desdeRequisicion;
+      setProveedor(d?.proveedor ?? '');
       setDescripcion('');
       setRuc('');
       setCategoriaId('');
@@ -169,9 +182,19 @@ export default function OrdenFormDialog({
       setEntrega('sitio');
       setCondiciones('');
       setDescuento('0');
-      setRenglones([vacio()]);
+      setRenglones(
+        d?.renglones.length
+          ? d.renglones.map((r) => ({
+              cantidad: r.cantidad,
+              unidad: r.unidad ?? 'unidad',
+              descripcion: r.descripcion,
+              precio_unitario: '',
+            }))
+          : [vacio()],
+      );
     }
-  }, [open, orden]);
+    setArchivosRequisicion(!orden && desdeRequisicion ? desdeRequisicion.archivos : []);
+  }, [open, orden, desdeRequisicion]);
 
   useEffect(() => {
     if (!open) return;
@@ -228,6 +251,7 @@ export default function OrdenFormDialog({
       };
 
       let id: number;
+      let sinAdjuntar: string[] = [];
       if (orden) {
         await api.put(`/ordenes-compra/${orden.id}`, {
           ...cuerpo,
@@ -235,8 +259,26 @@ export default function OrdenFormDialog({
         });
         id = orden.id;
       } else {
-        const res = await api.post('/ordenes-compra', { ...cuerpo, proyecto_id: proyectoId });
+        const res = await api.post('/ordenes-compra', {
+          ...cuerpo,
+          proyecto_id: proyectoId,
+          ...(desdeRequisicion
+            ? {
+                desde_requisicion: {
+                  requisicion_id: desdeRequisicion.requisicion_id,
+                  lineas: desdeRequisicion.lineas,
+                  cotizacion_id: desdeRequisicion.cotizacion_id,
+                  adjuntar: {
+                    cotizaciones: archivosRequisicion.filter((a) => a.tipo === 'cotizacion').map((a) => a.id),
+                    cuadros: archivosRequisicion.filter((a) => a.tipo === 'cuadro').map((a) => a.id),
+                    papel: archivosRequisicion.some((a) => a.tipo === 'papel'),
+                  },
+                },
+              }
+            : {}),
+        });
         id = res.data.data.id;
+        sinAdjuntar = res.data.adjuntos_fallidos ?? [];
       }
 
       for (const a of archivos) {
@@ -248,7 +290,7 @@ export default function OrdenFormDialog({
         });
       }
 
-      onListo(id);
+      onListo(id, sinAdjuntar);
       onOpenChange(false);
     } catch (e) {
       const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -347,6 +389,13 @@ export default function OrdenFormDialog({
     >
       <div className="space-y-5">
         {error && <Alert variant="error" title={error} />}
+        {desdeRequisicion && !editando && (
+          <Alert
+            variant="info"
+            title={`Desde la requisición ${desdeRequisicion.numero}, ${desdeRequisicion.lineasTexto}`}
+            description="El proveedor, los renglones y los adjuntos ya vienen puestos. Se pueden cambiar."
+          />
+        )}
 
         {yaSalio && (
           <Alert
@@ -604,6 +653,24 @@ export default function OrdenFormDialog({
                     {a.nombre_original}
                   </button>
                   <span className="ml-auto shrink-0 text-xs text-muted-foreground">Ya adjunto</span>
+                </div>
+              ))}
+              {/* Los que vienen de la requisición: se copian al crear la orden. */}
+              {archivosRequisicion.map((a) => (
+                <div key={a.clave} className="flex items-center gap-2 border-b border-slate-100 p-3">
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 truncate text-sm" title={a.detalle}>
+                    {a.nombre}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="ml-auto h-7 w-7 shrink-0"
+                    aria-label={`Quitar ${a.nombre}`}
+                    onClick={() => setArchivosRequisicion((f) => f.filter((x) => x.clave !== a.clave))}
+                  >
+                    <X className="h-3.5 w-3.5 text-error" />
+                  </Button>
                 </div>
               ))}
               {archivos.map((a, i) => (

@@ -83,6 +83,27 @@ export default function DashboardNew() {
     _setCurrentView(view);
     setNavKey((k) => k + 1);
   }, []);
+  // Una solicitud u orden pedida desde otra sección —el número de una línea de
+  // la requisición—: se abre en Pagos, igual que la del enlace del WhatsApp.
+  const [abrirOrdenId, setAbrirOrdenId] = useState<number | null>(null);
+  const ordenAbierta = useCallback(() => setAbrirOrdenId(null), []);
+  useEffect(() => {
+    const abrir = (tipo: 'solicitud' | 'orden') => (e: Event) => {
+      const id = (e as CustomEvent<number>).detail;
+      if (!Number.isInteger(id)) return;
+      if (tipo === 'solicitud') setAbrirSolicitudId(id);
+      else setAbrirOrdenId(id);
+      setCurrentView('solicitudes-pago');
+    };
+    const solicitud = abrir('solicitud');
+    const orden = abrir('orden');
+    window.addEventListener('abrir-solicitud', solicitud);
+    window.addEventListener('abrir-orden', orden);
+    return () => {
+      window.removeEventListener('abrir-solicitud', solicitud);
+      window.removeEventListener('abrir-orden', orden);
+    };
+  }, [setCurrentView]);
   const [stats, setStats] = useState<DashboardStats>({
     proyectos: null,
     clientes: null,
@@ -295,6 +316,8 @@ export default function DashboardNew() {
             onNavigate={setCurrentView}
             abrirSolicitudId={abrirSolicitudId}
             onSolicitudAbierta={solicitudAbierta}
+            abrirOrdenId={abrirOrdenId}
+            onOrdenAbierta={ordenAbierta}
           />
         );
 

@@ -34,13 +34,27 @@ export function cantidadDe(valor: string | number): string {
 
 /** «1, 2, 3»: los números de línea (como se leen en el papel) de unos ids. */
 export function numerosDeLineas(ids: number[], lineas: { id: number }[]): string {
-  return lineas
-    .map((l, i) => (ids.includes(l.id) ? i + 1 : null))
-    .filter((n): n is number => n !== null)
-    .join(', ');
+  return posiciones(ids, lineas).join(', ');
 }
 
 export const MARCAS: Marca[] = ['pendiente', 'atendida', 'parcial', 'cancelada'];
+
+/** «1», «1 y 2», «1, 2 y 3». */
+export function enumerar(numeros: number[]): string {
+  if (numeros.length <= 1) return numeros.join('');
+  return `${numeros.slice(0, -1).join(', ')} y ${numeros[numeros.length - 1]}`;
+}
+
+/** Las posiciones (1, 2, 3…) de unos ids de línea, en el orden de la requisición. */
+export function posiciones(ids: number[], lineas: { id: number }[]): number[] {
+  return lineas.map((l, i) => (ids.includes(l.id) ? i + 1 : null)).filter((n): n is number => n !== null);
+}
+
+/** «línea 1», «líneas 1 y 2». */
+export function textoLineas(ids: number[], lineas: { id: number }[]): string {
+  const n = posiciones(ids, lineas);
+  return `${n.length === 1 ? 'línea' : 'líneas'} ${enumerar(n)}`;
+}
 
 export const ETIQUETA_MARCA: Record<Marca, string> = {
   pendiente: 'Pendiente',

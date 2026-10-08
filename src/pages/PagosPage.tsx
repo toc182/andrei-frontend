@@ -32,6 +32,9 @@ interface Props {
   /** Una solicitud que hay que abrir al entrar (el enlace del WhatsApp de las urgentes). */
   abrirSolicitudId?: number | null;
   onSolicitudAbierta?: () => void;
+  /** Una orden que hay que abrir al entrar (desde la requisición de donde salió). */
+  abrirOrdenId?: number | null;
+  onOrdenAbierta?: () => void;
 }
 
 interface ProyectoOpcion {
@@ -40,7 +43,13 @@ interface ProyectoOpcion {
   nombre_corto?: string;
 }
 
-export default function PagosPage({ onNavigate, abrirSolicitudId, onSolicitudAbierta }: Props) {
+export default function PagosPage({
+  onNavigate,
+  abrirSolicitudId,
+  onSolicitudAbierta,
+  abrirOrdenId = null,
+  onOrdenAbierta,
+}: Props) {
   const { user, hasPermission } = useAuth();
   const verSolicitudes = hasPermission('solicitudes_ver');
   const verOrdenes = hasPermission('ordenes_ver');
@@ -93,6 +102,15 @@ export default function PagosPage({ onNavigate, abrirSolicitudId, onSolicitudAbi
     salir();
     setOrdenAbierta(id);
   };
+
+  // La orden pedida desde otra sección: se abre una vez, en su pestaña.
+  useEffect(() => {
+    if (abrirOrdenId === null || !verOrdenes) return;
+    cambiarPestana('ordenes');
+    abrirOrden(abrirOrdenId);
+    onOrdenAbierta?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abrirOrdenId]);
 
   const listaOrdenes = (
     <OrdenesTab

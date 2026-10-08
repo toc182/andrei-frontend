@@ -705,6 +705,8 @@ export interface CotizacionOferta {
   created_at: string;
   creado_por_nombre: string | null;
   archivos_count: number;
+  /** Las solicitudes u órdenes que le compraron, si viene de una requisición. */
+  comprada_en?: string[];
 }
 
 export interface CotizacionDetalle {
