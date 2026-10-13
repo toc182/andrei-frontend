@@ -7,6 +7,7 @@
  */
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { fechaDeMomento } from '@/lib/fechas';
 import api from '@/services/api';
 import { Alert, SectionHeader } from '@/components/shell';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,7 @@ import {
 import { formatMoney } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 import CotizacionDialog from './CotizacionDialog';
-import { diaDeMomento, numerosDeLineas } from './formato';
+import { numerosDeLineas } from './formato';
 import type { RequisicionDetalle } from './tipos';
 
 const CABECERA = 'py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
@@ -219,7 +220,7 @@ export default function CotizacionesSeccion({ requisicion: req, onCambio }: Prop
                     <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">
                       {numerosDeLineas(f.lineas, req.lineas)}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">{diaDeMomento(f.created_at)}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">{fechaDeMomento(f.created_at)}</TableCell>
                     {puede && <TableCell className="px-4 py-2 text-right">{botonQuitar(f)}</TableCell>}
                   </TableRow>
                 ))}

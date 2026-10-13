@@ -12,6 +12,7 @@
 // standalone tool) — the design-system "no raw hex" rule targets Tailwind utility classes.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import { parseDate, fmtDate, calDays, nextWorkDay, isWorkDay, type ScheduleEntry, type TaskId } from '@/lib/cronogramaEngine';
 import type { GanttRow } from '@/lib/cronogramaModel';
 import { ROW_H, HEADER_H, computeChartRange } from '@/lib/cronogramaGeometry';
@@ -74,11 +75,6 @@ const COL = {
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
-// gantto's fmtHuman: "16 mar 26" (used for the milestone date label + drag tooltip).
-function fmtHuman(s: string): string {
-  const [y, m, d] = s.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]} ${String(y).slice(2)}`;
-}
 
 function addCalDays(s: string, n: number): string {
   const d = parseDate(s);
@@ -157,7 +153,7 @@ export function GanttChart({
       setDrag((d) => (d && d.days !== days ? { ...d, days } : d));
       let label: string;
       if (ref.kind === 'move') {
-        label = 'Inicio: ' + fmtHuman(nextWorkDay(addCalDays(ref.s, days), ww, holSet));
+        label = 'Inicio: ' + fecha(nextWorkDay(addCalDays(ref.s, days), ww, holSet));
       } else {
         let nf = addCalDays(ref.f, days);
         if (nf < ref.s) nf = ref.s;
@@ -361,7 +357,7 @@ export function GanttChart({
           />
           {pxd >= 3 && (
             <text x={cx + 11} y={cy + 4} fontSize={10} fill={viol ? COL.violation : COL.textDim}>
-              {fmtHuman(sc.s)}
+              {fecha(sc.s)}
             </text>
           )}
         </g>,

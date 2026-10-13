@@ -12,6 +12,7 @@
 // - The action buttons (Marcar Revisada / Aprobar / Rechazar,
 //   Registrar Pago, Registrar Factura, Reenviar)
 
+import { fechaDeMomento } from '@/lib/fechas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -159,11 +160,7 @@ export function SolicitudApprovalSection({
                     </span>
                     <span className="text-muted-foreground">
                       —{' '}
-                      {new Date(aprobacion.fecha).toLocaleDateString('es-PA', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
+                      {fechaDeMomento(aprobacion.fecha)}
                     </span>
                   </div>
                 ))}
@@ -195,14 +192,7 @@ export function SolicitudApprovalSection({
                       {aprobacion ? (
                         <span className="text-muted-foreground">
                           —{' '}
-                          {new Date(aprobacion.fecha).toLocaleDateString(
-                            'es-PA',
-                            {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                            },
-                          )}
+                          {fechaDeMomento(aprobacion.fecha)}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">

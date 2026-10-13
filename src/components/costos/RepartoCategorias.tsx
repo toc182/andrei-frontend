@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/formatters';
-import { formatDate } from '@/utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import { EmptyState } from '@/components/shell';
 import type { ResumenCategoria, ResumenSolicitud } from '@/lib/costosApi';
 
@@ -98,7 +98,7 @@ export default function RepartoCategorias({ categorias, sinClasificar, solicitud
                   <tbody>
                     {primeras.map((s) => (
                       <tr key={s.id} className="border-b border-border/50 last:border-0">
-                        <td className="whitespace-nowrap py-1 pr-2 tabular-nums">{formatDate(s.fecha)}</td>
+                        <td className="whitespace-nowrap py-1 pr-2 tabular-nums">{fecha(s.fecha)}</td>
                         <td className="w-full truncate py-1 pr-2">{s.proveedor || 'Sin proveedor'}</td>
                         <td className="whitespace-nowrap py-1 text-right tabular-nums">{formatMoney(s.monto)}</td>
                       </tr>

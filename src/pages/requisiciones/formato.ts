@@ -2,24 +2,10 @@ import type { Marca } from './tipos';
 
 const PANAMA = { timeZone: 'America/Panama' } as const;
 
-/** dd/mm/aaaa de una fecha DATE («2026-10-08»): sin pasar por la hora, no se corre de día. */
-export function diaDe(valor: string | null): string {
-  if (!valor) return '—';
-  const [a, m, d] = valor.slice(0, 10).split('-');
-  return `${d}/${m}/${a}`;
-}
-
-// es-PA escribe el mes primero (10/06/2026 es el 6 de octubre): la fecha se
-// arma con en-GB, que es día/mes/año, en la hora de Panamá.
-const DIA = new Intl.DateTimeFormat('en-GB', { ...PANAMA, day: '2-digit', month: '2-digit', year: 'numeric' });
+// Las fechas con año se escriben con lib/fechas. Lo de abajo es la hora de la
+// historia, sin año: es-PA escribe el mes primero, así que el día/mes sale de en-GB.
 const DIA_MES = new Intl.DateTimeFormat('en-GB', { ...PANAMA, day: '2-digit', month: '2-digit' });
 const HORA = new Intl.DateTimeFormat('es-PA', { ...PANAMA, hour: 'numeric', minute: '2-digit' });
-
-/** dd/mm/aaaa de un momento (created_at), en la hora de Panamá. */
-export function diaDeMomento(valor: string | null): string {
-  if (!valor) return '—';
-  return DIA.format(new Date(valor));
-}
 
 /** dd/mm h:mm de un momento, para la historia. */
 export function momentoCorto(valor: string): string {

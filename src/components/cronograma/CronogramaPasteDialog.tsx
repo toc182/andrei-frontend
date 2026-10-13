@@ -7,6 +7,7 @@
 // rows are never inserted implicitly — the user fixes them, marks Ignorar, or ticks the opt-in.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { EmptyState } from '@/components/shell/states';
@@ -386,18 +387,18 @@ export function CronogramaPasteDialog({ open, onOpenChange, tasks, proj, afterId
                         <TableCell className="px-3 py-2 tabular-nums">
                           {meta?.promotedToGroup && row.manualDate ? (
                             <span className="text-muted-foreground line-through" title="La fecha del grupo se movió a su primera tarea">
-                              {row.manualDate}
+                              {fecha(row.manualDate)}
                             </span>
                           ) : startDiffers ? (
-                            <span className="text-info" title={`Fecha indicada ${row.manualDate} es un mínimo; el motor calcula ${computedStart}`}>
-                              {computedStart}
+                            <span className="text-info" title={`Fecha indicada ${fecha(row.manualDate)} es un mínimo; el motor calcula ${fecha(computedStart)}`}>
+                              {fecha(computedStart)}
                             </span>
                           ) : (
-                            computedStart ?? row.manualDate ?? <span className="text-muted-foreground">—</span>
+                            fecha(computedStart ?? row.manualDate, '') || <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell className={cn('px-3 py-2 tabular-nums', collapsed && 'text-warning')}>
-                          {sched?.f ?? row.fin ?? <span className="text-muted-foreground">—</span>}
+                          {fecha(sched?.f ?? row.fin, '') || <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="px-3 py-2 text-right tabular-nums" title={row.durationSource}>
                           {meta && task?.type !== 'group' ? task?.duration ?? row.duration : '—'}

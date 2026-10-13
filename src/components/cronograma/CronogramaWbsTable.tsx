@@ -13,6 +13,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { es } from 'react-day-picker/locale';
+import { fecha } from '@/lib/fechas';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { calDays, type ScheduleEntry, type TaskId } from '@/lib/cronogramaEngine';
@@ -21,7 +23,6 @@ import { formatPredecessors } from '@/lib/cronogramaModel';
 import { ROW_H, HEADER_H } from '@/lib/cronogramaGeometry';
 import { cn } from '@/lib/utils';
 
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 export type EditField = 'name' | 'dur' | 'pct' | 'pred' | 'inicio' | 'fin';
 
@@ -70,11 +71,6 @@ interface Props {
   onPendingEditConsumed?: () => void;
 }
 
-function fmtHuman(d: string | undefined): string {
-  if (!d) return '';
-  const [y, m, day] = d.split('-').map(Number);
-  return `${day} ${MONTHS[m - 1]} ${String(y).slice(2)}`;
-}
 function ymdToDate(s: string | undefined): Date | undefined {
   if (!s) return undefined;
   const [y, m, d] = s.split('-').map(Number);
@@ -330,6 +326,8 @@ export function CronogramaWbsTable({
               mode="single"
               selected={ymdToDate(value)}
               defaultMonth={ymdToDate(value)}
+              locale={es}
+              weekStartsOn={0}
               onSelect={(d) => {
                 if (d) (field === 'inicio' ? onEditStart : onEditFin)(t.id, dateToYmd(d));
                 setEditing(null);
@@ -456,7 +454,7 @@ export function CronogramaWbsTable({
 
               {/* inicio */}
               {isTask ? (
-                dateCell(t, 'inicio', sc?.s, fmtHuman(sc?.s))
+                dateCell(t, 'inicio', sc?.s, fecha(sc?.s, ''))
               ) : (
                 <div
                   className="px-2 py-[5px] text-center text-xs tabular-nums"
@@ -465,13 +463,13 @@ export function CronogramaWbsTable({
                     onOpenDialog(t.id);
                   }}
                 >
-                  {fmtHuman(sc?.s)}
+                  {fecha(sc?.s, '')}
                 </div>
               )}
 
               {/* fin */}
               {isTask ? (
-                dateCell(t, 'fin', sc?.f, fmtHuman(sc?.f))
+                dateCell(t, 'fin', sc?.f, fecha(sc?.f, ''))
               ) : (
                 <div
                   className="px-2 py-[5px] text-center text-xs tabular-nums"
@@ -480,7 +478,7 @@ export function CronogramaWbsTable({
                     onOpenDialog(t.id);
                   }}
                 >
-                  {isMs ? '' : fmtHuman(sc?.f)}
+                  {isMs ? '' : fecha(sc?.f, '')}
                 </div>
               )}
 

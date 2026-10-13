@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import logo from '../assets/logo.png';
 import { isLocalDev } from '../services/api';
+import { fecha, fechaDeMomento } from '@/lib/fechas';
 
 const API_BASE = isLocalDev()
   ? 'http://localhost:5000/api'
@@ -113,15 +114,6 @@ const estadoOrdenLabels: Record<
 
 function formatMoney(amount: number): string {
   return `B/. ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
 }
 
 const VerificacionPublica: React.FC = () => {
@@ -270,7 +262,7 @@ const VerificacionPublica: React.FC = () => {
                   <div>
                     <p className="text-xs text-slate-500">Fecha</p>
                     <p className="font-medium text-slate-700">
-                      {formatDate(data.fecha)}
+                      {fecha(data.fecha)}
                     </p>
                   </div>
                   <div>
@@ -353,7 +345,7 @@ const VerificacionPublica: React.FC = () => {
                             {ap.usuario_nombre}
                           </span>
                           <span className="text-xs text-slate-400 ml-auto">
-                            {formatDate(ap.fecha)}
+                            {fechaDeMomento(ap.fecha)}
                           </span>
                         </div>
                       ))}

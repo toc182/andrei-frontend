@@ -5,7 +5,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, Flag, Clock } from 'lucide-react';
-import { fechaLocal } from '@/utils/dateUtils';
+import { fechaLocal } from '@/lib/fechas';
 import type { Project } from '@/types';
 
 const formatDate = (date: Date | null) => {

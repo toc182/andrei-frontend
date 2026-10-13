@@ -22,7 +22,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, EmptyState, ErrorState, TableSkeleton } from '@/components/shell';
 import { formatMoney } from '@/utils/formatters';
-import { formatDate } from '@/utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import { cn } from '@/lib/utils';
 import SelectorPartida, { DiferenciaPartida, EtiquetaPartida } from './SelectorPartida';
 import RepartoPartidasDialog from './RepartoPartidasDialog';
@@ -251,7 +251,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                         {p.proveedor ?? 'Sin proveedor'}
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
-                        {p.numero ?? '—'} · {formatDate(p.fecha)}
+                        {p.numero ?? '—'} · {fecha(p.fecha)}
                       </div>
                     </div>
                     <div className="whitespace-nowrap text-sm tabular-nums text-slate-700">
@@ -330,7 +330,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                         {p.proveedor ?? 'Sin proveedor'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-2.5 py-2 text-sm text-slate-700">
-                        {formatDate(p.fecha)}
+                        {fecha(p.fecha)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-2.5 py-2 text-right text-sm tabular-nums text-slate-700">
                         {formatMoney(p.monto)}

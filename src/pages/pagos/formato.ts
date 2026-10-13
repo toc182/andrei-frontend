@@ -1,10 +1,12 @@
 /**
- * Las maneras de escribir un número, una fecha o una factura en la sección Pagos.
+ * Las maneras de escribir un número o una factura en la sección Pagos. Las fechas
+ * se escriben con lib/fechas, como en todo el sistema.
  *
  * Viven aparte de las pastillas porque un archivo que exporta componentes Y
  * funciones rompe el refresco en caliente de Vite —y porque estas las usa
  * medio módulo, no solo lo que se dibuja.
  */
+import { fecha } from '@/lib/fechas';
 import type { Entrega } from './tiposDetalle';
 
 /**
@@ -29,21 +31,7 @@ export function plata(valor: string | number): string {
   })}`;
 }
 
-/**
- * dd/mm/aaaa, leída en UTC.
- *
- * Una fecha de la base llega como «2026-08-18» y en Panamá (UTC-5) el Date
- * nativo la enseñaría como el 17. Aquí no.
- */
-export function fechaCorta(valor: string | null): string {
-  if (!valor) return '—';
-  const d = new Date(`${valor.slice(0, 10)}T00:00:00Z`);
-  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(
-    d.getUTCMonth() + 1,
-  ).padStart(2, '0')}/${d.getUTCFullYear()}`;
-}
-
 /** Cómo se nombra una factura; las recepciones de antes del 05/10 no tienen número. */
 export function nombreFactura(f: Pick<Entrega, 'numero_factura' | 'fecha'>): string {
-  return f.numero_factura ? `Factura ${f.numero_factura}` : `Recepción del ${fechaCorta(f.fecha)}`;
+  return f.numero_factura ? `Factura ${f.numero_factura}` : `Recepción del ${fecha(f.fecha)}`;
 }

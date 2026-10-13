@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/shell';
 import { formatMoney } from '@/utils/formatters';
-import { formatDate } from '@/utils/dateUtils';
+import { fechaDeMomento } from '@/lib/fechas';
 import PresupuestoHoja, { type CabeceraHoja } from '@/components/presupuesto/PresupuestoHoja';
 import PresupuestoHojaCero from '@/components/presupuesto/PresupuestoHojaCero';
 import NuevoPresupuestoDialog from '@/components/presupuesto/NuevoPresupuestoDialog';
@@ -215,7 +215,7 @@ export default function ProjectPresupuesto({
                         {p.nombre}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">
-                        {formatDate(p.creadoAt)}
+                        {fechaDeMomento(p.creadoAt)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-slate-700">
                         {formatMoney(p.costo)}

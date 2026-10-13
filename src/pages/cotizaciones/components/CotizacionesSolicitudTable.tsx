@@ -1,6 +1,7 @@
 // Tab "Por solicitud": one row per cotización (the request). Mobile cards
 // + desktop table-in-card, mirroring SolicitudesTable conventions.
 
+import { fechaDeMomento } from '@/lib/fechas';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -17,7 +18,7 @@ import type {
   ColumnFilters,
 } from '@/components/sortableHeaderUtils';
 import type { Cotizacion } from '@/types/api';
-import { formatFecha, proyectoLabel } from '../shared';
+import { proyectoLabel } from '../shared';
 import { TipoBadge } from './TipoBadge';
 import { DeRequisicion } from './DeRequisicion';
 
@@ -67,7 +68,7 @@ export function CotizacionesSolicitudTable({
                     {proyectoLabel(row.proyecto_nombre, row.ambito)}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {formatFecha(row.created_at)}
+                    {fechaDeMomento(row.created_at)}
                   </div>
                 </div>
               </CardContent>
@@ -146,7 +147,7 @@ export function CotizacionesSolicitudTable({
                       {proyectoLabel(row.proyecto_nombre, row.ambito)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-muted-foreground">
-                      {formatFecha(row.created_at)}
+                      {fechaDeMomento(row.created_at)}
                     </TableCell>
                   </TableRow>
                 ))

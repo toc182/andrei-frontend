@@ -10,6 +10,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { FileText, ReceiptText, X } from 'lucide-react';
+import { fecha as fechaTexto } from '@/lib/fechas';
 import api from '@/services/api';
 import { AppDialog, Alert, DatePicker } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSoltarArchivos } from '@/hooks/useSoltarArchivos';
 import { cn } from '@/lib/utils';
-import { fechaCorta, plata } from '../formato';
+import { plata } from '../formato';
 import type { OrdenDetalle } from '../tiposDetalle';
 
 interface Props {
@@ -188,7 +189,7 @@ export default function FacturaDialog({ orden, open, onOpenChange, onListo }: Pr
             title={
               orden.termino_dias === 0
                 ? 'Se paga de contado'
-                : `Se paga a más tardar el ${fechaCorta(vence)}`
+                : `Se paga a más tardar el ${fechaTexto(vence)}`
             }
             description={
               orden.termino_dias === 0

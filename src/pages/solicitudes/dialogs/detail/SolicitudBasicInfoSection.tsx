@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import type { SolicitudPago } from '../../types';
-import { formatDate } from './formatDate';
+import { fecha } from '@/lib/fechas';
 import { CategoriaSelect } from '@/components/CategoriaSelect';
 import {
   saveCategoriaSolicitud,
@@ -65,13 +65,13 @@ export function SolicitudBasicInfoSection({
               </div>
               <div>
                 <div className="text-muted-foreground">Fecha</div>
-                <div className="font-medium">{formatDate(solicitud.fecha)}</div>
+                <div className="font-medium">{fecha(solicitud.fecha)}</div>
               </div>
             </>
           ) : (
             <div>
               <div className="text-muted-foreground">Fecha</div>
-              <div className="font-medium">{formatDate(solicitud.fecha)}</div>
+              <div className="font-medium">{fecha(solicitud.fecha)}</div>
             </div>
           )}
         </div>

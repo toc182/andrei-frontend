@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { fechaDeMomento } from '@/lib/fechas';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { DatePicker } from '@/components/shell/DatePicker';
 import { Label } from '@/components/ui/label';
@@ -51,13 +52,6 @@ function tituloEvento(ev: CuentaEvento): string {
   if (ev.tipo === 'creacion') return ev.comentario?.split('\n')[0] || 'Cuenta creada';
   if (ev.tipo === 'edicion') return ev.comentario?.split('\n')[0] || 'Cuenta editada';
   return ev.comentario?.split('\n')[0] || 'Actualización';
-}
-
-function formatEventDate(s: string): string {
-  const d = new Date(s);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  return `${dd}/${months[d.getMonth()]}/${d.getFullYear()}`;
 }
 
 function toDateInputValue(iso: string): string {
@@ -167,7 +161,7 @@ export default function CuentaTimeline({
                   {tituloEvento(ev)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatEventDate(ev.created_at)} · {ev.creado_por_nombre}
+                  {fechaDeMomento(ev.created_at)} · {ev.creado_por_nombre}
                 </p>
 
                 {abierto && detalle && (

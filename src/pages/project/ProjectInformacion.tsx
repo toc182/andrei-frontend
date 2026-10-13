@@ -17,7 +17,7 @@ import ProyectoDocumentos from './ProyectoDocumentos';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { diasConSigno, diasEntre, montoConSigno } from '@/lib/adendas';
-import { formatDate } from '../../utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import { formatMoney } from '../../utils/formatters';
 import type { Project, Adenda } from '@/types';
 
@@ -142,17 +142,17 @@ export default function ProjectInformacion({
               <InfoRow label="Estado:">{getEstadoBadge(project.estado)}</InfoRow>
 
               {project.fecha_inicio && (
-                <InfoRow label="Fecha de Inicio:">{formatDate(project.fecha_inicio)}</InfoRow>
+                <InfoRow label="Fecha de Inicio:">{fecha(project.fecha_inicio)}</InfoRow>
               )}
 
               {project.fecha_fin_estimada && (
-                <InfoRow label="Fecha de Terminación:">{formatDate(project.fecha_fin_estimada)}</InfoRow>
+                <InfoRow label="Fecha de Terminación:">{fecha(project.fecha_fin_estimada)}</InfoRow>
               )}
 
               {/* Solo cuando una adenda aprobada la cambió (adenda_fecha_numero). */}
               {project.adenda_fecha_numero != null && project.fecha_fin_vigente && (
                 <InfoRow label="Terminación Vigente:">
-                  {formatDate(project.fecha_fin_vigente)}
+                  {fecha(project.fecha_fin_vigente)}
                   {extension != null && (
                     <span className="text-muted-foreground">
                       {' '}({diasConSigno(extension)})
@@ -162,7 +162,7 @@ export default function ProjectInformacion({
               )}
 
               {project.orden_proceder && (
-                <InfoRow label="Orden de Proceder:">{formatDate(project.orden_proceder)}</InfoRow>
+                <InfoRow label="Orden de Proceder:">{fecha(project.orden_proceder)}</InfoRow>
               )}
 
               {project.presupuesto_base && (

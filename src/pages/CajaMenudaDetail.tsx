@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/shell/DatePicker';
+import { fecha, fechaDeMomento } from '@/lib/fechas';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Shell Components
@@ -69,12 +70,6 @@ interface CajaMenudaDetailProps {
 const formatMonto = (valor: string | number | undefined) => {
   const num = Number(valor || 0);
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
-const formatDate = (dateStr: string) => {
-  const clean = dateStr.split('T')[0];
-  const d = new Date(clean + 'T00:00:00');
-  return d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 // --- Component ---
@@ -950,7 +945,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                       )}
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{formatDate(gasto.fecha)}</span>
+                      <span className="text-muted-foreground">{fecha(gasto.fecha)}</span>
                       <span className="font-medium">{formatMonto(gasto.monto_total)}</span>
                     </div>
                   </CardContent>
@@ -977,7 +972,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
                     <TableBody>
                       {gastos.map((gasto) => (
                         <TableRow key={gasto.id}>
-                          <TableCell>{formatDate(gasto.fecha)}</TableCell>
+                          <TableCell>{fecha(gasto.fecha)}</TableCell>
                           <TableCell>{gasto.proveedor}</TableCell>
                           <TableCell>{gasto.descripcion}</TableCell>
                           <TableCell className="text-right tabular-nums">{formatMonto(gasto.monto)}</TableCell>
@@ -1089,7 +1084,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             <TableBody>
               {/* Synthetic initial row */}
               <TableRow>
-                <TableCell>{formatDate(caja.created_at)}</TableCell>
+                <TableCell>{fechaDeMomento(caja.created_at)}</TableCell>
                 <TableCell>{caja.creado_por_nombre || '—'}</TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {(() => {
@@ -1140,7 +1135,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
               {/* Historial rows */}
               {caja.historial_montos?.map((h) => (
                 <TableRow key={h.id}>
-                  <TableCell>{formatDate(h.created_at)}</TableCell>
+                  <TableCell>{fechaDeMomento(h.created_at)}</TableCell>
                   <TableCell>{h.cambiado_por_nombre}</TableCell>
                   <TableCell className="text-right font-medium tabular-nums">{formatMonto(h.monto_nuevo)}</TableCell>
                   <TableCell>

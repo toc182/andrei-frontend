@@ -5,6 +5,7 @@
 // The only difference between the two pages is whether the "Proyecto" column
 // is rendered, controlled by the `showProyectoColumn` prop.
 
+import { fecha } from '@/lib/fechas';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState, TableSkeleton } from '@/components/shell/states';
 import { Badge } from '@/components/ui/badge';
@@ -30,16 +31,6 @@ import type { SolicitudPago } from '../types';
 import { formatMoney } from '../../../utils/formatters';
 import { useCargaLenta } from '@/hooks/useCargaLenta';
 import { cn } from '@/lib/utils';
-
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
 
 interface SolicitudesTableProps {
   solicitudes: SolicitudPago[];
@@ -141,7 +132,7 @@ export function SolicitudesTable({
                     {formatMoney(sol.monto_total)}
                   </div>
                   <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                    <span>{formatDate(sol.fecha)}</span>
+                    <span>{fecha(sol.fecha)}</span>
                     {sol.categoria_nombre && (
                       <>
                         <span>·</span>
@@ -275,7 +266,7 @@ export function SolicitudesTable({
                         {showProyectoColumn && (
                           <TableCell>{sol.proyecto_nombre || '-'}</TableCell>
                         )}
-                        <TableCell>{formatDate(sol.fecha)}</TableCell>
+                        <TableCell>{fecha(sol.fecha)}</TableCell>
                         <TableCell>
                           <span className="inline-flex items-center gap-1.5">
                             <span>{sol.proveedor}</span>

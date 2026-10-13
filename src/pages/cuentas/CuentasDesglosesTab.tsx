@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, MessageSquare } from 'lucide-react';
+import { fecha, fechaDeMomento } from '@/lib/fechas';
 import { DesgloseView } from '@/components/desglose/DesgloseView';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -30,17 +31,6 @@ import {
   getDesglosesCuentas, getFuentesDesglose, crearDesgloseCuenta, agregarComentarioDesglose,
   type DesgloseCuenta, type DesgloseFuente,
 } from '@/lib/desgloseApi';
-
-const fmtFecha = (ymd: string | null) => {
-  const m = ymd ? /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd) : null;
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : '—';
-};
-
-const fmtFechaHora = (iso: string) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' });
-};
 
 const hoyYMD = () => {
   const d = new Date();
@@ -249,7 +239,7 @@ export default function CuentasDesglosesTab({
                     )}
                   </TableCell>
                   <TableCell className="w-[1%] whitespace-nowrap px-4 py-2.5 tabular-nums">
-                    {fmtFecha(d.fecha)}
+                    {fecha(d.fecha)}
                   </TableCell>
                   <TableCell className="w-[1%] whitespace-nowrap px-4 py-2.5 text-center">
                     <button
@@ -343,7 +333,7 @@ export default function CuentasDesglosesTab({
                 <li key={c.id} className="border-l-2 border-border pl-3">
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm font-medium">{c.autor}</span>
-                    <span className="text-xs text-muted-foreground">{fmtFechaHora(c.creadoAt)}</span>
+                    <span className="text-xs text-muted-foreground">{fechaDeMomento(c.creadoAt, '')}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{c.texto}</p>
                 </li>

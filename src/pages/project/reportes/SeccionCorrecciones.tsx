@@ -12,7 +12,8 @@
  */
 
 import { Fragment } from 'react';
-import { type Correccion, type Trozo, fechaHoraPanama } from './tipos';
+import { type Correccion, type Trozo } from './tipos';
+import { fechaHora } from '@/lib/fechas';
 
 function PedazoDeRenglon({ trozo }: { trozo: Trozo }) {
   switch (trozo.tipo) {
@@ -51,7 +52,7 @@ export default function SeccionCorrecciones({ correcciones }: { correcciones: Co
           className="grid gap-1.5 py-3 first:pt-0 last:pb-0 md:grid-cols-[10.5rem_1fr] md:gap-4"
         >
           <div className="flex flex-wrap items-baseline gap-x-2 text-sm leading-5 md:block">
-            <div className="tabular-nums text-muted-foreground">{fechaHoraPanama(c.created_at)}</div>
+            <div className="tabular-nums text-muted-foreground">{fechaHora(c.created_at)}</div>
             <div>{c.usuario_nombre}</div>
           </div>
           <div className="min-w-0 space-y-2">

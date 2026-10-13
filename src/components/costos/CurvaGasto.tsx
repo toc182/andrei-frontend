@@ -18,7 +18,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatMoney } from '@/utils/formatters';
-import { formatDate } from '@/utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import { acumular, dominioCurva, hoyISO, marcasDeMes, toDay } from '@/lib/curvaGasto';
 
 // Margenes en pixeles de verdad. El dibujo se mide contra el hueco que le da la
@@ -257,7 +257,7 @@ export default function CurvaGasto({ serie, presupuesto, inicio, fin }: Props) {
                 ? 'fill-warning text-[10px] font-semibold'
                 : 'fill-muted-foreground text-[10px]'}
             >
-              Fin {formatDate(fin!)}
+              Fin {fecha(fin!)}
             </text>
             {g.diasPasados > 0 && (
               <text
@@ -305,7 +305,7 @@ export default function CurvaGasto({ serie, presupuesto, inicio, fin }: Props) {
           style={{ left: `${g.x(p.dia)}px`, top: `${g.y(p.acumulado)}px` }}
         >
           <span className="font-semibold tabular-nums">{formatMoney(p.acumulado)}</span>
-          <span className="ml-1.5 text-muted-foreground">{formatDate(p.fecha)}</span>
+          <span className="ml-1.5 text-muted-foreground">{fecha(p.fecha)}</span>
         </div>
       )}
     </div>

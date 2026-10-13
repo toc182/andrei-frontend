@@ -7,6 +7,7 @@
 // (old vs new). Handles four kinds of cambios: plain field changes,
 // nested item edits, item additions, and item removals.
 
+import { fechaHora } from '@/lib/fechas';
 import { Badge } from '@/components/ui/badge';
 
 export interface Correccion {
@@ -73,16 +74,7 @@ export function SolicitudCorreccionesHistory({
               <summary className="px-4 py-3 bg-slate-50 cursor-pointer flex items-center justify-between rounded-lg hover:bg-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-sm">
-                    {new Date(correccion.created_at).toLocaleDateString(
-                      'es-PA',
-                      {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      },
-                    )}
+                    {fechaHora(correccion.created_at)}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     — {correccion.usuario_nombre}

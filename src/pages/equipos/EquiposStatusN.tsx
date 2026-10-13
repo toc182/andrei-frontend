@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import api, { usuariosAPI } from '../../services/api';
+import { fechaDeMomento } from '@/lib/fechas';
 import type { EquipoExtended, ApiResponse, Project, UsuarioSeleccionable } from '@/types';
 
 // Shell components
@@ -137,19 +138,6 @@ export default function EquiposStatusN() {
     return () => clearInterval(interval);
   }, []);
 
-  const formatLastUpdate = (date?: Date | string | null): string => {
-    if (!date) return '';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return new Intl.DateTimeFormat('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-      .format(dateObj)
-      .replace(/\s/g, '-')
-      .replace('sept', 'sep');
-  };
-
   const handleRowClick = (equipo: EquipoWithStatus) => {
     setSelectedEquipo(equipo);
     setDetailsOpen(true);
@@ -242,9 +230,7 @@ export default function EquiposStatusN() {
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-slate-700">{equipo.ubicacion || 'No especificada'}</TableCell>
                     <TableCell className="px-4 py-3 text-sm text-slate-700">
-                      {equipo.updated_at
-                        ? formatLastUpdate(new Date(equipo.updated_at))
-                        : formatLastUpdate(lastUpdate)}
+                      {fechaDeMomento(equipo.updated_at || lastUpdate, '')}
                     </TableCell>
                   </TableRow>
                 );
@@ -301,7 +287,7 @@ export default function EquiposStatusN() {
             ['Propietario', selectedEquipo?.propietario],
             ['Observaciones', selectedEquipo?.observaciones || 'Sin observaciones'],
             ['Última Act.', selectedEquipo?.ultima_revision
-              ? formatLastUpdate(new Date(selectedEquipo.ultima_revision))
+              ? fechaDeMomento(selectedEquipo.ultima_revision)
               : 'Sin registro'],
           ].map(([label, value]) => (
             <div key={String(label)} className="grid grid-cols-3 gap-2">

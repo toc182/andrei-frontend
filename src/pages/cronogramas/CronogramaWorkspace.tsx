@@ -9,6 +9,7 @@
 // get temporary NEGATIVE ids; the backend swaps them for serials on save (idMap).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ErrorState } from '@/components/shell/states';
 import { Alert } from '@/components/shell/Alert';
@@ -105,11 +106,6 @@ function descendantsOf(id: TaskId, tasks: EngineTask[]): Set<TaskId> {
   return out;
 }
 
-const MONTHS_S = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-function fmtDMY(s: string): string {
-  const [y, m, d] = s.split('-').map(Number);
-  return `${d} ${MONTHS_S[m - 1]} ${String(y).slice(2)}`;
-}
 
 // The level sets the bottom tier of the time header (and therefore the column granularity).
 const ZOOMS: { key: Zoom; label: string }[] = [
@@ -614,7 +610,7 @@ export default function CronogramaWorkspace({ cronogramaId, projectId }: Props) 
       const got = computeSchedule(candidate, proj).get(id);
       const floor = nextWorkDay(dateYMD, config.workWeek, new Set(config.holidays || []));
       if (got && got.s > floor) {
-        setBanner(`El inicio quedó en ${fmtDMY(got.s)}: una predecesora no permite empezar el ${fmtDMY(dateYMD)}.`);
+        setBanner(`El inicio quedó en ${fecha(got.s)}: una predecesora no permite empezar el ${fecha(dateYMD)}.`);
       }
     },
     [config, tasks, commit],

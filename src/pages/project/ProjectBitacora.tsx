@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Paperclip,
 } from 'lucide-react';
+import { fechaHora } from '@/lib/fechas';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,18 +79,6 @@ interface NewEntry {
   contenido: string;
 }
 
-const formatDate = (dateString: string): string => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
 const formatRelativeTime = (dateString: string): string => {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -103,7 +92,7 @@ const formatRelativeTime = (dateString: string): string => {
   if (diffMins < 60) return `Hace ${diffMins} min`;
   if (diffHours < 24) return `Hace ${diffHours}h`;
   if (diffDays < 7) return `Hace ${diffDays}d`;
-  return formatDate(dateString);
+  return fechaHora(dateString);
 };
 
 // Parse @mentions in text
@@ -588,7 +577,7 @@ export default function ProjectBitacora({ projectId }: ProjectBitacoraProps) {
                   {selectedEntry.creador_nombre}
                 </span>
                 <span>·</span>
-                <span title={formatDate(selectedEntry.created_at)}>
+                <span title={fechaHora(selectedEntry.created_at)}>
                   {formatRelativeTime(selectedEntry.created_at)}
                 </span>
               </div>

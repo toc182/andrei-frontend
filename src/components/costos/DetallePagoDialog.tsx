@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AdjuntosPreview from '@/components/AdjuntosPreview';
 import api from '@/services/api';
 import { formatMoney } from '@/utils/formatters';
-import { formatDate } from '@/utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import type { SolicitudPagoAdjunto } from '@/types/api';
 import type { SolicitudItem, SolicitudPago } from '@/pages/solicitudes/types';
 
@@ -102,9 +102,9 @@ export default function DetallePagoDialog({
       title={s ? `${s.numero} · ${s.proveedor}` : 'Detalle del pago'}
       description={
         detalle?.comprobante
-          ? `Pagado el ${formatDate(detalle.comprobante.fecha_pago)}`
+          ? `Pagado el ${fecha(detalle.comprobante.fecha_pago)}`
           : s
-            ? `Solicitado el ${formatDate(s.fecha)}`
+            ? `Solicitado el ${fecha(s.fecha)}`
             : undefined
       }
       footer={

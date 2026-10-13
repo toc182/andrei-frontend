@@ -1,3 +1,4 @@
+import { fecha } from '@/lib/fechas';
 import type { CuentaEstado } from '@/types/api';
 
 // ── Estado display config ──────────────────────────────────────────────
@@ -208,46 +209,9 @@ export function formatMonto(v: string | number | null | undefined): string {
   return `B/. ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Periodo fields come back as either "YYYY-MM-DD" (DATE column) or
-// "YYYY-MM-DDT00:00:00.000Z" (DATE column auto-serialized by pg+Express).
-// Both formats represent a calendar day, not an instant — but JS Date
-// treats the "T00:00:00.000Z" form as UTC midnight, and getDate() then
-// returns the previous day in negative-offset timezones. Parse the
-// Y-M-D prefix directly so the calendar day is preserved.
-function parseLocalDate(s: string): Date {
-  const [y, m, d] = s.slice(0, 10).split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-export function formatDate(s: string | null | undefined): string {
-  if (!s) return '—';
-  return parseLocalDate(s).toLocaleDateString('es-PA', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-export function formatDateExact(s: string | null | undefined): string {
-  if (!s) return '';
-  const d = parseLocalDate(s);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const yy = String(d.getFullYear()).slice(2);
-  return `${dd}-${months[d.getMonth()]}-${yy}`;
-}
-
 // Returns { inicio, fin } strings for rendering with an arrow icon between them
 export function formatPeriodoParts(inicio: string | null, fin: string | null): { inicio: string; fin: string } {
-  return {
-    inicio: inicio ? formatDateExact(inicio) : '',
-    fin: fin ? formatDateExact(fin) : '',
-  };
-}
-
-export function formatPeriodo(inicio: string | null, fin: string | null): string {
-  if (!inicio && !fin) return '—';
-  const i = inicio ? formatDateExact(inicio) : '';
-  const f = fin ? formatDateExact(fin) : '';
-  if (i && f) return `${i} → ${f}`;
-  if (i) return `${i} →`;
-  return f;
+  return { inicio: fecha(inicio, ''), fin: fecha(fin, '') };
 }
 
 export function waitColor(days: number): string {

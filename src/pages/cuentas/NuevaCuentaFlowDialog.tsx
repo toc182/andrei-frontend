@@ -3,6 +3,7 @@
 // mismo AppDialog montado hace que el contenido cambie en el sitio, sin el
 // parpadeo de cerrar un modal y abrir otro.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -216,7 +217,7 @@ export default function NuevaCuentaFlowDialog({
                 <RadioGroupItem id={`desg-${d.id}`} value={String(d.id)} />
                 <div className="flex-1">
                   <div className="text-sm font-medium">{d.descripcion}</div>
-                  {d.fecha && <div className="text-xs text-muted-foreground tabular-nums">{d.fecha}</div>}
+                  {d.fecha && <div className="text-xs text-muted-foreground tabular-nums">{fecha(d.fecha)}</div>}
                 </div>
               </label>
             ))}

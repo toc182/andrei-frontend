@@ -27,7 +27,7 @@ import { EmptyState } from '@/components/shell/states';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
 import { cn } from '@/lib/utils';
-import { formatDate } from '../../utils/dateUtils';
+import { fechaDeMomento } from '@/lib/fechas';
 
 /** Lo que el servidor manda de cada documento. La clave de R2 no viaja. */
 interface ProyectoDocumento {
@@ -220,7 +220,7 @@ export default function ProyectoDocumentos({ projectId }: { projectId: number })
                     <p className="truncate">{doc.etiqueta || doc.nombre_original}</p>
                     <p className="truncate text-xs text-muted-foreground">
                       {doc.etiqueta && <span>{doc.nombre_original} · </span>}
-                      {doc.subido_por_nombre ?? 'Alguien'} · {formatDate(doc.created_at)}
+                      {doc.subido_por_nombre ?? 'Alguien'} · {fechaDeMomento(doc.created_at)}
                     </p>
                   </div>
                   <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">

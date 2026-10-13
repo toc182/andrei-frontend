@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Plus, X, Loader2 } from 'lucide-react';
+import { fecha as fechaTexto } from '@/lib/fechas';
 import api from '@/services/api';
 import SubidaEnCurso, { type Progreso } from './SubidaEnCurso';
 import { Alert, DatePicker, SectionHeader } from '@/components/shell';
@@ -52,7 +53,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   CLIMAS, LEYENDA_MAX, type Area, type FilaEntrega, type Foto, type Listas, type Reporte,
-  type Trabajo, fechaCorta, hoyYMD,
+  type Trabajo, hoyYMD,
 } from './tipos';
 import { Ficha, SeccionEntregas, SeccionEquipo, SeccionPersonal } from './SeccionesFilas';
 import { SeccionTrabajo } from './SeccionTrabajo';
@@ -398,7 +399,7 @@ export default function ReporteForm({
       .get(`/proyecto-reportes/${projectId}/existe`, { params: { fecha } })
       .then((r) => {
         if (!vigente) return;
-        setYaReportado(r.data.data?.ya_reportado ? fechaCorta(fecha) : null);
+        setYaReportado(r.data.data?.ya_reportado ? fechaTexto(fecha) : null);
         onNumeroPrevisto?.(r.data.data?.numero_siguiente ?? null);
       })
       .catch(() => undefined);

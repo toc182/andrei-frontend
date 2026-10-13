@@ -6,6 +6,7 @@
  * motivo. Si la orden ya estaba completa, vuelve a admitir facturas.
  */
 import { useEffect, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import api from '@/services/api';
 import {
   AlertDialog,
@@ -20,7 +21,7 @@ import {
 import { Alert } from '@/components/shell';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { fechaCorta, nombreFactura, plata } from '../formato';
+import { nombreFactura, plata } from '../formato';
 import type { Entrega, OrdenDetalle } from '../tiposDetalle';
 
 interface Props {
@@ -67,7 +68,7 @@ export default function AnularFacturaDialog({ orden, factura, open, onOpenChange
           <AlertDialogTitle>Anular factura</AlertDialogTitle>
           <AlertDialogDescription>
             {factura
-              ? `${nombreFactura(factura)} · ${fechaCorta(factura.fecha)} · ${plata(factura.monto_total)} · ${orden.numero}`
+              ? `${nombreFactura(factura)} · ${fecha(factura.fecha)} · ${plata(factura.monto_total)} · ${orden.numero}`
               : orden.numero}
           </AlertDialogDescription>
         </AlertDialogHeader>

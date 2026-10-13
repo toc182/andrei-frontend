@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import { fechaDeMomento } from '@/lib/fechas';
 import { Alert, AppDialog } from '@/components/shell';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -22,7 +23,7 @@ import {
 import api from '@/services/api';
 import { formatMoney } from '@/utils/formatters';
 import type { CotizacionOferta, CotizacionAmbito } from '@/types/api';
-import { formatFecha, proyectoLabel } from '../shared';
+import { proyectoLabel } from '../shared';
 import { TipoBadge } from '../components/TipoBadge';
 import { CotizacionArchivos } from '../components/CotizacionArchivos';
 import { OfertaFormDialog } from './OfertaFormDialog';
@@ -150,7 +151,7 @@ export function OfertaDetailDialog({
               <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Fecha
               </div>
-              <div className="font-semibold">{formatFecha(oferta.created_at)}</div>
+              <div className="font-semibold">{fechaDeMomento(oferta.created_at)}</div>
             </div>
             <div>
               <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

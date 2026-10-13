@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { InfoRow } from '@/components/project/InfoRow';
 import { ESTADO_ADENDA, TIPO_ADENDA, diasConSigno, montoConSigno } from '@/lib/adendas';
-import { formatDate } from '@/utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import type { Adenda } from '@/types';
 
 interface AdendaTarjetaProps {
@@ -42,7 +42,7 @@ export function AdendaTarjeta({ adenda, onEditar, onEliminar }: AdendaTarjetaPro
 
       {adenda.nueva_fecha_fin && (
         <InfoRow label="Nueva Fecha:">
-          {formatDate(adenda.nueva_fecha_fin)}
+          {fecha(adenda.nueva_fecha_fin)}
           {adenda.dias_extension != null && (
             <span className="text-muted-foreground">
               {' '}({diasConSigno(adenda.dias_extension)})
@@ -60,11 +60,11 @@ export function AdendaTarjeta({ adenda, onEditar, onEliminar }: AdendaTarjetaPro
       {adenda.observaciones && <InfoRow label="Observaciones:">{adenda.observaciones}</InfoRow>}
 
       <InfoRow label="Solicitada:">
-        {formatDate(adenda.fecha_solicitud)}
+        {fecha(adenda.fecha_solicitud)}
         {adenda.fecha_aprobacion && (
           <span className="text-muted-foreground">
             {' | Aprobada: '}
-            {formatDate(adenda.fecha_aprobacion)}
+            {fecha(adenda.fecha_aprobacion)}
           </span>
         )}
       </InfoRow>

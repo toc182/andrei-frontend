@@ -3,6 +3,7 @@
 // by proveedor. Mobile cards + desktop table-in-card.
 
 import { Paperclip } from 'lucide-react';
+import { fechaDeMomento } from '@/lib/fechas';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -21,7 +22,7 @@ import type {
 } from '@/components/sortableHeaderUtils';
 import type { CotizacionOfertaFlat } from '@/types/api';
 import { formatMoney } from '@/utils/formatters';
-import { formatFecha, proyectoLabel } from '../shared';
+import { proyectoLabel } from '../shared';
 import { TipoBadge } from './TipoBadge';
 import { DeRequisicion } from './DeRequisicion';
 
@@ -83,7 +84,7 @@ export function OfertasProveedorTable({
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted-foreground">
                     <span>{proyectoLabel(row.proyecto_nombre, row.ambito)}</span>
-                    <span>{formatFecha(row.created_at)}</span>
+                    <span>{fechaDeMomento(row.created_at)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -187,7 +188,7 @@ export function OfertasProveedorTable({
                       {proyectoLabel(row.proyecto_nombre, row.ambito)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-muted-foreground">
-                      {formatFecha(row.created_at)}
+                      {fechaDeMomento(row.created_at)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-center">
                       <ArchivosCount count={row.archivos_count} />

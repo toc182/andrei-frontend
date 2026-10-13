@@ -15,6 +15,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardList, Plus } from 'lucide-react';
+import { fechaDeMomento } from '@/lib/fechas';
 import api from '@/services/api';
 import { Alert, EmptyState, PageHeader, TableSkeleton } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,6 @@ import { useVolverAlSitio } from '@/hooks/useVolverAlSitio';
 import { cn } from '@/lib/utils';
 import RequisicionDetallePage from './RequisicionDetalle';
 import RequisicionFormDialog from './RequisicionFormDialog';
-import { diaDeMomento } from './formato';
 import { PrioridadEtiqueta } from './etiquetas';
 import type { PendientesRequisiciones, RequisicionFila } from './tipos';
 
@@ -150,7 +150,7 @@ function TablaRequisiciones({ vista, proyectoId, conProyecto, conFiltroPendiente
               <p className="mt-1 text-sm text-slate-700">{f.descripcion}</p>
               <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                 {conProyecto ? `${f.proyecto_nombre} · ` : ''}
-                {diaDeMomento(f.created_at)}
+                {fechaDeMomento(f.created_at)}
               </p>
             </Card>
           ))
@@ -195,7 +195,7 @@ function TablaRequisiciones({ vista, proyectoId, conProyecto, conFiltroPendiente
                         <TableCell className="truncate px-4 py-3 text-sm text-slate-700">{f.proyecto_nombre}</TableCell>
                       )}
                       <TableCell className="truncate px-4 py-3 text-sm text-slate-700">{f.descripcion}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">{diaDeMomento(f.created_at)}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">{fechaDeMomento(f.created_at)}</TableCell>
                       <TableCell className="px-4 py-3">
                         <PrioridadEtiqueta prioridad={f.prioridad} />
                       </TableCell>

@@ -8,6 +8,7 @@
  * dejar el resto para después. Sale UNA solicitud, con un renglón por factura.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import api from '@/services/api';
 import { AppDialog, Alert, ApprovalPillBar } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { diasHasta, fechaCorta, nombreFactura, plata } from '../formato';
+import { diasHasta, nombreFactura, plata } from '../formato';
 import { aprobadoresDe, type OrdenDetalle } from '../tiposDetalle';
 
 interface Props {
@@ -148,7 +149,7 @@ export default function ActivarPagoDialog({ orden, open, onOpenChange, onListo }
                             vencida ? 'font-semibold text-error' : 'text-muted-foreground',
                           )}
                         >
-                          Vence {fechaCorta(f.vence)}
+                          Vence {fecha(f.vence)}
                           {vencida ? ' · vencida' : ''}
                           {conSolicitud ? ` · ya tiene solicitud por ${plata(f.reclamado)}` : ''}
                         </span>

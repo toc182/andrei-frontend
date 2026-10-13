@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Clock, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useSidebar } from '@/components/ui/sidebar';
-import { fechaLocal } from '@/utils/dateUtils';
+import { fechaLocal } from '@/lib/fechas';
 import type { Project } from '@/types';
 
 const formatCurrency = (amount: number | null | undefined) => {

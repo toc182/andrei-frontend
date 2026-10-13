@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { fecha } from '@/lib/fechas';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -57,11 +58,6 @@ function cuandoFue(iso: string): string {
   if (dias === 1) return `ayer a las ${hora}`;
   const p = (n: number) => String(n).padStart(2, '0');
   return `el ${p(d.getDate())}/${p(d.getMonth() + 1)} a las ${hora}`;
-}
-
-function fechaDelReporte(ymd: string): string {
-  const [y, m, d] = ymd.slice(0, 10).split('-');
-  return `${d}/${m}/${y}`;
 }
 
 /** Lo que se escribió del trabajo ejecutado, en una línea. */
@@ -176,7 +172,7 @@ export default function ReporteNuevo({
             <div className="flex justify-between gap-3">
               <span className="text-muted-foreground">Fecha del reporte</span>
               <span className="font-semibold tabular-nums">
-                {fechaDelReporte(sinEnviar.semilla.fecha)}
+                {fecha(sinEnviar.semilla.fecha)}
               </span>
             </div>
             <div className="flex justify-between gap-3">

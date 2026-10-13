@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Ban, Check, ChevronLeft, Download, Pencil, Settings } from 'lucide-react';
+import { fecha, fechaDeMomento } from '@/lib/fechas';
 import api from '@/services/api';
 import { Alert, ErrorState, SectionHeader, TableSkeleton } from '@/components/shell';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,7 @@ import OrdenFormDialog from '@/pages/pagos/dialogs/OrdenFormDialog';
 import RequisicionFormDialog from './RequisicionFormDialog';
 import CotizacionesSeccion from './CotizacionesSeccion';
 import ComprarDialog from './ComprarDialog';
-import { cantidadDe, diaDe, diaDeMomento, momentoCorto, textoLineas } from './formato';
+import { cantidadDe, momentoCorto, textoLineas } from './formato';
 import { EstadoBadge, MarcaBadge, MarcaSelector, PrioridadEtiqueta } from './etiquetas';
 import type {
   CambioRequisicion,
@@ -75,7 +76,7 @@ interface Evento {
 /** Cómo se lee un valor de una corrección. */
 function valorLegible(campo: string, v: unknown): string {
   if (v === null || v === undefined || v === '') return '—';
-  if (campo === 'Fecha requerida' && typeof v === 'string') return diaDe(v);
+  if (campo === 'Fecha requerida' && typeof v === 'string') return fecha(v);
   if (campo === 'Prioridad') return v === 'urgente' ? 'Urgente' : 'Normal';
   if (campo === 'Tipo de cuenta') return v === 'ahorro' ? 'Ahorro' : 'Corriente';
   if (typeof v === 'number') return cantidadDe(v);
@@ -196,7 +197,7 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
         marca={l.marca}
         ocupado={marcando === l.id}
         onCambiar={(m) => void cambiarMarca(l, m)}
-        titulo={l.marca_por_nombre && l.marca_at ? `${l.marca_por_nombre} · ${diaDeMomento(l.marca_at)}` : undefined}
+        titulo={l.marca_por_nombre && l.marca_at ? `${l.marca_por_nombre} · ${fechaDeMomento(l.marca_at)}` : undefined}
       />
     ) : (
       <MarcaBadge marca={l.marca} />
@@ -423,7 +424,7 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
           title="Esta requisición está anulada"
           description={
             req.anulada_por_nombre && req.anulada_at
-              ? `La anuló ${req.anulada_por_nombre} el ${diaDeMomento(req.anulada_at)}.`
+              ? `La anuló ${req.anulada_por_nombre} el ${fechaDeMomento(req.anulada_at)}.`
               : undefined
           }
         />
@@ -444,18 +445,18 @@ export default function RequisicionDetallePage({ requisicionId, volverA, onVolve
       {/* La requisición, como el papel. */}
       <Card className="overflow-hidden p-0">
         <div className="grid grid-cols-1 divide-y divide-border border-b border-border md:grid-cols-4 md:divide-x md:divide-y-0">
-          <Dato etiqueta="Escrita por" sub={diaDeMomento(req.created_at)}>
+          <Dato etiqueta="Escrita por" sub={fechaDeMomento(req.created_at)}>
             {req.creado_por_nombre}
           </Dato>
           {req.estado === 'aprobada' ? (
-            <Dato etiqueta="Aprobada por" sub={req.aprobada_at ? diaDeMomento(req.aprobada_at) : null}>
+            <Dato etiqueta="Aprobada por" sub={req.aprobada_at ? fechaDeMomento(req.aprobada_at) : null}>
               {req.aprobada_por_nombre}
             </Dato>
           ) : (
             <Dato etiqueta="La aprueba">{req.aprobador_nombre ?? '—'}</Dato>
           )}
           <Dato etiqueta="Fecha requerida">
-            <span className="tabular-nums">{diaDe(req.fecha_requerida)}</span>
+            <span className="tabular-nums">{fecha(req.fecha_requerida)}</span>
           </Dato>
           <Dato etiqueta="Prioridad">
             <PrioridadEtiqueta prioridad={req.prioridad} className="font-semibold text-foreground" />

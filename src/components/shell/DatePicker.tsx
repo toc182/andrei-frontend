@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
+import { es } from "react-day-picker/locale";
+import { fecha } from "@/lib/fechas";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -31,12 +33,6 @@ function formatYMD(d: Date): string {
   return `${y}-${mo}-${day}`;
 }
 
-function formatDisplay(s: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (!m) return "";
-  return `${m[3]}/${m[2]}/${m[1]}`;
-}
-
 export function DatePicker({
   value,
   onChange,
@@ -61,7 +57,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-          {value ? formatDisplay(value) : placeholder}
+          {value ? fecha(value, placeholder) : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -81,6 +77,10 @@ export function DatePicker({
           // alto según el mes (5 o 6 filas) y el popover se reacomoda solo al
           // pasar de mes, saltando arriba y abajo bajo el cursor.
           fixedWeeks
+          // Meses y días en español; la semana sigue empezando en domingo,
+          // como antes (el español de date-fns la empieza en lunes).
+          locale={es}
+          weekStartsOn={0}
           className="bg-transparent"
         />
       </PopoverContent>

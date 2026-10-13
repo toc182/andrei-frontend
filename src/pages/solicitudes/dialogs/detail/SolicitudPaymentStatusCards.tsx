@@ -15,6 +15,7 @@
 // in the same vertical sequence.
 
 import { useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/shell/Alert';
 import { Download, Upload } from 'lucide-react';
@@ -82,9 +83,7 @@ export function SolicitudPaymentStatusCards({
               <div className="text-sm text-slate-700 space-y-1">
                 <div>
                   {solicitud.tipo === 'apertura' ? 'Fecha de transferencia' : 'Fecha de pago'}:{' '}
-                  {new Date(
-                    comprobante.fecha_pago.split('T')[0] + 'T12:00:00',
-                  ).toLocaleDateString('es-PA')}
+                  {fecha(comprobante.fecha_pago)}
                 </div>
                 <div>Registrado por: {comprobante.registrado_por_nombre}</div>
               </div>
@@ -110,9 +109,7 @@ export function SolicitudPaymentStatusCards({
             <div className="text-sm text-slate-700 space-y-1">
               <div>
                 Fecha:{' '}
-                {new Date(
-                  factura.fecha_factura.split('T')[0] + 'T12:00:00',
-                ).toLocaleDateString('es-PA')}
+                {fecha(factura.fecha_factura)}
               </div>
               {factura.numero_factura && (
                 <div>Número de factura: {factura.numero_factura}</div>
@@ -139,9 +136,7 @@ export function SolicitudPaymentStatusCards({
             <div className="text-sm text-slate-700 space-y-1">
               <div>
                 Fecha:{' '}
-                {new Date(
-                  devolucion.fecha_devolucion.split('T')[0] + 'T12:00:00',
-                ).toLocaleDateString('es-PA')}
+                {fecha(devolucion.fecha_devolucion)}
               </div>
               <div>Motivo: {devolucion.motivo}</div>
               <div>Registrado por: {devolucion.registrado_por_nombre}</div>
@@ -183,9 +178,7 @@ export function SolicitudPaymentStatusCards({
                 <div className="text-sm text-slate-700 space-y-1">
                   <div>
                     Fecha de reembolso:{' '}
-                    {new Date(
-                      reembolso.fecha_reembolso.split('T')[0] + 'T12:00:00',
-                    ).toLocaleDateString('es-PA')}
+                    {fecha(reembolso.fecha_reembolso)}
                   </div>
                   <div>Registrado por: {reembolso.registrado_por_nombre}</div>
                   {reembolso.comprobante_url && (

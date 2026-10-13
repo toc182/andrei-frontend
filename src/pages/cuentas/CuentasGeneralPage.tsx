@@ -7,7 +7,7 @@ import {
 import api from '@/services/api';
 import CuentaEstadoBadge from './CuentaEstadoBadge';
 import AvanceBar from './AvanceBar';
-import { formatMonto, formatPeriodo, formatPeriodoParts, formatWait, waitColor, CURRENT_STATUS_CONFIG } from './config';
+import { formatMonto, formatPeriodoParts, formatWait, waitColor, CURRENT_STATUS_CONFIG } from './config';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { Badge } from '@/components/ui/badge';

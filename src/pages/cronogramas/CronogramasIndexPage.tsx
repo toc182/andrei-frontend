@@ -2,6 +2,7 @@
 // and standalone), create a new one, import a {project, tasks} JSON, open or delete one.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { fecha } from '@/lib/fechas';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/shell/states';
 import { AppDialog } from '@/components/shell/AppDialog';
@@ -174,7 +175,7 @@ export default function CronogramasIndexPage({ onNavigate }: Props) {
                       {c.proyectoNombre || <span className="italic">Independiente</span>}
                     </TableCell>
                     <TableCell className="px-4 py-2.5 text-right tabular-nums">{c.taskCount}</TableCell>
-                    <TableCell className="px-4 py-2.5 tabular-nums">{c.fechaInicio}</TableCell>
+                    <TableCell className="px-4 py-2.5 tabular-nums">{fecha(c.fechaInicio)}</TableCell>
                     <TableCell className="px-2 py-2.5 text-right">
                       <button
                         className="rounded p-1.5 text-muted-foreground hover:bg-slate-50 hover:text-error"

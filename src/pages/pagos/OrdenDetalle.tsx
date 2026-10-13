@@ -33,6 +33,7 @@ import {
   TriangleAlert,
   Upload,
 } from 'lucide-react';
+import { fecha, fechaDeMomento } from '@/lib/fechas';
 import api from '@/services/api';
 import { recordado, recordar } from '@/lib/recordados';
 import { useCargaLenta } from '@/hooks/useCargaLenta';
@@ -57,7 +58,7 @@ import {
 } from '@/components/ui/table';
 import { Alert, ApprovalPillBar, ErrorState, SectionHeader, TableSkeleton } from '@/components/shell';
 import { EstadoOrdenBadge } from './estados';
-import { diasHasta, fechaCorta, nombreFactura, plata } from './formato';
+import { diasHasta, nombreFactura, plata } from './formato';
 import { aprobadoresDe, type Entrega, type OrdenDetalle as Orden } from './tiposDetalle';
 import FacturaDialog from './dialogs/FacturaDialog';
 import CompletaDialog from './dialogs/CompletaDialog';
@@ -90,11 +91,6 @@ const ESTADO_SOLICITUD: Record<string, string> = {
 /** Una solicitud que ya no va a pagar nada, o que ya pagó. */
 const TERMINADA = ['pagada', 'facturada', 'rechazada', 'devolucion'];
 
-/** Día de un momento guardado con hora: en la hora de Panamá, no en UTC. */
-const diaDe = (ts: string) => {
-  const d = new Date(ts);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-};
 /** Para ordenar la historia: un DATE vale como el mediodía de ese día. */
 const momentoDe = (valor: string, esFecha: boolean) =>
   esFecha ? new Date(`${valor.slice(0, 10)}T12:00:00`).getTime() : new Date(valor).getTime();
@@ -118,27 +114,27 @@ interface Evento {
 function VenceFactura({ f, chico }: { f: Entrega; chico?: boolean }) {
   const tam = chico ? 'text-xs' : 'text-sm';
   if (pagadaDe(f)) {
-    return <span className={cn(tam, 'tabular-nums text-muted-foreground')}>{fechaCorta(f.vence)}</span>;
+    return <span className={cn(tam, 'tabular-nums text-muted-foreground')}>{fecha(f.vence)}</span>;
   }
   const d = diasHasta(f.vence);
   if (d < 0) {
     return (
-      <span className={cn(tam, 'inline-flex items-center gap-1.5 font-semibold tabular-nums text-error')}>
+      <span className={cn(tam, 'inline-flex items-center gap-1.5 whitespace-nowrap font-semibold tabular-nums text-error')}>
         <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-        {fechaCorta(f.vence)} · hace {dias(-d)}
+        {fecha(f.vence)} · hace {dias(-d)}
       </span>
     );
   }
   if (d <= 7) {
     return (
-      <span className={cn(tam, 'font-semibold tabular-nums text-warning')}>
-        {fechaCorta(f.vence)} · {d === 0 ? 'hoy' : `en ${dias(d)}`}
+      <span className={cn(tam, 'whitespace-nowrap font-semibold tabular-nums text-warning')}>
+        {fecha(f.vence)} · {d === 0 ? 'hoy' : `en ${dias(d)}`}
       </span>
     );
   }
   return (
-    <span className={cn(tam, 'tabular-nums text-slate-700')}>
-      {fechaCorta(f.vence)} <span className="text-muted-foreground">· en {dias(d)}</span>
+    <span className={cn(tam, 'whitespace-nowrap tabular-nums text-slate-700')}>
+      {fecha(f.vence)} <span className="text-muted-foreground">· en {dias(d)}</span>
     </span>
   );
 }
@@ -350,11 +346,11 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     paso === 0
       ? `${orden.aprobaciones.length} de ${orden.aprobadores.length} firmas`
       : ultimaFirma
-        ? diaDe(ultimaFirma)
+        ? fechaDeMomento(ultimaFirma)
         : '',
-    orden.enviada_at ? diaDe(orden.enviada_at) : '',
+    orden.enviada_at ? fechaDeMomento(orden.enviada_at) : '',
     orden.completa_at
-      ? diaDe(orden.completa_at)
+      ? fechaDeMomento(orden.completa_at)
       : conFacturas
         ? `${facturas.length} ${facturas.length === 1 ? 'factura' : 'facturas'}`
         : '',
@@ -504,7 +500,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
   eventos.push({
     clave: 'creada',
     momento: momentoDe(orden.created_at, false),
-    dia: diaDe(orden.created_at),
+    dia: fechaDeMomento(orden.created_at),
     titulo: 'Orden creada',
     detalle: orden.creado_por_nombre,
     tipo: 'paso',
@@ -513,7 +509,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: `ap-${a.orden}`,
       momento: momentoDe(a.fecha, false),
-      dia: diaDe(a.fecha),
+      dia: fechaDeMomento(a.fecha),
       titulo: a.accion === 'rechazado' ? `Rechazada por ${a.usuario_nombre ?? '—'}` : `Aprobada por ${a.usuario_nombre ?? '—'}`,
       detalle: a.comentario,
       tipo: a.accion === 'rechazado' ? 'alerta' : 'paso',
@@ -523,7 +519,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: 'enviada',
       momento: momentoDe(orden.enviada_at, false),
-      dia: diaDe(orden.enviada_at),
+      dia: fechaDeMomento(orden.enviada_at),
       titulo: 'Enviada al proveedor',
       detalle: orden.enviada_por_nombre,
       tipo: 'paso',
@@ -533,7 +529,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: `anulada-${a.id}`,
       momento: momentoDe(a.anulada_at, false),
-      dia: diaDe(a.anulada_at),
+      dia: fechaDeMomento(a.anulada_at),
       titulo: `${nombreFactura(a)} anulada`,
       detalle: [a.anulada_motivo, a.anulada_por_nombre].filter(Boolean).join(' · '),
       monto: plata(a.monto_total),
@@ -544,7 +540,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: 'completa',
       momento: momentoDe(orden.completa_at, false),
-      dia: diaDe(orden.completa_at),
+      dia: fechaDeMomento(orden.completa_at),
       titulo: 'Marcada como completa',
       detalle: orden.completa_por_nombre,
       tipo: 'recibida',
@@ -554,7 +550,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: `pago-${p.id}`,
       momento: momentoDe(p.fecha, true),
-      dia: fechaCorta(p.fecha),
+      dia: fecha(p.fecha),
       titulo: `Solicitud de pago ${p.numero}`,
       detalle: ESTADO_SOLICITUD[p.estado] ?? p.estado,
       monto: plata(p.monto),
@@ -565,7 +561,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: `cambio-${c.id}`,
       momento: momentoDe(c.created_at, false),
-      dia: diaDe(c.created_at),
+      dia: fechaDeMomento(c.created_at),
       titulo: `Editada por ${c.usuario_nombre ?? 'alguien'}`,
       detalle: `${c.cambios
         .map((x) => `${x.campo}: ${String(x.antes ?? '—')} → ${String(x.despues ?? '—')}`)
@@ -577,7 +573,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
     eventos.push({
       clave: 'baja',
       momento: momentoDe(orden.baja_at, false),
-      dia: diaDe(orden.baja_at),
+      dia: fechaDeMomento(orden.baja_at),
       titulo: 'Dada de baja',
       detalle: orden.baja_motivo,
       tipo: 'alerta',
@@ -819,8 +815,8 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
             <div className="flex items-center gap-2 border-t border-error/25 bg-error/[0.06] px-5 py-2.5 text-sm font-semibold text-error">
               <TriangleAlert className="h-4 w-4 shrink-0" />
               {vencidas.length === 1
-                ? `${nombreFactura(vencidas[0])} vencida desde el ${fechaCorta(vencidas[0].vence)} (hace ${dias(-diasHasta(vencidas[0].vence))}).`
-                : `${vencidas.length} facturas vencidas. La más antigua, desde el ${fechaCorta(vencidas[0].vence)} (hace ${dias(-diasHasta(vencidas[0].vence))}).`}
+                ? `${nombreFactura(vencidas[0])} vencida desde el ${fecha(vencidas[0].vence)} (hace ${dias(-diasHasta(vencidas[0].vence))}).`
+                : `${vencidas.length} facturas vencidas. La más antigua, desde el ${fecha(vencidas[0].vence)} (hace ${dias(-diasHasta(vencidas[0].vence))}).`}
             </div>
           )}
         </Card>
@@ -856,7 +852,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
                   </div>
                   {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
                   <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs tabular-nums text-muted-foreground">
-                    <span>{fechaCorta(f.fecha)} · vence</span>
+                    <span>{fecha(f.fecha)} · vence</span>
                     <VenceFactura f={f} chico />
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
@@ -900,7 +896,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
                         {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">
-                        {fechaCorta(f.fecha)}
+                        {fecha(f.fecha)}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <VenceFactura f={f} />
@@ -972,7 +968,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
             </p>
             <p className="mt-0.5 text-sm font-semibold text-foreground">{orden.proyecto_nombre}</p>
             <p className="text-xs tabular-nums text-muted-foreground">
-              {fechaCorta(orden.fecha)}
+              {fecha(orden.fecha)}
               {orden.categoria_nombre ? ` · ${orden.categoria_nombre}` : ''}
             </p>
           </div>

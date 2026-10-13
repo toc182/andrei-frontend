@@ -14,6 +14,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Plus, ShoppingCart } from 'lucide-react';
+import { fecha } from '@/lib/fechas';
 import api from '@/services/api';
 import { recordado, recordar } from '@/lib/recordados';
 import { useCargaLenta } from '@/hooks/useCargaLenta';
@@ -38,7 +39,7 @@ import {
 } from '@/components/shell';
 import { SolicitudesPagination } from '@/pages/solicitudes/components/SolicitudesPagination';
 import { EstadoOrdenBadge, VenceBadge } from './estados';
-import { fechaCorta, plata } from './formato';
+import { plata } from './formato';
 import type { OrdenFila, ResumenOrdenes } from './tipos';
 
 const TAMANOS = [25, 50, 100];
@@ -220,7 +221,7 @@ export default function OrdenesTab({
                   <p className="truncate text-sm text-foreground">{o.descripcion}</p>
                 )}
                 <p className="truncate text-xs text-muted-foreground">
-                  {proyectoId ? fechaCorta(o.fecha) : `${o.proyecto_nombre} · ${fechaCorta(o.fecha)}`}
+                  {proyectoId ? fecha(o.fecha) : `${o.proyecto_nombre} · ${fecha(o.fecha)}`}
                 </p>
               </div>
               <p className="shrink-0 text-sm font-semibold tabular-nums">
@@ -330,7 +331,7 @@ export default function OrdenesTab({
                           </TableCell>
                         )}
                         <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">
-                          {fechaCorta(o.fecha)}
+                          {fecha(o.fecha)}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-sm text-slate-700">
                           {o.proveedor}

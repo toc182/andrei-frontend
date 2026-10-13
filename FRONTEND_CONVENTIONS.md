@@ -723,11 +723,11 @@ Outline "Cancel" on the **left**, primary action on the **right**. `sm:justify-b
 
 ### Date inputs (DatePicker)
 
-**Source:** `src/components/shell/DatePicker.tsx`. Use `<DatePicker>` for every date field. **Never** use `<Input type="date">` — the native control looks different on every browser/OS and ignores the app's `DD/MM/YYYY` Panama convention.
+**Source:** `src/components/shell/DatePicker.tsx`. Use `<DatePicker>` for every date field. **Never** use `<Input type="date">` — the native control looks different on every browser/OS and ignores the app's date format (see *Dates on screen* below).
 
 - **The contract is a string.** `value` is always `"YYYY-MM-DD"` (or `""` when empty), and `onChange` receives the same shape. Form schemas, API payloads, and DB columns stay exactly as they were under `<Input type="date">` — this is a drop-in swap.
 - **No `Date` objects cross the component boundary.** That single rule eliminates the timezone-drift bug (serializing a `Date` to JSON yields UTC midnight, which displays as the previous day in Panama UTC-5). The wrapper handles `Date` only internally for the Calendar.
-- **Trigger display is zero-padded `DD/MM/YYYY`.** Matches the Panama convention used everywhere else in the app.
+- **The trigger shows «07/oct/2026»**, like every date in the app. The calendar is in Spanish (`locale={es}` from `react-day-picker/locale`) and keeps `weekStartsOn={0}`: weeks start on Sunday, as they always have here.
 - Height is `h-9`, background `bg-card` — same as every other form control in §12.
 
 **With react-hook-form (preferred):**
@@ -756,6 +756,19 @@ const [fecha, setFecha] = useState("");
 ```
 
 Props: `value: string`, `onChange: (value: string) => void`, `disabled?: boolean`, `placeholder?: string`, `className?: string`.
+
+### Dates on screen
+
+Every date the app shows goes through `src/lib/fechas.ts` (Ivan, 2026-10-08): **«07/oct/2026»**, and with a time **«07/oct/2026 3:05 p. m.»**. Day with two digits, month as three lowercase letters (`ene feb mar abr may jun jul ago sep oct nov dic` — September is `sep`, never `sept`), four-digit year. **Never** `toLocaleDateString`: `es-PA` writes the month first (`10/07/2026` is 7 October).
+
+Pick the function by what the value IS, not by how it looks:
+
+| Value | Function | Why |
+|---|---|---|
+| A calendar day — a `DATE` column (`fecha`, `vence`, `fecha_requerida`, `periodo_inicio`) | `fecha(v)` | Reads the first ten characters only. The live server runs in UTC and sends 7 October as `2026-10-07T00:00:00.000Z`; through `new Date()` that is 6 October at 7 p.m. in Panama. |
+| A moment — a timestamp (`created_at`, `aprobada_at`, `marca_at`) | `fechaDeMomento(v)`, or `fechaHora(v)` with the time | Converted to Panama time, wherever the viewer is. |
+
+All three take an optional second argument for the blank (default `—`). Long dates written out on purpose («7 de octubre de 2026» in report headings, `ProjectTimeline`) stay long. Numeric date cells keep `tabular-nums`.
 
 ---
 

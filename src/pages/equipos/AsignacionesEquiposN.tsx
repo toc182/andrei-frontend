@@ -18,6 +18,7 @@ import type {
 } from '@/types';
 
 // Shell components
+import { fecha } from '@/lib/fechas';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { SectionHeader } from '@/components/shell/SectionHeader';
@@ -907,7 +908,7 @@ export default function AsignacionesEquiposN({ onRegisterAction }: AsignacionesE
                       {registrosUso.map((registro) => (
                         <TableRow key={registro.id}>
                           <TableCell className="text-sm">
-                            {new Date(registro.fecha_inicio).toLocaleDateString()}
+                            {fecha(registro.fecha_inicio)}
                           </TableCell>
                           <TableCell className="text-sm">{registro.cantidad}</TableCell>
                         </TableRow>

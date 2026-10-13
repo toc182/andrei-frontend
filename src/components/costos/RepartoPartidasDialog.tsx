@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AppDialog, Alert } from '@/components/shell';
 import { formatMoney } from '@/utils/formatters';
-import { formatDate } from '@/utils/dateUtils';
+import { fecha } from '@/lib/fechas';
 import { cn } from '@/lib/utils';
 import { ListaPartidas } from './SelectorPartida';
 import { repartirEntre } from '@/lib/repartoPartidas';
@@ -146,7 +146,7 @@ export default function RepartoPartidasDialog({
       title="¿A qué partidas va este pago?"
       description={
         pago
-          ? `${pago.numero ?? 'Sin número'} · ${pago.proveedor ?? 'Sin proveedor'} · ${formatMoney(pago.monto)} · pagado el ${formatDate(pago.fecha)}`
+          ? `${pago.numero ?? 'Sin número'} · ${pago.proveedor ?? 'Sin proveedor'} · ${formatMoney(pago.monto)} · pagado el ${fecha(pago.fecha)}`
           : undefined
       }
       footer={

@@ -14,15 +14,6 @@ export const AMBITO_LABEL: Record<CotizacionAmbito, string> = {
   otros: 'Otros',
 };
 
-export function formatFecha(value: string | null | undefined): string {
-  if (!value) return '-';
-  return new Date(value).toLocaleDateString('es-PA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
-
 // For a project-tied quote, show the project name. Otherwise fall back to
 // the ambito label (Oficina / Otros). Legacy rows with neither default to
 // Oficina.

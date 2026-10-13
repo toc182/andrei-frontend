@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { fecha } from '@/lib/fechas';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { DatePicker } from '@/components/shell/DatePicker';
@@ -36,7 +37,6 @@ const ESTADOS: { value: Adenda['estado']; label: string }[] = [
 ];
 
 /** 'YYYY-MM-DD' → 'DD/MM/YYYY', como lo muestra el DatePicker de al lado. */
-const fechaCorta = (iso: string) => iso.split('-').reverse().join('/');
 
 /** El monto escrito, o null si no es un número. */
 const leerMonto = (s: string): number | null => {
@@ -232,7 +232,7 @@ const AdendaForm = ({ project, adendas, isOpen, onClose, onSave, editingAdenda =
                 {terminacionAnterior && (
                   <p className="text-xs text-muted-foreground">
                     {editingAdenda ? 'Desde la terminación anterior: ' : 'Desde la terminación vigente: '}
-                    {fechaCorta(terminacionAnterior)}
+                    {fecha(terminacionAnterior)}
                   </p>
                 )}
               </div>
