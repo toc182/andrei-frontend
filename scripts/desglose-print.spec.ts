@@ -215,8 +215,8 @@ const repeatChagres = (times: number): DesgloseRow[] => {
     'B\'v2: Subtotal, ITBMS y Total en negrita');
 }
 {
-  const { pages } = buildDesglosePrintPages(baseOpts({ fecha: '20 jul 2026' }), { rows: CHAGRES, itbmsTasa: 7 });
-  ok(pages[0].includes('Impreso: 20 jul 2026'), 'B\': fecha de impresión en el pie');
+  const { pages } = buildDesglosePrintPages(baseOpts({ fecha: '20/jul/2026' }), { rows: CHAGRES, itbmsTasa: 7 });
+  ok(pages[0].includes('Impreso: 20/jul/2026'), 'B\': fecha de impresión en el pie');
   const { pages: sin } = buildDesglosePrintPages(baseOpts(), { rows: CHAGRES, itbmsTasa: 7 });
   ok(!sin[0].includes('Impreso:'), 'B\': sin fecha no hay etiqueta Impreso');
 }

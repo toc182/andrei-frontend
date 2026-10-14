@@ -21,6 +21,7 @@
 import { parseDate, fmtDate, calDays, type ScheduleEntry, type TaskId } from './cronogramaEngine';
 import { formatPredecessors, type GanttRow } from './cronogramaModel';
 import { ROW_H as ROW_PX } from './cronogramaGeometry';
+import { fecha } from './fechas';
 
 // ---- constants (gantto parity) ----
 
@@ -127,8 +128,9 @@ export function printColumns(fontPt: number, visible: string[]) {
     { key: 'num', char: 4, center: true, label: '#' },
     { key: 'name', char: 30, label: 'Nombre' },
     { key: 'dur', char: 5, center: true, label: 'Días' },
-    { key: 'inicio', char: 9, center: true, label: 'Inicio' },
-    { key: 'fin', char: 9, center: true, label: 'Fin' },
+    // «16/mar/2026», como toda fecha del sistema (antes «16 mar 26», de gantto).
+    { key: 'inicio', char: 11, center: true, label: 'Inicio' },
+    { key: 'fin', char: 11, center: true, label: 'Fin' },
     { key: 'pct', char: 4, center: true, label: '%' },
     { key: 'pred', char: 11, label: 'Pred' },
   ];
@@ -317,13 +319,6 @@ export function printTimeSegments(rangeStart: string, totalDays: number): { seg1
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-/** gantto fmtHuman: "16 mar 26" (same format the WBS table shows on screen). */
-function fmtHuman(s: string | undefined): string {
-  if (!s) return '';
-  const [y, m, d] = s.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]} ${String(y).slice(2)}`;
 }
 
 /** mm formatter — 0.01mm precision keeps SVG strings compact and the golden spec stable. */
@@ -613,8 +608,8 @@ export function buildPrintPages(opts: PrintOptions, data: PrintData): { pages: s
               ? String(calDays(sc.s, sc.f) + 1)
               : '';
         svg += cellMM('dur', dur, { y, fill: COL.textDim });
-        svg += cellMM('inicio', data.cycle ? '—' : fmtHuman(sc?.s), { y });
-        svg += cellMM('fin', data.cycle || t.type === 'milestone' ? '' : fmtHuman(sc?.f), { y });
+        svg += cellMM('inicio', data.cycle ? '—' : fecha(sc?.s, ''), { y });
+        svg += cellMM('fin', data.cycle || t.type === 'milestone' ? '' : fecha(sc?.f, ''), { y });
         svg += cellMM('pct', t.type === 'milestone' ? '' : pct + '%', { y, fill: COL.textDim });
         svg += cellMM('pred', isGroup ? '' : truncMM(formatPredecessors(t, data.rowNum), cw('pred')), { y, fill: COL.textDim });
         svg += `<line x1="0" y1="${f2(headerBand + (i - rowStart + 1) * rowH)}" x2="${f2(pwMM)}" y2="${f2(headerBand + (i - rowStart + 1) * rowH)}" stroke="${COL.rowline}" stroke-width="0.2"/>`;

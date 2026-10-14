@@ -84,7 +84,8 @@ const baseOpts = (over: Partial<PrintOptions> = {}): PrintOptions => ({
     'papers: dimensiones mm');
   const L = computePrintLayout(baseOpts(), 80, 365);
   ok(Math.abs(L.rowH - 5.39784) < 0.001, `golden: rowH 9pt = 5.398mm (got ${L.rowH})`);
-  ok(Math.abs(L.tableW - 155.076768) < 0.01, `golden: tableW completo = 155.08mm (got ${L.tableW})`);
+  // Inicio y Fin de 11 caracteres («16/mar/2026»): 4 em más que con «16 mar 26».
+  ok(Math.abs(L.tableW - 162.951264) < 0.01, `golden: tableW completo = 162.95mm (got ${L.tableW})`);
 }
 
 // ---- printTimeSegments ----
@@ -176,19 +177,19 @@ function fixtureData(rowCount: number, totalDays: number): PrintData {
 
 // ---- golden mm del chart (fix distorsión: el chart se emite en mm, ventana anidada 1:1) ----
 // Valores calculados a mano para fixtureData(10, 60) en A4 apaisado 10mm / 9pt / 1 ancho:
-// timelineW = 277 − 155.076768 = 121.923232mm; dayMM = 121.923232/60 = 2.03205387mm;
+// timelineW = 277 − 162.951264 = 114.048736mm; dayMM = 114.048736/60 = 1.90081227mm;
 // rowH = 5.39784mm; k = rowH/30 = 0.179928 (mm por px de proporción de fila en pantalla).
 {
   const { pages } = buildPrintPages(baseOpts(), fixtureData(10, 60));
-  ok(pages[0].includes('viewBox="0.00 0.00 121.92 53.98"'), 'golden mm: ventana del chart 1:1 (sin escala anisotrópica)');
-  ok(pages[0].includes('width="121.92" height="53.98"'), 'golden mm: tamaño físico del chart = viewBox');
-  ok(pages[0].includes('M66.04,17.63 L67.30,18.89 L66.04,20.15 L64.78,18.89 z'), 'golden mm: rombo de hito uniforme (±1.26mm)');
+  ok(pages[0].includes('viewBox="0.00 0.00 114.05 53.98"'), 'golden mm: ventana del chart 1:1 (sin escala anisotrópica)');
+  ok(pages[0].includes('width="114.05" height="53.98"'), 'golden mm: tamaño físico del chart = viewBox');
+  ok(pages[0].includes('M61.78,17.63 L63.04,18.89 L61.78,20.15 L60.52,18.89 z'), 'golden mm: rombo de hito uniforme (±1.26mm)');
   ok(pages[0].includes('l0,2.16 l1.08,-1.08 z'), 'golden mm: triángulo de corchete de grupo uniforme');
-  ok(pages[0].includes('d="M38.61,8.10 H44.07 V12.24"'), 'golden mm: flecha FS aterriza en el borde de la barra');
-  ok(pages[0].includes('d="M14.22,8.10 H11.02 V24.29 H14.22"'), 'golden mm: flecha SS con codo fijo de 3.2mm');
+  ok(pages[0].includes('d="M36.12,8.10 H41.32 V12.24"'), 'golden mm: flecha FS aterriza en el borde de la barra');
+  ok(pages[0].includes('d="M13.31,8.10 H10.11 V24.29 H13.31"'), 'golden mm: flecha SS con codo fijo de 3.2mm');
   ok(pages[0].includes('stroke-width="0.3" opacity="0.85" marker-end='), 'golden mm: trazo de flecha fijo 0.3mm');
-  ok(pages[0].includes('x="14.22" y="6.84" width="24.38" height="2.52" rx="0.54"'), 'golden mm: barra de 12 días en mm');
-  ok(pages[0].includes('x1="45.72"') && pages[0].includes('stroke-dasharray="1.2 0.9"'), 'golden mm: línea de hoy en mm');
+  ok(pages[0].includes('x="13.31" y="6.84" width="22.81" height="2.52" rx="0.54"'), 'golden mm: barra de 12 días en mm');
+  ok(pages[0].includes('x1="42.77"') && pages[0].includes('stroke-dasharray="1.2 0.9"'), 'golden mm: línea de hoy en mm');
 }
 {
   const { pages } = buildPrintPages(baseOpts({ logosLeft: ['"><script>x</script>'] }), fixtureData(6, 60));

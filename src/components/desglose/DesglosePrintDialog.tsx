@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { fecha } from '@/lib/fechas';
 import { AppDialog } from '@/components/shell/AppDialog';
 import { Alert } from '@/components/shell/Alert';
 import { Button } from '@/components/ui/button';
@@ -27,11 +28,7 @@ import type { DesgloseRow } from '@/lib/desgloseModel';
 
 const PREVIEW_MAX_PAGES = 4;
 
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const fechaHoy = () => {
-  const d = new Date();
-  return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
-};
+const fechaHoy = () => fecha(new Date());
 
 interface Ajustes {
   papel: string; // key de PRINT_PAPERS o 'custom'

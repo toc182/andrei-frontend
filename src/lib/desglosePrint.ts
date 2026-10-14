@@ -61,7 +61,7 @@ export interface DesglosePrintOptions {
   maxTall: number;
   title: string;
   subtitle: string;
-  /** Fecha de impresión ya formateada ('20 jul 2026'); vacía/ausente = sin pie
+  /** Fecha de impresión ya formateada ('20/jul/2026'); vacía/ausente = sin pie
    *  de fecha. Viene del caller — el builder es puro y no puede mirar el reloj. */
   fecha?: string;
   logosLeft: string[]; // data URLs, up to MAX_LOGOS_PER_SIDE each side
