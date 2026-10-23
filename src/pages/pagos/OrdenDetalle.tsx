@@ -16,7 +16,7 @@
  *      facturado.
  *   4. La historia y los documentos.
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   Ban,
   Check,
@@ -24,14 +24,12 @@ import {
   Download,
   Ellipsis,
   PackageCheck,
-  Paperclip,
   Pencil,
   Plus,
   ReceiptText,
   Send,
   Settings,
   TriangleAlert,
-  Upload,
 } from 'lucide-react';
 import { fecha, fechaDeMomento } from '@/lib/fechas';
 import api from '@/services/api';
@@ -68,8 +66,8 @@ import BajaDialog from './dialogs/BajaDialog';
 import OrdenFormDialog from './dialogs/OrdenFormDialog';
 import { BulkApprovalPasswordDialog } from '@/pages/solicitudes/dialogs/BulkApprovalPasswordDialog';
 import { RechazarSolicitudDialog } from '@/pages/solicitudes/dialogs/RechazarSolicitudDialog';
-import AdjuntosPreview from '@/components/AdjuntosPreview';
 import { abrirAdjunto } from './adjuntos';
+import DocumentosOrden from './DocumentosOrden';
 
 interface Props {
   ordenId: number;
@@ -159,10 +157,6 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
   const [clave, setClave] = useState('');
   const [errorClave, setErrorClave] = useState<string | null>(null);
   const [comentario, setComentario] = useState('');
-  const [subiendo, setSubiendo] = useState(false);
-  /** El papel de una factura que no se subió al registrarla se sube desde su renglón. */
-  const papelRef = useRef<HTMLInputElement>(null);
-  const [papelPara, setPapelPara] = useState<number | null>(null);
 
   const traer = useCallback(async () => {
     setCargando(true);
@@ -202,38 +196,6 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       return false;
     } finally {
       setAccion(null);
-    }
-  };
-
-  /** Sube archivos a la orden; con `entregaId`, a esa factura. */
-  const subirAdjuntos = async (archivos: FileList | File[], entregaId?: number) => {
-    setSubiendo(true);
-    setError(null);
-    try {
-      for (const archivo of Array.from(archivos)) {
-        const fd = new FormData();
-        fd.append('archivo', archivo);
-        if (entregaId) fd.append('entrega_id', String(entregaId));
-        await api.post(`/ordenes-compra/${ordenId}/adjuntos`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      }
-    } catch (e) {
-      setError(mensajeDe(e, 'No se pudo subir el archivo'));
-    } finally {
-      setSubiendo(false);
-      void traer();
-    }
-  };
-
-  const borrarAdjunto = async (adjuntoId: number) => {
-    setError(null);
-    try {
-      await api.delete(`/ordenes-compra/${ordenId}/adjuntos/${adjuntoId}`);
-    } catch {
-      setError('No se pudo quitar el archivo');
-    } finally {
-      void traer();
     }
   };
 
@@ -321,11 +283,6 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       `${api.defaults.baseURL}/ordenes-compra/${orden.id}/pdf?token=${token ?? ''}`,
       '_blank',
     );
-  };
-
-  const subirPapel = (entregaId: number) => {
-    setPapelPara(entregaId);
-    papelRef.current?.click();
   };
 
   // El paso en que va: 0 aprobándose, 1 por enviar, 2 recibiéndose, 3 pagándose, 4 cerrada.
@@ -584,34 +541,25 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
   const rechazo = orden.aprobaciones.find((a) => a.accion === 'rechazado');
 
   // ------------------------------------------------- piezas de cada factura
-  const papeles = (f: Entrega) => (
-    <span className="inline-flex items-center">
-      {f.adjuntos.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          onClick={() => void abrirDocumento(a.id)}
-          title={a.descripcion || a.nombre_original}
-          aria-label={`Abrir ${a.nombre_original}`}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-navy hover:bg-navy/10"
-        >
-          <Paperclip className="h-4 w-4" />
-        </button>
-      ))}
-      {f.adjuntos.length === 0 && (
-        <button
-          type="button"
-          onClick={() => subirPapel(f.id)}
-          disabled={subiendo}
-          title="Subir la factura"
-          aria-label={`Subir el papel de ${nombreFactura(f)}`}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-warning hover:bg-warning/10"
-        >
-          <Upload className="h-4 w-4" />
-        </button>
-      )}
-    </span>
-  );
+  const archivosDe = (f: Entrega) =>
+    f.adjuntos.length === 0 ? (
+      <span className="text-sm text-muted-foreground">—</span>
+    ) : (
+      <span className="inline-flex items-center">
+        {f.adjuntos.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => void abrirDocumento(a.id)}
+            title={`${nombreFactura(f)} · ${a.nombre_original}`}
+            aria-label={`Bajar ${a.nombre_original}`}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-navy hover:bg-navy/10"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        ))}
+      </span>
+    );
 
   const menuDe = (f: Entrega) =>
     puedeAnular(f) ? (
@@ -654,9 +602,11 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
       );
     }
     const enEsta = f.solicitudes.filter((s) => !TERMINADA.includes(s.estado));
-    if (enEsta.length === 0) return <span className="text-sm text-muted-foreground">Por pagar</span>;
+    if (enEsta.length === 0) {
+      return <Badge className="border bg-slate-100 text-slate-600 border-slate-200">Por pagar</Badge>;
+    }
     return (
-      <span className="inline-flex flex-wrap items-center gap-2 md:justify-end">
+      <span className="inline-flex flex-wrap items-center gap-2">
         {enEsta.map((s) => (
           <Badge key={s.id} className="border bg-warning/10 text-warning border-warning/30">
             {s.numero} · {(ESTADO_SOLICITUD[s.estado] ?? s.estado).toLowerCase()}
@@ -844,20 +794,20 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
               {facturas.map((f) => (
                 <div key={f.id} className="px-5 py-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="inline-flex min-w-0 items-center gap-1 text-sm font-medium text-foreground">
-                      {f.numero_factura ?? <span className="text-muted-foreground">Sin número</span>}
-                      {papeles(f)}
-                    </p>
+                    <p className="text-sm font-medium tabular-nums text-foreground">{fecha(f.fecha)}</p>
                     <p className="shrink-0 text-sm font-semibold tabular-nums">{plata(f.monto_total)}</p>
                   </div>
                   {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
-                  <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs tabular-nums text-muted-foreground">
-                    <span>{fecha(f.fecha)} · vence</span>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                    <span>Vence</span>
                     <VenceFactura f={f} chico />
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
                     {pagoDe(f)}
-                    {menuDe(f)}
+                    <span className="inline-flex items-center">
+                      {f.adjuntos.length > 0 && archivosDe(f)}
+                      {menuDe(f)}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -866,10 +816,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                    <TableHead className="w-[200px] px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Factura
-                    </TableHead>
-                    <TableHead className="w-[130px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="w-[150px] px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Fecha
                     </TableHead>
                     <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -878,25 +825,24 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
                     <TableHead className="w-[140px] px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Monto
                     </TableHead>
-                    <TableHead className="px-5 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <TableHead className="w-[96px] px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Factura
+                    </TableHead>
+                    {/* «Pago» lleva el estado; la columna angosta del final, sin
+                        título, el menú de la factura (Ivan: «¿es una columna o
+                        2?»). */}
+                    <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Pago
                     </TableHead>
+                    <TableHead className="w-[48px] p-0" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {facturas.map((f) => (
                     <TableRow key={f.id} className="border-b border-slate-100 last:border-0">
-                      <TableCell className="px-5 py-3 text-sm text-foreground">
-                        <span className="inline-flex items-center gap-1 font-medium">
-                          {f.numero_factura ?? (
-                            <span className="font-normal text-muted-foreground">Sin número</span>
-                          )}
-                          {papeles(f)}
-                        </span>
-                        {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 text-sm tabular-nums text-slate-700">
+                      <TableCell className="px-5 py-3 text-sm tabular-nums text-slate-700">
                         {fecha(f.fecha)}
+                        {f.nota && <p className="text-xs text-muted-foreground">{f.nota}</p>}
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <VenceFactura f={f} />
@@ -904,12 +850,9 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
                       <TableCell className="px-4 py-3 text-right text-sm tabular-nums text-slate-700">
                         {plata(f.monto_total)}
                       </TableCell>
-                      <TableCell className="px-5 py-3 text-right">
-                        <span className="inline-flex items-center justify-end gap-1">
-                          {pagoDe(f)}
-                          {menuDe(f)}
-                        </span>
-                      </TableCell>
+                      <TableCell className="px-4 py-3 text-center">{archivosDe(f)}</TableCell>
+                      <TableCell className="px-4 py-3">{pagoDe(f)}</TableCell>
+                      <TableCell className="py-3 pl-0 pr-3 text-right">{menuDe(f)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -938,17 +881,6 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
               </dl>
             </div>
           </Card>
-          <input
-            ref={papelRef}
-            type="file"
-            multiple
-            className="hidden"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) => {
-              if (e.target.files?.length && papelPara) void subirAdjuntos(e.target.files, papelPara);
-              e.target.value = '';
-            }}
-          />
         </div>
       )}
 
@@ -1111,19 +1043,7 @@ export default function OrdenDetallePage({ ordenId, onVolver, onCambio }: Props)
           </Card>
         </div>
 
-        <div className="space-y-3">
-          <SectionHeader title="Documentos" />
-          <Card className="p-5">
-            <AdjuntosPreview
-              adjuntos={orden.adjuntos}
-              rutaUrls={`/ordenes-compra/${orden.id}/adjuntos/urls`}
-              onUpload={(archivos) => void subirAdjuntos(archivos)}
-              onDelete={(id) => void borrarAdjunto(id)}
-              uploading={subiendo}
-              title="Cotización y otros archivos"
-            />
-          </Card>
-        </div>
+        <DocumentosOrden orden={orden} onCambio={() => void traer()} />
       </div>
 
       <FacturaDialog

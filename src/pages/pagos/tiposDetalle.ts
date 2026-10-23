@@ -17,8 +17,10 @@ export interface OrdenAdjunto {
   nombre_original: string;
   tipo_mime: string;
   tamano: number;
+  /** El nombre que alguien le puso. Sin él, se lee el del archivo. */
   descripcion: string | null;
   subido_por_nombre: string | null;
+  created_at: string;
 }
 
 /** Una solicitud de pago que cubre (parte de) una factura. */
