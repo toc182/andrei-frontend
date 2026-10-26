@@ -730,9 +730,10 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar cambio de aprobadores</AlertDialogTitle>
             <AlertDialogDescription>
-              Este cambio reseteará todas las aprobaciones de solicitudes no
-              pagadas de este proyecto. Las solicitudes volverán a estado
-              pendiente. ¿Desea continuar?
+              Este cambio reiniciará las aprobaciones de las solicitudes de
+              pago no pagadas y de las órdenes de compra que no se han enviado
+              al proveedor en este proyecto. Todas volverán a esperar sus
+              firmas. ¿Desea continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
