@@ -3,7 +3,7 @@
  * Router central de la aplicación con sidebar contextual
  */
 
-import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode, Suspense } from 'react';
 import { AppLayout, type Crumb } from '../components/layout/AppLayout';
 import { AppErrorBoundary } from '@/components/shell/AppErrorBoundary';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -18,20 +18,24 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, Users, Truck, TrendingUp } from 'lucide-react';
-import ProjectsList from '../components/ProjectsList';
-import ClientesN from './ClientesN';
-import DocumentosPage from './DocumentosPage';
-import EquiposPage from './EquiposPage';
-import ProjectDetailLayout from './project/ProjectDetailLayout';
-import RequisicionesGeneral from './RequisicionesGeneral';
-import AdministracionPage from './AdministracionPage';
-import PagosPage from './PagosPage';
-import MiCuentaPage from './MiCuentaPage';
-import CajasMenudasPage from './CajasMenudasPage';
-import CuentasGeneralPage from './cuentas/CuentasGeneralPage';
-import CotizacionesPage from './cotizaciones/CotizacionesPage';
-import CronogramasIndexPage from './cronogramas/CronogramasIndexPage';
-import CronogramaWorkspace from './cronogramas/CronogramaWorkspace';
+import {
+  ProjectsList,
+  ClientesN,
+  DocumentosPage,
+  EquiposPage,
+  ProjectDetailLayout,
+  RequisicionesGeneral,
+  AdministracionPage,
+  PagosPage,
+  MiCuentaPage,
+  CajasMenudasPage,
+  CuentasGeneralPage,
+  CotizacionesPage,
+  CronogramasIndexPage,
+  CronogramaWorkspace,
+  precargarPantallas,
+} from './pantallas';
+import { CargandoPantalla } from '@/components/CargandoPantalla';
 import { canUseCronogramas } from '@/lib/cronogramaAccess';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -77,6 +81,11 @@ export default function DashboardNew() {
   // La dirección se limpia en seguida: recargar la página no vuelve a abrirla.
   useEffect(() => {
     if (solicitudDelEnlace() !== null) window.history.replaceState(null, '', '/');
+  }, []);
+  // Con la primera pantalla ya pedida, el código de las demás baja por detrás.
+  useEffect(() => {
+    const t = setTimeout(precargarPantallas, 1500);
+    return () => clearTimeout(t);
   }, []);
   const [navKey, setNavKey] = useState(0);
   const setCurrentView = useCallback((view: string) => {
@@ -393,7 +402,7 @@ export default function DashboardNew() {
       breadcrumbs={breadcrumbs ?? undefined}
     >
       <AppErrorBoundary>
-        {renderContent()}
+        <Suspense fallback={<CargandoPantalla />}>{renderContent()}</Suspense>
       </AppErrorBoundary>
     </AppLayout>
   );

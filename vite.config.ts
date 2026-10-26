@@ -12,4 +12,17 @@ export default defineConfig({
     },
   },
   cacheDir: path.join(os.tmpdir(), 'vite-andrei-frontend'),
+  build: {
+    rollupOptions: {
+      output: {
+        // Las librerías (React, Radix, date-fns…) en un archivo aparte: casi
+        // nunca cambian, así que el navegador lo guarda entre actualizaciones y
+        // solo vuelve a bajar lo nuestro. exceljs se queda fuera: pesa casi
+        // 1 MB y solo se baja al exportar a Excel.
+        manualChunks(id) {
+          if (id.includes('node_modules') && !id.includes('exceljs')) return 'librerias';
+        },
+      },
+    },
+  },
 });

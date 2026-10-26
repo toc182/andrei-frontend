@@ -92,6 +92,9 @@ No React Router. Routing is handled manually:
 - App.tsx checks window.location.pathname for public routes (/verificar/)
 - DashboardNew.tsx handles all internal navigation via state
 - Never add React Router — it is not installed and not the pattern
+- Every screen is loaded on demand from `src/pages/pantallas.ts` (each one its own file,
+  the rest preloaded in the background, one automatic reload if an update removed the
+  file). A new screen goes there too — imported directly it lands back in the main file.
 
 ## API calls
 

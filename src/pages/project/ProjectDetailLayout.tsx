@@ -4,7 +4,7 @@
  * Header and submenu removed — navigation is now in the sidebar
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import type { Crumb } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,18 +15,21 @@ import {
 import { buttonVariants } from '@/components/ui/button';
 import { Alert } from '@/components/shell/Alert';
 import { toast } from 'sonner';
-import ProjectInformacion from './ProjectInformacion';
-import ProjectSummary from './ProjectSummary';
-import ProjectControlCostos from './ProjectControlCostos';
-import ProjectRequisiciones from './ProjectRequisiciones';
-import ProjectMembers from './ProjectMembers';
-import ProjectTodos from './ProjectTodos';
-import ProjectReportes from './ProjectReportes';
-import ProjectPagos from './ProjectPagos';
-import CajasMenudasPage from '../CajasMenudasPage';
-import CuentasProjectView from '../cuentas/CuentasProjectView';
-import CuentaDetailPage from '../cuentas/CuentaDetailPage';
-import CronogramaWorkspace from '../cronogramas/CronogramaWorkspace';
+import {
+  ProjectInformacion,
+  ProjectSummary,
+  ProjectControlCostos,
+  ProjectRequisiciones,
+  ProjectMembers,
+  ProjectTodos,
+  ProjectReportes,
+  ProjectPagos,
+  CajasMenudasPage,
+  CuentasProjectView,
+  CuentaDetailPage,
+  CronogramaWorkspace,
+} from '../pantallas';
+import { CargandoPantalla } from '@/components/CargandoPantalla';
 import AdendaForm from '../../components/forms/AdendaForm';
 import ProjectFormNew from '../../components/forms/ProjectFormNew';
 import api from '../../services/api';
@@ -405,7 +408,7 @@ export default function ProjectDetailLayout({
   return (
     <>
       {/* Content — no header, no submenu */}
-      {renderSubview()}
+      <Suspense fallback={<CargandoPantalla />}>{renderSubview()}</Suspense>
 
       {/* Delete Adenda Confirmation */}
       <AlertDialog open={confirmarBorrado} onOpenChange={setConfirmarBorrado}>
