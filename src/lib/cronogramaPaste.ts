@@ -15,7 +15,7 @@
 
 import type { DepType, EngineTask, Predecessor, TaskId } from './cronogramaEngine';
 import { parseTsv } from './cronogramaPasteTsv';
-import { parseDateColumn, type DateOrder, type DateResult, type DateColumnResult } from './cronogramaPasteDates';
+import { parseDateColumn, type DateOrder, type DateResult, type DateColumnResult } from './fechasPegadas';
 import { analyzeHierarchy, parseDias, type HierMode, type ModeDetection } from './cronogramaPasteHierarchy';
 
 /** Hard ceiling per paste; anything past it is dropped with a visible message (never silently). */

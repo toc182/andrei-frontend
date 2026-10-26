@@ -770,6 +770,8 @@ Pick the function by what the value IS, not by how it looks:
 
 All three take an optional second argument for the blank (default `—`). Long dates written out on purpose («7 de octubre de 2026» in report headings, `ProjectTimeline`) stay long. Numeric date cells keep `tabular-nums`.
 
+**Dates people type or paste** are read by ONE reader, `src/lib/fechasPegadas.ts` (the cronograma bulk paste and petty cash): «07/10/2026», «7-oct-26», «07/oct/2026», «7 de octubre de 2026», English exports, a date with its time; day first unless the pasted column proves otherwise. In an entry grid (petty cash «Registrar Gastos») the date cell is `<CeldaFecha>` (`src/components/forms/CeldaFecha.tsx`): typed or pasted in any of those forms, shown «07/oct/2026», a click opens the Spanish calendar. What it cannot read stays in the cell **in red, as pasted** (`bg-error/10 text-error`, the reason in the tooltip), the footer counts «N fechas por corregir» and saving is blocked until they are fixed. Never blank an unreadable date: the row would be saved without it, or silently dropped.
+
 ---
 
 ## 13. Buttons

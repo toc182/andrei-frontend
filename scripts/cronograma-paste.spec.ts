@@ -13,7 +13,7 @@
 // crash); never emits a milestone; and the one-undo / one-markDirty commit contract.
 
 import { parseTsv } from '../src/lib/cronogramaPasteTsv';
-import { parseSingleDate, parseDateColumn } from '../src/lib/cronogramaPasteDates';
+import { parseSingleDate, parseDateColumn } from '../src/lib/fechasPegadas';
 import { parsePaste, type PasteMapping } from '../src/lib/cronogramaPaste';
 import { opInsertPasteBatch, previewPasteBatch, childrenOf } from '../src/lib/cronogramaTaskOps';
 import { buildRows } from '../src/lib/cronogramaModel';

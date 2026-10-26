@@ -23,7 +23,7 @@ import { ClipboardPaste } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { computeSchedule, type EngineProject, type EngineTask, type TaskId } from '@/lib/cronogramaEngine';
 import { parseTsv } from '@/lib/cronogramaPasteTsv';
-import type { DateOrder } from '@/lib/cronogramaPasteDates';
+import type { DateOrder } from '@/lib/fechasPegadas';
 import type { HierMode } from '@/lib/cronogramaPasteHierarchy';
 import { MAX_PASTE_ROWS, parsePaste, type IssueLevel, type PasteMapping, type ResolvedPasteRow } from '@/lib/cronogramaPaste';
 import { previewPasteBatch } from '@/lib/cronogramaTaskOps';

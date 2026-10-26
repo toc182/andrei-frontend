@@ -8,6 +8,8 @@ import {
   Plus, Pencil, Trash2, Loader2, Upload, Download, FileText, Receipt, Send, AlertCircle, FileCheck,
 } from 'lucide-react';
 
+import { CeldaFecha } from '@/components/forms/CeldaFecha';
+import { leerColumna, type FechaDeCelda } from '@/lib/fechasPegadas';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,6 +98,8 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   const [batchRows, setBatchRows] = useState<Array<{
     fecha: string; proveedor: string; descripcion: string;
     monto: string; itbms: string; monto_total: string;
+    /** Lo que se pegó o escribió en la fecha y no se pudo leer, con el porqué. */
+    fechaCruda?: string; fechaMotivo?: string;
   }>>([]);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
 
@@ -278,6 +282,14 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     });
   };
 
+  const setFechaFila = (index: number, v: FechaDeCelda) => {
+    setBatchRows(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], fecha: v.fecha, fechaCruda: v.cruda, fechaMotivo: v.motivo };
+      return updated;
+    });
+  };
+
   const handleAddBatchRow = () => {
     setBatchRows(prev => [...prev, emptyRow()]);
   };
@@ -292,63 +304,6 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     'monto',
     'itbms',
   ];
-
-  // Parse a pasted date string into YYYY-MM-DD, or '' if unparseable.
-  // Accepted: DD/MM/YYYY, D/M/YYYY, DD-MM-YYYY, YYYY-MM-DD,
-  // D-mes-YY, D-mes-YYYY, D/mes/YY, D mes YYYY (Spanish or English month abbr)
-  const parsePastedDate = (raw: string): string => {
-    const s = raw.trim();
-    if (!s) return '';
-
-    // YYYY-MM-DD (already correct format)
-    const isoMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if (isoMatch) {
-      const [, y, m, d] = isoMatch;
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-    }
-
-    // DD/MM/YYYY or DD-MM-YYYY (4-digit year required)
-    const numMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-    if (numMatch) {
-      const [, d, m, y] = numMatch;
-      const dn = parseInt(d, 10);
-      const mn = parseInt(m, 10);
-      if (dn >= 1 && dn <= 31 && mn >= 1 && mn <= 12) {
-        return `${y}-${String(mn).padStart(2, '0')}-${String(dn).padStart(2, '0')}`;
-      }
-      return '';
-    }
-
-    // D-mes-YY(YY) or D/mes/YY(YY) or D mes YY(YY)
-    const MONTHS: Record<string, number> = {
-      ene: 1, jan: 1,
-      feb: 2,
-      mar: 3,
-      abr: 4, apr: 4,
-      may: 5,
-      jun: 6,
-      jul: 7,
-      ago: 8, aug: 8,
-      sep: 9, sept: 9,
-      oct: 10,
-      nov: 11,
-      dic: 12, dec: 12,
-    };
-    const monMatch = s.match(/^(\d{1,2})[\s/-]([a-zA-ZáéíóúÁÉÍÓÚ]{3,4})[\s/-](\d{2}|\d{4})$/);
-    if (monMatch) {
-      const [, dStr, monStr, yStr] = monMatch;
-      const monKey = monStr.toLowerCase().slice(0, 4);
-      const mn = MONTHS[monKey] ?? MONTHS[monKey.slice(0, 3)];
-      if (!mn) return '';
-      const dn = parseInt(dStr, 10);
-      if (dn < 1 || dn > 31) return '';
-      let y = parseInt(yStr, 10);
-      if (yStr.length === 2) y = y >= 70 ? 1900 + y : 2000 + y;
-      return `${y}-${String(mn).padStart(2, '0')}-${String(dn).padStart(2, '0')}`;
-    }
-
-    return '';
-  };
 
   // Parse a pasted number (strip currency symbols, thousands separators, normalize decimal)
   // Handles: "B/. 205.75", "$1,234.56", "1.234,56", "205,75", "205.75", "1234"
@@ -422,6 +377,9 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
     }
 
     const startCol = BATCH_COLUMNS.indexOf(field);
+    // La columna de fechas se lee de una vez: si una dice 25/04, todas son día/mes.
+    const colFecha = BATCH_COLUMNS.indexOf('fecha') - startCol;
+    const fechas = colFecha >= 0 ? leerColumna(cells.map((r) => r[colFecha] ?? '')) : [];
 
     setBatchRows((prev) => {
       const updated = [...prev];
@@ -439,7 +397,12 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           let value = cellValue;
 
           if (targetField === 'fecha') {
-            value = parsePastedDate(cellValue);
+            const leida = fechas[rOff];
+            updated[targetRow] = {
+              ...updated[targetRow],
+              fecha: leida.fecha, fechaCruda: leida.cruda, fechaMotivo: leida.motivo,
+            };
+            return;
           } else if (targetField === 'monto' || targetField === 'itbms') {
             value = parsePastedNumber(cellValue);
           }
@@ -464,6 +427,10 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
   };
 
   const handleSubmitBatch = async () => {
+    if (fechasPorCorregir > 0) {
+      setError('Corrige las fechas en rojo antes de guardar');
+      return;
+    }
     // Filter out empty rows
     const validRows = batchRows.filter(r => r.fecha && r.proveedor && r.descripcion && Number(r.monto) > 0);
     if (validRows.length === 0) {
@@ -508,6 +475,10 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
   const batchTotal = batchRows.reduce((sum, r) => sum + (Number(r.monto_total) || 0), 0);
   const batchValidCount = batchRows.filter(r => r.fecha && r.proveedor && Number(r.monto) > 0).length;
+  // Una fila con datos y sin fecha leída no se guardaría: se cuenta y se marca en rojo.
+  const faltaFecha = (r: (typeof batchRows)[number]) =>
+    !r.fecha && !r.fechaCruda && Boolean(r.proveedor.trim() || r.descripcion.trim() || Number(r.monto) > 0);
+  const fechasPorCorregir = batchRows.filter(r => r.fechaCruda || faltaFecha(r)).length;
 
   // --- Comprobante handlers ---
 
@@ -1326,12 +1297,20 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
             <span className="text-sm text-muted-foreground">
               Total: <strong className="text-foreground">{formatMonto(batchTotal)}</strong>
               {batchValidCount > 0 && ` (${batchValidCount} gasto${batchValidCount !== 1 ? 's' : ''})`}
+              {fechasPorCorregir > 0 && (
+                <>
+                  {' · '}
+                  <span className="font-semibold text-error">
+                    {fechasPorCorregir} fecha{fechasPorCorregir !== 1 ? 's' : ''} por corregir
+                  </span>
+                </>
+              )}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowBatchModal(false)} disabled={batchSubmitting}>
                 Cancelar
               </Button>
-              <Button onClick={handleSubmitBatch} disabled={batchSubmitting}>
+              <Button onClick={handleSubmitBatch} disabled={batchSubmitting || fechasPorCorregir > 0}>
                 {batchSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Guardar Todo
               </Button>
@@ -1344,12 +1323,12 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
           )}
 
           <p className="text-xs text-muted-foreground mb-2">
-            Tip: puedes copiar varias celdas desde Excel y pegarlas aquí. Usa fechas en formato <strong>DD/MM/AAAA</strong> o <strong>1-mar-26</strong>.
+            Tip: puedes copiar varias celdas desde Excel y pegarlas aquí. La fecha se puede escribir o pegar como <strong>07/oct/2026</strong>, <strong>07/10/2026</strong> o <strong>7-oct-26</strong>.
           </p>
 
           <div className="overflow-x-auto overflow-y-auto max-h-[60vh] -mx-2">
             {/* Header */}
-            <div className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] bg-muted border-y px-1 sticky top-0 z-10">
+            <div className="grid grid-cols-[132px_1fr_1fr_80px_70px_80px_32px] bg-muted border-y px-1 sticky top-0 z-10">
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Fecha</span>
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Proveedor</span>
               <span className="px-2 py-2 text-xs font-medium text-muted-foreground uppercase">Descripción</span>
@@ -1361,13 +1340,13 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
 
             {/* Rows */}
             {batchRows.map((row, index) => (
-              <div key={index} className="grid grid-cols-[110px_1fr_1fr_80px_70px_80px_32px] border-b last:border-b-0 px-1">
-                <input
-                  type="date"
-                  className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"
-                  value={row.fecha}
-                  onChange={(e) => handleBatchRowChange(index, 'fecha', e.target.value)}
-                  onPaste={(e) => handleBatchPaste(e, index, 'fecha')}
+              <div key={index} className="grid grid-cols-[132px_1fr_1fr_80px_70px_80px_32px] border-b last:border-b-0 px-1">
+                <CeldaFecha
+                  className="border-r border-border/50 focus-within:bg-slate-50"
+                  valor={{ fecha: row.fecha, cruda: row.fechaCruda, motivo: row.fechaMotivo }}
+                  onCambio={(v) => setFechaFila(index, v)}
+                  onPegarVarias={(e) => handleBatchPaste(e, index, 'fecha')}
+                  falta={faltaFecha(row)}
                 />
                 <input
                   className="px-2 py-2 text-sm border-r border-border/50 bg-transparent outline-none focus:bg-slate-50"

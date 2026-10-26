@@ -1,18 +1,17 @@
-// Date parsing for the cronograma bulk-paste dialog. The product owner pastes presupuesto rows
-// from Excel where Inicio/Fin are locale-formatted (Panama defaults to dd/mm/aaaa), so a column
-// can hold "15/03/2026", "2026-03-15", "15 mar 2026", or a mix. Two hard requirements drive this
-// module (build-spec guarantee "Honest dates"):
+// The one reader for dates a person pastes or types: the cronograma bulk-paste dialog and the
+// petty cash paste table (Ivan, 2026-10-08: «aveces hacemos copy paste desde excel, tiene que
+// poder entenderlo»). Excel in Panama is locale-formatted (dd/mm/aaaa by default), so a column
+// can hold "15/03/2026", "2026-03-15", "15 mar 2026", "15/mar/2026", or a mix. Two hard
+// requirements drive this module (build-spec guarantee "Honest dates"):
 //
-//   1. Validity is decided on the INTEGER tokens BEFORE ever calling `new Date(y, m-1, d)`. JS
-//      Date silently rolls over 31/02 -> Mar 3 and 13/01 -> next-Jan; we reject those at the token
-//      level so a bad cell BLOCKS its row instead of scheduling a wrong date. Output is built with
-//      `fmtDate` (zero-padded), never toISOString (which shifts by timezone).
+//   1. Validity is decided on the INTEGER tokens, never through `new Date(y, m-1, d)`: JS Date
+//      silently rolls over 31/02 -> Mar 3 and 13/01 -> next-Jan. A bad cell BLOCKS its row instead
+//      of saving a wrong date. Output is the zero-padded "YYYY-MM-DD", never toISOString (which
+//      shifts by timezone).
 //   2. Ambiguous numeric order (dd/mm vs mm/dd) is resolved per COLUMN, not per cell, so one
 //      "25/03" in the column pins the whole column to dd/mm. Precedence: ISO > named month >
 //      an unambiguous `day > 12` component > the user's selector. A data-driven order that
 //      contradicts the selector is reported as a conflict for the dialog to block on.
-
-import { fmtDate } from './cronogramaEngine';
 
 /** User-chosen order for numeric dates whose components are all <= 12 (genuinely ambiguous). */
 export type DateOrder = 'dmy' | 'mdy';
@@ -58,7 +57,7 @@ function validate(y: number, m: number, d: number): DateResult {
   if (!Number.isInteger(y) || y < 1900 || y > 2999) return { ok: false, reason: `año fuera de rango (${y})` };
   const dim = daysInMonth(y, m);
   if (!Number.isInteger(d) || d < 1 || d > dim) return { ok: false, reason: `día inválido (${d}) para ${m}/${y}` };
-  return { ok: true, value: fmtDate(new Date(y, m - 1, d)) };
+  return { ok: true, value: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}` };
 }
 
 type Classified =
@@ -73,7 +72,12 @@ const SERIAL = 'parece un número de serie de Excel; pega la fecha como texto (d
 
 /** Classify a raw cell without committing to a dd/mm vs mm/dd order (that is a column decision). */
 function classify(raw: string): Classified {
-  const s = raw.trim();
+  // A date copied together with its time («07/10/2026 0:00», «07/oct/2026 3:05 p. m.»,
+  // «2026-10-07T15:05») keeps only the date: the time says nothing about the day.
+  const s = raw
+    .trim()
+    .replace(/(?:\s+|T)\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:\s*[ap]\.?\s*m\.?)?(?:Z|[+-]\d{2}:?\d{2})?$/i, '')
+    .trim();
   if (!s) return { kind: 'blank' };
   // Bare all-digit run of 5+ = Excel serial (e.g. 45678). Reject with a hint; don't guess an epoch.
   if (/^\d{5,}$/.test(s)) return { kind: 'serial' };
@@ -82,7 +86,7 @@ function classify(raw: string): Classified {
   if (hasLetters) {
     const tokens = s
       .toLowerCase()
-      .split(/[\s/.-]+/)
+      .split(/[\s/.,-]+/)
       .map((t) => t.replace(/\.$/, ''))
       .filter(Boolean);
     const mi = tokens.findIndex((t) => t in MONTHS);
@@ -182,4 +186,31 @@ export function parseDateColumn(cells: string[], selector: DateOrder): DateColum
   }
 
   return { results: classified.map((c) => resolve(c, resolvedOrder)), resolvedOrder, inference, conflict };
+}
+
+/** What a typing/pasting cell knows about its date: the date read ("YYYY-MM-DD", or '' when
+ *  blank), or what was pasted and could not be read, with why. */
+export interface FechaDeCelda {
+  fecha: string;
+  cruda?: string;
+  motivo?: string;
+}
+
+/** One cell typed or pasted by a person (petty cash), read day first as in Panama. What cannot
+ *  be read is kept as written so the cell can show it in red instead of going blank. */
+export function leerCelda(texto: string): FechaDeCelda {
+  return deCelda(parseSingleDate(texto, 'dmy'), texto);
+}
+
+// `'value' in r` and not `r.ok`: this project compiles without strictNullChecks, and there a
+// boolean discriminant does not narrow the union.
+function deCelda(r: DateResult, texto: string): FechaDeCelda {
+  if ('value' in r) return { fecha: r.value };
+  if (r.blank) return { fecha: '' };
+  return { fecha: '', cruda: texto.trim(), motivo: r.reason };
+}
+
+/** A pasted column: dd/mm vs mm/dd decided once for the whole column (see parseDateColumn). */
+export function leerColumna(textos: string[]): FechaDeCelda[] {
+  return parseDateColumn(textos, 'dmy').results.map((r, i) => deCelda(r, textos[i]));
 }
