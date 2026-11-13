@@ -658,7 +658,17 @@ export function ProjectsTable({ data }) {
 
 **Source:** `src/components/shell/AppDialog.tsx`
 
-Props: `open`, `onOpenChange`, `size` (default `"simple"`), `title`, `description`, `children`, `footer`.
+Props: `open`, `onOpenChange`, `size` (default `"simple"`), `title`, `description`, `children`, `footer`, `cerrarSoloConBoton`.
+
+### Long forms: `cerrarSoloConBoton`
+
+By default a click outside the dialog or Esc closes it. A form where that would
+throw away a lot of typing (the requisition, with its lines) passes
+`cerrarSoloConBoton`: then only the corner X, Cancel or the save button close
+it. Such a form also keeps what is typed in the browser (`src/lib/borradorLocal.ts`)
+and offers it back on reopening with `<AvisoSinGuardar>` (`src/components/AvisoSinGuardar.tsx`),
+the same message the daily report uses. Don't turn it on for short dialogs: there,
+closing with a click outside is the expected way out.
 
 ### Width decisions
 

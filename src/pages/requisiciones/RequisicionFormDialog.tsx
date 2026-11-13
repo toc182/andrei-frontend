@@ -12,10 +12,16 @@
  * las líneas son una tabla donde se escribe en la casilla (LineasGrid) y los
  * datos bancarios son los mismos cuatro de la solicitud de pago, que pasan tal
  * cual a la solicitud que salga de aquí.
+ *
+ * Lo escrito no se pierde (2026-11-12, a Cesar se le cerró a media requisición):
+ * la ventana solo se cierra con un botón, y una NUEVA se va guardando en el
+ * navegador mientras se escribe (borradorRequisicion.ts). La lista la ofrece al
+ * volver a pulsar «Nueva requisición».
  */
 import { useEffect, useRef, useState } from 'react';
 import { Paperclip, Upload, X } from 'lucide-react';
 import api from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import { AppDialog, Alert, DatePicker } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +34,9 @@ import { useSoltarArchivos } from '@/hooks/useSoltarArchivos';
 import { cn } from '@/lib/utils';
 import { LineasGrid } from './LineasGrid';
 import { lineaEnBlanco, lineaVacia } from './lineas';
+import {
+  type BorradorRequisicion, borrarRequisicion, conClavesNuevas, guardarRequisicion,
+} from './borradorRequisicion';
 import { PrioridadEtiqueta } from './etiquetas';
 import type { LineaBorrador, Prioridad, RequisicionDetalle } from './tipos';
 
@@ -47,6 +56,8 @@ interface Props {
   proyectoNombre?: string;
   /** Si viene, se corrige esta; si no, se escribe una nueva. */
   requisicion?: RequisicionDetalle | null;
+  /** Una nueva que quedó sin guardar y se eligió seguir: arranca desde ella. */
+  semilla?: BorradorRequisicion | null;
   /** Si quien escribe es el que aprueba las del proyecto: guarda y aprueba. */
   esAprobador: boolean;
   /** Ya guardada. `sinSubir`: los archivos que no se pudieron subir, para avisar. */
@@ -65,9 +76,11 @@ export default function RequisicionFormDialog({
   proyectoId,
   proyectoNombre,
   requisicion,
+  semilla = null,
   esAprobador,
   onListo,
 }: Props) {
+  const { user } = useAuth();
   const editando = !!requisicion;
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
@@ -89,15 +102,20 @@ export default function RequisicionFormDialog({
   const [clave, setClave] = useState('');
   const [errorClave, setErrorClave] = useState<string | null>(null);
   const entradaArchivo = useRef<HTMLInputElement>(null);
+  // La ventana queda montada entre una vez y otra: al abrirse, su primera pasada
+  // todavía trae lo de la vez anterior. Esa no se guarda (ver abajo).
+  const recienAbierta = useRef(false);
 
-  // Cada vez que se abre, desde lo que hay: la requisición que se corrige, o en
-  // blanco.
+  // Cada vez que se abre, desde lo que hay: la requisición que se corrige, la
+  // nueva que quedó sin guardar, o en blanco.
   useEffect(() => {
     if (!open) return;
+    recienAbierta.current = true;
     const r = requisicion;
-    setDescripcion(r?.descripcion ?? '');
-    setFecha(r?.fecha_requerida ?? '');
-    setPrioridad(r?.prioridad ?? 'normal');
+    const s = r ? null : semilla;
+    setDescripcion(r?.descripcion ?? s?.descripcion ?? '');
+    setFecha(r?.fecha_requerida ?? s?.fecha ?? '');
+    setPrioridad(r?.prioridad ?? s?.prioridad ?? 'normal');
     setLineas(
       r?.lineas.length
         ? r.lineas.map((l) => ({
@@ -107,13 +125,15 @@ export default function RequisicionFormDialog({
             descripcion: l.descripcion,
             renglon_desglose: l.renglon_desglose ?? '',
           }))
-        : [lineaVacia()],
+        : s?.lineas?.length
+          ? conClavesNuevas(s.lineas)
+          : [lineaVacia()],
     );
-    setNotas(r?.notas ?? '');
-    setBeneficiario(r?.beneficiario ?? '');
-    setBanco(r?.banco ?? '');
-    setTipoCuenta(r?.tipo_cuenta ?? SIN_TIPO);
-    setNumeroCuenta(r?.numero_cuenta ?? '');
+    setNotas(r?.notas ?? s?.notas ?? '');
+    setBeneficiario(r?.beneficiario ?? s?.beneficiario ?? '');
+    setBanco(r?.banco ?? s?.banco ?? '');
+    setTipoCuenta(r?.tipo_cuenta ?? s?.tipoCuenta ?? SIN_TIPO);
+    setNumeroCuenta(r?.numero_cuenta ?? s?.numeroCuenta ?? '');
     setArchivos([]);
     setQuitados([]);
     setRechazados(null);
@@ -121,7 +141,26 @@ export default function RequisicionFormDialog({
     setLineasMalas(new Set());
     setClave('');
     setErrorClave(null);
-  }, [open, requisicion]);
+  }, [open, requisicion, semilla]);
+
+  // Una nueva se va guardando en el navegador con cada cambio, para ofrecerla si
+  // la ventana o la página se cierran antes de crearla. Sin nada escrito, lo
+  // guardado se borra. Mientras se crea, no: si ya quedó creada y alguien sigue
+  // tecleando mientras suben los archivos, se ofrecería otra vez y saldría doble.
+  useEffect(() => {
+    if (!open || editando || !user || guardando) return;
+    if (recienAbierta.current) {
+      recienAbierta.current = false;
+      return;
+    }
+    guardarRequisicion(user.id, proyectoId, {
+      descripcion, fecha, prioridad, lineas, notas, beneficiario, banco, tipoCuenta, numeroCuenta,
+      adjuntosSinSubir: archivos.length,
+    });
+  }, [
+    open, editando, user, guardando, proyectoId, descripcion, fecha, prioridad, lineas, notas,
+    beneficiario, banco, tipoCuenta, numeroCuenta, archivos.length,
+  ]);
 
   const agregarArchivos = (lista: File[]) => {
     const buenos: ArchivoNuevo[] = [];
@@ -205,6 +244,9 @@ export default function RequisicionFormDialog({
           ...(esAprobador ? { aprobar: true, password } : {}),
         });
         id = res.data.data.id as number;
+        // Ya existe: lo guardado en el navegador sobra, aunque algún archivo de
+        // abajo no llegue a subir. Ofrecerla otra vez la haría duplicar.
+        if (user) borrarRequisicion(user.id, proyectoId);
       }
 
       // Los archivos van después: la requisición ya existe y tiene número.
@@ -271,6 +313,7 @@ export default function RequisicionFormDialog({
         open={open}
         onOpenChange={(v) => !guardando && onOpenChange(v)}
         size="complex"
+        cerrarSoloConBoton
         title={titulo}
         description={proyectoNombre ?? requisicion?.proyecto_nombre ?? ''}
         footer={

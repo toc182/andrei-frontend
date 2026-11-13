@@ -20,7 +20,15 @@ interface AppDialogProps {
   description?: string;
   children?: ReactNode;
   footer?: ReactNode;
+  /**
+   * Que solo se cierre con un botón —la equis, Cancelar o el de guardar—: un
+   * toque fuera de la ventana o Escape no hacen nada. Para formularios largos,
+   * donde cerrar sin querer cuesta lo escrito (FRONTEND_CONVENTIONS §11).
+   */
+  cerrarSoloConBoton?: boolean;
 }
+
+const ignorar = (e: Event) => e.preventDefault();
 
 const dialogWidths: Record<DialogSize, string> = {
   confirm:  "sm:max-w-md",
@@ -41,12 +49,17 @@ export function AppDialog({
   description,
   children,
   footer,
+  cerrarSoloConBoton = false,
 }: AppDialogProps) {
   const hasDivider = size !== "confirm";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(dialogWidths[size], "max-h-[90vh] overflow-hidden p-0")}>
+      <DialogContent
+        className={cn(dialogWidths[size], "max-h-[90vh] overflow-hidden p-0")}
+        onInteractOutside={cerrarSoloConBoton ? ignorar : undefined}
+        onEscapeKeyDown={cerrarSoloConBoton ? ignorar : undefined}
+      >
         <div className="flex max-h-[90vh] flex-col">
           <DialogHeader
             className={cn(

@@ -13,7 +13,8 @@
  * borrador, o a ninguno, manda el teléfono y el formulario creará un borrador
  * nuevo al guardar: el viejo se lo lleva el barrido de la madrugada.
  *
- * Mockup aprobado por Ivan el 2026-09-14.
+ * El aviso que lo ofrece (mockup aprobado por Ivan el 2026-09-14) es el mismo
+ * de la requisición: components/AvisoSinGuardar.tsx.
  */
 
 import { useEffect, useState } from 'react';
@@ -21,11 +22,7 @@ import { Loader2 } from 'lucide-react';
 import { fecha } from '@/lib/fechas';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import {
-  AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { AvisoSinGuardar } from '@/components/AvisoSinGuardar';
 import ReporteForm from './ReporteForm';
 import {
   type Semilla, borrarLocal, leerLocal, semillaDeReporte, trabajosDeSemilla,
@@ -48,28 +45,8 @@ interface SinEnviar {
   descartar: number[];
 }
 
-/** «hoy a las 4:23 p. m.», «ayer a las…», «el 12/09 a las…». */
-function cuandoFue(iso: string): string {
-  const d = new Date(iso);
-  const hora = d.toLocaleTimeString('es-PA', { hour: 'numeric', minute: '2-digit' });
-  const dia = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const dias = Math.round((dia(new Date()) - dia(d)) / 86_400_000);
-  if (dias === 0) return `hoy a las ${hora}`;
-  if (dias === 1) return `ayer a las ${hora}`;
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `el ${p(d.getDate())}/${p(d.getMonth() + 1)} a las ${hora}`;
-}
-
 /** Lo que se escribió del trabajo ejecutado, en una línea. */
 const loEscrito = (s: Semilla) => trabajosDeSemilla(s).map((t) => t.texto).join(' · ');
-
-function arranque(texto: string, tope = 110): string {
-  const limpio = texto.replace(/\s+/g, ' ').trim();
-  if (limpio.length <= tope) return limpio;
-  const corte = limpio.slice(0, tope);
-  const espacio = corte.lastIndexOf(' ');
-  return `${(espacio > tope * 0.6 ? corte.slice(0, espacio) : corte).trimEnd()}…`;
-}
 
 export default function ReporteNuevo({
   projectId, onListo, onCancelar, onNumeroPrevisto,
@@ -152,54 +129,24 @@ export default function ReporteNuevo({
   }
 
   if (fase === 'preguntando' && sinEnviar) {
-    const fotos = sinEnviar.fotos.length;
     return (
-      // Hay que elegir: sin equis, sin cerrar con Escape ni tocando fuera. Si se
-      // pudiera cerrar sin elegir, el formulario en blanco que queda debajo
-      // pisaría en el teléfono lo que quedó sin enviar en cuanto se escribiera.
-      <AlertDialog open>
-        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tienes un reporte sin enviar</AlertDialogTitle>
-            <AlertDialogDescription>
-              {/* La hora en es-PA ya termina en punto («p. m.»): no se le añade otro. */}
-              Quedó sin enviar {cuandoFue(sinEnviar.cuando).replace(/\.?$/, '.')} Puedes
-              seguir donde lo dejaste.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="space-y-1.5 rounded-md border border-border bg-muted px-3 py-2.5 text-sm">
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Fecha del reporte</span>
-              <span className="font-semibold tabular-nums">
-                {fecha(sinEnviar.semilla.fecha)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Fotos ya subidas</span>
-              <span className="font-semibold tabular-nums">{fotos}</span>
-            </div>
-            {/* El arranque de lo escrito: los puntos por área, o el texto de
-                un reporte empezado antes de ese cambio. */}
-            {loEscrito(sinEnviar.semilla) && (
-              <p className="border-t border-border pt-1.5 text-slate-700">
-                «{arranque(loEscrito(sinEnviar.semilla))}»
-              </p>
-            )}
-          </div>
-
-          {/* Lado a lado también en el teléfono, como en el mockup: son dos
-              opciones del mismo peso, no una acción y su cancelar. */}
-          <AlertDialogFooter className="flex-row gap-2 sm:justify-between sm:space-x-0">
-            <Button variant="outline" className="flex-1 sm:flex-none" onClick={descartar}>
-              Descartarlo
-            </Button>
-            <Button className="flex-1 sm:flex-none" onClick={continuar}>
-              Continuarlo
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AvisoSinGuardar
+        titulo="Tienes un reporte sin enviar"
+        quedo="Quedó sin enviar"
+        cuando={sinEnviar.cuando}
+        invitacion="Puedes seguir donde lo dejaste."
+        filas={[
+          { etiqueta: 'Fecha del reporte', valor: fecha(sinEnviar.semilla.fecha), numero: true },
+          { etiqueta: 'Fotos ya subidas', valor: sinEnviar.fotos.length, numero: true },
+        ]}
+        // El arranque de lo escrito: los puntos por área, o el texto de un
+        // reporte empezado antes de ese cambio.
+        extracto={loEscrito(sinEnviar.semilla)}
+        descartar="Descartarlo"
+        continuar="Continuarlo"
+        onDescartar={descartar}
+        onContinuar={continuar}
+      />
     );
   }
 

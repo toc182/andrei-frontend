@@ -15,8 +15,10 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardList, Plus } from 'lucide-react';
-import { fechaDeMomento } from '@/lib/fechas';
+import { fecha, fechaDeMomento } from '@/lib/fechas';
+import type { Guardado } from '@/lib/borradorLocal';
 import api from '@/services/api';
+import { AvisoSinGuardar } from '@/components/AvisoSinGuardar';
 import { Alert, EmptyState, PageHeader, TableSkeleton } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -32,6 +34,9 @@ import { useVolverAlSitio } from '@/hooks/useVolverAlSitio';
 import { cn } from '@/lib/utils';
 import RequisicionDetallePage from './RequisicionDetalle';
 import RequisicionFormDialog from './RequisicionFormDialog';
+import {
+  type BorradorRequisicion, borrarRequisicion, leerRequisicion, lineasEscritas,
+} from './borradorRequisicion';
 import { PrioridadEtiqueta } from './etiquetas';
 import type { PendientesRequisiciones, RequisicionFila } from './tipos';
 
@@ -255,6 +260,10 @@ export default function RequisicionesLista({
   const [abierta, setAbierta] = useState<number | null>(null);
   const [avisoAbierta, setAvisoAbierta] = useState<string[] | undefined>(undefined);
   const [formAbierto, setFormAbierto] = useState(false);
+  // La nueva que quedó sin guardar (borradorRequisicion.ts): se ofrece antes de
+  // abrir el formulario, y si se elige seguirla, el formulario arranca de ella.
+  const [sinGuardar, setSinGuardar] = useState<Guardado<BorradorRequisicion> | null>(null);
+  const [semilla, setSemilla] = useState<BorradorRequisicion | null>(null);
 
   const traerPendientes = useCallback(() => {
     api
@@ -295,6 +304,22 @@ export default function RequisicionesLista({
     onAbiertaAlEntrar?.();
   }, [abrirAlEntrar, onAbiertaAlEntrar]);
 
+  const nuevaRequisicion = () => {
+    const guardada = user && proyectoId ? leerRequisicion(user.id, proyectoId) : null;
+    if (guardada) {
+      setSinGuardar(guardada);
+      return;
+    }
+    setSemilla(null);
+    setFormAbierto(true);
+  };
+  const seguirSinGuardar = (seguir: boolean) => {
+    if (!seguir && user && proyectoId) borrarRequisicion(user.id, proyectoId);
+    setSemilla(seguir ? sinGuardar : null);
+    setSinGuardar(null);
+    setFormAbierto(true);
+  };
+
   const cambiarPestana = (v: string) => {
     const vista = v as Vista;
     setPestana(vista);
@@ -334,7 +359,7 @@ export default function RequisicionesLista({
           subtitle={proyectoId ? undefined : 'Vista consolidada de todos los proyectos'}
         >
           {puedeEscribir && (
-            <Button onClick={() => setFormAbierto(true)} disabled={faltaAprobador}>
+            <Button onClick={nuevaRequisicion} disabled={faltaAprobador}>
               <Plus className="mr-2 h-4 w-4" />
               Nueva requisición
             </Button>
@@ -382,12 +407,38 @@ export default function RequisicionesLista({
         )}
       </div>
 
+      {sinGuardar && (
+        <AvisoSinGuardar
+          titulo="Tienes una requisición sin guardar"
+          quedo="Quedó sin guardar"
+          cuando={sinGuardar.guardadoEn}
+          invitacion="Puedes seguir donde la dejaste."
+          filas={[
+            { etiqueta: 'Descripción', valor: sinGuardar.descripcion.trim() || '—' },
+            { etiqueta: 'Fecha requerida', valor: fecha(sinGuardar.fecha), numero: true },
+            { etiqueta: 'Líneas', valor: lineasEscritas(sinGuardar).length, numero: true },
+            ...(sinGuardar.adjuntosSinSubir > 0
+              ? [{ etiqueta: 'Adjuntos por volver a subir', valor: sinGuardar.adjuntosSinSubir, numero: true }]
+              : []),
+          ]}
+          extracto={lineasEscritas(sinGuardar)
+            .map((l) => l.descripcion.trim())
+            .filter(Boolean)
+            .join(' · ')}
+          descartar="Descartarla"
+          continuar="Continuarla"
+          onDescartar={() => seguirSinGuardar(false)}
+          onContinuar={() => seguirSinGuardar(true)}
+        />
+      )}
+
       {puedeEscribir && (
         <RequisicionFormDialog
           open={formAbierto}
           onOpenChange={setFormAbierto}
           proyectoId={proyectoId!}
           proyectoNombre={proyectoNombre}
+          semilla={semilla}
           esAprobador={aprobador.id !== null && aprobador.id === user?.id}
           onListo={(id, sinSubir) => {
             setRecargar((n) => n + 1);

@@ -12,11 +12,12 @@
  * Solo el texto y lo elegido, no las fotos: un archivo no cabe en localStorage.
  * Las fotos que ya subieron las trae el servidor con el borrador.
  *
- * localStorage puede fallar (navegación privada, almacenamiento lleno o
- * bloqueado): cada acceso va en try/catch, y si falla simplemente no se
- * recuerda nada, que es como funcionaba antes.
+ * Cómo se guarda y qué pasa si el navegador no deja es lo mismo para todo
+ * formulario que recuerda lo escrito: está en lib/borradorLocal.ts. Aquí va solo
+ * lo del reporte —su forma, su clave y qué vale la pena recordar—.
  */
 
+import { borrarBorrador, guardarBorrador, leerBorrador } from '@/lib/borradorLocal';
 import type { FilaEntrega, Reporte, Trabajo } from './tipos';
 
 /** Lo que el formulario necesita para arrancar, con la forma de su estado. */
@@ -117,33 +118,13 @@ const clave = (userId: number, projectId: number) =>
   `reporte-sin-enviar:${userId}:${projectId}`;
 
 export function leerLocal(userId: number, projectId: number): SemillaGuardada | null {
-  try {
-    const crudo = localStorage.getItem(clave(userId, projectId));
-    if (!crudo) return null;
-    const s = JSON.parse(crudo) as SemillaGuardada;
-    return tieneContenido(s) ? s : null;
-  } catch {
-    return null;
-  }
+  return leerBorrador(clave(userId, projectId), tieneContenido);
 }
 
 export function guardarLocal(userId: number, projectId: number, s: Semilla): void {
-  try {
-    if (!tieneContenido(s)) {
-      localStorage.removeItem(clave(userId, projectId));
-      return;
-    }
-    const guardada: SemillaGuardada = { ...s, guardadoEn: new Date().toISOString() };
-    localStorage.setItem(clave(userId, projectId), JSON.stringify(guardada));
-  } catch {
-    // Sin almacenamiento no se recuerda nada; el formulario sigue funcionando.
-  }
+  guardarBorrador(clave(userId, projectId), s, tieneContenido);
 }
 
 export function borrarLocal(userId: number, projectId: number): void {
-  try {
-    localStorage.removeItem(clave(userId, projectId));
-  } catch {
-    // Igual que arriba.
-  }
+  borrarBorrador(clave(userId, projectId));
 }
