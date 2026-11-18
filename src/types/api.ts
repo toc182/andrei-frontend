@@ -461,6 +461,16 @@ export interface CajaMenuda {
   solicitud_apertura_numero?: string | null;
   historial_pendiente_transferencia?: boolean;
   tiene_reembolso_pendiente?: boolean;
+  /** Por qué ya no se puede eliminar (salió dinero por ella), o null si se puede. */
+  motivo_no_eliminar?: string | null;
+}
+
+/** Lo que se va con una caja al eliminarla (GET /cajas-menudas/:id/eliminacion). */
+export interface CajaMenudaEliminacion {
+  nombre: string;
+  motivo: string | null;
+  gastos: number;
+  solicitudes: { id: number; numero: string; tipo: string; estado: string; es_apertura: boolean }[];
 }
 
 export interface CajaMenudaGasto {

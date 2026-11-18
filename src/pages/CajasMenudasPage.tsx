@@ -3,12 +3,17 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api, { usuariosAPI } from '../services/api';
-import { Plus, Pencil, Loader2, Wallet, Upload, AlertCircle, Settings, Minus, Lock } from 'lucide-react';
-import type { CajaMenuda, UsuarioSeleccionable } from '../types/api';
+import { Plus, Pencil, Loader2, Wallet, Upload, AlertCircle, Settings, Minus, Lock, Trash2 } from 'lucide-react';
+import type { CajaMenuda, CajaMenudaEliminacion, UsuarioSeleccionable } from '../types/api';
 import CajaMenudaDetail from './CajaMenudaDetail';
+import { useAuth } from '@/context/AuthContext';
 
 // Shadcn Components
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -119,6 +124,23 @@ const formatMonto = (valor: string | number | undefined) => {
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+// «a, b y c»
+const enumerar = (xs: string[]) =>
+  xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`;
+
+// «Se eliminarán la caja, sus 3 gastos y la solicitud de apertura CSIPIN-002A.»
+const queSeVa = (e: CajaMenudaEliminacion) => {
+  const partes = ['la caja'];
+  if (e.gastos === 1) partes.push('su gasto');
+  else if (e.gastos > 1) partes.push(`sus ${e.gastos} gastos`);
+  const apertura = e.solicitudes.find((s) => s.es_apertura);
+  const otras = e.solicitudes.filter((s) => !s.es_apertura).map((s) => s.numero);
+  if (apertura) partes.push(`la solicitud de apertura ${apertura.numero}`);
+  if (otras.length === 1) partes.push(`la solicitud ${otras[0]}`);
+  else if (otras.length > 1) partes.push(`las solicitudes ${enumerar(otras)}`);
+  return `Se eliminarán ${enumerar(partes)}. Esta acción no se puede deshacer.`;
+};
+
 // --- Component ---
 
 interface CajasMenudasPageProps {
@@ -140,6 +162,12 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [subirMontoModalCaja, setSubirMontoModalCaja] = useState<CajaMenuda | null>(null);
   const [bajarMontoModalCaja, setBajarMontoModalCaja] = useState<CajaMenuda | null>(null);
   const [cerrarModalCaja, setCerrarModalCaja] = useState<CajaMenuda | null>(null);
+
+  // Eliminar una caja abierta por error: solo administración y gerencia
+  const { isAdminOrCoAdmin } = useAuth();
+  const [eliminarCaja, setEliminarCaja] = useState<CajaMenuda | null>(null);
+  const [eliminacion, setEliminacion] = useState<CajaMenudaEliminacion | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
   // Edit form
   const [editNombre, setEditNombre] = useState('');
@@ -341,6 +369,38 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     }
   };
 
+  // La confirmación pregunta al servidor qué se va con la caja
+  const abrirEliminar = async (caja: CajaMenuda) => {
+    setError('');
+    setEliminacion(null);
+    setEliminarCaja(caja);
+    try {
+      const response = await api.get(`/cajas-menudas/${caja.id}/eliminacion`);
+      setEliminacion(response.data.data as CajaMenudaEliminacion);
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setEliminarCaja(null);
+      setError(apiErr.response?.data?.error || 'Error al preparar la eliminación');
+    }
+  };
+
+  const handleEliminar = async () => {
+    if (!eliminarCaja) return;
+    try {
+      setEliminando(true);
+      await api.delete(`/cajas-menudas/${eliminarCaja.id}`);
+      setEliminarCaja(null);
+      loadCajas(false);
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setEliminarCaja(null);
+      setError(apiErr.response?.data?.error || 'Error al eliminar la caja');
+      loadCajas(false);
+    } finally {
+      setEliminando(false);
+    }
+  };
+
   // Gear dropdown for open cajas
   const GearDropdown = ({ caja }: { caja: CajaMenuda }) => (
     <DropdownMenu>
@@ -421,6 +481,40 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
             <Lock className="mr-2 h-4 w-4" />
             Cerrar caja
           </DropdownMenuItem>
+        )}
+        {isAdminOrCoAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            {caja.motivo_no_eliminar ? (
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <DropdownMenuItem
+                        disabled
+                        className="text-destructive"
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar caja
+                      </DropdownMenuItem>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    {caja.motivo_no_eliminar}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => abrirEliminar(caja)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar caja
+              </DropdownMenuItem>
+            )}
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -930,6 +1024,41 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
           )}
         </div>
       </AppDialog>
+
+      {/* Eliminar Caja Confirmation */}
+      <AlertDialog
+        open={!!eliminarCaja}
+        onOpenChange={(open) => { if (!open && !eliminando) setEliminarCaja(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar {eliminarCaja?.nombre}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {!eliminacion ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Revisando lo que se elimina con ella…
+                </span>
+              ) : eliminacion.motivo ? (
+                `No se puede eliminar: ${eliminacion.motivo.toLowerCase()}. Ciérrela de la forma normal.`
+              ) : (
+                queSeVa(eliminacion)
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={eliminando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleEliminar(); }}
+              disabled={!eliminacion || !!eliminacion.motivo || eliminando}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              {eliminando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Eliminar caja
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
