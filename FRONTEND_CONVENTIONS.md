@@ -1514,6 +1514,17 @@ en la celda: al escribir solo aparece el cursor.
 - **Filas expandibles**: la fila completa es `role="button"` con `aria-expanded`, abre solo una a la vez y el detalle aparece debajo con un borde izquierdo de 2px. El titular va truncado cuando está cerrada y completo cuando se abre.
 - **Las acciones de una fila viven dentro de la fila abierta**, no en chrome que aparece al hover: una hilera de `Button` `variant="ghost"` con `h-auto px-0 py-0 text-xs`, icono `h-3 w-3` y el mismo sangrado de 2.5 que el detalle. Van al final del bloque expandido y se muestran aunque el evento no tenga detalle que enseñar. Cada botón lleva `stopPropagation` porque la fila entera abre y cierra al hacer clic. Reference: `src/pages/cuentas/CuentaTimeline.tsx`.
 
+## 25. Tabla de permisos
+
+**Reference:** `src/pages/administracion/TablaPermisos.tsx`, la misma en la ficha de una persona y en la de un perfil (Administración). Lo que significa cada casilla vive SOLO en `src/pages/administracion/catalogo.ts`; la lista de llaves de un perfil del servidor (`LLAVES_DE_PERFIL`, `services/perfiles.ts`) tiene que coincidir con la que sale de ahí.
+
+- **Una fila por sección**, agrupadas (Proyecto / Administración / Empresa) en el orden del menú. El grupo va en `font-heading text-sm font-semibold text-navy` con una nota de una línea debajo; la sección lleva su nombre como lo dice la pantalla y un ícono `Info` que abre un `Popover` con una línea de qué es.
+- **Computadora: una retícula, no una `<table>`**: `md:grid-cols-[minmax(0,230px)_repeat(4,60px)_minmax(0,1fr)]` — Sección, Ver, Crear, Editar, Borrar y «Además». Banda de encabezado `bg-slate-200` como las tablas (§10).
+- **Una casilla es una llave.** Marcada = verde: `Checkbox` de shadcn con `data-[state=checked]:bg-success data-[state=checked]:border-success` y su texto en `font-semibold text-success`; sin marcar, `text-muted-foreground`. Nunca interruptores ni pastillas (Ivan rechazó las «pills que no se entienden»).
+- **Una celda que no es llave** muestra un texto fijo apagado (`text-[11.5px] text-muted-foreground`) con `title` que explica por qué; una llave que cubre varias columnas las ocupa juntas, con su propio texto.
+- **Teléfono: sin retícula.** Cada sección pone sus casillas con texto una tras otra (`flex-wrap`) y los textos fijos en una sola línea debajo («Todos: ver, crear»).
+- **Gerencia (`bloqueada`)**: todo marcado y deshabilitado, sin el verde en negrita — se ve, no se cambia.
+
 ---
 
 *End of FRONTEND_CONVENTIONS.md. Questions or edge cases not covered here should be resolved by picking the closest existing pattern and extending it — not by inventing new patterns. Consistency is the feature.*
