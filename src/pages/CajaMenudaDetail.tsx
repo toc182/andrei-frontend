@@ -686,14 +686,27 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       {/* Header */}
       <PageHeader title={caja.nombre} subtitle={caja.proyecto_nombre}>
         <Badge
-          className={caja.estado === 'abierta' ? 'bg-success/10 text-success border-success/30 border' : 'bg-slate-100 text-slate-600 border-slate-200 border'}
+          className={
+            caja.estado === 'abierta'
+              ? 'bg-success/10 text-success border-success/30 border'
+              : caja.estado === 'cancelada'
+                ? 'bg-error/10 text-error border-error/30 border'
+                : 'bg-slate-100 text-slate-600 border-slate-200 border'
+          }
         >
-          {caja.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
+          {caja.estado === 'abierta' ? 'Abierta' : caja.estado === 'cancelada' ? 'Cancelada' : 'Cerrada'}
         </Badge>
       </PageHeader>
 
-      {/* Apertura solicitud status */}
-      {caja.solicitud_apertura_id ? (
+      {/* Apertura solicitud status. Una caja cuya apertura se rechazó queda
+          cancelada (migración 192) y ya no admite nada. */}
+      {caja.estado === 'cancelada' ? (
+        <Alert
+          variant="error"
+          title="Caja cancelada"
+          description={`La solicitud de apertura (${caja.solicitud_apertura_numero}) fue rechazada. Esta caja no admite gastos ni cambios de monto.`}
+        />
+      ) : caja.solicitud_apertura_id ? (
         caja.solicitud_apertura_estado !== 'transferida' &&
         !(caja.solicitud_apertura_estado === 'rechazada' && Number(caja.monto_asignado) > 0) && (
           <Alert
@@ -984,7 +997,7 @@ const CajaMenudaDetail = ({ cajaId, onBack }: CajaMenudaDetailProps) => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Adjuntos</h3>
-          {isPending && (
+          {isPending && caja.estado !== 'cancelada' && (
             <div>
               <input
                 ref={fileInputRef}

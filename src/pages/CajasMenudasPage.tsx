@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Shell Components
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -74,10 +75,15 @@ const estadoBadge = (estado: string) => {
   if (estado === 'abierta') {
     return <Badge className="min-w-[4.5rem] justify-center bg-success/10 text-success border-success/30 border">Abierta</Badge>;
   }
+  if (estado === 'cancelada') {
+    return <Badge className="min-w-[4.5rem] justify-center bg-error/10 text-error border-error/30 border">Cancelada</Badge>;
+  }
   return <Badge className="min-w-[4.5rem] justify-center bg-slate-100 text-slate-600 border-slate-200 border">Cerrada</Badge>;
 };
 
 const ComprobanteAlertIcon = ({ caja }: { caja: CajaMenuda }) => {
+  // Una caja cancelada no espera ningún comprobante: su apertura fue rechazada.
+  if (caja.estado === 'cancelada') return null;
   const faltaApertura = caja.solicitud_apertura_id
     ? caja.solicitud_apertura_estado !== 'transferida'
     : caja.tiene_comprobante_apertura === false;
@@ -124,6 +130,11 @@ const formatMonto = (valor: string | number | undefined) => {
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+// La apertura todavía no se ha transferido: bajar el monto la reemplaza por una
+// solicitud nueva por el monto nuevo (Ivan, 2026-11-19).
+const aperturaSinTransferir = (caja: CajaMenuda) =>
+  caja.solicitud_apertura_estado === 'pendiente' || caja.solicitud_apertura_estado === 'aprobada';
+
 // «a, b y c»
 const enumerar = (xs: string[]) =>
   xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`;
@@ -168,6 +179,9 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
   const [eliminarCaja, setEliminarCaja] = useState<CajaMenuda | null>(null);
   const [eliminacion, setEliminacion] = useState<CajaMenudaEliminacion | null>(null);
   const [eliminando, setEliminando] = useState(false);
+
+  // «Activas» son las abiertas; «Inactivas», las cerradas y las canceladas
+  const [pestana, setPestana] = useState<'activas' | 'inactivas'>('activas');
 
   // Edit form
   const [editNombre, setEditNombre] = useState('');
@@ -327,7 +341,10 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
       setError('');
       const formData = new FormData();
       formData.append('monto_asignado', String(monto));
-      if (comprobanteFile) formData.append('comprobante', comprobanteFile);
+      // Con la apertura sin transferir no se devuelve dinero: no hay comprobante
+      if (comprobanteFile && !aperturaSinTransferir(bajarMontoModalCaja)) {
+        formData.append('comprobante', comprobanteFile);
+      }
       await api.put(`/cajas-menudas/${bajarMontoModalCaja.id}/monto`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -401,7 +418,11 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     }
   };
 
-  // Gear dropdown for open cajas
+  // Una caja abierta tiene su menú completo; una cancelada, solo «Eliminar
+  // caja», y solo para administración y gerencia.
+  const tieneMenu = (caja: CajaMenuda) =>
+    caja.estado === 'abierta' || (caja.estado === 'cancelada' && isAdminOrCoAdmin);
+
   const GearDropdown = ({ caja }: { caja: CajaMenuda }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -415,76 +436,80 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem
-          onClick={() => {
-            setEditNombre(caja.nombre);
-            setEditResponsableId(String(caja.responsable_id));
-            setError('');
-            setEditModalCaja(caja);
-          }}
-        >
-          <Pencil className="mr-2 h-4 w-4" />
-          Editar
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-success"
-          onClick={() => {
-            setNuevoMonto('');
-            setError('');
-            setSubirMontoModalCaja(caja);
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Subir monto
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="text-destructive"
-          onClick={() => {
-            setNuevoMonto('');
-            setComprobanteFile(null);
-            setError('');
-            setBajarMontoModalCaja(caja);
-          }}
-        >
-          <Minus className="mr-2 h-4 w-4" />
-          Bajar monto
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {caja.tiene_reembolso_pendiente ? (
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <DropdownMenuItem
-                    disabled
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    <Lock className="mr-2 h-4 w-4" />
-                    Cerrar caja
-                  </DropdownMenuItem>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                Tiene solicitud de reembolso pendiente
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <DropdownMenuItem
-            onClick={() => {
-              setComprobanteFile(null);
-              setError('');
-              setCerrarModalCaja(caja);
-            }}
-          >
-            <Lock className="mr-2 h-4 w-4" />
-            Cerrar caja
-          </DropdownMenuItem>
+        {caja.estado === 'abierta' && (
+          <>
+            <DropdownMenuItem
+              onClick={() => {
+                setEditNombre(caja.nombre);
+                setEditResponsableId(String(caja.responsable_id));
+                setError('');
+                setEditModalCaja(caja);
+              }}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-success"
+              onClick={() => {
+                setNuevoMonto('');
+                setError('');
+                setSubirMontoModalCaja(caja);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Subir monto
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => {
+                setNuevoMonto('');
+                setComprobanteFile(null);
+                setError('');
+                setBajarMontoModalCaja(caja);
+              }}
+            >
+              <Minus className="mr-2 h-4 w-4" />
+              Bajar monto
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {caja.tiene_reembolso_pendiente ? (
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <DropdownMenuItem
+                        disabled
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <Lock className="mr-2 h-4 w-4" />
+                        Cerrar caja
+                      </DropdownMenuItem>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    Tiene solicitud de reembolso pendiente
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <DropdownMenuItem
+                onClick={() => {
+                  setComprobanteFile(null);
+                  setError('');
+                  setCerrarModalCaja(caja);
+                }}
+              >
+                <Lock className="mr-2 h-4 w-4" />
+                Cerrar caja
+              </DropdownMenuItem>
+            )}
+          </>
         )}
         {isAdminOrCoAdmin && (
           <>
-            <DropdownMenuSeparator />
+            {caja.estado === 'abierta' && <DropdownMenuSeparator />}
             {caja.motivo_no_eliminar ? (
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
@@ -520,6 +545,12 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
     </DropdownMenu>
   );
 
+  const visibles = cajas.filter((c) => (pestana === 'activas') === (c.estado === 'abierta'));
+  const vacio =
+    pestana === 'activas'
+      ? { title: 'No hay cajas menudas abiertas', description: 'Registra la primera caja menuda de un proyecto' }
+      : { title: 'No hay cajas menudas inactivas', description: 'Aquí aparecen las cajas cerradas y las canceladas' };
+
   // Detail view
   if (selectedCajaId) {
     return (
@@ -549,126 +580,138 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
         <Alert variant="error" title={error} />
       )}
 
-      {/* Desktop: Table */}
-      <div className="hidden md:block">
-        <Card className="overflow-hidden p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
-                  <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
-                  {!projectId && <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>}
-                  <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Asignado / Saldo</TableHead>
-                  <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
-                  <TableHead className="w-10 px-2 py-2.5"></TableHead>
-                </TableRow>
-              </TableHeader>
-              {loading ? (
-                <TableSkeleton columns={projectId ? 4 : 5} rows={4} />
-              ) : cajas.length === 0 ? (
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={projectId ? 4 : 5} className="p-0">
-                      <EmptyState
-                        icon={Wallet}
-                        title="No hay cajas menudas registradas"
-                        description="Registra la primera caja menuda de un proyecto"
-                        action={
-                          <Button size="sm" onClick={handleNew}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Nueva Caja Menuda
-                          </Button>
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              ) : (
-                <TableBody>
-                  {cajas.map((caja) => (
-                    <TableRow key={caja.id} className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60" onClick={() => setSelectedCajaId(caja.id)}>
-                      <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
-                        <div className="flex items-center gap-2">
+      <Tabs value={pestana} onValueChange={(v) => setPestana(v as 'activas' | 'inactivas')}>
+        <TabsList className="mb-6 w-full justify-center">
+          <TabsTrigger value="activas">Activas</TabsTrigger>
+          <TabsTrigger value="inactivas">Inactivas</TabsTrigger>
+        </TabsList>
+        <TabsContent value={pestana}>
+          {/* Desktop: Table */}
+          <div className="hidden md:block">
+            <Card className="overflow-hidden p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-slate-200 hover:bg-slate-200">
+                      <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nombre</TableHead>
+                      {!projectId && <TableHead className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proyecto</TableHead>}
+                      <TableHead className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Asignado / Saldo</TableHead>
+                      <TableHead className="w-[100px] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Estado</TableHead>
+                      <TableHead className="w-10 px-2 py-2.5"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  {loading ? (
+                    <TableSkeleton columns={projectId ? 4 : 5} rows={4} />
+                  ) : visibles.length === 0 ? (
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={projectId ? 4 : 5} className="p-0">
+                          <EmptyState
+                            icon={Wallet}
+                            title={vacio.title}
+                            description={vacio.description}
+                            action={
+                              pestana === 'activas' ? (
+                                <Button size="sm" onClick={handleNew}>
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Nueva Caja Menuda
+                                </Button>
+                              ) : undefined
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  ) : (
+                    <TableBody>
+                      {visibles.map((caja) => (
+                        <TableRow key={caja.id} className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/60" onClick={() => setSelectedCajaId(caja.id)}>
+                          <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
+                            <div className="flex items-center gap-2">
+                              {caja.nombre}
+                              <ComprobanteAlertIcon caja={caja} />
+                            </div>
+                          </TableCell>
+                          {!projectId && <TableCell className="px-4 py-3 text-sm text-slate-700">{caja.proyecto_nombre}</TableCell>}
+                          <TableCell className="px-4 py-3 text-right text-sm tabular-nums">
+                            <div className="text-slate-700">{formatMonto(caja.monto_asignado)}</div>
+                            <div className={`text-xs font-medium ${caja.estado !== 'abierta' ? 'text-slate-400' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
+                              {caja.estado !== 'abierta' ? '-' : formatMonto(caja.saldo)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-3">{estadoBadge(caja.estado)}</TableCell>
+                          <TableCell className="px-2 py-3">
+                            {tieneMenu(caja) && <GearDropdown caja={caja} />}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  )}
+                </Table>
+            </Card>
+          </div>
+
+          {/* Mobile: Cards */}
+          <div className="md:hidden space-y-3">
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4 space-y-2">
+                      <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                      <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : visibles.length === 0 ? (
+              <EmptyState
+                icon={Wallet}
+                title={vacio.title}
+                description={vacio.description}
+                action={
+                  pestana === 'activas' ? (
+                    <Button onClick={handleNew}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Nueva Caja Menuda
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              visibles.map((caja) => (
+                <Card key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium flex items-center gap-2">
                           {caja.nombre}
                           <ComprobanteAlertIcon caja={caja} />
-                        </div>
-                      </TableCell>
-                      {!projectId && <TableCell className="px-4 py-3 text-sm text-slate-700">{caja.proyecto_nombre}</TableCell>}
-                      <TableCell className="px-4 py-3 text-right text-sm tabular-nums">
-                        <div className="text-slate-700">{formatMonto(caja.monto_asignado)}</div>
-                        <div className={`text-xs font-medium ${caja.estado === 'cerrada' ? 'text-slate-400' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
-                          {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-4 py-3">{estadoBadge(caja.estado)}</TableCell>
-                      <TableCell className="px-2 py-3">
-                        {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              )}
-            </Table>
-        </Card>
-      </div>
-
-      {/* Mobile: Cards */}
-      <div className="md:hidden space-y-3">
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardContent className="p-4 space-y-2">
-                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                  <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
-                </CardContent>
-              </Card>
-            ))}
+                        </p>
+                        {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {estadoBadge(caja.estado)}
+                        {tieneMenu(caja) && <GearDropdown caja={caja} />}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Asignado</span>
+                      <span className="font-medium tabular-nums">{formatMonto(caja.monto_asignado)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Saldo</span>
+                      <span className={`font-medium tabular-nums ${caja.estado !== 'abierta' ? '' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
+                        {caja.estado !== 'abierta' ? '-' : formatMonto(caja.saldo)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Responsable: {caja.responsable_nombre}</p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
-        ) : cajas.length === 0 ? (
-          <EmptyState
-            icon={Wallet}
-            title="No hay cajas menudas"
-            description="Registra la primera caja menuda de un proyecto"
-            action={
-              <Button onClick={handleNew}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Caja Menuda
-              </Button>
-            }
-          />
-        ) : (
-          cajas.map((caja) => (
-            <Card key={caja.id} className="cursor-pointer" onClick={() => setSelectedCajaId(caja.id)}>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium flex items-center gap-2">
-                      {caja.nombre}
-                      <ComprobanteAlertIcon caja={caja} />
-                    </p>
-                    {!projectId && <p className="text-sm text-muted-foreground">{caja.proyecto_nombre}</p>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {estadoBadge(caja.estado)}
-                    {caja.estado === 'abierta' && <GearDropdown caja={caja} />}
-                  </div>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Asignado</span>
-                  <span className="font-medium tabular-nums">{formatMonto(caja.monto_asignado)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Saldo</span>
-                  <span className={`font-medium tabular-nums ${caja.estado === 'cerrada' ? '' : Number(caja.saldo) < 0 ? 'text-error' : 'text-success'}`}>
-                    {caja.estado === 'cerrada' ? '-' : formatMonto(caja.saldo)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">Responsable: {caja.responsable_nombre}</p>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Create Dialog */}
       <AppDialog
@@ -930,28 +973,36 @@ const CajasMenudasPage = ({ projectId }: CajasMenudasPageProps = {}) => {
             />
             <p className="text-xs text-muted-foreground">Debe ser menor al monto actual y mayor que cero.</p>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Comprobante de devolución</label>
-            <div className="flex items-center gap-2">
-              <input
-                ref={comprobanteRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => comprobanteRef.current?.click()}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
-              </Button>
+          {bajarMontoModalCaja && aperturaSinTransferir(bajarMontoModalCaja) ? (
+            <Alert
+              variant="info"
+              title={`La apertura ${bajarMontoModalCaja.solicitud_apertura_numero} aún no se ha transferido.`}
+              description={`Al confirmar, la solicitud ${bajarMontoModalCaja.solicitud_apertura_numero} por ${formatMonto(bajarMontoModalCaja.monto_asignado)} se eliminará y se creará una nueva solicitud de apertura por el nuevo monto, que pasará por aprobación.`}
+            />
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Comprobante de devolución</label>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={comprobanteRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(e) => setComprobanteFile(e.target.files?.[0] || null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => comprobanteRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {comprobanteFile ? comprobanteFile.name : 'Seleccionar archivo'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
             </div>
-            <p className="text-xs text-muted-foreground">Comprobante de la devolución de fondos (opcional).</p>
-          </div>
+          )}
         </div>
       </AppDialog>
 

@@ -62,6 +62,10 @@ export interface SolicitudPago {
   solicitado_nombre?: string;
   requisicion_numero?: string;
   updated_at?: string;
+  // Solo en el detalle de la apertura de una caja menuda: su caja y cuántos
+  // gastos tiene. Con gastos no se puede rechazar; sin ellos, rechazarla
+  // cancela la caja.
+  caja_apertura?: { id: number; nombre: string; gastos: number } | null;
 }
 
 export interface SolicitudItem {

@@ -961,6 +961,8 @@ export default function ProjectSolicitudesPago({
         comment={rejectComment}
         onCommentChange={setRejectComment}
         onConfirm={handleRechazar}
+        cajaApertura={detailSolicitud?.caja_apertura}
+        numero={detailSolicitud?.numero}
       />
 
       {/* Delete Confirmation Modal */}

@@ -444,7 +444,8 @@ export interface CajaMenuda {
   responsable_id: number;
   nombre: string;
   monto_asignado: string;
-  estado: 'abierta' | 'cerrada';
+  /** cancelada = su solicitud de apertura fue rechazada (migración 192): ya no admite nada. */
+  estado: 'abierta' | 'cerrada' | 'cancelada';
   created_at: string;
   updated_at: string;
   proyecto_nombre?: string;
