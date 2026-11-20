@@ -83,7 +83,7 @@ export default function SeccionDatos({ datos }: { datos: DatosSemana }) {
   return (
     <div>
       <p className="pb-1 text-sm text-muted-foreground">
-        Salen solos de los reportes diarios y de las solicitudes pagadas. Si algo no cuadra,
+        Salen solos de los reportes diarios y de los pagos registrados. Si algo no cuadra,
         corrige el reporte diario de ese día.
       </p>
 

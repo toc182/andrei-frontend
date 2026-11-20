@@ -81,12 +81,14 @@ const PASOS = ['Aprobada', 'Enviada al proveedor', 'Recibida', 'Pagada y cerrada
 const ESTADO_SOLICITUD: Record<string, string> = {
   pendiente: 'Esperando aprobación',
   aprobada: 'Aprobada, falta pagarla',
+  abonada: 'Abonada, falta el saldo',
   pagada: 'Pagada',
   facturada: 'Pagada y facturada',
   rechazada: 'Rechazada',
   devolucion: 'Devuelta',
 };
-/** Una solicitud que ya no va a pagar nada, o que ya pagó. */
+/** Una solicitud que ya no va a pagar nada, o que ya pagó. Una abonada no:
+ *  todavía debe su saldo. */
 const TERMINADA = ['pagada', 'facturada', 'rechazada', 'devolucion'];
 
 /** Para ordenar la historia: un DATE vale como el mediodía de ese día. */

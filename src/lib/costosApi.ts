@@ -29,9 +29,14 @@ export interface PartidaAsignada {
 export interface ResumenSolicitud {
   id: number;
   numero: string | null;
-  fecha: string; // YYYY-MM-DD, la del comprobante de pago
+  fecha: string; // YYYY-MM-DD, la de su último pago
   proveedor: string | null;
+  /** Lo pagado hasta hoy: lo que cuenta como gasto. */
   monto: number;
+  /** El total de la solicitud. Igual a monto salvo en una abonada (pagos
+   *  parciales): el reparto en partidas se hace sobre el total y cada partida
+   *  cuenta en proporción a lo pagado. */
+  total: number;
   categoriaId: number | null;
   partidas: PartidaAsignada[];
 }

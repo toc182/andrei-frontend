@@ -8,6 +8,9 @@
 // gasto por partida no cuadraria con el total gastado y las dos cifras de la
 // pantalla se contradirian. El servidor lo vuelve a comprobar.
 //
+// Una solicitud abonada (pagos parciales) se reparte igual, sobre su TOTAL: de
+// cada partida cuenta la parte en proporcion a lo pagado.
+//
 // Los montos se guardan como TEXTO mientras se escriben —"8.0" es un paso
 // legitimo hacia "8.05"— y se convierten a numero solo para sumar y guardar.
 
@@ -72,7 +75,7 @@ export default function RepartoPartidasDialog({
             rowUid: p.rowUid,
             monto: p.monto.toFixed(2),
           }))
-        : [{ rowUid: null, monto: pago.monto.toFixed(2) }],
+        : [{ rowUid: null, monto: pago.total.toFixed(2) }],
     );
   }, [open, pago]);
 
@@ -81,7 +84,7 @@ export default function RepartoPartidasDialog({
     return (rowUid: string | null) => (rowUid ? porUid.get(rowUid) ?? null : null);
   }, [partidas]);
 
-  const total = pago ? centavos(pago.monto) : 0;
+  const total = pago ? centavos(pago.total) : 0;
   const suma = lineas.reduce((s, l) => s + centavos(aNumero(l.monto)), 0);
   const diferencia = total - suma;
   const completas = lineas.every((l) => l.rowUid != null && centavos(aNumero(l.monto)) > 0);
@@ -108,7 +111,7 @@ export default function RepartoPartidasDialog({
       setError(`No hay partidas en ${donde}.`);
       return;
     }
-    const { lineas: hechas, enPartesIguales } = repartirEntre(grupo, pago.monto);
+    const { lineas: hechas, enPartesIguales } = repartirEntre(grupo, pago.total);
     if (hechas.length === 0) {
       setError(`No se pudo repartir entre las partidas de ${donde}.`);
       return;
@@ -146,7 +149,11 @@ export default function RepartoPartidasDialog({
       title="¿A qué partidas va este pago?"
       description={
         pago
-          ? `${pago.numero ?? 'Sin número'} · ${pago.proveedor ?? 'Sin proveedor'} · ${formatMoney(pago.monto)} · pagado el ${fecha(pago.fecha)}`
+          ? `${pago.numero ?? 'Sin número'} · ${pago.proveedor ?? 'Sin proveedor'} · ${formatMoney(pago.total)} · ${
+              pago.monto < pago.total
+                ? `abonado ${formatMoney(pago.monto)} al ${fecha(pago.fecha)}`
+                : `pagado el ${fecha(pago.fecha)}`
+            }`
           : undefined
       }
       footer={

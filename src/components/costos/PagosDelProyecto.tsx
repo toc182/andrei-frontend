@@ -5,8 +5,10 @@
 // curva: ese endpoint ya devuelve las pagadas una por una, ordenadas de la mas
 // reciente a la mas vieja, asi que no hace falta pedirlas aparte.
 //
-// Los mismos pagos que suman "Gastado hasta hoy": estado pagada o facturada, y
-// la fecha es la del comprobante de pago (si no hay, la de la solicitud).
+// Los mismos pagos que suman "Gastado hasta hoy": abonadas, pagadas y
+// facturadas, con lo pagado hasta hoy y la fecha de su último pago. De una
+// abonada (pagos parciales) el monto es lo ya pagado, con su total debajo; la
+// partida se le pone igual, sobre el total.
 //
 // La partida se escoge EN LA MISMA FILA. Sin partida no es un error: es la
 // bandeja de pendientes, y por eso el filtro de arriba nace en «Sin partida» en
@@ -43,6 +45,14 @@ const TH = 'px-2.5 py-2.5 text-xs font-semibold uppercase tracking-wide text-mut
  *  apunta a una fila que ya no esta en el desglose. */
 const sinPartida = (p: ResumenSolicitud) =>
   p.partidas.length === 0 || p.partidas.every((x) => x.item == null);
+
+/** Debajo del monto de una abonada: de cuánto es la solicitud entera. */
+function DeTotal({ pago }: { pago: ResumenSolicitud }) {
+  if (pago.monto >= pago.total) return null;
+  return (
+    <div className="text-xs text-muted-foreground">de {formatMoney(pago.total)}</div>
+  );
+}
 
 interface PagosDelProyectoProps {
   projectId: number;
@@ -156,9 +166,9 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
 
   const escogerUna = async (pago: ResumenSolicitud, rowUid: string) => {
     try {
-      // Escoger una sola partida le echa el pago entero: repartirlo es el otro
-      // camino, el del cuadro.
-      await guardar(pago.id, [{ rowUid, monto: pago.monto }]);
+      // Escoger una sola partida le echa el pago entero —la solicitud entera,
+      // también si está abonada—: repartirlo es el otro camino, el del cuadro.
+      await guardar(pago.id, [{ rowUid, monto: pago.total }]);
     } catch (err) {
       console.error('Error asignando la partida del pago:', err);
       setError('No se pudo guardar la partida de ese pago.');
@@ -254,8 +264,9 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                         {p.numero ?? '—'} · {fecha(p.fecha)}
                       </div>
                     </div>
-                    <div className="whitespace-nowrap text-sm tabular-nums text-slate-700">
+                    <div className="whitespace-nowrap text-right text-sm tabular-nums text-slate-700">
                       {formatMoney(p.monto)}
+                      <DeTotal pago={p} />
                     </div>
                   </button>
                   <div className="mt-2">
@@ -334,6 +345,7 @@ export default function PagosDelProyecto({ projectId, onAbrirSolicitudes }: Pago
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-2.5 py-2 text-right text-sm tabular-nums text-slate-700">
                         {formatMoney(p.monto)}
+                        <DeTotal pago={p} />
                       </TableCell>
                       {/* La casilla de Partida abre su desplegable, no el
                           detalle: la fila entera navega y esta celda no puede

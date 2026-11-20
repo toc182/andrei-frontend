@@ -242,13 +242,16 @@ export async function marcarMensajeLeido(args: {
 }
 
 /**
- * Registers the payment of a solicitud. Uploads the payment date and one
- * or more comprobante files, closes the registrar-pago modal and the
- * detail dialog, refreshes the list, and fires the status-changed event.
+ * Registers a payment of a solicitud. Uploads the payment date, the amount
+ * (a regular solicitud can be paid in parts; null = caja menuda, paid in
+ * full) and one or more comprobante files, closes the registrar-pago modal
+ * and the detail dialog, refreshes the list, and fires the status-changed
+ * event.
  */
 export async function registrarPagoSolicitud(args: {
   solicitudId: number;
   fechaPago: string;
+  monto: string | null;
   files: FileList | null;
   setRegistrandoPago: (loading: boolean) => void;
   setShowRegistrarPagoModal: (open: boolean) => void;
@@ -261,6 +264,7 @@ export async function registrarPagoSolicitud(args: {
     args.setRegistrandoPago(true);
     const formData = new FormData();
     formData.append('fecha_pago', args.fechaPago);
+    if (args.monto !== null) formData.append('monto', args.monto);
     for (let i = 0; i < args.files.length; i++) {
       formData.append('archivos', args.files[i]);
     }

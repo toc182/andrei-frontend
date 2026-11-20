@@ -2,11 +2,14 @@
 // Lifted out of SolicitudesPagoGeneral.tsx and ProjectSolicitudesPago.tsx
 // during the refactor of issue #26.
 
+import type { SolicitudPagoAdjunto } from '@/types/api';
+
 export type EstadoSolicitud =
   | 'borrador'
   | 'pendiente'
   | 'aprobada'
   | 'rechazada'
+  | 'abonada'
   | 'pagada'
   | 'facturada'
   | 'devolucion'
@@ -28,6 +31,10 @@ export interface SolicitudPago {
   descuentos: number;
   impuestos: number;
   monto_total: number;
+  // Lo pagado y el saldo (vista solicitud_pago_saldo, migración 191). Solo los
+  // trae el detalle; llegan como texto, igual que monto_total.
+  pagado?: number | string;
+  saldo?: number | string;
   estado: EstadoSolicitud;
   tipo: TipoSolicitud;
   observaciones: string | null;
@@ -77,6 +84,21 @@ export interface SolicitudAjuste {
   monto: number;
 }
 
+/** Un pago de una solicitud (pagos parciales, migración 191), con sus
+ *  comprobantes. Un pago anulado viene con activo = false, quién, cuándo y por
+ *  qué: no cuenta, pero queda a la vista. */
+export interface PagoSolicitud {
+  id: number;
+  fecha_pago: string; // YYYY-MM-DD
+  monto: string; // «1293.75»
+  activo: boolean;
+  registrado_por_nombre: string | null;
+  anulado_por_nombre: string | null;
+  anulado_at: string | null;
+  motivo_anulacion: string | null;
+  adjuntos: SolicitudPagoAdjunto[];
+}
+
 export interface ProjectOption {
   id: number;
   nombre: string;
@@ -105,6 +127,7 @@ export interface AprobadorProyecto {
 export const ESTADO_OPTIONS = [
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'aprobada', label: 'Aprobada' },
+  { value: 'abonada', label: 'Abonada' },
   { value: 'pagada', label: 'Pagada' },
   { value: 'facturada', label: 'Facturada' },
   { value: 'reembolsada', label: 'Reembolsada' },

@@ -48,6 +48,15 @@ export function SolicitudDetailHeader({
 }: SolicitudDetailHeaderProps) {
   if (!solicitud) return null;
 
+  // Only the admin corrects, also a request paid in part (abonada): that is
+  // where a payment is fixed or cancelled. A refund from the supplier is only
+  // for a request paid in full.
+  const puedeCorregir =
+    isAdmin && ['abonada', 'pagada', 'facturada'].includes(solicitud.estado);
+  const puedeDevolver =
+    (solicitud.estado === 'pagada' || solicitud.estado === 'facturada') &&
+    (isAdminOrCoAdmin || hasPermission('registrar_pago'));
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <Button
@@ -59,30 +68,29 @@ export function SolicitudDetailHeader({
         <Download className="h-3.5 w-3.5 mr-1" />
         Descargar PDF
       </Button>
-      {(solicitud.estado === 'pagada' || solicitud.estado === 'facturada') &&
-        (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 w-7 p-0">
-                <Settings className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isAdmin &&
-                (solicitud.estado === 'pagada' ||
-                  solicitud.estado === 'facturada') && (
-                  <DropdownMenuItem onClick={onOpenCorreccion}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Corregir solicitud
-                  </DropdownMenuItem>
-                )}
+      {(puedeCorregir || puedeDevolver) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+              <Settings className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {puedeCorregir && (
+              <DropdownMenuItem onClick={onOpenCorreccion}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Corregir solicitud
+              </DropdownMenuItem>
+            )}
+            {puedeDevolver && (
               <DropdownMenuItem onClick={onOpenDevolucionForm}>
                 <Undo2 className="h-4 w-4 mr-2" />
                 Registrar Devolución
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       {canManage &&
         (solicitud.estado === 'pendiente' ||
           solicitud.estado === 'aprobada') &&

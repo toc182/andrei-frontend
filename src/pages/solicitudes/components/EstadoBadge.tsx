@@ -1,5 +1,5 @@
 // Estado badge for solicitudes-pago — tinted pattern per FRONTEND_CONVENTIONS §21.1
-// Labels: aprobada → "Por pagar", transferida → "Verificada"
+// Labels: aprobada → "Por pagar", abonada → "Abonada" (pagada en parte), transferida → "Verificada"
 
 import { Badge } from '@/components/ui/badge';
 import {
@@ -23,6 +23,7 @@ const VARIANTS: Record<string, BadgeConfig> = {
   pendiente: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Pendiente', icon: Clock },
   aprobada: { className: 'bg-warning/10 text-warning border-warning/30 border', label: 'Por pagar' },
   rechazada: { className: 'bg-error/10 text-error border-error/30 border', label: 'Rechazada', icon: X },
+  abonada: { className: 'bg-teal/10 text-teal border-teal/30 border', label: 'Abonada' },
   pagada: { className: 'bg-success/10 text-success border-success/30 border', label: 'Pagada', icon: Check },
   facturada: { className: 'bg-info/10 text-info border-info/30 border', label: 'Facturada', icon: FileCheck },
   reembolsada: { className: 'bg-info/10 text-info border-info/30 border', label: 'Verificada', icon: CreditCard },

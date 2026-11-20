@@ -30,7 +30,8 @@ interface AdjuntosPreviewProps {
   puedeBorrar?: (id: number) => boolean;
   uploading?: boolean;
   readOnly?: boolean;
-  title?: string;
+  /** null = sin encabezado, solo las miniaturas (los comprobantes de cada pago). */
+  title?: string | null;
 }
 
 interface AdjuntoUrl {
@@ -108,6 +109,7 @@ export default function AdjuntosPreview({
   return (
     <div className="relative space-y-3 rounded-lg" {...zona}>
       {/* Header */}
+      {(title !== null || !readOnly) && (
       <div className="flex items-center justify-between">
         <h4 className="font-medium flex items-center gap-2">
           <Paperclip className="h-4 w-4" /> {title}
@@ -134,6 +136,7 @@ export default function AdjuntosPreview({
           </div>
         )}
       </div>
+      )}
 
       {rechazo && <p className="text-xs text-error">{rechazo}</p>}
 

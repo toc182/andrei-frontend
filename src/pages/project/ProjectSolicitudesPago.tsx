@@ -36,6 +36,7 @@ import type {
   SolicitudAjuste,
   Aprobacion,
   AprobadorProyecto,
+  PagoSolicitud,
 } from '../solicitudes/types';
 import { ALL_ESTADOS } from '../solicitudes/types';
 import { smartDefaultSort } from '../solicitudes/utils/solicitudSort';
@@ -195,6 +196,7 @@ export default function ProjectSolicitudesPago({
     registrado_por_nombre: string;
     adjuntos: SolicitudPagoAdjunto[];
   } | null>(null);
+  const [detailPagos, setDetailPagos] = useState<PagoSolicitud[]>([]);
 
   // Registrar factura/recibo
   const [showRegistrarFacturaModal, setShowRegistrarFacturaModal] =
@@ -422,6 +424,7 @@ export default function ProjectSolicitudesPago({
         setDetailAprobaciones(response.data.aprobaciones || []);
         setDetailAprobadores(response.data.aprobadores_proyecto || []);
         setDetailComprobante(response.data.comprobante || null);
+        setDetailPagos(response.data.pagos || []);
         setDetailFactura(response.data.factura || null);
         setDetailReembolso(response.data.reembolso || null);
         setDetailDevolucion(response.data.devolucion || null);
@@ -485,10 +488,11 @@ export default function ProjectSolicitudesPago({
       onError: setActionError,
     });
 
-  const handleRegistrarPago = (solicitudId: number) =>
+  const handleRegistrarPago = (solicitudId: number, monto: string | null) =>
     registrarPagoSolicitud({
       solicitudId,
       fechaPago: registroPagoFecha,
+      monto,
       files: registroPagoFiles,
       setRegistrandoPago,
       setShowRegistrarPagoModal,
@@ -856,6 +860,7 @@ export default function ProjectSolicitudesPago({
         aprobadores={detailAprobadores}
         adjuntos={detailAdjuntos}
         comprobante={detailComprobante}
+        pagos={detailPagos}
         factura={detailFactura}
         reembolso={detailReembolso}
         devolucion={detailDevolucion}
@@ -988,13 +993,15 @@ export default function ProjectSolicitudesPago({
         open={showRegistrarPagoModal}
         onOpenChange={setShowRegistrarPagoModal}
         tipo={detailSolicitud?.tipo}
+        totalAPagar={detailSolicitud?.monto_total}
+        pagado={detailSolicitud?.pagado}
         fecha={registroPagoFecha}
         onFechaChange={setRegistroPagoFecha}
         files={registroPagoFiles}
         onFilesChange={setRegistroPagoFiles}
         loading={registrandoPago}
-        onConfirm={() =>
-          detailSolicitud && handleRegistrarPago(detailSolicitud.id)
+        onConfirm={(monto) =>
+          detailSolicitud && handleRegistrarPago(detailSolicitud.id, monto)
         }
       />
 
@@ -1062,11 +1069,12 @@ export default function ProjectSolicitudesPago({
             banco: detailSolicitud.banco,
             tipo_cuenta: detailSolicitud.tipo_cuenta,
             numero_cuenta: detailSolicitud.numero_cuenta,
+            monto_total: detailSolicitud.monto_total,
             updated_at: detailSolicitud.updated_at || '',
           }}
           items={detailItems}
           ajustes={detailAjustes}
-          comprobante={detailComprobante}
+          pagos={detailPagos}
           factura={detailFactura ? {
             fecha_factura: detailFactura.fecha_factura,
             numero_factura: detailFactura.numero_factura ?? null,

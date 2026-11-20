@@ -4,8 +4,8 @@
 //
 // Priority order (lower = higher in the list):
 // 1. es_mi_turno first (the user's pending approvals bubble to the top)
-// 2. Estado priority group: pendiente > aprobada > pagada/devolucion >
-//    facturada/reembolsada > rechazada
+// 2. Estado priority group: pendiente > aprobada/abonada (still owe money) >
+//    pagada/devolucion > facturada/reembolsada > rechazada
 // 3. Date desc, with id as tiebreaker (higher id = more recent)
 
 import type { SolicitudPago } from '../types';
@@ -13,6 +13,7 @@ import type { SolicitudPago } from '../types';
 export const ESTADO_PRIORITY: Record<string, number> = {
   pendiente: 1,
   aprobada: 2,
+  abonada: 2,
   pagada: 3,
   devolucion: 3,
   facturada: 4,

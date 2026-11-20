@@ -1115,6 +1115,7 @@ All badges use the universal tinted pattern. Icons at `w-3 h-3` from `lucide-rea
 |---|---|---|---|
 | `pendiente` | *(replaced by approval pill bar — no badge)* | — | — |
 | `aprobada` | Por pagar | warning | none |
+| `abonada` | Abonada (paid in part; still owes its balance) | teal | none |
 | `pagada` | Pagada | success | `Check` |
 | `facturada` | Facturada | info | `FileCheck` |
 | `reembolsada` | Reembolsada | info | `CreditCard` |
@@ -1139,6 +1140,16 @@ All badges use the universal tinted pattern. Icons at `w-3 h-3` from `lucide-rea
   <Undo2 className="w-3 h-3" /> Devolución
 </Badge>
 ```
+
+#### Pagos card (detail of a regular request with payments)
+
+An `abonada`, `pagada` or `facturada` request shows one «Pagos» card (info
+tint, like the other payment cards): three figures — Total a pagar / Pagado /
+Saldo — then one row per payment («Pago 1 · 18/nov/2026», «Registrado por»,
+the amount right-aligned and `tabular-nums`) with its receipts as
+`<AdjuntosPreview readOnly title={null}>` (thumbnails only, no header). A
+request paid in one go shows the same card with one row. Cancelled payments
+are not listed here; they live in the corrections history.
 
 #### Approval pill bar (replaces the Estado badge when `estado === 'pendiente'`)
 

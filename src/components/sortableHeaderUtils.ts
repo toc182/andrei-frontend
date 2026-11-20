@@ -12,9 +12,10 @@ interface ColumnFilters {
 const ESTADO_ORDER: Record<string, number> = {
   pendiente: 0,
   aprobada: 1,
-  pagada: 2,
-  facturada: 3,
-  devolucion: 4,
+  abonada: 2,
+  pagada: 3,
+  facturada: 4,
+  devolucion: 5,
 };
 
 // Sort comparator helper

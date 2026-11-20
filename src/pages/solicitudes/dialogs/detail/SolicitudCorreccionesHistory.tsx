@@ -4,10 +4,12 @@
 //
 // Renders a collapsible <details> per correccion. Each one shows the
 // date, the author, the motivo, and a table of field-level changes
-// (old vs new). Handles four kinds of cambios: plain field changes,
-// nested item edits, item additions, and item removals.
+// (old vs new). Handles plain field changes, nested edits of an item or
+// of a payment («Pago del 18/nov/2026 — Monto»), item additions and
+// removals, and cancelled payments (pagos parciales, migración 191).
 
-import { fechaHora } from '@/lib/fechas';
+import { fecha, fechaHora } from '@/lib/fechas';
+import { formatMoney } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
 
 export interface Correccion {
@@ -45,9 +47,20 @@ const FIELD_LABELS: Record<string, string> = {
   cantidad: 'Cantidad',
   unidad: 'Unidad',
   precio_unitario: 'Precio unitario',
+  monto: 'Monto',
+  estado: 'Estado',
 };
 
 const labelOf = (campo: string) => FIELD_LABELS[campo] || campo;
+
+// Dates as «17/nov/2026» and a payment's amount as money; the rest as saved.
+const DATE_FIELDS = ['fecha', 'fecha_pago', 'fecha_factura'];
+const valorDe = (campo: string, valor: string) =>
+  DATE_FIELDS.includes(campo) && /^\d{4}-\d{2}-\d{2}/.test(valor)
+    ? fecha(valor)
+    : campo === 'monto' && valor !== '' && !Number.isNaN(Number(valor))
+      ? formatMoney(Number(valor))
+      : valor;
 
 export function SolicitudCorreccionesHistory({
   correcciones,
@@ -98,7 +111,11 @@ export function SolicitudCorreccionesHistory({
                   </thead>
                   <tbody>
                     {cambios.map((cambio, idx) => {
-                      if (cambio.campo === 'item' && 'cambios' in cambio) {
+                      if (Array.isArray(cambio.cambios)) {
+                        const titulo =
+                          cambio.campo === 'item'
+                            ? `Item "${cambio.descripcion}"`
+                            : cambio.descripcion;
                         const itemCambios = cambio.cambios as {
                           campo: string;
                           anterior: string;
@@ -110,14 +127,13 @@ export function SolicitudCorreccionesHistory({
                             className="border-t border-slate-100"
                           >
                             <td className="py-1.5 pr-3 text-slate-700">
-                              Item &quot;{cambio.descripcion}&quot; —{' '}
-                              {labelOf(ic.campo)}
+                              {titulo} — {labelOf(ic.campo)}
                             </td>
                             <td className="py-1.5 pr-3 text-error line-through">
-                              {ic.anterior}
+                              {valorDe(ic.campo, ic.anterior)}
                             </td>
                             <td className="py-1.5 text-success">
-                              {ic.nuevo}
+                              {valorDe(ic.campo, ic.nuevo)}
                             </td>
                           </tr>
                         ));
@@ -135,6 +151,22 @@ export function SolicitudCorreccionesHistory({
                             <td className="py-1.5 text-success">
                               {cambio.descripcion}
                             </td>
+                          </tr>
+                        );
+                      }
+                      if (cambio.campo === 'pago_anulado') {
+                        return (
+                          <tr
+                            key={idx}
+                            className="border-t border-slate-100"
+                          >
+                            <td className="py-1.5 pr-3 text-slate-700">
+                              Pago anulado
+                            </td>
+                            <td className="py-1.5 pr-3 text-error line-through">
+                              {cambio.descripcion}
+                            </td>
+                            <td className="py-1.5 text-muted-foreground">—</td>
                           </tr>
                         );
                       }
@@ -160,16 +192,18 @@ export function SolicitudCorreccionesHistory({
                           className="border-t border-slate-100"
                         >
                           <td className="py-1.5 pr-3 text-slate-700">
-                            {labelOf(cambio.campo)}
+                            {cambio.descripcion
+                              ? `${cambio.descripcion} — ${labelOf(cambio.campo)}`
+                              : labelOf(cambio.campo)}
                           </td>
                           <td className="py-1.5 pr-3 text-error line-through">
                             {typeof cambio.anterior === 'string'
-                              ? cambio.anterior
+                              ? valorDe(cambio.campo, cambio.anterior)
                               : '—'}
                           </td>
                           <td className="py-1.5 text-success">
                             {typeof cambio.nuevo === 'string'
-                              ? cambio.nuevo
+                              ? valorDe(cambio.campo, cambio.nuevo)
                               : '—'}
                           </td>
                         </tr>

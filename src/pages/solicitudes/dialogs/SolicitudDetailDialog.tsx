@@ -20,6 +20,7 @@ import type {
   SolicitudAjuste,
   Aprobacion,
   AprobadorProyecto,
+  PagoSolicitud,
 } from '../types';
 import type {
   MensajeUpdated,
@@ -54,6 +55,8 @@ interface SolicitudDetailDialogProps {
     registrado_por_nombre: string;
     adjuntos: SolicitudPagoAdjunto[];
   } | null;
+  /** Each payment with its receipts (pagos parciales, migración 191). */
+  pagos: PagoSolicitud[];
   factura: {
     fecha_factura: string;
     numero_factura?: string;
@@ -125,6 +128,7 @@ export function SolicitudDetailDialog({
   aprobadores,
   adjuntos,
   comprobante,
+  pagos,
   factura,
   reembolso,
   devolucion,
@@ -243,6 +247,7 @@ export function SolicitudDetailDialog({
           <SolicitudPaymentStatusCards
             solicitud={solicitud}
             comprobante={comprobante}
+            pagos={pagos}
             factura={factura}
             devolucion={devolucion}
             reembolso={reembolso}
@@ -262,6 +267,7 @@ export function SolicitudDetailDialog({
             aprobaciones={aprobaciones}
             aprobadores={aprobadores}
             reembolso={reembolso}
+            tieneFactura={!!factura}
             revisada={revisada}
             togglingRevisada={togglingRevisada}
             resubmitting={resubmitting}

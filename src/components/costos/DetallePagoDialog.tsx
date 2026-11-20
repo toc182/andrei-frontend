@@ -23,12 +23,13 @@ import api from '@/services/api';
 import { formatMoney } from '@/utils/formatters';
 import { fecha } from '@/lib/fechas';
 import type { SolicitudPagoAdjunto } from '@/types/api';
-import type { SolicitudItem, SolicitudPago } from '@/pages/solicitudes/types';
+import type { PagoSolicitud, SolicitudItem, SolicitudPago } from '@/pages/solicitudes/types';
 
 const TH = 'px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 
 /** Las mismas clases de estado que el resto de la aplicacion. */
 const ESTADOS: Record<string, { texto: string; clase: string }> = {
+  abonada: { texto: 'Abonada', clase: 'bg-teal/10 text-teal border-teal/30' },
   pagada: { texto: 'Pagada', clase: 'bg-success/10 text-success border-success/30' },
   facturada: { texto: 'Facturada', clase: 'bg-info/10 text-info border-info/30' },
   transferida: { texto: 'Transferida', clase: 'bg-info/10 text-info border-info/30' },
@@ -38,7 +39,8 @@ interface Detalle {
   solicitud: SolicitudPago;
   items: SolicitudItem[];
   adjuntos: SolicitudPagoAdjunto[];
-  comprobante: { fecha_pago: string; adjuntos: SolicitudPagoAdjunto[] } | null;
+  /** Sus pagos que cuentan (pagos parciales, migración 191). */
+  pagos: PagoSolicitud[];
 }
 
 interface DetallePagoDialogProps {
@@ -68,7 +70,7 @@ export default function DetallePagoDialog({
         solicitud: res.data.solicitud,
         items: res.data.items ?? [],
         adjuntos: res.data.adjuntos ?? [],
-        comprobante: res.data.comprobante ?? null,
+        pagos: ((res.data.pagos ?? []) as PagoSolicitud[]).filter((p) => p.activo),
       });
     } catch (err) {
       console.error('Error cargando el detalle del pago:', err);
@@ -89,10 +91,19 @@ export default function DetallePagoDialog({
   // Un adjunto puede venir en las dos listas; se muestra una sola vez.
   const papeles: SolicitudPagoAdjunto[] = [];
   if (detalle) {
-    for (const a of [...detalle.adjuntos, ...(detalle.comprobante?.adjuntos ?? [])]) {
+    for (const a of [...detalle.adjuntos, ...detalle.pagos.flatMap((p) => p.adjuntos)]) {
       if (!papeles.some((x) => x.id === a.id)) papeles.push(a);
     }
   }
+  // La fecha del último pago; de una abonada, también cuánto lleva pagado.
+  const ultimo = detalle ? detalle.pagos[detalle.pagos.length - 1] : undefined;
+  const descripcion = !s
+    ? undefined
+    : ultimo && s.estado === 'abonada'
+      ? `Abonado ${formatMoney(Number(s.pagado ?? 0))} al ${fecha(ultimo.fecha_pago)}`
+      : ultimo
+        ? `Pagado el ${fecha(ultimo.fecha_pago)}`
+        : `Solicitado el ${fecha(s.fecha)}`;
 
   return (
     <AppDialog
@@ -100,13 +111,7 @@ export default function DetallePagoDialog({
       onOpenChange={onOpenChange}
       size="standard"
       title={s ? `${s.numero} · ${s.proveedor}` : 'Detalle del pago'}
-      description={
-        detalle?.comprobante
-          ? `Pagado el ${fecha(detalle.comprobante.fecha_pago)}`
-          : s
-            ? `Solicitado el ${fecha(s.fecha)}`
-            : undefined
-      }
+      description={descripcion}
       footer={
         <>
           {onAbrirSolicitudes ? (

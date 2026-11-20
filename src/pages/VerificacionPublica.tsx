@@ -44,6 +44,12 @@ const estadoLabels: Record<
     color: 'text-error',
     bg: 'bg-error/10 border-error/30',
   },
+  // Pagada en parte (pagos parciales). Sin montos: esta página es pública.
+  abonada: {
+    label: 'Abonada',
+    color: 'text-teal',
+    bg: 'bg-teal/10 border-teal/30',
+  },
   pagada: {
     label: 'Pagada',
     color: 'text-info',

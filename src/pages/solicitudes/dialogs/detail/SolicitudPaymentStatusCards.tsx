@@ -4,8 +4,13 @@
 //
 // Renders up to four colored info cards, each conditional on the
 // solicitud state:
-// - Comprobante de Pago (blue)   — pagada / facturada
-// - Factura o Recibo (emerald)   — facturada
+// - Pagos (blue)                 — a regular request with payments (abonada,
+//                                  pagada, facturada): total, paid, balance and
+//                                  each payment with its receipt (pagos
+//                                  parciales, migración 191; mock approved by
+//                                  Ivan 2026-11-18, also for one payment)
+// - Comprobante de Transferencia (blue) — caja menuda opening (transferida)
+// - Factura o Recibo (emerald)   — facturada, or abonada once it is registered
 // - Devolución (red)             — devolucion
 // - Comprobante de Reembolso (amber) — pinellas_paga && (pagada|facturada)
 //
@@ -15,6 +20,7 @@
 // in the same vertical sequence.
 
 import { useState } from 'react';
+import { formatMoney } from '@/utils/formatters';
 import { fecha } from '@/lib/fechas';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/shell/Alert';
@@ -22,7 +28,7 @@ import { Download, Upload } from 'lucide-react';
 import api from '../../../../services/api';
 import AdjuntosPreview from '../../../../components/AdjuntosPreview';
 import type { SolicitudPagoAdjunto } from '../../../../types/api';
-import type { SolicitudPago } from '../../types';
+import type { PagoSolicitud, SolicitudPago } from '../../types';
 
 interface SolicitudPaymentStatusCardsProps {
   solicitud: SolicitudPago;
@@ -31,6 +37,9 @@ interface SolicitudPaymentStatusCardsProps {
     registrado_por_nombre: string;
     adjuntos: SolicitudPagoAdjunto[];
   } | null;
+  /** Every payment; only the active ones are shown (a cancelled one is in the
+   *  corrections history). */
+  pagos: PagoSolicitud[];
   factura: {
     fecha_factura: string;
     numero_factura?: string;
@@ -61,6 +70,7 @@ interface SolicitudPaymentStatusCardsProps {
 export function SolicitudPaymentStatusCards({
   solicitud,
   comprobante,
+  pagos,
   factura,
   devolucion,
   reembolso,
@@ -70,10 +80,62 @@ export function SolicitudPaymentStatusCards({
 }: SolicitudPaymentStatusCardsProps) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  const vigentes = pagos.filter((p) => p.activo);
+  const conPagos =
+    solicitud.tipo === 'regular' &&
+    ['abonada', 'pagada', 'facturada'].includes(solicitud.estado) &&
+    vigentes.length > 0;
+  const total = Number(solicitud.monto_total);
+  const pagado = Number(
+    solicitud.pagado ?? vigentes.reduce((s, p) => s + Number(p.monto), 0),
+  );
+  const saldo = Number(solicitud.saldo ?? total - pagado);
+
   return (
     <>
-      {/* Comprobante de Pago */}
-      {(solicitud.estado === 'pagada' || solicitud.estado === 'facturada' || solicitud.estado === 'transferida') &&
+      {/* Pagos */}
+      {conPagos && (
+        <div className="space-y-3">
+          <div className="p-4 bg-info/[0.06] border border-info/20 rounded-lg space-y-3">
+            <h4 className="font-medium text-foreground">Pagos</h4>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <Cifra etiqueta="Total a pagar" valor={formatMoney(total)} />
+              <Cifra etiqueta="Pagado" valor={formatMoney(pagado)} />
+              <Cifra etiqueta="Saldo" valor={formatMoney(saldo)} />
+            </div>
+            <div className="rounded-lg border bg-card divide-y">
+              {vigentes.map((p, i) => (
+                <div key={p.id} className="p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="font-medium">
+                        Pago {i + 1} · {fecha(p.fecha_pago)}
+                      </div>
+                      <div className="text-muted-foreground">
+                        Registrado por: {p.registrado_por_nombre ?? '—'}
+                      </div>
+                    </div>
+                    <div className="font-semibold tabular-nums whitespace-nowrap">
+                      {formatMoney(Number(p.monto))}
+                    </div>
+                  </div>
+                  {p.adjuntos.length > 0 && (
+                    <AdjuntosPreview
+                      adjuntos={p.adjuntos}
+                      solicitudPagoId={solicitud.id}
+                      readOnly
+                      title={null}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comprobante de Transferencia (caja menuda: la apertura, como siempre) */}
+      {solicitud.estado === 'transferida' &&
         comprobante && (
           <div className="space-y-3">
             <div className="p-4 bg-info/[0.06] border border-info/20 rounded-lg space-y-3">
@@ -100,7 +162,8 @@ export function SolicitudPaymentStatusCards({
         )}
 
       {/* Factura */}
-      {solicitud.estado === 'facturada' && factura && (
+      {(solicitud.estado === 'facturada' || solicitud.estado === 'abonada') &&
+        factura && (
         <div className="space-y-3">
           <div className="p-4 bg-success/[0.06] border border-success/20 rounded-lg space-y-3">
             <h4 className="font-medium text-foreground">
@@ -229,5 +292,14 @@ export function SolicitudPaymentStatusCards({
         <Alert variant="error" title={downloadError} />
       )}
     </>
+  );
+}
+
+function Cifra({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+  return (
+    <div>
+      <div className="text-muted-foreground">{etiqueta}</div>
+      <div className="font-semibold tabular-nums">{valor}</div>
+    </div>
   );
 }

@@ -38,6 +38,8 @@ interface SolicitudApprovalSectionProps {
   aprobaciones: Aprobacion[];
   aprobadores: AprobadorProyecto[];
   reembolso: { id: number } | null;
+  /** The factura or recibo is already registered (it can be, while abonada). */
+  tieneFactura: boolean;
   revisada: boolean;
   togglingRevisada: boolean;
   resubmitting: boolean;
@@ -61,6 +63,7 @@ export function SolicitudApprovalSection({
   aprobaciones,
   aprobadores,
   reembolso,
+  tieneFactura,
   revisada,
   togglingRevisada,
   resubmitting,
@@ -76,6 +79,9 @@ export function SolicitudApprovalSection({
   onOpenRegistrarFacturaDialog,
   onReenviar,
 }: SolicitudApprovalSectionProps) {
+  // Money already went out: partly (abonada) or in full. The approval chain is
+  // closed and «Pinellas paga» can no longer be switched on.
+  const tienePagos = ['abonada', 'pagada', 'facturada'].includes(solicitud.estado);
   const aprobacionesHechas = aprobaciones.filter(
     (a) => a.accion === 'aprobado',
   ).length;
@@ -112,37 +118,29 @@ export function SolicitudApprovalSection({
           <div>
             <label
               className={`flex items-center gap-2 text-sm ${
-                !solicitud.pinellas_paga &&
-                (solicitud.estado === 'pagada' ||
-                  solicitud.estado === 'facturada')
+                !solicitud.pinellas_paga && tienePagos
                   ? 'opacity-50 cursor-not-allowed'
                   : 'cursor-pointer'
               }`}
             >
               <Checkbox
                 checked={solicitud.pinellas_paga}
-                disabled={
-                  !solicitud.pinellas_paga &&
-                  (solicitud.estado === 'pagada' ||
-                    solicitud.estado === 'facturada')
-                }
+                disabled={!solicitud.pinellas_paga && tienePagos}
                 onCheckedChange={(checked) =>
                   onPinellasPagaChange(!!checked)
                 }
               />
               Pinellas paga (reembolso)
             </label>
-            {!solicitud.pinellas_paga &&
-              (solicitud.estado === 'pagada' ||
-                solicitud.estado === 'facturada') && (
-                <p className="text-xs text-muted-foreground ml-6 mt-1">
-                  No disponible después de pagada
-                </p>
-              )}
+            {!solicitud.pinellas_paga && tienePagos && (
+              <p className="text-xs text-muted-foreground ml-6 mt-1">
+                No disponible después de un pago
+              </p>
+            )}
           </div>
         )}
 
-        {solicitud.estado === 'pagada' || solicitud.estado === 'facturada'
+        {tienePagos
           ? aprobaciones.length > 0 && (
               <div className="space-y-2">
                 {aprobaciones.map((aprobacion, index) => (
@@ -255,7 +253,8 @@ export function SolicitudApprovalSection({
           </div>
         )}
 
-        {solicitud.estado === 'aprobada' &&
+        {(solicitud.estado === 'aprobada' ||
+          (solicitud.estado === 'abonada' && solicitud.tipo === 'regular')) &&
           (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
             <div className="pt-2">
               <Button
@@ -272,7 +271,10 @@ export function SolicitudApprovalSection({
             </div>
           )}
 
-        {solicitud.estado === 'pagada' && solicitud.tipo !== 'apertura' &&
+        {/* The factura can come before the last payment: while abonada it is
+            registered once and the label stays «Abonada». */}
+        {((solicitud.estado === 'pagada' && solicitud.tipo !== 'apertura') ||
+          (solicitud.estado === 'abonada' && !tieneFactura)) &&
           (isAdminOrCoAdmin || hasPermission('registrar_pago')) && (
             <div className="pt-2">
               <Button

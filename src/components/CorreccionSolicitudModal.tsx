@@ -16,6 +16,13 @@ import { Separator } from '@/components/ui/separator';
 import api from '@/services/api';
 import { Plus, Trash2, Upload, AlertTriangle, MinusCircle, PlusCircle } from 'lucide-react';
 import { formatMoney } from '@/utils/formatters';
+import { CorreccionPagos } from '@/pages/solicitudes/dialogs/detail/CorreccionPagos';
+import {
+  pagosEditables,
+  planPagos,
+  type PagoEditable,
+} from '@/pages/solicitudes/utils/correccionPagos';
+import type { PagoSolicitud } from '@/pages/solicitudes/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,6 +38,8 @@ interface SolicitudData {
   banco: string | null;
   tipo_cuenta: string | null;
   numero_cuenta: string | null;
+  /** The total as saved: a request paid in full whose total changes moves its last payment. */
+  monto_total: number | string;
   updated_at: string;
 }
 
@@ -51,10 +60,6 @@ interface AjusteData {
   monto: number;
 }
 
-interface ComprobanteData {
-  fecha_pago: string;
-}
-
 interface FacturaData {
   fecha_factura: string;
   numero_factura: string | null;
@@ -68,7 +73,8 @@ interface CorreccionSolicitudModalProps {
   solicitud: SolicitudData;
   items: ItemData[];
   ajustes: AjusteData[];
-  comprobante?: ComprobanteData | null;
+  /** Every payment of the request; the active ones can be fixed or cancelled. */
+  pagos: PagoSolicitud[];
   factura?: FacturaData | null;
 }
 
@@ -102,7 +108,7 @@ export default function CorreccionSolicitudModal({
   solicitud,
   items,
   ajustes,
-  comprobante,
+  pagos,
   factura,
 }: CorreccionSolicitudModalProps) {
   // --- motivo ---
@@ -128,10 +134,8 @@ export default function CorreccionSolicitudModal({
   // --- ajustes ---
   const [editAjustes, setEditAjustes] = useState<AjusteFormData[]>([]);
 
-  // --- comprobante ---
-  const [fechaPago, setFechaPago] = useState('');
-  const [comprobanteFiles, setComprobanteFiles] = useState<File[]>([]);
-  const comprobanteInputRef = useRef<HTMLInputElement>(null);
+  // --- pagos (each one: date, amount, receipt, or cancel) ---
+  const [editPagos, setEditPagos] = useState<PagoEditable[]>([]);
 
   // --- factura ---
   const [fechaFactura, setFechaFactura] = useState('');
@@ -189,9 +193,8 @@ export default function CorreccionSolicitudModal({
       })),
     );
 
-    // Comprobante
-    setFechaPago(comprobante?.fecha_pago?.slice(0, 10) ?? '');
-    setComprobanteFiles([]);
+    // Pagos
+    setEditPagos(pagosEditables(pagos));
 
     // Factura
     setFechaFactura(factura?.fecha_factura?.slice(0, 10) ?? '');
@@ -227,6 +230,15 @@ export default function CorreccionSolicitudModal({
     .reduce((sum, a) => sum + (parseFloat(a.monto) || 0), 0);
 
   const montoTotal = subtotal + itbmsMonto + totalAumentos - totalDisminuciones;
+
+  // What the payments end up as with the new total (same rules as the server).
+  const totalNuevoCentavos = Math.round(montoTotal * 100);
+  const plan = planPagos(
+    editPagos,
+    Math.round(Number(solicitud.monto_total) * 100),
+    totalNuevoCentavos,
+    !!factura,
+  );
 
   // ---------------------------------------------------------------------------
   // Item helpers
@@ -366,12 +378,15 @@ export default function CorreccionSolicitudModal({
       ];
       fd.append('ajustes', JSON.stringify(ajustesPayload));
 
-      // Comprobante
-      if (comprobante) {
-        fd.append('fecha_pago', fechaPago);
+      // Pagos: only what changed; each payment's new receipt in its own field
+      if (plan.pedido.length > 0) {
+        fd.append('pagos', JSON.stringify(plan.pedido));
       }
-      for (const f of comprobanteFiles) {
-        fd.append('archivos_comprobante', f);
+      for (const p of editPagos) {
+        if (p.anular) continue;
+        for (const f of p.archivos) {
+          fd.append(`archivos_pago_${p.id}`, f);
+        }
       }
 
       // Factura
@@ -421,7 +436,7 @@ export default function CorreccionSolicitudModal({
           </Button>
           <Button
             type="button"
-            disabled={saving || !motivo.trim()}
+            disabled={saving || !motivo.trim() || !!plan.error}
             onClick={handleSubmit}
           >
             {saving ? 'Guardando...' : 'Guardar corrección'}
@@ -874,44 +889,15 @@ export default function CorreccionSolicitudModal({
 
         <Separator />
 
-        {/* ---- Comprobante ---- */}
-        {comprobante && (
+        {/* ---- Pagos ---- */}
+        {editPagos.length > 0 && (
           <>
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Comprobante de pago</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="corr-fecha-pago">Fecha de pago</Label>
-                  <DatePicker value={fechaPago} onChange={setFechaPago} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Reemplazar archivos</Label>
-                  <input
-                    ref={comprobanteInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        setComprobanteFiles(Array.from(e.target.files));
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => comprobanteInputRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4 mr-1" />
-                    {comprobanteFiles.length > 0
-                      ? `${comprobanteFiles.length} archivo(s) seleccionado(s)`
-                      : 'Seleccionar archivos'}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <CorreccionPagos
+              pagos={editPagos}
+              onChange={setEditPagos}
+              plan={plan}
+              totalNuevo={totalNuevoCentavos}
+            />
             <Separator />
           </>
         )}
